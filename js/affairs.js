@@ -14,7 +14,7 @@ console.log('[affairs.js] v20260701dj');
   var today = function () { var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
   var fmtD = function (d) { return String(d == null ? '' : d).slice(0, 10); };
   var nl2br = function (s) { return esc(s).replace(/\n/g, '<br>'); };
-  function msgCard(t, x) { return '<div class="fin-card" style="text-align:center;padding:40px 18px;"><h3 style="margin:0 0 8px;color:var(--accent,#032257);">' + esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);">' + esc(x) + '</p></div>'; }
+  function msgCard(t, x) { return '<div class="fin-card" style="text-align:center;padding:40px 18px;"><h3 style="margin:0 0 8px;color:var(--accent,#223350);">' + esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);">' + esc(x) + '</p></div>'; }
 
   // ── 교적 연동(대상자 자동완성·관계 표시) ──
   var MEMBERS = [], membersLoaded = false;
@@ -247,7 +247,7 @@ console.log('[affairs.js] v20260701dj');
     }
     function headerHTML(active) {
       return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">' +
-        '<h2 style="margin:0;color:var(--accent,#032257);font-size:1.2rem">🗂 자료실</h2>' +
+        '<h2 style="margin:0;color:var(--accent,#223350);font-size:1.2rem">🗂 자료실</h2>' +
         '<span style="color:#9aa5b1;font-size:.82rem">성도별로 학습·세례증명서·수료증·보고서·과제물 등을 보관합니다</span>' +
         '<div style="margin-left:auto;display:flex;gap:6px">' +
         '<button class="btn ' + (active === 'members' ? 'btn-solid' : 'btn-line') + '" data-v="members" style="padding:6px 13px;font-size:.85rem">성도별 보기</button>' +
@@ -289,7 +289,7 @@ console.log('[affairs.js] v20260701dj');
       var files = FILES.filter(function (f) { return fileMid(f) === mid; });
       panel.innerHTML = headerHTML('members') +
         '<div class="fin-card"><button class="btn btn-line" id="ar_back" style="padding:5px 12px;font-size:.82rem">‹ 성도 목록</button>' +
-        '<h3 style="margin:10px 0 0;color:var(--accent,#032257)">' + esc(name) + ' <span style="font-weight:400;color:#7b8794;font-size:.86rem">' + esc(((m && m.group) || '') + ' ' + ((m && m.role) || '')).trim() + '</span></h3></div>' +
+        '<h3 style="margin:10px 0 0;color:var(--accent,#223350)">' + esc(name) + ' <span style="font-weight:400;color:#7b8794;font-size:.86rem">' + esc(((m && m.group) || '') + ' ' + ((m && m.role) || '')).trim() + '</span></h3></div>' +
         '<div class="fin-card"><div class="fin-grid" style="align-items:end">' +
         '<div class="form-field"><label>분류</label><select id="ar_cat">' + ARCH_CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
         '<div class="form-field"><label>자료 제목</label><input id="ar_title" placeholder="예: 2026 학습 수료증"></div>' +
@@ -449,7 +449,7 @@ console.log('[affairs.js] v20260701dj');
 
   function renderManager(panel, type) {
     panel.innerHTML =
-      '<div class="fin-card"><h3 style="margin:0 0 12px;color:var(--accent,#032257)">' + type.name + ' 기록 추가</h3>' +
+      '<div class="fin-card"><h3 style="margin:0 0 12px;color:var(--accent,#223350)">' + type.name + ' 기록 추가</h3>' +
       '<form id="afForm"><div class="fin-grid">' + type.fields.map(function (f) { return fieldHTML(f, f.type === 'date' ? today() : ''); }).join('') + '</div>' +
       '<div style="margin-top:14px;display:flex;gap:10px;align-items:center"><button type="submit" class="btn btn-solid" id="af_save">＋ 추가</button><button type="button" class="btn btn-line" id="af_reset" style="display:none">취소</button><span class="fin-msg" id="af_msg"></span></div></form></div>' +
       '<div id="afList"><p class="qt-loading">불러오는 중…</p></div>';
@@ -579,7 +579,7 @@ console.log('[affairs.js] v20260701dj');
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9500;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
     ov.innerHTML = '<div class="fin-card" style="max-width:560px;width:100%;background:#fff">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;color:var(--accent,#032257)">🎵 찬송가 선택 (복수 선택)</h3><button class="btn btn-line" id="hp_close" style="padding:3px 11px">닫기</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;color:var(--accent,#223350)">🎵 찬송가 선택 (복수 선택)</h3><button class="btn btn-line" id="hp_close" style="padding:3px 11px">닫기</button></div>' +
       '<input type="text" id="hp_q" placeholder="🔍 번호 또는 제목 검색 (숫자만 입력해도 바로 검색)" style="width:100%;padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;margin-bottom:8px">' +
       '<div id="hp_sel" style="margin-bottom:8px;min-height:26px"></div>' +
       '<div id="hp_list" style="max-height:340px;overflow:auto;border:1px solid #eef1f5;border-radius:8px"></div>' +
@@ -623,7 +623,7 @@ console.log('[affairs.js] v20260701dj');
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9500;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
     ov.innerHTML = '<div class="fin-card" style="max-width:760px;width:100%;background:#fff">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;color:var(--accent,#032257)">📜 교독문 선택</h3><button class="btn btn-line" id="gp_close" style="padding:3px 11px">닫기</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;color:var(--accent,#223350)">📜 교독문 선택</h3><button class="btn btn-line" id="gp_close" style="padding:3px 11px">닫기</button></div>' +
       '<input type="text" id="gp_q" placeholder="🔍 번호·제목 검색 (예: 시편 23, 성탄)" style="width:100%;padding:8px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;margin-bottom:10px">' +
       '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">' +
       '<div id="gp_list" style="flex:0 0 230px;max-width:100%;max-height:430px;overflow:auto;border:1px solid #eef1f5;border-radius:8px"></div>' +
@@ -646,7 +646,7 @@ console.log('[affairs.js] v20260701dj');
           sel = g; pickBtn.disabled = false;
           Array.prototype.forEach.call(listEl.querySelectorAll('.gp-item'), function (x) { x.style.background = ''; });
           d.style.background = '#eef4ff';
-          prevEl.innerHTML = '<div style="font-weight:700;color:var(--accent,#032257);margin-bottom:8px">' + g.no + '. ' + esc(g.title) + '</div>' + gyodokBodyHTML(g.body);
+          prevEl.innerHTML = '<div style="font-weight:700;color:var(--accent,#223350);margin-bottom:8px">' + g.no + '. ' + esc(g.title) + '</div>' + gyodokBodyHTML(g.body);
         };
       });
     }
@@ -693,7 +693,7 @@ console.log('[affairs.js] v20260701dj');
       function statCard(label, value, sub, accent) {
         return '<div class="fin-card" style="margin:0;padding:16px 18px">' +
           '<div style="font-size:.8rem;color:var(--ink-soft,#7b8794);font-weight:600">' + esc(label) + '</div>' +
-          '<div style="font-size:1.85rem;font-weight:800;color:' + (accent || 'var(--accent,#032257)') + ';line-height:1.1;margin-top:4px">' + esc(String(value)) + '</div>' +
+          '<div style="font-size:1.85rem;font-weight:800;color:' + (accent || 'var(--accent,#223350)') + ';line-height:1.1;margin-top:4px">' + esc(String(value)) + '</div>' +
           (sub ? '<div style="font-size:.75rem;color:#9aa5b1;margin-top:3px">' + esc(sub) + '</div>' : '') + '</div>';
       }
 
@@ -703,7 +703,7 @@ console.log('[affairs.js] v20260701dj');
         var w = Math.round(x[1] / svcMax * 100);
         return '<div style="display:flex;align-items:center;gap:10px;margin:6px 0">' +
           '<div class="svc-label" data-svc="' + esc(x[0]) + '" style="flex:0 0 96px;font-size:.84rem;color:#3a4a63;font-weight:600;text-align:right;cursor:pointer;text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(x[0]) + '</div>' +
-          '<div style="flex:1;background:#eef2f7;border-radius:6px;height:16px;overflow:hidden"><div style="width:' + w + '%;height:100%;background:linear-gradient(90deg,#3a6db5,#032257)"></div></div>' +
+          '<div style="flex:1;background:#eef2f7;border-radius:6px;height:16px;overflow:hidden"><div style="width:' + w + '%;height:100%;background:linear-gradient(90deg,#3a6db5,#223350)"></div></div>' +
           '<div style="flex:0 0 42px;font-size:.82rem;font-weight:700;color:#3a4a63">' + x[1] + '편</div></div>';
       }).join('') || '<p style="color:#9aa5b1;font-size:.86rem">아직 설교 기록이 없습니다.</p>';
 
@@ -718,7 +718,7 @@ console.log('[affairs.js] v20260701dj');
         return '<div style="display:flex;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid #f0f0f0">' +
           '<div style="flex:0 0 84px;font-size:.8rem;color:#9aa5b1">' + esc(fmtD(r.sermon_date)) + '</div>' +
           '<div style="flex:0 0 76px"><span class="fin-pill">' + esc(r.service || '-') + '</span></div>' +
-          '<div style="flex:1;min-width:0"><div class="rc-title" data-idx="' + i + '" title="클릭해서 내용 보기" style="font-weight:700;color:var(--accent,#032257);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목 없음)') + '</div>' +
+          '<div style="flex:1;min-width:0"><div class="rc-title" data-idx="' + i + '" title="클릭해서 내용 보기" style="font-weight:700;color:var(--accent,#223350);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목 없음)') + '</div>' +
           (r.scripture ? '<div style="font-size:.78rem;color:#7b8794">' + esc(r.scripture) + '</div>' : '') + '</div></div>';
       }).join('') || '<p style="color:#9aa5b1;font-size:.86rem">아직 설교 기록이 없습니다.</p>';
 
@@ -755,9 +755,9 @@ console.log('[affairs.js] v20260701dj');
         '<div style="font-size:.75rem;color:#9aa5b1;margin-top:3px">구속사 365 참여 성도 · 눌러서 현황 보기</div></div>' +
         '</div>' +
         '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">' +
-        '<b style="color:var(--accent,#032257)">📖 성경 권별 커버리지</b>' +
+        '<b style="color:var(--accent,#223350)">📖 성경 권별 커버리지</b>' +
         '<div><button class="btn btn-line" id="sd_all" style="padding:4px 11px;font-size:.8rem">전체</button> <button class="btn btn-line" id="sd_only" style="padding:4px 11px;font-size:.8rem">설교한 성경만</button></div></div>' +
-        '<div style="background:#eef2f7;border-radius:7px;height:10px;overflow:hidden;margin-bottom:14px"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#3a6db5,#032257)"></div></div>' +
+        '<div style="background:#eef2f7;border-radius:7px;height:10px;overflow:hidden;margin-bottom:14px"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#3a6db5,#223350)"></div></div>' +
         '<div class="cov-wrap" id="sd_cov">' +
         '<div style="font-size:.82rem;color:#7b8794;font-weight:700;margin:2px 0 7px">구약 <span style="color:#1f6feb">' + otDone + '</span>/' + BIBLE_OT.length + '권</div>' +
         '<div class="cov-grid" style="margin-bottom:16px">' + cells(BIBLE_OT, false) + '</div>' +
@@ -765,8 +765,8 @@ console.log('[affairs.js] v20260701dj');
         '<div class="cov-grid">' + cells(BIBLE_NT, true) + '</div>' +
         '</div></div>' +
         '<div class="fin-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));align-items:start">' +
-        '<div class="fin-card"><b style="color:var(--accent,#032257)">🗂 예배별 분포</b><div style="margin-top:10px">' + svcHTML + '</div></div>' +
-        '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--accent,#032257)">🕘 최근 설교</b><button class="btn btn-line" id="sd_goList" style="padding:4px 11px;font-size:.8rem">설교관리 →</button></div><div style="margin-top:8px">' + recent + '</div></div>' +
+        '<div class="fin-card"><b style="color:var(--accent,#223350)">🗂 예배별 분포</b><div style="margin-top:10px">' + svcHTML + '</div></div>' +
+        '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--accent,#223350)">🕘 최근 설교</b><button class="btn btn-line" id="sd_goList" style="padding:4px 11px;font-size:.8rem">설교관리 →</button></div><div style="margin-top:8px">' + recent + '</div></div>' +
         '</div>';
 
       var cov = panel.querySelector('#sd_cov');
@@ -810,7 +810,7 @@ console.log('[affairs.js] v20260701dj');
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
       ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#032257)">📖 성경읽기 현황 <span style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + ids.length + '명</span></h3><button class="btn btn-line" id="bs_close" style="padding:3px 11px">닫기</button></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#223350)">📖 성경읽기 현황 <span style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + ids.length + '명</span></h3><button class="btn btn-line" id="bs_close" style="padding:3px 11px">닫기</button></div>' +
         '<div id="bs_list" style="max-height:62vh;overflow:auto"><p class="qt-loading">명단을 불러오는 중…</p></div></div>';
       document.body.appendChild(ov);
       var close = pushBackClose(function () { ov.remove(); });
@@ -832,7 +832,7 @@ console.log('[affairs.js] v20260701dj');
                 '<div style="display:flex;align-items:center;gap:10px">' +
                 '<span style="flex:0 0 24px;color:#9aa5b1;font-size:.8rem;text-align:center">' + (i + 1) + '</span>' +
                 '<span style="flex:1;font-weight:600;color:#1f2937">' + esc(x.name) + '</span>' +
-                '<span style="font-size:.82rem;color:var(--accent,#032257);font-weight:700">' + x.cnt + '/365일 (' + pct + '%)</span>' +
+                '<span style="font-size:.82rem;color:var(--accent,#223350);font-weight:700">' + x.cnt + '/365일 (' + pct + '%)</span>' +
                 '<span style="font-size:.75rem;color:#9aa5b1">' + esc(x.last) + '</span></div>' +
                 '<div style="background:#eef2f7;border-radius:5px;height:6px;overflow:hidden;margin:7px 0 0 34px"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#3fa06a,#1e874b)"></div></div>' +
                 '</div>';
@@ -884,7 +884,7 @@ console.log('[affairs.js] v20260701dj');
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
       ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:680px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#032257)">🔊 저장된 AI 음성 <span id="tl_cnt" style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + files.length + '개</span></h3><button class="btn btn-line" id="tl_close" style="padding:3px 11px">닫기</button></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#223350)">🔊 저장된 AI 음성 <span id="tl_cnt" style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + files.length + '개</span></h3><button class="btn btn-line" id="tl_close" style="padding:3px 11px">닫기</button></div>' +
         '<p style="margin:0 0 10px;font-size:.76rem;color:#9aa5b1">저장소에 실제로 존재하는 파일 목록입니다. 삭제하면 즉시 지워지며(오늘·내일 QT는 자동 생성이 다시 만듦), <b>14일이 지난 파일은 자동 삭제</b>되어 저장 공간이 항상 여유 있게 유지됩니다.</p>' +
         '<div id="tl_body" style="max-height:62vh;overflow:auto"></div></div>';
       document.body.appendChild(ov);
@@ -904,7 +904,7 @@ console.log('[affairs.js] v20260701dj');
           var url = SB + '/storage/v1/object/public/tts-cache/' + encodeURIComponent(f.name);
           return '<div style="display:flex;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid #f0f0f0">' +
             '<div style="flex:0 0 78px;font-size:.8rem;color:#9aa5b1">' + esc(when) + '</div>' +
-            '<div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--accent,#032257);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(f.name) + '">' + esc(title) + '</div>' +
+            '<div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--accent,#223350);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(f.name) + '">' + esc(title) + '</div>' +
             '<div style="font-size:.74rem;color:#9aa5b1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(sub) + '</div></div>' +
             '<audio controls preload="none" src="' + esc(url) + '" style="flex:0 0 190px;max-width:190px;height:34px"></audio>' +
             '<button class="btn btn-line tl-del" data-i="' + i + '" title="파일 삭제" style="flex:0 0 auto;padding:4px 9px;color:#c0392b;border-color:#e6b3b3">🗑</button>' +
@@ -952,7 +952,7 @@ console.log('[affairs.js] v20260701dj');
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
       ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#032257)">📋 ' + esc(fmtD(dateStr)) + ' QT 출석 <span style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + checks.length + '명</span></h3><button class="btn btn-line" id="qa_close" style="padding:3px 11px">닫기</button></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#223350)">📋 ' + esc(fmtD(dateStr)) + ' QT 출석 <span style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + checks.length + '명</span></h3><button class="btn btn-line" id="qa_close" style="padding:3px 11px">닫기</button></div>' +
         '<div id="qa_list" style="max-height:60vh;overflow:auto"><p class="qt-loading">명단을 불러오는 중…</p></div></div>';
       document.body.appendChild(ov);
       var close = pushBackClose(function () { ov.remove(); });
@@ -987,7 +987,7 @@ console.log('[affairs.js] v20260701dj');
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.55);z-index:9750;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
       ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:760px;width:100%;padding:24px 26px;box-shadow:0 24px 60px rgba(0,0,0,.32)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#032257);font-size:1.3rem;font-family:\'Noto Serif KR\',serif;line-height:1.35">' + esc(r.title || '(제목 없음)') + '</h3><button class="btn btn-line" id="sc_close" style="padding:5px 13px;white-space:nowrap">‹ 목록</button></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#223350);font-size:1.3rem;font-family:\'Noto Serif KR\',serif;line-height:1.35">' + esc(r.title || '(제목 없음)') + '</h3><button class="btn btn-line" id="sc_close" style="padding:5px 13px;white-space:nowrap">‹ 목록</button></div>' +
         (meta ? '<div style="font-size:.82rem;color:#7b8794;margin-bottom:15px">' + meta + '</div>' : '') +
         '<div style="line-height:1.95;font-size:1.02rem;color:#1f2937;font-family:\'Noto Serif KR\',serif;max-height:68vh;overflow:auto">' + body + '</div></div>';
       document.body.appendChild(ov);
@@ -1005,11 +1005,11 @@ console.log('[affairs.js] v20260701dj');
         return '<div style="display:flex;gap:10px;align-items:baseline;padding:9px 2px;border-bottom:1px solid #f0f0f0">' +
           '<div style="flex:0 0 84px;font-size:.8rem;color:#9aa5b1;white-space:nowrap">' + esc(fmtD(r.sermon_date)) + '</div>' +
           '<div style="flex:0 0 72px"><span class="fin-pill" style="background:' + c + '1a;color:' + c + '">' + esc(r.service || '-') + '</span></div>' +
-          '<div style="flex:1;min-width:0"><div class="bk-title" data-idx="' + i + '" title="클릭해서 내용 보기" style="font-weight:700;color:var(--accent,#032257);cursor:pointer;text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목 없음)') + '</div>' +
+          '<div style="flex:1;min-width:0"><div class="bk-title" data-idx="' + i + '" title="클릭해서 내용 보기" style="font-weight:700;color:var(--accent,#223350);cursor:pointer;text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목 없음)') + '</div>' +
           (r.scripture ? '<div style="font-size:.78rem;color:#7b8794">' + esc(r.scripture) + '</div>' : '') + '</div></div>';
       }).join('');
       ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:700px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#032257)">📖 ' + esc(book) + ' <span style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + (list ? list.length : 0) + '편</span></h3><button class="btn btn-line" id="bk_close" style="padding:3px 11px">닫기</button></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#223350)">📖 ' + esc(book) + ' <span style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + (list ? list.length : 0) + '편</span></h3><button class="btn btn-line" id="bk_close" style="padding:3px 11px">닫기</button></div>' +
         '<div style="max-height:70vh;overflow:auto">' + (items || '<p style="color:#9aa5b1">기록이 없습니다.</p>') + '</div></div>';
       document.body.appendChild(ov);
       var close = pushBackClose(function () { ov.remove(); });
@@ -1064,7 +1064,7 @@ console.log('[affairs.js] v20260701dj');
               var dow = (startDow + day2 - 1) % 7;
               var tc2 = dow === 0 ? '#e74c3c' : dow === 6 ? '#3a6db5' : '#3a4a63';
               if (dSet[day2]) {
-                cells += '<div class="sv-day" data-y="' + ys + '" data-m="' + m + '" data-d="' + day2 + '" style="text-align:center;font-size:.7rem;font-weight:800;background:#032257;color:#fff;border-radius:4px;padding:2px 1px;cursor:pointer;line-height:1.6" title="' + dSet[day2].length + '편 — 클릭하여 보기">' + day2 + '</div>';
+                cells += '<div class="sv-day" data-y="' + ys + '" data-m="' + m + '" data-d="' + day2 + '" style="text-align:center;font-size:.7rem;font-weight:800;background:#223350;color:#fff;border-radius:4px;padding:2px 1px;cursor:pointer;line-height:1.6" title="' + dSet[day2].length + '편 — 클릭하여 보기">' + day2 + '</div>';
               } else {
                 cells += '<div style="text-align:center;font-size:.7rem;color:' + tc2 + ';padding:2px 1px;line-height:1.6">' + day2 + '</div>';
               }
@@ -1080,7 +1080,7 @@ console.log('[affairs.js] v20260701dj');
         var hasData = !!yearMap[String(y)];
         var dot = hasData ? ' <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;vertical-align:middle;margin-left:3px" title="설교 데이터 있음"></span>' : '';
         return '<button id="sv_prev" style="background:#eef2f7;border:none;border-radius:999px;padding:5px 14px;cursor:pointer;font-size:.84rem;font-weight:700;color:#3a4a63">◀ 이전년</button>' +
-          '<span style="font-size:1.05rem;font-weight:800;color:#032257;min-width:80px;text-align:center">' + y + '년' + dot + '</span>' +
+          '<span style="font-size:1.05rem;font-weight:800;color:#223350;min-width:80px;text-align:center">' + y + '년' + dot + '</span>' +
           '<button id="sv_next" style="background:#eef2f7;border:none;border-radius:999px;padding:5px 14px;cursor:pointer;font-size:.84rem;font-weight:700;color:#3a4a63">다음년 ▶</button>';
       }
 
@@ -1088,7 +1088,7 @@ console.log('[affairs.js] v20260701dj');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
       ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:900px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
-        '<h3 style="margin:0;color:var(--accent,#032257)">📅 ' + esc(svc) + ' <span style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + filtered.length + '편</span></h3>' +
+        '<h3 style="margin:0;color:var(--accent,#223350)">📅 ' + esc(svc) + ' <span style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + filtered.length + '편</span></h3>' +
         '<button class="btn btn-line" id="sv_close" style="padding:3px 11px">닫기</button></div>' +
         '<div id="sv_nav" style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' + buildYearNav(selYearNum) + '</div>' +
         '<div id="sv_cal" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;max-height:72vh;overflow:auto;padding-bottom:4px">' + buildCalGrid(selYearNum) + '</div>' +
@@ -1129,12 +1129,12 @@ console.log('[affairs.js] v20260701dj');
       ov2.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.4);z-index:9720;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
       var items = (list || []).map(function (r, i) {
         return '<div style="padding:9px 2px;border-bottom:1px solid #f0f0f0">' +
-          '<div class="dl-title" data-idx="' + i + '" style="font-weight:700;color:var(--accent,#032257);cursor:pointer;text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목 없음)') + '</div>' +
+          '<div class="dl-title" data-idx="' + i + '" style="font-weight:700;color:var(--accent,#223350);cursor:pointer;text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목 없음)') + '</div>' +
           (r.scripture ? '<div style="font-size:.78rem;color:#7b8794">' + esc(r.scripture) + '</div>' : '') + '</div>';
       }).join('');
       ov2.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-        '<h3 style="margin:0;font-size:1rem;color:var(--accent,#032257)">' + esc(label) + '</h3>' +
+        '<h3 style="margin:0;font-size:1rem;color:var(--accent,#223350)">' + esc(label) + '</h3>' +
         '<button class="btn btn-line" id="dl_close" style="padding:3px 11px">닫기</button></div>' +
         '<div style="max-height:60vh;overflow:auto">' + (items || '<p style="color:#9aa5b1">기록 없음</p>') + '</div></div>';
       document.body.appendChild(ov2);
@@ -1195,7 +1195,7 @@ console.log('[affairs.js] v20260701dj');
         '<style>' +
         '.sg-head{display:block;width:100%;text-align:left;border:1px solid #cdddf6;background:linear-gradient(135deg,#f5f9ff,#eaf1ff);border-radius:12px;padding:14px 16px;cursor:pointer;font-family:inherit}' +
         '.sg-head:hover{border-color:#1f6feb}' +
-        '.sg-h-book{font-size:1.3rem;font-weight:800;color:var(--accent,#032257)}' +
+        '.sg-h-book{font-size:1.3rem;font-weight:800;color:var(--accent,#223350)}' +
         '.sg-h-cat{font-size:.8rem;color:#5a6b82;margin-top:2px}.sg-h-go{font-size:.8rem;color:#1f6feb;font-weight:700;margin-top:8px}' +
         '.sg-chips{display:flex;flex-wrap:wrap;gap:6px}' +
         '.sg-chip{border:1px solid #f0c4c4;background:#fff6f6;border-radius:999px;padding:5px 13px;font-size:.86rem;font-weight:600;color:#b3413a;cursor:pointer;font-family:inherit}' +
@@ -1203,12 +1203,12 @@ console.log('[affairs.js] v20260701dj');
         '.sg-row{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;gap:10px;background:none;border:0;border-bottom:1px solid #f0f0f0;padding:9px 2px;cursor:pointer;font-family:inherit}' +
         '.sg-row:hover{background:#f7f9fc}' +
         '</style>' +
-        '<div class="fin-card"><b style="color:var(--accent,#032257)">💡 이번에 이 본문은 어떠세요?</b>' +
+        '<div class="fin-card"><b style="color:var(--accent,#223350)">💡 이번에 이 본문은 어떠세요?</b>' +
         '<div style="font-size:.8rem;color:#9aa5b1;margin:3px 0 12px">아직 설교하지 않은 성경 책 중에서, 분야가 골고루 채워지도록 추천합니다. 클릭하면 그 본문으로 바로 설교를 시작합니다.</div>' +
         '<div class="fin-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">' + headHTML + '</div></div>' +
         '<div class="fin-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start">' +
-        '<div class="fin-card"><b style="color:var(--accent,#032257)">📚 분류별 아직 안 한 책</b><div style="font-size:.78rem;color:#9aa5b1;margin:3px 0 12px">빨간 칩 = 아직 한 번도 설교 안 한 책 (클릭 → 설교 시작)</div>' + catHTML + '</div>' +
-        '<div class="fin-card"><b style="color:var(--accent,#032257)">🕰 한동안 안 다룬 책</b><div style="font-size:.78rem;color:#9aa5b1;margin:3px 0 10px">설교했지만 가장 오래된 순 — 다시 다뤄볼 만한 책</div>' + neglectHTML + '</div>' +
+        '<div class="fin-card"><b style="color:var(--accent,#223350)">📚 분류별 아직 안 한 책</b><div style="font-size:.78rem;color:#9aa5b1;margin:3px 0 12px">빨간 칩 = 아직 한 번도 설교 안 한 책 (클릭 → 설교 시작)</div>' + catHTML + '</div>' +
+        '<div class="fin-card"><b style="color:var(--accent,#223350)">🕰 한동안 안 다룬 책</b><div style="font-size:.78rem;color:#9aa5b1;margin:3px 0 10px">설교했지만 가장 오래된 순 — 다시 다뤄볼 만한 책</div>' + neglectHTML + '</div>' +
         '</div>';
 
       Array.prototype.forEach.call(panel.querySelectorAll('[data-book]'), function (el) {
@@ -1331,18 +1331,18 @@ console.log('[affairs.js] v20260701dj');
     ov.style.cssText = 'position:fixed;inset:0;background:#f4f6fa;z-index:9000;overflow:auto';
     var thisYear = new Date().getFullYear();
     ov.innerHTML =
-      '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(3,34,87,.06)">' +
+      '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(34,51,80,.06)">' +
       '<div style="max-width:900px;margin:0 auto;padding:11px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
       '<button class="btn btn-line" id="qi_close" style="padding:8px 14px;border-radius:9px">‹ 닫기</button>' +
-      '<div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:1.12rem;color:var(--accent,#032257)">📥 생명의 삶 가져오기</div>' +
+      '<div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:1.12rem;color:var(--accent,#223350)">📥 생명의 삶 가져오기</div>' +
       '<div style="font-size:.72rem;color:#9aa5b1;margin-top:2px">개인 참고용 비공개 보관함 — 홈페이지엔 절대 표시되지 않습니다</div></div>' +
       '<button class="btn btn-solid" id="qi_save" style="padding:8px 18px;border-radius:9px;font-weight:700" disabled>💾 날짜별 저장</button>' +
       '</div></header>' +
       '<div style="max-width:900px;margin:0 auto;padding:18px">' +
-      '<div class="fin-card"><b style="color:var(--accent,#032257)">① 생명의 삶 열기 → 내용 복사</b>' +
+      '<div class="fin-card"><b style="color:var(--accent,#223350)">① 생명의 삶 열기 → 내용 복사</b>' +
       '<div style="font-size:.84rem;color:#5a6b82;margin:6px 0 10px">아래 버튼으로 (이미 로그인된) 생명의 삶을 새 탭에서 엽니다. 그날(또는 한 달치) QT 본문을 <b>전체 선택(Ctrl+A) → 복사(Ctrl+C)</b> 하세요.</div>' +
       '<a class="btn btn-line" href="https://www.du.plus/my-library" target="_blank" rel="noopener" style="padding:8px 16px">생명의 삶 열기 ↗</a></div>' +
-      '<div class="fin-card"><b style="color:var(--accent,#032257)">② 여기에 붙여넣기</b>' +
+      '<div class="fin-card"><b style="color:var(--accent,#223350)">② 여기에 붙여넣기</b>' +
       '<div style="display:flex;gap:10px;align-items:center;margin:8px 0;flex-wrap:wrap">' +
       '<label style="font-size:.84rem;color:#5a6b82">연도(날짜에 연도가 없을 때)</label>' +
       '<input type="number" id="qi_year" value="' + thisYear + '" style="width:96px;padding:6px 8px;border:1px solid #dfe5ee;border-radius:7px;font:inherit">' +
@@ -1352,7 +1352,7 @@ console.log('[affairs.js] v20260701dj');
       '<div style="font-size:.78rem;color:#9aa5b1;margin:3px 0 8px">그 달 PDF(생명의 삶 PLUS)를 올리면 전문을 추출해 위 칸에 채우고 날짜별로 정리합니다.</div>' +
       '<input type="file" id="qi_pdf" accept="application/pdf,.pdf"><span id="qi_pdfmsg" style="font-size:.8rem;color:#7b8794;margin-left:8px"></span></div></div>' +
       '<div id="qi_prev"></div>' +
-      '<div class="fin-card"><b style="color:var(--accent,#032257)">📂 가져온 자료 (비공개)</b><div id="qi_list" style="margin-top:8px"><p class="qt-loading">불러오는 중…</p></div></div>' +
+      '<div class="fin-card"><b style="color:var(--accent,#223350)">📂 가져온 자료 (비공개)</b><div id="qi_list" style="margin-top:8px"><p class="qt-loading">불러오는 중…</p></div></div>' +
       '</div>';
     document.body.appendChild(ov);
     document.body.style.overflow = 'hidden';
@@ -1383,7 +1383,7 @@ console.log('[affairs.js] v20260701dj');
     function renderPrev() {
       if (!parsed.length) { prevBox.innerHTML = ''; saveBtn.disabled = true; return; }
       saveBtn.disabled = false;
-      prevBox.innerHTML = '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="color:var(--accent,#032257)">③ 날짜별 정리 미리보기 (' + parsed.length + '일)</b><span style="font-size:.78rem;color:#9aa5b1">저장 전에 날짜·제목을 고칠 수 있어요</span></div>' +
+      prevBox.innerHTML = '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="color:var(--accent,#223350)">③ 날짜별 정리 미리보기 (' + parsed.length + '일)</b><span style="font-size:.78rem;color:#9aa5b1">저장 전에 날짜·제목을 고칠 수 있어요</span></div>' +
         parsed.map(function (p, i) {
           return '<div style="border:1px solid #eef1f5;border-radius:9px;padding:10px;margin-bottom:8px">' +
             '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">' +
@@ -1959,7 +1959,7 @@ console.log('[affairs.js] v20260701dj');
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9800;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
     ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:680px;width:100%;padding:22px 24px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#032257)">📖 예화 클립</h3><button class="btn btn-line" id="iv_close" style="padding:3px 11px">닫기</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#223350)">📖 예화 클립</h3><button class="btn btn-line" id="iv_close" style="padding:3px 11px">닫기</button></div>' +
       (meta ? '<div style="font-size:.78rem;color:#7b8794;margin-bottom:2px">' + meta + '</div>' : '') +
       (book ? '<div style="font-size:.88rem;color:#7a5d27;font-weight:600;margin-bottom:12px">' + book + '</div>' : '') +
       '<div style="white-space:pre-wrap;line-height:1.85;font-size:.97rem;color:#1f2937;max-height:62vh;overflow:auto">' + esc(r.content || '') + '</div>' +
@@ -1978,7 +1978,7 @@ console.log('[affairs.js] v20260701dj');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9800;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
     function fld(label, id, val, ph) { return '<div style="margin-bottom:10px"><label style="display:block;font-size:.78rem;color:#5a6b82;font-weight:700;margin-bottom:4px">' + label + '</label><input type="' + (id === 'ie_date' ? 'date' : 'text') + '" id="' + id + '" value="' + esc(val || '') + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + ' style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;font:inherit;outline:none"></div>'; }
     ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:680px;width:100%;padding:22px 24px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin:0;color:var(--accent,#032257)">✏️ 예화 클립 수정</h3><button class="btn btn-line" id="ie_close" style="padding:3px 11px">닫기</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin:0;color:var(--accent,#223350)">✏️ 예화 클립 수정</h3><button class="btn btn-line" id="ie_close" style="padding:3px 11px">닫기</button></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + fld('일자', 'ie_date', fmtD(r.ref_date)) + fld('본문(성경)', 'ie_scr', r.scripture, '예: 에스겔 33:1-9') + '</div>' +
       fld('제목(책)', 'ie_book', s.book || r.title, '예: 이기는 신앙') +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + fld('저자', 'ie_author', s.author, '예: 이권희') + fld('출판사', 'ie_pub', s.publisher, '예: 두란노') + '</div>' +
@@ -2014,7 +2014,7 @@ console.log('[affairs.js] v20260701dj');
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
     ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:720px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#032257)">🔍 예화 검색</h3><button class="btn btn-line" id="il_close" style="padding:3px 11px">닫기</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#223350)">🔍 예화 검색</h3><button class="btn btn-line" id="il_close" style="padding:3px 11px">닫기</button></div>' +
       '<input type="text" id="il_q" placeholder="🔍 제목·저자·출판사·본문·내용 검색" style="width:100%;padding:9px 13px;border:1px solid #e2e8f0;border-radius:9px;font:inherit;margin:6px 0 12px;outline:none">' +
       '<div id="il_list"><p class="qt-loading">불러오는 중…</p></div></div>';
     document.body.appendChild(ov);
@@ -2054,7 +2054,7 @@ console.log('[affairs.js] v20260701dj');
   function renderIllustrations(panel) {
     panel.innerHTML =
       '<div class="fin-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">' +
-      '<div><b style="font-size:1.08rem;color:var(--accent,#032257)">🗂 예화 클립</b>' +
+      '<div><b style="font-size:1.08rem;color:var(--accent,#223350)">🗂 예화 클립</b>' +
       '<div style="font-size:.84rem;color:var(--ink-soft);margin-top:4px">생명의삶 자동분류에서 모은 예화 클립입니다. <b>보기</b>로 전문을 확인하고, 설교 작성 중에는 ‘예화 검색’으로 원고에 삽입할 수 있습니다.</div></div>' +
       '<input type="text" id="il_q" placeholder="🔍 제목·저자·출판사·본문 검색" style="padding:9px 13px;border:1px solid #e2e8f0;border-radius:9px;font:inherit;min-width:230px;outline:none"></div>' +
       '<div id="il_list"><p class="qt-loading">불러오는 중…</p></div>';
@@ -2068,7 +2068,7 @@ console.log('[affairs.js] v20260701dj');
         (rows.length ? rows.map(function (r) {
           var s = parseIllusSource(r.source);
           return '<tr><td style="white-space:nowrap">' + esc(fmtD(r.ref_date) || '') + '</td>' +
-            '<td><b class="il-view" data-id="' + esc(r.id) + '" title="클릭하면 전문을 봅니다" style="cursor:pointer;color:var(--accent,#032257);text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(s.book || r.title || '(제목 없음)') + '</b></td>' +
+            '<td><b class="il-view" data-id="' + esc(r.id) + '" title="클릭하면 전문을 봅니다" style="cursor:pointer;color:var(--accent,#223350);text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(s.book || r.title || '(제목 없음)') + '</b></td>' +
             '<td style="white-space:nowrap">' + esc(s.author || '—') + '</td>' +
             '<td>' + esc(s.publisher || '—') + '</td>' +
             '<td style="white-space:nowrap"><button class="btn btn-solid il-view" data-id="' + esc(r.id) + '" style="padding:4px 12px;font-size:.78rem">📖 보기</button> <button class="btn btn-line il-edit" data-id="' + esc(r.id) + '" style="padding:4px 11px;font-size:.78rem">✏️ 수정</button> <button class="btn btn-line il-del" data-id="' + esc(r.id) + '" style="padding:4px 11px;font-size:.78rem">삭제</button></td></tr>';
@@ -2096,7 +2096,7 @@ console.log('[affairs.js] v20260701dj');
     api('GET', 'worship_templates?select=*').then(function (rows) { WTPL = {}; (rows || []).forEach(function (r) { WTPL[r.service] = r.items || []; }); }).catch(function () {});
     panel.innerHTML =
       '<div class="fin-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">' +
-      '<div><b style="font-size:1.08rem;color:var(--accent,#032257)">' + (worshipMode ? '예배 준비·관리' : '설교 작성·관리') + '</b>' +
+      '<div><b style="font-size:1.08rem;color:var(--accent,#223350)">' + (worshipMode ? '예배 준비·관리' : '설교 작성·관리') + '</b>' +
       '<div style="font-size:.84rem;color:var(--ink-soft);margin-top:4px">' + (worshipMode ? '캘린더에서 <b>날짜를 클릭</b>하면 그 날짜의 <b>예배 순서</b>를 짜고 아이패드로 발표할 수 있습니다. (주일 낮 예배 중심)' : '캘린더에서 <b>날짜를 클릭</b>하면 그 날짜로 바로 설교를 준비할 수 있고, 아래 <b>목록</b>에서도 관리됩니다.') + '</div></div>' +
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
       '<button class="btn btn-solid" id="sm_start" style="padding:11px 22px;font-size:1rem">' + (worshipMode ? '🎼 예배 순서 작성' : '✍️ 설교 시작') + '</button></div></div>' +
@@ -2213,7 +2213,7 @@ console.log('[affairs.js] v20260701dj');
           wrows.map(function (r, i) {
             var c = svcColor(r.service), ds = fmtD(r.sermon_date), n = orderCount(r);
             return '<tr><td style="text-align:center;color:#9aa5b1;font-size:.8rem">' + (i + 1) + '</td><td style="white-space:nowrap">' + esc(ds) + '</td><td style="white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + c + ';margin-right:5px"></span>' + esc(r.service || '') + '</td>' +
-              '<td><b class="sm-edit" data-id="' + esc(r.id) + '" title="클릭하면 예배 순서를 엽니다" style="cursor:pointer;color:var(--accent,#032257);text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목없음)') + '</b></td>' +
+              '<td><b class="sm-edit" data-id="' + esc(r.id) + '" title="클릭하면 예배 순서를 엽니다" style="cursor:pointer;color:var(--accent,#223350);text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목없음)') + '</b></td>' +
               '<td style="white-space:nowrap">' + esc(r.scripture || '') + '</td><td style="white-space:nowrap">' + n + '항목</td>' +
               '<td style="white-space:nowrap"><button class="btn btn-solid sm-read" data-id="' + esc(r.id) + '" style="padding:4px 11px;font-size:.78rem">📖 발표</button> <button class="btn btn-line sm-edit" data-id="' + esc(r.id) + '" style="padding:4px 9px;font-size:.78rem">수정</button> <button class="btn btn-line sm-orderdel" data-id="' + esc(r.id) + '" style="padding:4px 9px;font-size:.78rem">순서삭제</button></td></tr>';
           }).join('') + '</tbody></table></div></div>';
@@ -2290,7 +2290,7 @@ console.log('[affairs.js] v20260701dj');
         weekBtns = '<span style="display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center">' +
           ['전체', '1', '2', '3', '4', '5'].map(function (w) {
             var on = (String(filtWeek) === w);
-            return '<button class="sm-wk" data-wk="' + w + '" style="padding:5px 11px;border:1px solid ' + (on ? 'var(--accent,#032257)' : '#dfe5ee') + ';border-radius:8px;background:' + (on ? 'var(--accent,#032257)' : '#fff') + ';color:' + (on ? '#fff' : '#3a4a63') + ';cursor:pointer;font-size:.82rem;font-weight:' + (on ? '700' : '400') + '">' + (w === '전체' ? '전체 주' : w + '주') + '</button>';
+            return '<button class="sm-wk" data-wk="' + w + '" style="padding:5px 11px;border:1px solid ' + (on ? 'var(--accent,#223350)' : '#dfe5ee') + ';border-radius:8px;background:' + (on ? 'var(--accent,#223350)' : '#fff') + ';color:' + (on ? '#fff' : '#3a4a63') + ';cursor:pointer;font-size:.82rem;font-weight:' + (on ? '700' : '400') + '">' + (w === '전체' ? '전체 주' : w + '주') + '</button>';
           }).join('') + '</span>';
       }
       var ppSel = '<select id="sm_per_page" style="padding:5px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;font-size:.84rem;cursor:pointer">' +
@@ -2309,7 +2309,7 @@ console.log('[affairs.js] v20260701dj');
         if (page > 1) pageBtns += pgBtn(page - 1, '‹');
         for (var pi = from; pi <= to; pi++) {
           var isActive = pi === page;
-          pageBtns += '<button class="sm-pg" data-pg="' + pi + '" style="padding:4px 11px;border:1px solid ' + (isActive ? 'var(--accent,#032257)' : '#dfe5ee') + ';border-radius:6px;background:' + (isActive ? 'var(--accent,#032257)' : '#fff') + ';color:' + (isActive ? '#fff' : 'inherit') + ';cursor:pointer;font-size:.84rem;font-weight:' + (isActive ? '700' : '400') + '">' + pi + '</button>';
+          pageBtns += '<button class="sm-pg" data-pg="' + pi + '" style="padding:4px 11px;border:1px solid ' + (isActive ? 'var(--accent,#223350)' : '#dfe5ee') + ';border-radius:6px;background:' + (isActive ? 'var(--accent,#223350)' : '#fff') + ';color:' + (isActive ? '#fff' : 'inherit') + ';cursor:pointer;font-size:.84rem;font-weight:' + (isActive ? '700' : '400') + '">' + pi + '</button>';
         }
         if (page < totalPages) pageBtns += pgBtn(page + 1, '›');
         if (page <= totalPages - 10) pageBtns += pgBtn(Math.min(totalPages, page + 10), '10»');
@@ -2329,7 +2329,7 @@ console.log('[affairs.js] v20260701dj');
         return '<tr><td style="text-align:center;color:#9aa5b1;font-size:.8rem">' + num + '</td>' +
           '<td style="white-space:nowrap">' + esc(ds) + '</td>' +
           '<td style="white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + c + ';margin-right:5px"></span>' + esc(r.service || '') + '</td>' +
-          '<td style="min-width:11em;word-break:keep-all"><b class="sm-title" data-id="' + esc(r.id) + '"' + (r.summary ? ' title="' + esc(String(r.summary).slice(0, 200)) + '"' : '') + ' style="cursor:pointer;color:var(--accent,#032257);text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목없음)') + '</b>' +
+          '<td style="min-width:11em;word-break:keep-all"><b class="sm-title" data-id="' + esc(r.id) + '"' + (r.summary ? ' title="' + esc(String(r.summary).slice(0, 200)) + '"' : '') + ' style="cursor:pointer;color:var(--accent,#223350);text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목없음)') + '</b>' +
           (r.series ? '<div style="margin-top:2px">' + String(r.series).split(',').map(function (s) { s = s.trim(); return s ? '<span style="display:inline-block;font-size:.66rem;background:#eef3fa;color:#3a5a8c;border:1px solid #d9e4f2;border-radius:999px;padding:1px 7px;margin:1px 3px 0 0">📚 ' + esc(s) + '</span>' : ''; }).join('') + '</div>' : '') + '</td>' +
           '<td style="white-space:nowrap">' + esc(r.scripture || '') + '</td>' +
           '<td style="white-space:nowrap">' + qtCell + '</td>' +
@@ -2463,13 +2463,13 @@ console.log('[affairs.js] v20260701dj');
         '.sed-wrap.sed-mode-worship .sed-aside{order:2;position:static;left:auto;top:auto;width:100%;max-width:880px;margin:4px auto 0}' +
         '.sed-mode-worship .sed-aside>.af-field>label{font-size:1.35rem}' +
         '.sed-mode-worship #se_order .od-row{padding:10px 12px;margin-bottom:8px}' +
-        '.qtc-card{border:1px solid #e1e6ef;border-radius:12px;background:#fff;padding:14px 15px;box-shadow:0 4px 14px rgba(3,34,87,.05)}' +
-        '.qtc-h{font-size:1.02rem;font-weight:800;color:var(--accent,#032257);display:flex;align-items:center;gap:5px}' +
+        '.qtc-card{border:1px solid #e1e6ef;border-radius:12px;background:#fff;padding:14px 15px;box-shadow:0 4px 14px rgba(34,51,80,.05)}' +
+        '.qtc-h{font-size:1.02rem;font-weight:800;color:var(--accent,#223350);display:flex;align-items:center;gap:5px}' +
         '.qtc-sub{font-size:.74rem;color:#9aa5b1;margin:5px 0 9px;line-height:1.45}' +
         '.qtc-paste{width:100%;min-height:148px;border:1px solid #e2e8f0;border-radius:8px;padding:9px 11px;font:inherit;font-size:.82rem;line-height:1.5;outline:none;resize:vertical}.qtc-paste:focus{border-color:#9db4d6}' +
         '.qtc-rrow{font-size:.76rem;color:#41607f;background:#f3f7fc;border-radius:7px;padding:5px 9px;margin-top:5px;display:flex;gap:6px}.qtc-rrow b{color:#0a2c5c}' +
         // 문서(설교 원고) 페이지 — MS Word 스타일: 회색 캔버스 위 흰 페이지
-        '.sed-form{max-width:820px;margin:0 auto;background:#fff;border:1px solid #e7ebf2;border-radius:16px;box-shadow:0 12px 44px rgba(3,34,87,.09),0 2px 6px rgba(3,34,87,.04);padding:32px 42px 42px}' +
+        '.sed-form{max-width:820px;margin:0 auto;background:#fff;border:1px solid #e7ebf2;border-radius:16px;box-shadow:0 12px 44px rgba(34,51,80,.09),0 2px 6px rgba(34,51,80,.04);padding:32px 42px 42px}' +
         '.sed-mode-worship .sed-form{padding:26px 32px 34px}' +
         '.sed-form .af-field input,.sed-form .af-field select,.sed-form .af-field textarea{border:1px solid #e3e8f0;border-radius:9px;transition:border-color .15s,box-shadow .15s}' +
         '.sed-form .af-field input:focus,.sed-form .af-field select:focus,.sed-form .af-field textarea:focus{border-color:#9db4d6;box-shadow:0 0 0 3px rgba(60,110,200,.08);outline:none}' +
@@ -2479,17 +2479,17 @@ console.log('[affairs.js] v20260701dj');
         '.sed-aside-l.open{opacity:1;visibility:visible;transform:translateX(0)}' +
         '.sed-mode-worship .sed-aside-l{display:none!important}' +
         '.mb-close{margin-left:auto;border:none;background:none;font-size:1.05rem;line-height:1;color:#9aa5b1;cursor:pointer;padding:2px 4px;border-radius:6px}.mb-close:hover{background:#eceff4;color:#33415c}' +
-        '.mb-card{border:1px solid #d7e0ee;border-radius:14px;background:#fff;box-shadow:0 18px 50px rgba(3,34,87,.22);overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 92px)}' +
-        '.mb-head{font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.02rem;color:var(--accent,#032257);padding:13px 15px 12px;border-bottom:1px solid #eef1f5;background:linear-gradient(180deg,#fbfcfe 0%,#f3f7fb 100%);display:flex;align-items:center;gap:6px}' +
+        '.mb-card{border:1px solid #d7e0ee;border-radius:14px;background:#fff;box-shadow:0 18px 50px rgba(34,51,80,.22);overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 92px)}' +
+        '.mb-head{font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.02rem;color:var(--accent,#223350);padding:13px 15px 12px;border-bottom:1px solid #eef1f5;background:linear-gradient(180deg,#fbfcfe 0%,#f3f7fb 100%);display:flex;align-items:center;gap:6px}' +
         '.mb-trans{display:flex;gap:5px;padding:11px 12px 7px}' +
         '.mb-trans button{flex:1;padding:6px 4px;border:1px solid #dde3ec;background:#fff;border-radius:999px;font:inherit;font-size:.79rem;font-weight:700;cursor:pointer;color:#3a4a63;transition:.14s}' +
         '.mb-trans button:hover{border-color:#b9c6da}' +
-        '.mb-trans button.on{background:var(--accent,#032257);color:#fff;border-color:var(--accent,#032257)}' +
+        '.mb-trans button.on{background:var(--accent,#223350);color:#fff;border-color:var(--accent,#223350)}' +
         '.mb-selrow{display:flex;gap:6px;padding:3px 12px 11px}' +
         '.mb-selrow select{padding:7px 8px;border:1px solid #dde3ec;border-radius:8px;font:inherit;font-size:.82rem;cursor:pointer;background:#fff}' +
         '.mb-selrow #mb_book{flex:1}.mb-selrow #mb_chap{width:74px}' +
         '.mb-text{flex:1;overflow-y:auto;padding:6px 15px 15px;font-family:\'Noto Serif KR\',serif;border-top:1px solid #f0f3f7;background:#fdfcf8}' +
-        '.mb-thead{font-size:.8rem;font-weight:700;color:var(--accent,#032257);padding:10px 0 8px;border-bottom:1px solid #eceff4;margin-bottom:9px;display:flex;justify-content:space-between;align-items:baseline}' +
+        '.mb-thead{font-size:.8rem;font-weight:700;color:var(--accent,#223350);padding:10px 0 8px;border-bottom:1px solid #eceff4;margin-bottom:9px;display:flex;justify-content:space-between;align-items:baseline}' +
         '.mb-thead span:last-child{font-size:.7rem;color:#9aa5b1;font-weight:400}' +
         '.mb-verse{margin-bottom:6px;font-size:.92rem;line-height:1.85;color:#22303f}' +
         '.mb-vn{display:inline-block;font-size:.64rem;font-weight:800;color:#3a6db5;min-width:20px;vertical-align:top;margin-top:4px}' +
@@ -2498,7 +2498,7 @@ console.log('[affairs.js] v20260701dj');
         '.sed-qt{display:flex;align-items:center;gap:7px;background:#fff7e3;border:1px solid #e8cd86;border-radius:8px;padding:0 11px;height:40px;font-size:.84rem;font-weight:500;color:#8a6d1f;cursor:pointer;user-select:none}' +
         '.sed-row2{display:grid;grid-template-columns:2.3fr 1fr;gap:12px;margin-bottom:12px}' +
         // 설교 원고 리치 에디터
-        '.se-toolbar{display:flex;flex-wrap:wrap;gap:1px;align-items:center;background:linear-gradient(180deg,#ffffff 0%,#f5f8fc 100%);border:1px solid #e3e8f0;border-bottom:none;border-radius:11px 11px 0 0;padding:7px 9px;position:sticky;top:60px;z-index:5;box-shadow:0 1px 0 rgba(3,34,87,.03)}' +
+        '.se-toolbar{display:flex;flex-wrap:wrap;gap:1px;align-items:center;background:linear-gradient(180deg,#ffffff 0%,#f5f8fc 100%);border:1px solid #e3e8f0;border-bottom:none;border-radius:11px 11px 0 0;padding:7px 9px;position:sticky;top:60px;z-index:5;box-shadow:0 1px 0 rgba(34,51,80,.03)}' +
         '.se-toolbar button{font:inherit;font-size:.86rem;border:1px solid transparent;background:none;border-radius:7px;padding:6px 9px;cursor:pointer;color:#33415c;line-height:1;min-width:32px;transition:background .12s,box-shadow .12s}' +
         '.se-toolbar button:hover{background:#eaf1fb;box-shadow:inset 0 0 0 1px #dbe6f5}.se-toolbar button:active{background:#d8e2f0}' +
         '.se-toolbar select{font:inherit;font-size:.82rem;border:1px solid #dde3ec;border-radius:7px;padding:6px 8px;background:#fff;cursor:pointer;color:#33415c}' +
@@ -2520,13 +2520,13 @@ console.log('[affairs.js] v20260701dj');
         '.se-caret{font-size:.6rem;color:#9aa5b1;position:absolute;right:2px;top:3px}' +
         '.se-pop-wrap{position:relative;display:inline-flex}' +
         // 색상 팔레트 — 화면 기준(fixed)으로 띄워 리본의 overflow(가로 스크롤)에 잘리지 않게 함. 위치는 열 때 버튼 좌표로 계산
-        '.se-pop{position:fixed;z-index:9999;background:#fff;border:1px solid #dde3ec;border-radius:12px;box-shadow:0 14px 40px rgba(3,34,87,.28);padding:9px;display:none;grid-template-columns:repeat(6,22px);gap:7px}' +
+        '.se-pop{position:fixed;z-index:9999;background:#fff;border:1px solid #dde3ec;border-radius:12px;box-shadow:0 14px 40px rgba(34,51,80,.28);padding:9px;display:none;grid-template-columns:repeat(6,22px);gap:7px}' +
         '.se-pop.open{display:grid}' +
         '.se-pop .se-sw{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.14);cursor:pointer;padding:0;min-width:0;transition:transform .1s}.se-pop .se-sw:hover{transform:scale(1.14)}' +
         '.se-pop .se-sw.se-none{background:repeating-linear-gradient(45deg,#fff,#fff 4px,#f1d0d0 4px,#f1d0d0 6px);position:relative}' +
         '.se-bible-btn{color:#1d4ed8!important;font-weight:700}.se-bible-btn:hover{background:#dbe9ff!important}' +
         '.se-editor{min-height:56vh;border:1px solid #e3e8f0;border-radius:0 0 11px 11px;padding:26px 30px 34px;font-size:1.06rem;line-height:2;font-family:\'Noto Serif KR\',serif;background:#fff;outline:none;color:#1a1a1a}' +
-        '.se-editor:focus{border-color:#c4d2e6;box-shadow:inset 0 1px 4px rgba(3,34,87,.04)}' +
+        '.se-editor:focus{border-color:#c4d2e6;box-shadow:inset 0 1px 4px rgba(34,51,80,.04)}' +
         '.se-editor:empty:before{content:attr(data-ph);color:#aab3c0}' +
         '.se-editor h2{font-size:1.42em;font-weight:800;margin:.6em 0 .3em;color:#0a2c5c}' +
         '.se-editor h3{font-size:1.18em;font-weight:700;margin:.5em 0 .25em;color:#13314e}' +
@@ -2537,8 +2537,8 @@ console.log('[affairs.js] v20260701dj');
         '@media(max-width:1240px){.sed-lightov .sed-aside{position:static;left:auto;top:auto;width:auto;max-width:820px;margin:0 auto 20px}.sed-lightov .sed-form{max-width:820px}}' +
         '@media(max-width:560px){.sed-row2{grid-template-columns:1fr}.sed-aside-l{left:8px;right:8px;width:auto;top:64px}}' +
         // ═══ 설교 매니저 스튜디오(다크 3분할) — 헤더·리본·바인더·미리보기·상태바 ═══
-        '.sed-hd{position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#ffffff 0%,#f7f9fc 100%);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(3,34,87,.06)}' +
-        '.sed-brand{font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.18rem;letter-spacing:-.01em;color:var(--accent,#032257)}' +
+        '.sed-hd{position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#ffffff 0%,#f7f9fc 100%);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(34,51,80,.06)}' +
+        '.sed-brand{font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.18rem;letter-spacing:-.01em;color:var(--accent,#223350)}' +
         '.sed-sub{font-size:.7rem;color:#9aa5b1;margin-top:1px;letter-spacing:.02em}' +
         '.sed-status{font:inherit;font-size:.84rem;border:1px solid #dde3ec;border-radius:9px;padding:8px 10px;background:#fff;cursor:pointer;color:#33415c;font-weight:700}' +
         '.sed-ribbon{display:flex;justify-content:center;padding:7px 12px;overflow-x:auto;flex:none}' +
@@ -2550,8 +2550,8 @@ console.log('[affairs.js] v20260701dj');
         '.sed-nosel-editor .se-editor,.sed-nosel-editor .rp-paper,.sed-nosel-editor #rp_flow{-webkit-user-select:none!important;user-select:none!important}' +
         '.mb-text,.mb-text .mb-verse{-webkit-user-select:text;user-select:text}' +
         // ⚙ 자동저장 설정창(팝오버)
-        '.se-setpop{position:fixed;z-index:40;width:232px;background:#fff;border:1px solid #dde3ec;border-radius:11px;box-shadow:0 10px 30px rgba(3,34,87,.18);padding:12px 14px;color:#33415c;font-size:.86rem}' +
-        '.se-setpop-h{font-weight:800;color:var(--accent,#032257);margin-bottom:9px;font-size:.9rem}' +
+        '.se-setpop{position:fixed;z-index:40;width:232px;background:#fff;border:1px solid #dde3ec;border-radius:11px;box-shadow:0 10px 30px rgba(34,51,80,.18);padding:12px 14px;color:#33415c;font-size:.86rem}' +
+        '.se-setpop-h{font-weight:800;color:var(--accent,#223350);margin-bottom:9px;font-size:.9rem}' +
         '.se-setpop-row{display:flex;align-items:center;gap:7px;margin-bottom:8px}' +
         '.se-setpop-row input[type=number]{font:inherit;border:1px solid #dde3ec;border-radius:6px;padding:4px 6px}' +
         '.se-setpop-note{font-size:.74rem;color:#9aa5b1;line-height:1.5;margin-top:2px}' +
@@ -2559,7 +2559,7 @@ console.log('[affairs.js] v20260701dj');
         '.se-editor .se-video{color:#1d4ed8;font-weight:600}' +
         '.bd-tabs{display:flex;gap:4px;margin-bottom:12px}' +
         '.bd-tabs button{flex:1;font:inherit;font-size:.78rem;font-weight:700;padding:7px 3px;border:1px solid #dde3ec;background:#fff;color:#5b6b7d;border-radius:8px;cursor:pointer}' +
-        '.bd-tabs button.on{background:var(--accent,#032257);border-color:var(--accent,#032257);color:#fff}' +
+        '.bd-tabs button.on{background:var(--accent,#223350);border-color:var(--accent,#223350);color:#fff}' +
         '.sed-binder .af-field{margin-bottom:11px}' +
         '.bd-chip{display:inline-flex;align-items:center;gap:5px;background:#eef3fa;border:1px solid #d5e0f0;color:#27466e;border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:600;margin:0 5px 6px 0}' +
         '.bd-chip button{border:0;background:none;cursor:pointer;color:#8296b3;font-size:.82rem;padding:0;line-height:1}' +
@@ -2569,7 +2569,7 @@ console.log('[affairs.js] v20260701dj');
         '.bd-doc.cur{border-color:#7fa3d8;box-shadow:0 0 0 2px rgba(90,140,220,.18)}' +
         '.rp-tabs{display:flex;gap:4px;margin-bottom:10px}' +
         '.rp-tabs button{flex:1;font:inherit;font-size:.8rem;font-weight:700;padding:8px 3px;border:1px solid #dde3ec;background:#fff;color:#5b6b7d;border-radius:9px;cursor:pointer}' +
-        '.rp-tabs button.on{background:var(--accent,#032257);color:#fff;border-color:var(--accent,#032257)}' +
+        '.rp-tabs button.on{background:var(--accent,#223350);color:#fff;border-color:var(--accent,#223350)}' +
         '.rp-paperwrap{overflow:hidden;display:flex;justify-content:center}' +
         // PDF 미리보기 — 아이패드(3:4) 페이지, Apps Script exportSermonPdf(576×768pt·여백 44/48pt)와 동일 비율(0.903px/pt)
         // CSS 다단(column)으로 실제 페이지처럼 넘겨봄: 한 단 = 한 페이지 본문, 줄이 잘리지 않음
@@ -2683,7 +2683,7 @@ console.log('[affairs.js] v20260701dj');
         '.sed-dark .sed-qt{background:#161d29;border-color:#2a3547;color:#c9d4e4}' +   // 주변 입력칸과 같은 색
         '.sed-dark .bd-tabs button{background:#161d29;border-color:#2a3547;color:#8394ab}' +
         '.sed-dark .bd-tabs button.on{background:#2c4a86;border-color:#2c4a86;color:#fff}' +
-        '.sed-dark .bd-chip{background:#1a2740;border-color:#2f4570;color:#a9c3ec}' +
+        '.sed-dark .bd-chip{background:#1a2740;border-color:#223350;color:#a9c3ec}' +
         '.sed-dark .bd-chip button{color:#6d84ad}' +
         '.sed-dark .bd-doc{background:#141b27;border-color:#242e3e}' +
         '.sed-dark .bd-doc b{color:#cdd8e8}.sed-dark .bd-doc span{color:#75839a}' +
@@ -2855,7 +2855,7 @@ console.log('[affairs.js] v20260701dj');
           '<button type="button" class="mb-ins" id="mb_insert" title="현재 보고 있는 장을 위 본문(성경) 칸에 넣습니다">＋ 이 장을 본문칸에 넣기</button>' +
           '</div></div>') +
         '<div class="sed-aside"><div class="af-field" style="margin:0">' +
-        '<label style="font-size:1.18rem;font-weight:700;color:var(--accent,#032257);margin-bottom:2px">📋 예배 순서</label>' +
+        '<label style="font-size:1.18rem;font-weight:700;color:var(--accent,#223350);margin-bottom:2px">📋 예배 순서</label>' +
         '<div style="font-size:.74rem;color:#9aa5b1;margin-bottom:9px">교독문·찬송가·CCM·항목을 추가하고 드래그로 정렬 · 항목에 📎 파일 첨부</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px"><button type="button" class="btn btn-line" id="se_tpl_load" style="padding:6px 8px;font-size:.78rem">📋 양식 불러오기</button><button type="button" class="btn btn-line" id="se_tpl_save" style="padding:6px 8px;font-size:.78rem">💾 양식 저장</button></div>' +
         '<div id="se_tpl_msg" style="font-size:.74rem;color:#7b8794;min-height:0;margin-bottom:6px"></div>' +
@@ -2963,7 +2963,7 @@ console.log('[affairs.js] v20260701dj');
         var ov2 = document.createElement('div');
         ov2.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:30px 14px;overflow:auto';
         ov2.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:640px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#032257)">' + esc(title) + '</h3><button class="btn btn-line" id="otm_close" style="padding:3px 11px">닫기</button></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#223350)">' + esc(title) + '</h3><button class="btn btn-line" id="otm_close" style="padding:3px 11px">닫기</button></div>' +
           '<textarea id="otm_ta" placeholder="' + esc(ph) + '" style="width:100%;min-height:260px;padding:12px 14px;border:1px solid #e2e8f0;border-radius:9px;font:inherit;line-height:1.85;outline:none;font-family:\'Noto Serif KR\',serif">' + esc(it.body || '') + '</textarea>' +
           '<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:8px"><label style="font-size:.82rem;color:#5a6b82;display:inline-flex;align-items:center;gap:5px"><input type="checkbox" id="otm_fixed"' + (it.fixed ? ' checked' : '') + ' style="width:15px;height:15px;accent-color:#c79a2e"> 📌 고정(매주 유지)</label>' +
           '<div><button class="btn btn-line" id="otm_cancel" style="padding:8px 16px">취소</button> <button class="btn btn-solid" id="otm_save" style="padding:8px 20px;font-weight:700">저장</button></div></div></div>';
@@ -2984,7 +2984,7 @@ console.log('[affairs.js] v20260701dj');
           return '<div class="od-row" data-i="' + i + '" style="display:flex;align-items:flex-start;gap:6px;border:1px solid #e1e7ef;border-radius:9px;padding:7px 9px;margin-bottom:6px;background:#fff' + (it.noexport ? ';opacity:.62' : '') + '">' +
             '<span class="od-handle" style="cursor:grab;color:#9aa5b1;padding-top:2px;touch-action:none">≡</span>' +
             '<span style="flex:0 0 16px;text-align:center;color:#7b8794;font-size:.74rem;padding-top:3px">' + (i + 1) + '</span>' +
-            '<div style="flex:1;min-width:0"><div class="od-labelclick" data-i="' + i + '" title="클릭해서 작성/수정" style="font-weight:700;font-size:.9rem;color:var(--accent,#032257);cursor:pointer">' + esc(it.label || '항목') + badges + (it.url ? ' <a href="' + esc(it.url) + '" target="_blank" rel="noopener" style="font-size:.72rem;font-weight:400">자료</a>' : '') + '</div>' +
+            '<div style="flex:1;min-width:0"><div class="od-labelclick" data-i="' + i + '" title="클릭해서 작성/수정" style="font-weight:700;font-size:.9rem;color:var(--accent,#223350);cursor:pointer">' + esc(it.label || '항목') + badges + (it.url ? ' <a href="' + esc(it.url) + '" target="_blank" rel="noopener" style="font-size:.72rem;font-weight:400">자료</a>' : '') + '</div>' +
             detailLine + bodyPrev +
             (it._openBody ? '<textarea class="od-body" data-i="' + i + '" placeholder="전문(찬송가 가사·기도문 등) — 아이패드 보기에 그대로 펼쳐집니다" style="width:100%;margin-top:5px;min-height:72px;line-height:1.7;padding:6px 8px;border:1px solid #dfe5ee;border-radius:7px;font:inherit;font-size:.84rem">' + esc(it.body || '') + '</textarea>' : '') +
             '</div>' +
@@ -4607,7 +4607,7 @@ console.log('[affairs.js] v20260701dj');
       /* 상단 바 */
       '.bar{flex-shrink:0;position:sticky;top:0;background:rgba(255,255,255,.96);border-bottom:1px solid #e3ddd0;padding:6px 12px;display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow-x:auto;z-index:10;-webkit-overflow-scrolling:touch}',
       '.bar button{flex-shrink:0;font:inherit;font-size:14px;border:1px solid #cdd7e3;background:#fff;border-radius:8px;padding:5px 11px;cursor:pointer;white-space:nowrap}',
-      '.bar button.active{background:#032257;color:#fff;border-color:#032257}',
+      '.bar button.active{background:#223350;color:#fff;border-color:#223350}',
       '.bar .hint{flex-shrink:0;font-size:12px;color:#9a8f78;margin-left:auto;white-space:nowrap}',
       /* 덱 컨테이너 */
       '#deck{flex:1;overflow:hidden;position:relative}',
@@ -4859,7 +4859,7 @@ console.log('[affairs.js] v20260701dj');
   function renderBulletinAdmin(panel) {
     panel.innerHTML =
       '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
-      '<div><h3 style="margin:0 0 4px;color:var(--accent,#032257)">주보 제작</h3><p style="margin:0;color:var(--ink-soft,#7b8794);font-size:.9rem">설교목록에서 <b>다음 주 설교</b>를 불러와 채우고, <b>게시</b>하면 홈페이지 주보란에 자동 반영됩니다. (인쇄는 금액 포함, 홈페이지는 금액 제외)</p></div>' +
+      '<div><h3 style="margin:0 0 4px;color:var(--accent,#223350)">주보 제작</h3><p style="margin:0;color:var(--ink-soft,#7b8794);font-size:.9rem">설교목록에서 <b>다음 주 설교</b>를 불러와 채우고, <b>게시</b>하면 홈페이지 주보란에 자동 반영됩니다. (인쇄는 금액 포함, 홈페이지는 금액 제외)</p></div>' +
       '<button class="btn btn-solid" id="bt_new" style="white-space:nowrap">🖨 주보 제작</button></div></div>' +
       '<div id="bt_list"><p class="qt-loading">불러오는 중…</p></div>';
     panel.querySelector('#bt_new').onclick = function () { bulletinEditor({}); };
@@ -4905,10 +4905,10 @@ console.log('[affairs.js] v20260701dj');
     function tI(label, id, val, ph) { return '<div class="af-field"><label>' + label + '</label><input type="text" id="' + id + '" value="' + esc(val || '') + '" placeholder="' + esc(ph || '') + '"></div>'; }
     var off = d.offering || {}, amt = d.offering_amounts || {}, com = d.committee || {};
     ov.innerHTML =
-      '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(3,34,87,.06)">' +
+      '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(34,51,80,.06)">' +
       '<div style="max-width:1100px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
       '<button class="btn btn-line" id="bt_close" style="padding:8px 14px;border-radius:9px">‹ 닫기</button>' +
-      '<div style="flex:1;text-align:center"><div style="font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.2rem;color:var(--accent,#032257)">주보 제작</div><div style="font-size:.72rem;color:#9aa5b1">설교 연동 · 인쇄(PDF) · 홈페이지 게시</div></div>' +
+      '<div style="flex:1;text-align:center"><div style="font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.2rem;color:var(--accent,#223350)">주보 제작</div><div style="font-size:.72rem;color:#9aa5b1">설교 연동 · 인쇄(PDF) · 홈페이지 게시</div></div>' +
       '<button class="btn btn-line" id="bt_pull" style="padding:8px 13px;border-radius:9px;background:#eef4ff;border-color:#9cc0f0">📥 데이터 불러오기</button>' +
       '<button class="btn btn-line" id="bt_ai" style="padding:8px 13px;border-radius:9px;background:#f3eefc;border-color:#c4a8ee">✨ AI 검수</button>' +
       '<button class="btn btn-line" id="bt_save" style="padding:8px 13px;border-radius:9px">💾 임시저장</button>' +
@@ -5364,9 +5364,9 @@ console.log('[affairs.js] v20260701dj');
       '.bv-chaps{width:50px;flex-shrink:0;overflow-y:auto;background:#f4f7fb;padding:5px 3px;border-right:1px solid #e3e7ee}' +
       '.bv-cb{display:block;width:100%;padding:4px 2px;background:none;border:none;color:#3a4a63;font-size:.8rem;font-weight:600;cursor:pointer;border-radius:4px;text-align:center;margin:1px 0}' +
       '.bv-cb:hover{background:#dde6f5}' +
-      '.bv-cb.on{background:#032257;color:#fff}' +
+      '.bv-cb.on{background:#223350;color:#fff}' +
       '.bv-text{flex:1;overflow-y:auto;padding:16px 22px;background:#fdfcf8;font-family:\'Noto Serif KR\',serif}' +
-      '.bv-thead{font-size:.86rem;font-weight:700;color:#032257;padding-bottom:10px;border-bottom:1px solid #e8ecf2;margin-bottom:13px;display:flex;justify-content:space-between;align-items:center}' +
+      '.bv-thead{font-size:.86rem;font-weight:700;color:#223350;padding-bottom:10px;border-bottom:1px solid #e8ecf2;margin-bottom:13px;display:flex;justify-content:space-between;align-items:center}' +
       '.bv-verse{margin-bottom:7px;font-size:.99rem;line-height:1.95;color:#1a1a1a}' +
       '.bv-vn{display:inline-block;font-size:.68rem;font-weight:800;color:#3a6db5;min-width:25px;vertical-align:top;margin-top:5px}' +
       '.bv-vt{display:inline}' +
@@ -5375,7 +5375,7 @@ console.log('[affairs.js] v20260701dj');
       '<div style="display:flex;flex-direction:column;gap:0">' +
       '<div style="display:flex;gap:8px;align-items:center;padding:10px 14px;border:1px solid #e3e7ee;border-bottom:none;background:#f8fafc;border-radius:12px 12px 0 0">' +
       '<span style="font-size:.82rem;font-weight:700;color:#3a4a63">번역:</span>' +
-      '<button class="bv-trans" data-v="gyr" style="padding:5px 14px;border:none;border-radius:999px;cursor:pointer;font-size:.83rem;font-weight:700;background:#032257;color:#fff">개역개정4판</button>' +
+      '<button class="bv-trans" data-v="gyr" style="padding:5px 14px;border:none;border-radius:999px;cursor:pointer;font-size:.83rem;font-weight:700;background:#223350;color:#fff">개역개정4판</button>' +
       '<button class="bv-trans" data-v="urm" style="padding:5px 14px;border:none;border-radius:999px;cursor:pointer;font-size:.83rem;font-weight:700;background:#eef2f7;color:#3a4a63">우리말성경</button>' +
       '</div>' +
       '<div class="bv-wrap">' +
@@ -5460,7 +5460,7 @@ console.log('[affairs.js] v20260701dj');
       btn.onclick = function () {
         bvTrans = btn.dataset.v;
         Array.prototype.forEach.call(panel.querySelectorAll('.bv-trans'), function (b) {
-          b.style.background = b.dataset.v === bvTrans ? '#032257' : '#eef2f7';
+          b.style.background = b.dataset.v === bvTrans ? '#223350' : '#eef2f7';
           b.style.color      = b.dataset.v === bvTrans ? '#fff'    : '#3a4a63';
         });
         loadAndShow();
@@ -5478,7 +5478,7 @@ console.log('[affairs.js] v20260701dj');
   function renderEdu(panel) {
     panel.innerHTML =
       '<div class="fin-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">' +
-      '<div><b style="font-size:1.08rem;color:var(--accent,#032257)">교육 관리</b>' +
+      '<div><b style="font-size:1.08rem;color:var(--accent,#223350)">교육 관리</b>' +
       '<div style="font-size:.84rem;color:var(--ink-soft);margin-top:4px">교육 과정을 개설하고 참석자(이수자)를 교적부에 연동합니다.</div></div>' +
       '<button class="btn btn-solid" id="edu_new_btn" style="padding:10px 20px">✏️ 교육 개설</button></div>' +
       '<div id="edu_list"><p class="qt-loading">불러오는 중…</p></div>';
@@ -5505,7 +5505,7 @@ console.log('[affairs.js] v20260701dj');
               var s = r.edu_date || '', e2 = r.end_date || '';
               var period = s + (e2 && e2 !== s ? ' ~ ' + e2 : '');
               return '<tr>' +
-                '<td><b class="edu-edit" data-id="' + esc(r.id) + '" style="cursor:pointer;color:var(--accent,#032257)">' + esc(r.title || '(제목없음)') + '</b></td>' +
+                '<td><b class="edu-edit" data-id="' + esc(r.id) + '" style="cursor:pointer;color:var(--accent,#223350)">' + esc(r.title || '(제목없음)') + '</b></td>' +
                 '<td style="white-space:nowrap">' + (r.cohort ? '<span class="fin-pill">' + esc(r.cohort) + '</span>' : '<span style="color:#c5ccd6">—</span>') + '</td>' +
                 '<td style="white-space:nowrap">' + esc(r.class_name || '') + '</td>' +
                 '<td style="white-space:nowrap">' + esc(period) + '</td>' +
@@ -5546,7 +5546,7 @@ console.log('[affairs.js] v20260701dj');
       ov.innerHTML =
         '<div style="background:#fff;border-radius:14px;width:100%;max-width:700px;box-shadow:0 8px 40px rgba(0,0,0,.22);padding:28px 24px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
-        '<h3 style="margin:0;color:var(--accent,#032257)">' + (rec.id ? '교육 수정' : '교육 개설') + '</h3>' +
+        '<h3 style="margin:0;color:var(--accent,#223350)">' + (rec.id ? '교육 수정' : '교육 개설') + '</h3>' +
         '<button type="button" id="edu_xbtn" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#9aa5b1;line-height:1">×</button></div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:18px">' +
         '<div class="af-field" style="grid-column:1/-1;position:relative"><label>교육명</label><input type="text" id="edu_f_title" autocomplete="off" value="' + esc(rec.title || '') + '" placeholder="예: 새가족반, 제자훈련반" style="width:100%;box-sizing:border-box"></div>' +
@@ -5560,7 +5560,7 @@ console.log('[affairs.js] v20260701dj');
         '</div>' +
         '<div style="margin-bottom:20px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-        '<label style="font-size:.82rem;color:var(--ink-soft);font-weight:600">참석자 / 이수자 <span id="edu_pcnt" style="color:var(--accent,#032257)">(' + participants.length + '명)</span></label>' +
+        '<label style="font-size:.82rem;color:var(--ink-soft);font-weight:600">참석자 / 이수자 <span id="edu_pcnt" style="color:var(--accent,#223350)">(' + participants.length + '명)</span></label>' +
         '<button type="button" id="edu_add_p" class="btn btn-line" style="padding:4px 13px;font-size:.82rem">＋ 추가</button></div>' +
         '<div id="edu_pbox" style="display:flex;flex-wrap:wrap;gap:6px;min-height:46px;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;background:#fafbfc;align-items:flex-start"></div>' +
         '<div style="font-size:.75rem;color:#9aa5b1;margin-top:5px">추가 버튼을 누르면 입력창이 생깁니다. 이름을 입력하면 교적부에서 검색합니다. Enter 또는 선택으로 추가됩니다.</div>' +
@@ -5804,7 +5804,7 @@ console.log('[affairs.js] v20260701dj');
               (rows.length ? '<div style="border:1px solid #eef1f5;border-radius:8px;overflow:hidden">' + rows.map(function (r) {
                 return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 11px;border-bottom:1px solid #f0f3f7;font-size:.86rem">' +
                   '<span>' + matIcon(r.title) + ' ' + esc(r.title) + (r.size ? ' <span style="color:#9aa5b1;font-size:.76rem">· ' + fmtSize(r.size) + '</span>' : '') + '</span>' +
-                  '<span style="display:flex;gap:10px;align-items:center"><a href="#" class="mat-dl" data-id="' + esc(r.id) + '" style="color:var(--accent,#032257)">다운로드</a><b class="mat-del" data-id="' + esc(r.id) + '" style="cursor:pointer;color:#c0392b;font-size:.8rem">삭제</b></span></div>';
+                  '<span style="display:flex;gap:10px;align-items:center"><a href="#" class="mat-dl" data-id="' + esc(r.id) + '" style="color:var(--accent,#223350)">다운로드</a><b class="mat-del" data-id="' + esc(r.id) + '" style="cursor:pointer;color:#c0392b;font-size:.8rem">삭제</b></span></div>';
               }).join('') + '</div>' : '<p style="color:#9aa5b1;font-size:.83rem;padding:8px 0">등록된 자료가 없습니다.</p>');
             var byId = {}; rows.forEach(function (r) { byId[r.id] = r; });
             var upmsg = box.querySelector('#edu_mat_upmsg');
@@ -5880,14 +5880,14 @@ console.log('[affairs.js] v20260701dj');
   // ====================================================================
   function renderSettings(panel) {
     panel.innerHTML =
-      '<div class="fin-card"><h3 style="margin:0 0 4px;color:var(--accent,#032257)">교회 기본 정보</h3>' +
+      '<div class="fin-card"><h3 style="margin:0 0 4px;color:var(--accent,#223350)">교회 기본 정보</h3>' +
       '<p style="margin:0 0 12px;color:var(--ink-soft,#7b8794);font-size:.9rem">설립일을 기준으로 주보 <b>호수(No.)</b>의 주년이 정해집니다. 예) 1964년 설립 → 2026년은 62주년 → 62-○○주.</p>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end">' +
       '<div class="af-field"><label>교회 설립일</label><input type="date" id="set_founded" value=""></div>' +
       '<div class="af-field"><label>현재 주년(자동)</label><input type="text" id="set_anniv" value="" readonly style="background:#f5f7fa"></div>' +
       '</div></div>' +
       // 주보 PDF 저장
-      '<div class="fin-card"><h3 style="margin:0 0 4px;color:var(--accent,#032257)">주보 PDF 저장</h3>' +
+      '<div class="fin-card"><h3 style="margin:0 0 4px;color:var(--accent,#223350)">주보 PDF 저장</h3>' +
       '<p style="margin:0 0 12px;color:var(--ink-soft,#7b8794);font-size:.9rem">주보를 <b>🖨 3단 인쇄(PDF)</b> 할 때 PDF의 기본 <b>파일명</b>을 정합니다. 사용 가능한 항목: <code>{date}</code>(20260705) · <code>{no}</code>(62-27) · <code>{week}</code>(7월 첫째 주)</p>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end">' +
       '<div class="af-field"><label>PDF 파일명 형식</label><input type="text" id="set_pdfname" value="" placeholder="{date} 주보"></div>' +
@@ -5896,7 +5896,7 @@ console.log('[affairs.js] v20260701dj');
       '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn btn-solid" id="set_save_g" style="padding:8px 16px;font-size:.85rem">💾 기본 정보 저장</button> <span id="set_gmsg" class="fin-msg"></span></div>' +
       '<p style="margin:10px 0 0;color:#9aa5b1;font-size:.78rem">※ 브라우저 보안상 웹페이지가 PC의 저장 <b>폴더</b>를 직접 지정할 수는 없습니다. 인쇄 창에서 <b>대상 → ‘PDF로 저장’</b>을 고른 뒤 폴더를 한 번 선택하면, 브라우저가 그 위치를 기억해 다음부터 같은 폴더로 저장됩니다.</p>' +
       '</div>' +
-      '<div class="fin-card"><h3 style="margin:0 0 4px;color:var(--accent,#032257)">연간 봉사위원</h3>' +
+      '<div class="fin-card"><h3 style="margin:0 0 4px;color:var(--accent,#223350)">연간 봉사위원</h3>' +
       '<p style="margin:0 0 12px;color:var(--ink-soft,#7b8794);font-size:.9rem">월별 봉사위원을 한 번 입력해 두면, <b>주보 제작 → 데이터 불러오기</b> 시 해당 월 봉사위원이 자동으로 채워집니다. 그 달 <b>마지막 주일</b> 주보에는 다음 달 봉사위원도 함께 표기됩니다.</p>' +
       '<div id="set_rows"></div>' +
       '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn btn-line" id="set_add" style="padding:6px 13px;font-size:.85rem">＋ 월 추가</button><button class="btn btn-solid" id="set_save" style="padding:6px 16px;font-size:.85rem">💾 저장</button><span id="set_msg" class="fin-msg"></span></div>' +

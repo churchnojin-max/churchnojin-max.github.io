@@ -106,10 +106,10 @@ console.log('[dashboard.js] v20260705qtfallback');
   }
 
   function renderDashboard(me) {
-    var grp = 'font-family:"Noto Serif KR",serif;font-size:1.05rem;font-weight:700;color:var(--accent,#032257);margin:32px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--accent,#032257);';
+    var grp = 'font-family:"Noto Serif KR",serif;font-size:1.05rem;font-weight:700;color:var(--accent,#223350);margin:32px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--accent,#223350);';
     root.innerHTML =
       '<div class="form-card" style="margin-bottom:22px;padding:16px 18px;">' +
-      '<h2 id="dashWelcome" style="margin:0;font-size:1.15rem;color:var(--accent,#032257);">' + esc(me.memberName || '') + '님, 환영합니다 🙏</h2>' +
+      '<h2 id="dashWelcome" style="margin:0;font-size:1.15rem;color:var(--accent,#223350);">' + esc(me.memberName || '') + '님, 환영합니다 🙏</h2>' +
       '</div>' +
       '<h2 style="' + grp + 'margin-top:6px;">🕊 나의 신앙생활</h2>' +
       '<div id="dashQt" style="margin-bottom:22px;"></div>' +
@@ -117,7 +117,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       '<div id="qtProgress" style="margin-bottom:22px;"></div>' +
       '<div id="myEdu" style="margin-bottom:22px;"></div>' +
       '<h2 style="' + grp + '">💒 나의 교회생활</h2>' +
-      '<div class="form-card" style="margin-bottom:22px;padding:16px 18px;"><h3 style="margin:0 0 10px;font-size:1rem;color:var(--accent,#032257);">💝 헌금</h3><div id="offeringList"><p class="qt-loading">불러오는 중…</p></div></div>' +
+      '<div class="form-card" style="margin-bottom:22px;padding:16px 18px;"><h3 style="margin:0 0 10px;font-size:1rem;color:var(--accent,#223350);">💝 헌금</h3><div id="offeringList"><p class="qt-loading">불러오는 중…</p></div></div>' +
       '<div id="myDocs" style="margin-bottom:22px;"></div>' +
       '<div id="familyTree" style="margin-bottom:22px;"></div>' +
       '<p style="text-align:center;margin-top:14px;"><a class="btn btn-line" href="index.html#qt">이번 주 말씀·주보는 홈에서 보기 →</a></p>';
@@ -171,7 +171,7 @@ console.log('[dashboard.js] v20260705qtfallback');
   function loadBibleReading(me) {
     var el = document.getElementById('bibleRead'); if (!el) return;
     if (!window.BIBLE_PLAN) { el.innerHTML = ''; return; }
-    var head = '<div class="form-card" style="padding:16px 18px"><h3 style="margin:0 0 10px;font-size:1rem;color:var(--accent,#032257)">📖 나의 성경읽기 <span style="font-weight:400;font-size:.76rem;color:#9aa5b1">구속사 365 · 우리말성경</span></h3>';
+    var head = '<div class="form-card" style="padding:16px 18px"><h3 style="margin:0 0 10px;font-size:1rem;color:var(--accent,#223350)">📖 나의 성경읽기 <span style="font-weight:400;font-size:.76rem;color:#9aa5b1">구속사 365 · 우리말성경</span></h3>';
     el.innerHTML = head + '<p class="qt-loading">불러오는 중…</p></div>';
     Promise.all([
       brFetch('bible_reading?select=day_no,done_at&order=day_no'),
@@ -199,13 +199,13 @@ console.log('[dashboard.js] v20260705qtfallback');
     if (eta) meta.push('이 속도면 <b>' + eta + '</b> 완주');
     if (BR.readers != null && BR.readers > 0) meta.push('🙌 함께 읽는 성도 <b>' + BR.readers + '명</b>');
     el.innerHTML = head +
-      '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.84rem;color:#5b6b7d;margin-bottom:6px"><span>' + cnt + ' / 365일</span><b style="color:var(--accent,#032257)">' + pct + '%</b></div>' +
-      '<div style="background:#eef2f7;border-radius:7px;height:10px;overflow:hidden;margin-bottom:12px"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#3a6db5,#032257)"></div></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.84rem;color:#5b6b7d;margin-bottom:6px"><span>' + cnt + ' / 365일</span><b style="color:var(--accent,#223350)">' + pct + '%</b></div>' +
+      '<div style="background:#eef2f7;border-radius:7px;height:10px;overflow:hidden;margin-bottom:12px"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#3a6db5,#223350)"></div></div>' +
       (day
         ? '<div style="background:#f6f9f3;border:1px solid #e2e8da;border-radius:11px;padding:12px 14px;margin-bottom:12px">' +
           '<div style="font-size:.76rem;color:#5b7a52;font-weight:700;margin-bottom:3px">오늘의 읽기 · Day ' + day.d + '</div>' +
           '<div style="font-size:.8rem;color:#7b8794;margin-bottom:4px">' + esc(P.themes[day.t]) + '</div>' +
-          '<div style="font-size:1.06rem;font-weight:700;color:var(--accent,#032257)">' + esc(day.r) + '</div>' +
+          '<div style="font-size:1.06rem;font-weight:700;color:var(--accent,#223350)">' + esc(day.r) + '</div>' +
           (window.BIBLE_NOTES && window.BIBLE_NOTES.days[day.d - 1]
             ? '<div style="margin-top:9px;padding-top:9px;border-top:1px dashed #d9e2d2;font-size:.87rem;line-height:1.75;color:#3f5240">💬 ' + esc(window.BIBLE_NOTES.days[day.d - 1]) + '</div>'
             : '') +
@@ -213,7 +213,7 @@ console.log('[dashboard.js] v20260705qtfallback');
         : '<div style="background:#f0f7ef;border:1px solid #d8e8d4;border-radius:11px;padding:14px;text-align:center;margin-bottom:12px;font-weight:700;color:#2f5d3a">🎉 365일 완주를 축하합니다!</div>') +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:' + (meta.length ? '10px' : '0') + '">' +
       (day
-        ? '<button type="button" id="brRead" style="padding:9px 18px;border:0;border-radius:9px;background:var(--accent,#032257);color:#fff;font:inherit;font-weight:700;cursor:pointer">📖 본문 읽기</button>' +
+        ? '<button type="button" id="brRead" style="padding:9px 18px;border:0;border-radius:9px;background:var(--accent,#223350);color:#fff;font:inherit;font-weight:700;cursor:pointer">📖 본문 읽기</button>' +
           '<button type="button" class="btn btn-line" id="brDone" style="padding:8px 16px">✓ 읽기 완료</button>'
         : '') +
       '<button type="button" class="btn btn-line" id="brTable" style="padding:8px 16px">전체 표</button></div>' +
@@ -265,7 +265,7 @@ console.log('[dashboard.js] v20260705qtfallback');
     ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:720px;width:100%;padding:22px 24px;box-shadow:0 24px 60px rgba(0,0,0,.32)">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div style="min-width:0">' +
       '<div style="font-size:.76rem;color:#5b7a52;font-weight:700">Day ' + day.d + ' · ' + esc(P.themes[day.t]) + '</div>' +
-      '<h3 style="margin:4px 0 0;color:var(--accent,#032257);font-family:\'Noto Serif KR\',serif">' + esc(day.r) + ' <span style="font-size:.72rem;color:#9aa5b1;font-weight:400">우리말성경</span></h3></div>' +
+      '<h3 style="margin:4px 0 0;color:var(--accent,#223350);font-family:\'Noto Serif KR\',serif">' + esc(day.r) + ' <span style="font-size:.72rem;color:#9aa5b1;font-weight:400">우리말성경</span></h3></div>' +
       '<div style="display:flex;gap:6px;flex:0 0 auto">' +
       (ttsOk ? '<button class="btn btn-line" id="brm_tts" style="padding:4px 12px;white-space:nowrap">🔊 듣기</button>' : '') +
       '<button class="btn btn-line" id="brm_close" style="padding:4px 12px;white-space:nowrap">닫기</button></div></div>' +
@@ -279,7 +279,7 @@ console.log('[dashboard.js] v20260705qtfallback');
           '</div>';
       })() +
       '<div id="brm_body" style="margin-top:14px;max-height:60vh;overflow:auto;line-height:1.95;font-size:1.02rem;font-family:\'Noto Serif KR\',serif;color:#1f2937"><p class="qt-loading">본문을 불러오는 중…</p></div>' +
-      (onDone ? '<div style="margin-top:14px;text-align:center"><button type="button" id="brm_done" style="padding:10px 28px;border:0;border-radius:10px;background:var(--accent,#032257);color:#fff;font:inherit;font-weight:700;cursor:pointer">✓ 읽기 완료</button></div>' : '') +
+      (onDone ? '<div style="margin-top:14px;text-align:center"><button type="button" id="brm_done" style="padding:10px 28px;border:0;border-radius:10px;background:var(--accent,#223350);color:#fff;font:inherit;font-weight:700;cursor:pointer">✓ 읽기 완료</button></div>' : '') +
       '</div>';
     document.body.appendChild(ov); document.body.style.overflow = 'hidden';
 
@@ -338,7 +338,7 @@ console.log('[dashboard.js] v20260705qtfallback');
         var ab = ref[0], book = B[ab] || [];
         for (var c = ref[1]; c <= ref[2]; c++) {
           var verses = book[c - 1] || [];
-          html += '<h4 class="brm-h" style="margin:20px 0 8px;color:var(--accent,#032257);font-size:1.05rem;border-bottom:1px solid #eef1f5;padding-bottom:6px">' + esc((P.names[ab] || ab) + ' ' + c + (ab === '시' ? '편' : '장')) + '</h4>' +
+          html += '<h4 class="brm-h" style="margin:20px 0 8px;color:var(--accent,#223350);font-size:1.05rem;border-bottom:1px solid #eef1f5;padding-bottom:6px">' + esc((P.names[ab] || ab) + ' ' + c + (ab === '시' ? '편' : '장')) + '</h4>' +
             verses.map(function (v, i) { return '<p class="brm-v" style="margin:0 0 6px"><sup style="color:#9db4d6;font-size:.72rem;margin-right:4px">' + (i + 1) + '</sup>' + esc(v) + '</p>'; }).join('');
         }
       });
@@ -392,7 +392,7 @@ console.log('[dashboard.js] v20260705qtfallback');
           '</div>';
       }).join('');
       return '<details' + (days.some(function (d) { return !done[d.d]; }) && dn > 0 ? ' open' : '') + ' style="border:1px solid #e6ebf2;border-radius:10px;margin-bottom:8px;background:#fff">' +
-        '<summary style="cursor:pointer;padding:10px 12px;font-weight:700;color:var(--accent,#032257);font-size:.9rem;list-style-position:inside">' + (ti + 1) + '. ' + esc(t) +
+        '<summary style="cursor:pointer;padding:10px 12px;font-weight:700;color:var(--accent,#223350);font-size:.9rem;list-style-position:inside">' + (ti + 1) + '. ' + esc(t) +
         ' <span class="br-gcnt" data-ti="' + ti + '" style="font-weight:400;color:' + (dn === days.length ? '#1e874b' : '#9aa5b1') + ';font-size:.78rem">' + (dn === days.length ? '✓ 완료' : dn + '/' + days.length + '일') + '</span></summary>' +
         '<div style="padding:2px 12px 10px">' +
         (window.BIBLE_NOTES && window.BIBLE_NOTES.themes[ti]
@@ -401,7 +401,7 @@ console.log('[dashboard.js] v20260705qtfallback');
         rowsH + '</div></details>';
     }).join('');
     ov.innerHTML = '<div style="background:#f7f9fc;border-radius:14px;max-width:720px;width:100%;padding:20px 18px;box-shadow:0 24px 60px rgba(0,0,0,.32)">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#032257)">📖 구속사 성경읽기 365 <span id="brt_cnt" style="font-size:.84rem;color:#9aa5b1;font-weight:600">' + BR.rows.length + '/365</span></h3><button class="btn btn-line" id="brt_close" style="padding:4px 12px">닫기</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#223350)">📖 구속사 성경읽기 365 <span id="brt_cnt" style="font-size:.84rem;color:#9aa5b1;font-weight:600">' + BR.rows.length + '/365</span></h3><button class="btn btn-line" id="brt_close" style="padding:4px 12px">닫기</button></div>' +
       '<p style="margin:0 0 12px;font-size:.76rem;color:#9aa5b1">✅ 체크하면 <b>바로 저장</b>되고, 체크를 해제하면 <b>삭제</b>됩니다(별도 저장 버튼이 필요 없어요) · 📖 를 누르면 우리말성경 본문이 열립니다</p>' +
       '<div style="max-height:64vh;overflow:auto"><div id="brt_cov"></div>' + groups + '</div></div>';
     document.body.appendChild(ov); document.body.style.overflow = 'hidden';
@@ -447,9 +447,9 @@ console.log('[dashboard.js] v20260705qtfallback');
       var pct = totCh ? Math.round(readCh / totCh * 100) : 0;
       box.innerHTML = '<div style="border:1px solid #e6ebf2;border-radius:10px;background:#fff;padding:12px;margin-bottom:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:7px">' +
-        '<b style="color:var(--accent,#032257);font-size:.9rem">📖 성경 전체 진도</b>' +
-        '<span style="font-size:.78rem;color:#5b6b7d">' + readCh + ' / ' + totCh + '장 · <b style="color:var(--accent,#032257)">' + pct + '%</b></span></div>' +
-        '<div style="background:#eef2f7;border-radius:6px;height:9px;overflow:hidden;margin-bottom:11px"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#3a6db5,#032257)"></div></div>' +
+        '<b style="color:var(--accent,#223350);font-size:.9rem">📖 성경 전체 진도</b>' +
+        '<span style="font-size:.78rem;color:#5b6b7d">' + readCh + ' / ' + totCh + '장 · <b style="color:var(--accent,#223350)">' + pct + '%</b></span></div>' +
+        '<div style="background:#eef2f7;border-radius:6px;height:9px;overflow:hidden;margin-bottom:11px"><div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#3a6db5,#223350)"></div></div>' +
         '<div style="font-size:.74rem;color:#7b8794;font-weight:700;margin-bottom:5px">구약 <span style="color:#1f6feb">' + ot.done + '</span>/39권 완독</div>' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;margin-bottom:11px">' + ot.html + '</div>' +
         '<div style="font-size:.74rem;color:#7b8794;font-weight:700;margin-bottom:5px">신약 <span style="color:#d6455a">' + nt.done + '</span>/27권 완독</div>' +
@@ -491,7 +491,7 @@ console.log('[dashboard.js] v20260705qtfallback');
   function loadMyDocs(me) {
     var el = document.getElementById('myDocs'); if (!el) return;
     var url = window.SUPABASE_URL, ak = window.SUPABASE_ANON_KEY, tok = (window.WPF && WPF.token && WPF.token());
-    var head = '<div class="form-card" style="padding:16px 18px"><h3 style="margin:0 0 12px;font-size:1rem;color:var(--accent,#032257)">📄 나의 문서</h3>';
+    var head = '<div class="form-card" style="padding:16px 18px"><h3 style="margin:0 0 12px;font-size:1rem;color:var(--accent,#223350)">📄 나의 문서</h3>';
     var empty = head + '<p style="color:#9aa5b1;font-size:.9rem;margin:0">아직 등록된 문서가 없습니다.</p></div>';
     if (!url || !ak || !tok) { el.innerHTML = ''; return; }
     // 본인(+배우자) 매칭키로만 조회 — 관리자여도 대시보드에선 남의 문서가 보이면 안 됨
@@ -721,7 +721,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       .then(function (rows) {
         var ongoing = (rows || []).filter(function (r) { return !r.end_date || r.end_date >= t; });
         if (!ongoing.length) { el.innerHTML = ''; return; }
-        var box = '<div class="form-card" style="padding:16px 18px;"><h3 style="margin:0 0 10px;font-size:1rem;color:var(--accent,#032257);">📚 진행중인 교육</h3>';
+        var box = '<div class="form-card" style="padding:16px 18px;"><h3 style="margin:0 0 10px;font-size:1rem;color:var(--accent,#223350);">📚 진행중인 교육</h3>';
         el.innerHTML = box + ongoing.map(function (r) {
           return '<div class="my-edu-item" data-id="' + esc(r.id) + '" style="border:1px solid #e8edf3;border-radius:10px;padding:10px 12px;margin-bottom:8px;">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" class="my-edu-head">' +
@@ -750,7 +750,7 @@ console.log('[dashboard.js] v20260705qtfallback');
         bodyEl.innerHTML = rows.map(function (r) {
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid #f0f3f7">' +
             '<span>📎 ' + esc(r.title) + (r.size ? ' <span style="color:#9aa5b1;font-size:.76rem">· ' + fmtSize(r.size) + '</span>' : '') + '</span>' +
-            '<a href="#" class="my-mat-dl" data-path="' + esc(r.path) + '" data-title="' + esc(r.title) + '" style="color:var(--accent,#032257)">다운로드</a></div>';
+            '<a href="#" class="my-mat-dl" data-path="' + esc(r.path) + '" data-title="' + esc(r.title) + '" style="color:var(--accent,#223350)">다운로드</a></div>';
         }).join('');
         Array.prototype.forEach.call(bodyEl.querySelectorAll('.my-mat-dl'), function (a) {
           a.onclick = function (e) {
@@ -831,8 +831,8 @@ console.log('[dashboard.js] v20260705qtfallback');
     var inner = el.querySelector('#fmInner');
     var tabs = el.querySelectorAll('.fm-who');
     function setActive(b) {
-      Array.prototype.forEach.call(tabs, function (x) { x.style.background = '#fff'; x.style.color = 'var(--accent,#032257)'; x.style.border = '1px solid #cdd7e3'; });
-      b.style.background = 'var(--accent,#032257)'; b.style.color = '#fff'; b.style.border = '1px solid var(--accent,#032257)';
+      Array.prototype.forEach.call(tabs, function (x) { x.style.background = '#fff'; x.style.color = 'var(--accent,#223350)'; x.style.border = '1px solid #cdd7e3'; });
+      b.style.background = 'var(--accent,#223350)'; b.style.color = '#fff'; b.style.border = '1px solid var(--accent,#223350)';
     }
     function show(w, btn) {
       setActive(btn);
@@ -862,7 +862,7 @@ console.log('[dashboard.js] v20260705qtfallback');
     }).join('');
     var donut = '<svg viewBox="0 0 150 150" width="150" height="150" style="flex:0 0 auto;">' + segs +
       '<text x="75" y="70" text-anchor="middle" font-size="10" fill="#7b8794">총 헌금</text>' +
-      '<text x="75" y="89" text-anchor="middle" font-size="12" font-weight="700" fill="#032257">' + won(total) + '</text></svg>';
+      '<text x="75" y="89" text-anchor="middle" font-size="12" font-weight="700" fill="#223350">' + won(total) + '</text></svg>';
     var legend = '<div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:6px;">' +
       accs.map(function (a) { return '<div style="display:flex;align-items:center;gap:8px;font-size:.85rem;"><span style="width:11px;height:11px;border-radius:3px;background:' + a.color + ';flex:0 0 auto;"></span><span style="flex:1;">' + esc(a.name) + '</span><b style="font-variant-numeric:tabular-nums;">' + won(a.total) + '</b><span style="color:#9aa5b1;width:40px;text-align:right;">' + (total ? (a.total / total * 100).toFixed(0) : 0) + '%</span></div>'; }).join('') +
       '</div>';
@@ -882,7 +882,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       '</tbody><tfoot><tr style="font-weight:700;background:#f5f8fc;"><td colspan="' + (1 + (hasGiver ? 1 : 0) + (sv ? 1 : 0)) + '" style="padding:8px;text-align:right;">합계</td><td style="padding:8px;text-align:right;">' + won(total) + '</td></tr></tfoot></table></div>';
     el.innerHTML = spouseNote +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">' +
-        statCard('총 헌금액', won(total) + '원', '#032257') +
+        statCard('총 헌금액', won(total) + '원', '#223350') +
         statCard('헌금 건수', list.length + '건', '#1e874b') +
         statCard('헌금 항목', accs.length + '개', '#3b82f6') +
       '</div>' +
@@ -896,8 +896,8 @@ console.log('[dashboard.js] v20260705qtfallback');
     var panel = el.querySelector('#osPanel');
     var tabs2 = el.querySelectorAll('.os-tab');
     function setActive2(b) {
-      Array.prototype.forEach.call(tabs2, function (x) { x.style.background = '#fff'; x.style.color = 'var(--accent,#032257)'; x.style.border = '1px solid #cdd7e3'; });
-      b.style.background = 'var(--accent,#032257)'; b.style.color = '#fff'; b.style.border = '1px solid var(--accent,#032257)';
+      Array.prototype.forEach.call(tabs2, function (x) { x.style.background = '#fff'; x.style.color = 'var(--accent,#223350)'; x.style.border = '1px solid #cdd7e3'; });
+      b.style.background = 'var(--accent,#223350)'; b.style.color = '#fff'; b.style.border = '1px solid var(--accent,#223350)';
     }
     function show2(which, btn) { setActive2(btn); panel.innerHTML = which === 'all' ? allTab : '<div class="form-card" style="padding:16px;">' + byTab + '</div>'; }
     Array.prototype.forEach.call(tabs2, function (b) { b.onclick = function () { show2(b.dataset.o, b); }; });
@@ -927,7 +927,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       var mine = isMine(m);
       var icon = kind === 'head' ? '⌂ ' : (kind === 'spouse' ? '💑 ' : '');
       return '<span style="display:inline-flex;align-items:center;gap:5px">' + icon +
-        '<b style="' + (mine ? 'color:#1e874b' : (kind === 'head' ? 'color:var(--accent,#032257)' : '')) + '">' + esc(m.name) + '</b>' +
+        '<b style="' + (mine ? 'color:#1e874b' : (kind === 'head' ? 'color:var(--accent,#223350)' : '')) + '">' + esc(m.name) + '</b>' +
         (mine ? '<span style="font-size:.7rem;background:#e8f6ee;color:#1e874b;border-radius:999px;padding:1px 7px">나</span>' : '') +
         '<span style="font-size:.74rem;color:#7b8794">' + esc(kind === 'head' ? '세대주' : (m.relation || (kind === 'spouse' ? '배우자' : ''))) + (bday(m) ? ' · ' + esc(bday(m)) : '') + '</span></span>';
     }
@@ -945,7 +945,7 @@ console.log('[dashboard.js] v20260705qtfallback');
         others.map(function (m) { return '<div style="padding:4px 0 4px 18px;color:#cbd5e1">└ ' + person(m, 'child') + '</div>'; }).join('') +
         '</div>';
     }
-    return '<div class="form-card" style="padding:16px 18px;"><h3 style="margin:0 0 4px;color:var(--accent,#032257);font-size:1rem">👪 우리 가족 가계도</h3>' +
+    return '<div class="form-card" style="padding:16px 18px;"><h3 style="margin:0 0 4px;color:var(--accent,#223350);font-size:1rem">👪 우리 가족 가계도</h3>' +
       '<p style="color:var(--ink-soft);font-size:.82rem;margin:0 0 12px">교적에 등록된 우리 가족 관계입니다. (변경은 교회 사무실·관리자에게 문의)</p>' +
       order.map(household).join('') + '</div>';
   }
@@ -974,7 +974,7 @@ console.log('[dashboard.js] v20260705qtfallback');
   }
   function loadQtProgress(me) {
     var el = document.getElementById('qtProgress'); if (!el) return;
-    el.innerHTML = '<div class="form-card" style="padding:16px 18px;"><h3 style="margin:0 0 4px;font-size:1rem;color:var(--accent,#032257);">📊 QT 진행표</h3><p style="color:var(--ink-soft);font-size:.82rem;margin:0 0 12px;">아멘한 큐티의 말씀 본문이 성경 66권 중 어디를 지나왔는지 보여줍니다. 표시된 책을 누르면 그때 읽은 큐티를 다시 볼 수 있습니다.</p><div id="qtProgGrid"><p class="qt-loading">불러오는 중…</p></div><div id="qtProgDetail"></div></div>';
+    el.innerHTML = '<div class="form-card" style="padding:16px 18px;"><h3 style="margin:0 0 4px;font-size:1rem;color:var(--accent,#223350);">📊 QT 진행표</h3><p style="color:var(--ink-soft);font-size:.82rem;margin:0 0 12px;">아멘한 큐티의 말씀 본문이 성경 66권 중 어디를 지나왔는지 보여줍니다. 표시된 책을 누르면 그때 읽은 큐티를 다시 볼 수 있습니다.</p><div id="qtProgGrid"><p class="qt-loading">불러오는 중…</p></div><div id="qtProgDetail"></div></div>';
     var url = window.SUPABASE_URL, ak = window.SUPABASE_ANON_KEY, tok = (window.WPF && WPF.token && WPF.token());
     var uid = sbUser() && sbUser().id;
     if (!uid || !tok) { el.querySelector('#qtProgGrid').innerHTML = ''; return; }
@@ -1018,7 +1018,7 @@ console.log('[dashboard.js] v20260705qtfallback');
         '<div style="display:flex;justify-content:space-between;align-items:center;">' +
         '<b style="font-size:.9rem;">' + esc(r.title || '') + '</b>' +
         '<span style="font-size:.76rem;color:#9aa5b1;">' + esc(r.sermon_date) + ' ▾</span></div>' +
-        (r.scripture ? '<div style="font-size:.8rem;color:var(--accent,#032257);margin-top:2px;">' + esc(r.scripture) + '</div>' : '') +
+        (r.scripture ? '<div style="font-size:.8rem;color:var(--accent,#223350);margin-top:2px;">' + esc(r.scripture) + '</div>' : '') +
         '<div class="qtc-bookentry-body" hidden style="margin-top:10px;"></div></div>';
     }
     function drawGrid(covered, byBook) {
@@ -1037,7 +1037,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       if (!detail) return;
       detail.innerHTML = '<div style="border-top:1px solid #eef1f5;margin-top:16px;padding-top:14px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
-        '<b style="font-size:.92rem;color:var(--accent,#032257);">' + esc(book) + ' — 읽은 큐티 ' + rows.length + '건</b>' +
+        '<b style="font-size:.92rem;color:var(--accent,#223350);">' + esc(book) + ' — 읽은 큐티 ' + rows.length + '건</b>' +
         '<button type="button" id="qtProgDetailClose" class="btn btn-line" style="padding:3px 12px;font-size:.78rem;white-space:nowrap;">✕ 닫기</button></div>' +
         '<div style="margin-top:10px;">' + rows.map(entryHTML).join('') + '</div></div>';
       var closeBtn = detail.querySelector('#qtProgDetailClose');

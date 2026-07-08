@@ -63,7 +63,7 @@ console.log('[finance.js] v20260701di');
       }).catch(function (e) { root.innerHTML = msgCard('불러오기 실패', e.message); });
     }).catch(function (e) { root.innerHTML = msgCard('확인 실패', e.message); });
   }
-  function msgCard(t, x) { return '<div class="fin-card" style="text-align:center;padding:40px 18px;"><h3 style="margin:0 0 8px;color:var(--accent,#032257);">' + esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);">' + esc(x) + '</p></div>'; }
+  function msgCard(t, x) { return '<div class="fin-card" style="text-align:center;padding:40px 18px;"><h3 style="margin:0 0 8px;color:var(--accent,#223350);">' + esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);">' + esc(x) + '</p></div>'; }
 
   // ── 보고서 인쇄/PDF (회의 배포용 전문 양식) ──
   function printDoc(title, inner, sub) {
@@ -236,7 +236,7 @@ console.log('[finance.js] v20260701di');
     for (var yr = y + 1; yr >= y - 4; yr--) opts += '<option value="' + yr + '"' + (yr === M.fy ? ' selected' : '') + '>' + yr + '년도</option>';
     var r = fyRange(M.fy);
     return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:#f5f8fc;border:1px solid #e3ebf5;border-radius:10px;">' +
-      '<b style="color:var(--accent,#032257)">📅 회계연도</b>' +
+      '<b style="color:var(--accent,#223350)">📅 회계연도</b>' +
       '<select id="fySel" style="padding:6px 10px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;background:#fff;">' + opts + '</select>' +
       '<span style="color:#7b8794;font-size:.86rem;">' + r.from + ' ~ ' + r.to + '</span>' +
       '<span style="color:#9aa5b1;font-size:.8rem;margin-left:auto;">시작월·범위는 <b>설정</b> 탭에서</span></div>';
@@ -403,19 +403,19 @@ console.log('[finance.js] v20260701di');
         // 월별 차트 + 도넛 (상단)
         '<div class="fin-card"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:24px">' +
           '<div><b>📊 월별 수입·지출</b> <span style="font-size:.76rem"><span style="color:#34C759">● 수입</span> <span style="color:#FF3B30">● 지출</span> <span style="color:#9aa5b1">· 막대+추세선</span></span>' +
-            '<div id="mcWrap" style="position:relative;margin-top:14px">' + monthChart() + '<div id="mcTip" style="position:absolute;display:none;background:#032257;color:#fff;font-size:.76rem;line-height:1.45;padding:6px 9px;border-radius:7px;pointer-events:none;white-space:nowrap;z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.25)"></div></div></div>' +
+            '<div id="mcWrap" style="position:relative;margin-top:14px">' + monthChart() + '<div id="mcTip" style="position:absolute;display:none;background:#223350;color:#fff;font-size:.76rem;line-height:1.45;padding:6px 9px;border-radius:7px;pointer-events:none;white-space:nowrap;z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.25)"></div></div></div>' +
           '<div><b>🍩 헌금 항목별 (연간)</b>' + donut() + '</div>' +
         '</div></div>' +
         // KPI 요약
-        '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">' + stat('전기 이월금', carry, '#7b8794') + stat('당기 수입', ti, '#1e874b') + stat('당기 지출', te, '#c0392b') + stat('현재 잔액', bal, '#032257') + '</div>' +
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">' + stat('전기 이월금', carry, '#7b8794') + stat('당기 수입', ti, '#1e874b') + stat('당기 지출', te, '#c0392b') + stat('현재 잔액', bal, '#223350') + '</div>' +
         // 주간 수입/지출 현황
-        '<h3 style="margin:6px 0 10px;color:var(--accent,#032257)">주간 현황 <span style="font-size:.8rem;font-weight:400;color:#9aa5b1">지난주 ' + esc(lastWk.from) + '~' + esc(lastWk.to) + ' · 이번주 ' + esc(thisWk.from) + '~' + esc(thisWk.to) + '</span></h3>' +
+        '<h3 style="margin:6px 0 10px;color:var(--accent,#223350)">주간 현황 <span style="font-size:.8rem;font-weight:400;color:#9aa5b1">지난주 ' + esc(lastWk.from) + '~' + esc(lastWk.to) + ' · 이번주 ' + esc(thisWk.from) + '~' + esc(thisWk.to) + '</span></h3>' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin-bottom:8px">' +
           '<div class="fin-card">' + cardHead('＋ 수입 현황', '#1e874b', wkRight(incLT, incTT)) + statusTable('수입', wkCols) + '</div>' +
           '<div class="fin-card">' + cardHead('－ 지출 현황', '#c0392b', wkRight(expLT, expTT)) + statusTable('지출', wkCols) + '</div>' +
         '</div>' +
         // 연간 현황
-        '<h3 style="margin:22px 0 10px;color:var(--accent,#032257)">' + M.fy + '년 현황 <span style="font-size:.8rem;font-weight:400;color:#9aa5b1">' + esc(fyR.from) + ' ~ ' + esc(fyR.to) + '</span></h3>' +
+        '<h3 style="margin:22px 0 10px;color:var(--accent,#223350)">' + M.fy + '년 현황 <span style="font-size:.8rem;font-weight:400;color:#9aa5b1">' + esc(fyR.from) + ' ~ ' + esc(fyR.to) + '</span></h3>' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px">' +
           '<div class="fin-card">' + cardHead('수입 (연간 누계)', '#1e874b', '<b style="color:#1e874b">' + won(incFYt) + '원</b>') + statusTable('수입', [{ label: '금액', from: fyR.from, to: fyR.to }]) + '</div>' +
           '<div class="fin-card">' + cardHead('지출 (연간 누계)', '#c0392b', '<b style="color:#c0392b">' + won(expFYt) + '원</b>') + statusTable('지출', [{ label: '금액', from: fyR.from, to: fyR.to }]) + '</div>' +
@@ -460,7 +460,7 @@ console.log('[finance.js] v20260701di');
       '</div><div id="o_sub"></div>';
     var sub = panel.querySelector('#o_sub');
     var tabs = panel.querySelectorAll('.os2');
-    function setA(b) { Array.prototype.forEach.call(tabs, function (x) { x.style.background = '#fff'; x.style.color = 'var(--accent,#032257)'; x.style.border = '1px solid #cdd7e3'; }); b.style.background = 'var(--accent,#032257)'; b.style.color = '#fff'; b.style.border = '1px solid var(--accent,#032257)'; }
+    function setA(b) { Array.prototype.forEach.call(tabs, function (x) { x.style.background = '#fff'; x.style.color = 'var(--accent,#223350)'; x.style.border = '1px solid #cdd7e3'; }); b.style.background = 'var(--accent,#223350)'; b.style.color = '#fff'; b.style.border = '1px solid var(--accent,#223350)'; }
     function show(s, b) { setA(b); if (s === 'lookup') renderOfferingLookup(sub); else renderOfferingInput(sub); }
     Array.prototype.forEach.call(tabs, function (b) { b.onclick = function () { show(b.dataset.s, b); }; });
     show('input', tabs[0]);
@@ -641,7 +641,7 @@ console.log('[finance.js] v20260701di');
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
     ov.innerHTML = '<div class="fin-card" style="max-width:420px;width:100%;background:#fff">' +
-      '<h3 style="margin:0 0 8px;color:var(--accent,#032257)">교적에 등록할까요?</h3>' +
+      '<h3 style="margin:0 0 8px;color:var(--accent,#223350)">교적에 등록할까요?</h3>' +
       '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:14px"><b>' + esc(name) + '</b>님은 교적에 없습니다. 등록하면 다음부터 검색·헌금 집계가 연결됩니다. <b>생년월일은 비워도 됩니다.</b></p>' +
       '<div class="form-field"><label>이름</label><input type="text" id="rg_name" value="' + esc(name) + '"></div>' +
       '<div class="form-field" style="margin-top:8px"><label>생년월일 (선택)</label><input type="text" id="rg_birth" maxlength="10" placeholder="예: 1981-08-19 (없으면 비움)" inputmode="numeric"></div>' +
@@ -676,7 +676,7 @@ console.log('[finance.js] v20260701di');
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
     ov.innerHTML = '<div class="fin-card" style="max-width:460px;width:100%;background:#fff;max-height:90vh;overflow:auto">' +
-      '<h3 style="margin:0 0 14px;color:var(--accent,#032257)">' + (isExp ? '지출' : '헌금') + ' 전표 수정</h3>' +
+      '<h3 style="margin:0 0 14px;color:var(--accent,#223350)">' + (isExp ? '지출' : '헌금') + ' 전표 수정</h3>' +
       '<div class="form-field"><label>일자</label><input type="date" id="ed_date" value="' + esc(ymdStr(x['일자'])) + '"></div>' +
       '<div class="form-field"><label>계정</label><select id="ed_acc">' + (isExp ? accOptions('지출') : accOptions('수입', '헌금')) + '</select></div>' +
       (isExp ? '' : '<div class="form-field"><label>예배</label><select id="ed_svc">' + svcOptions() + '</select></div>') +
@@ -1100,7 +1100,7 @@ console.log('[finance.js] v20260701di');
       M.budget.forEach(function (b) { var code = String(b['계정코드'] || ''); var amt = Number(b['예산']) || 0; if (code.slice(-4) === '0000') return; if (/^1/.test(code)) budIn += amt; else if (/^2/.test(code)) budExp += amt; });
       var carry = carryover();
       withPrint(panel, '결산보고서',
-        '<div class="fin-card" style="display:flex;gap:22px;flex-wrap:wrap;align-items:center"><div>전기 이월금 <b>' + won(carry) + '</b></div><div>당기 수입 <b style="color:#1e874b">' + won(ti) + '</b></div><div>당기 지출 <b style="color:#c0392b">' + won(te) + '</b></div><div style="margin-left:auto;font-size:1.05rem">기말 잔액 <b style="color:var(--accent,#032257)">' + won(carry + ti - te) + '</b></div></div>' +
+        '<div class="fin-card" style="display:flex;gap:22px;flex-wrap:wrap;align-items:center"><div>전기 이월금 <b>' + won(carry) + '</b></div><div>당기 수입 <b style="color:#1e874b">' + won(ti) + '</b></div><div>당기 지출 <b style="color:#c0392b">' + won(te) + '</b></div><div style="margin-left:auto;font-size:1.05rem">기말 잔액 <b style="color:var(--accent,#223350)">' + won(carry + ti - te) + '</b></div></div>' +
         '<div class="fin-card"><b>월별 수입·지출 현황</b><div style="overflow:auto;margin-top:8px"><table class="fin-table"><thead><tr><th>월</th><th class="num">수입</th><th class="num">지출</th><th class="num">차액</th></tr></thead><tbody>' + monthTbl +
         '</tbody><tfoot><tr style="font-weight:700;background:#f5f8fc"><td>합계</td><td class="num">' + won(ti) + '</td><td class="num">' + won(te) + '</td><td class="num">' + won(ti - te) + '</td></tr></tfoot></table></div></div>' +
         (M.budget.length ? '<div class="fin-card"><b>예산 대비 실적</b><div style="overflow:auto;margin-top:8px"><table class="fin-table"><thead><tr><th>구분</th><th class="num">연간 예산</th><th class="num">실적 누계</th><th class="num">집행률</th></tr></thead><tbody>' +
@@ -1161,7 +1161,7 @@ console.log('[finance.js] v20260701di');
           '<div>수입 <b style="color:#1e874b">' + won(inc) + '</b></div>' +
           '<div>지출 <b style="color:#c0392b">' + won(exp) + '</b></div>' +
           '<div>당기차액 <b>' + won(inc - exp) + '</b></div>' +
-          '<div>기말 잔액 <b style="color:var(--accent,#032257)">' + won(ending) + '</b></div>' +
+          '<div>기말 잔액 <b style="color:var(--accent,#223350)">' + won(ending) + '</b></div>' +
           '<div style="color:#9aa5b1">' + list.length + '건</div></div>' +
           '<div class="fin-card"><b>수입 계정별</b><div style="overflow:auto;margin-top:8px">' + tbl(accIn, inc) + '</div></div>' +
           '<div class="fin-card"><b>지출 계정별</b><div style="overflow:auto;margin-top:8px">' + tbl(accEx, exp) + '</div></div>';
@@ -1218,7 +1218,7 @@ console.log('[finance.js] v20260701di');
         var blocks = order.map(function (a) {
           var names = byAcc[a].map(nameOf);
           // 이름 사이에 '실제 공백 문자'를 넣어 복사·붙여넣기 해도 이름이 붙지 않도록 한다(margin은 화면 여백용).
-          return '<div style="margin-bottom:12px"><b style="color:var(--accent,#032257)">' + esc(a) + ' (' + names.length + '명)</b>' +
+          return '<div style="margin-bottom:12px"><b style="color:var(--accent,#223350)">' + esc(a) + ' (' + names.length + '명)</b>' +
             '<div style="line-height:2;font-size:.95rem;margin-top:2px">' + names.map(function (n) { return '<span style="margin-right:12px">' + esc(n) + '</span>'; }).join(' ') + '</div></div>';
         }).join('');
         var content = '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>' + w.from + ' ~ ' + w.to + ' 헌금자 명단</b><span style="color:var(--ink-soft);font-size:.9rem">총 ' + list.length + '건</span></div>' + blocks + '</div>';
@@ -1318,7 +1318,7 @@ console.log('[finance.js] v20260701di');
     var addr = me.address || '';
     ov.innerHTML =
       '<div style="background:#fff;border-radius:14px;max-width:680px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:22px 24px 26px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#032257)">기부금영수증 발급 — ' + esc(member.name) + '</h3><button id="rc_x" style="border:0;background:none;font-size:1.5rem;cursor:pointer;color:#98a2af">&times;</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#223350)">기부금영수증 발급 — ' + esc(member.name) + '</h3><button id="rc_x" style="border:0;background:none;font-size:1.5rem;cursor:pointer;color:#98a2af">&times;</button></div>' +
       '<p style="color:var(--ink-soft);font-size:.84rem;margin:0 0 14px">' + M.fy + '년도 헌금 누계 <b>' + won(member.total) + '원</b> · ' + member.count + '건. 발급 옵션을 선택하면 미리보기가 갱신됩니다.</p>' +
       '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px">' +
       '<div><div style="font-size:.78rem;color:var(--ink-soft);margin-bottom:4px">명세 방식</div>' +
@@ -1636,7 +1636,7 @@ console.log('[finance.js] v20260701di');
       var nextFY = M.fy + 1;
       var closedAt = (M.settings || {})['fy_closed_' + M.fy] || '';
       panel.innerHTML = '<div class="fin-card" style="max-width:560px">' +
-        '<h3 style="margin:0 0 6px;color:var(--accent,#032257)">회계연도 설정</h3>' +
+        '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">회계연도 설정</h3>' +
         '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:16px">회계연도가 시작하는 월을 정합니다. 거래장부·통계·결산보고서·기부금영수증이 선택한 회계연도 범위로 집계됩니다.</p>' +
         '<div class="form-field" style="max-width:220px"><label>회계연도 시작 월</label><select id="set_sm">' + mopts + '</select></div>' +
         '<p class="help" style="margin-top:10px">예) <b>1월</b> → 1/1 ~ 12/31 · <b>12월</b> → 12/1 ~ 익년 11/30(오직 방식) · <b>3월</b> → 3/1 ~ 익년 2/말</p>' +
@@ -1644,12 +1644,12 @@ console.log('[finance.js] v20260701di');
         '<div style="margin-top:14px;display:flex;gap:10px;align-items:center"><button class="btn btn-solid" id="set_save">저장</button><span class="fin-msg" id="set_msg"></span></div>' +
         '<p style="color:#9aa5b1;font-size:.78rem;margin-top:12px">※ 시작월은 현재 브라우저에 저장됩니다. 회계연도 선택은 상단 드롭다운에서 바꿀 수 있습니다.</p></div>' +
         '<div class="fin-card" style="max-width:560px">' +
-        '<h3 style="margin:0 0 6px;color:var(--accent,#032257)">전기 이월금 — ' + M.fy + '년도</h3>' +
+        '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">전기 이월금 — ' + M.fy + '년도</h3>' +
         '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:14px">회계연도 시작 시점의 <b>이월 잔액</b>입니다. 결산보고서의 기말 잔액(이월금＋수입－지출) 계산에 반영됩니다. 회계연도마다 따로 저장됩니다.</p>' +
         '<div class="form-field" style="max-width:260px"><label>이월금 (원)</label><input type="text" id="set_carry" inputmode="numeric" value="' + (carry ? won(carry) : '') + '" placeholder="0" style="text-align:right;font-weight:700"></div>' +
         '<div style="margin-top:14px;display:flex;gap:10px;align-items:center"><button class="btn btn-solid" id="set_carry_save">이월금 저장</button><span class="fin-msg" id="set_carry_msg"></span></div></div>' +
         '<div class="fin-card" style="max-width:560px">' +
-        '<h3 style="margin:0 0 6px;color:var(--accent,#032257)">회계연도 마감 — ' + M.fy + '년도</h3>' +
+        '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">회계연도 마감 — ' + M.fy + '년도</h3>' +
         '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:12px">현재 회계연도를 마감하면 <b>기말 잔액이 다음 연도(' + nextFY + '년도) 전기 이월금으로 자동 이월</b>되고, 화면이 ' + nextFY + '년도로 전환됩니다. 이월된 금액은 위 <b>전기 이월금</b>에서 수정할 수 있습니다.</p>' +
         '<table class="fin-table" style="margin-bottom:12px"><tbody>' +
         '<tr><td>전기 이월금</td><td class="num">' + won(carry) + '</td></tr>' +
@@ -1662,7 +1662,7 @@ console.log('[finance.js] v20260701di');
         (function () {
           var o = orgInfo();
           return '<div class="fin-card" style="max-width:560px">' +
-            '<h3 style="margin:0 0 6px;color:var(--accent,#032257)">기부금영수증 발급기관</h3>' +
+            '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">기부금영수증 발급기관</h3>' +
             '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:14px">공식 기부금영수증(별지 제45호의2서식)에 인쇄되는 <b>기부금 수령인(교회)</b> 정보입니다. 특히 <b>고유번호(사업자등록번호)</b>는 영수증 효력에 필요합니다.</p>' +
             '<div class="form-field"><label>단체명</label><input type="text" id="org_name" value="' + esc(o.name) + '"></div>' +
             '<div class="form-field"><label>고유번호(사업자등록번호)</label><input type="text" id="org_bizno" value="' + esc(o.bizno) + '" placeholder="000-00-00000"></div>' +
@@ -1690,7 +1690,7 @@ console.log('[finance.js] v20260701di');
               '<span class="rcp-up-msg" style="font-size:.78rem"></span></div></div></div>';
           }
           return '<div class="fin-card" style="max-width:560px">' +
-            '<h3 style="margin:0 0 6px;color:var(--accent,#032257)">기부금영수증 증빙 이미지</h3>' +
+            '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">기부금영수증 증빙 이미지</h3>' +
             '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:14px">고유번호증·총회소속증명서·직인 이미지를 업로드하면 기부금영수증 출력 시 자동으로 반영됩니다. (고유번호증·총회소속증명서는 뒷장에 첨부, 직인은 교회명 옆에 날인)</p>' +
             slots.map(slotHTML).join('') +
             (window.ChurchUpload && ChurchUpload.isReady() ? '' : '<p style="color:#c0392b;font-size:.8rem">⚠ 업로드 서버가 설정되지 않아 업로드를 사용할 수 없습니다.</p>') +

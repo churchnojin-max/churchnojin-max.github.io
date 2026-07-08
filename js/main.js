@@ -963,7 +963,7 @@ if (modal) {
     let m = document.getElementById("iosGuideModal");
     if (!m) {
       const shareSvg =
-        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#032257" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><rect x="5" y="11" width="14" height="9" rx="2"/></svg>';
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#223350" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4"/><path d="M8.5 7.5 12 4l3.5 3.5"/><rect x="5" y="11" width="14" height="9" rx="2"/></svg>';
       const safariSteps =
         '<li><span class="ios-step-no">1</span><div>화면 아래(아이패드는 위)의 <b>공유 버튼</b> <span class="ios-share">' + shareSvg + '</span> 을 누릅니다.</div></li>' +
         '<li><span class="ios-step-no">2</span><div>메뉴를 내려 <b>‘홈 화면에 추가’</b> 를 누릅니다.</div></li>' +

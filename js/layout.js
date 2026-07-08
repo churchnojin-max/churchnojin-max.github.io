@@ -189,7 +189,7 @@
       const t = document.createElement("div");
       t.className = "flash-toast";
       t.textContent = msg;
-      t.setAttribute("style", "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(3,34,87,.96);color:#fff;padding:12px 22px;border-radius:30px;font-size:.95rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:9999;opacity:0;transition:opacity .25s;");
+      t.setAttribute("style", "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(34,51,80,.96);color:#fff;padding:12px 22px;border-radius:30px;font-size:.95rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:9999;opacity:0;transition:opacity .25s;");
       document.body.appendChild(t);
       requestAnimationFrame(() => { t.style.opacity = "1"; });
       setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.remove(), 300); }, 2600);
@@ -370,9 +370,9 @@
                 const a = document.createElement("a");
                 a.href = "affairs.html";
                 a.className = "ac-admin-go";
-                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#032257;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
+                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#223350;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
                 a.onmouseenter = function () { this.style.background = "#1a4080"; };
-                a.onmouseleave = function () { this.style.background = "#032257"; };
+                a.onmouseleave = function () { this.style.background = "#223350"; };
                 a.innerHTML = "<span>⚙</span><span>목회행정</span>";
                 card.appendChild(a);
               }
@@ -392,9 +392,9 @@
                 const a = document.createElement("a");
                 a.href = "dashboard.html";
                 a.className = "ac-dash-go";
-                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#032257;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
+                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#223350;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
                 a.onmouseenter = function () { this.style.background = "#1a4080"; };
-                a.onmouseleave = function () { this.style.background = "#032257"; };
+                a.onmouseleave = function () { this.style.background = "#223350"; };
                 a.innerHTML = "<span>🏠</span><span>대시보드</span>";
                 card.appendChild(a);
               }
