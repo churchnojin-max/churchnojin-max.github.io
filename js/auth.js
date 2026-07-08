@@ -18,9 +18,8 @@
   const nameField = document.getElementById("nameField");
   const channelField = document.getElementById("channelField");
   const submitBtn = document.getElementById("authSubmit");
-  const KAKAO_CHANNEL = "_xkdNxfX"; // 카카오톡 채널 공개 ID
   const toggleBtn = document.getElementById("authToggle");
-  const kakaoBtn = document.getElementById("kakaoLogin");
+  const kakaoBtn = document.getElementById("kakaoLogin"); // 이메일 전용이면 없음(null)
 
   let mode = "login"; // 'login' | 'signup'
 
@@ -96,16 +95,15 @@
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) closeModal(); });
     toggleBtn.addEventListener("click", () => setMode(mode === "login" ? "signup" : "login"));
 
-    kakaoBtn.addEventListener("click", async () => {
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: "kakao",
-        options: {
-          redirectTo: location.origin + location.pathname,
-          scopes: "profile_nickname", // 닉네임만 요청 (이메일은 검수 필요해 제외, KOE205 방지)
-        },
+    if (kakaoBtn) {
+      kakaoBtn.addEventListener("click", async () => {
+        const { error } = await sb.auth.signInWithOAuth({
+          provider: "kakao",
+          options: { redirectTo: location.origin + location.pathname, scopes: "profile_nickname" },
+        });
+        if (error) showMsg("카카오 로그인 오류: " + error.message, false);
       });
-      if (error) showMsg("카카오 로그인 오류: " + error.message, false);
-    });
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -114,16 +112,11 @@
       submitBtn.disabled = true;
       try {
         if (mode === "signup") {
-          const wantChannel = !!fd.get("channel");
           const { error } = await sb.auth.signUp({
             email, password, options: { data: { name: name || email.split("@")[0] } },
           });
           if (error) throw error;
-          // 채널 추가 동의 시 카카오톡 채널 추가 페이지 열기
-          if (wantChannel) {
-            try { window.open("https://pf.kakao.com/" + KAKAO_CHANNEL + "/friend", "_blank", "noopener"); } catch (e) {}
-          }
-          showMsg("가입 확인 메일을 보냈습니다. 메일의 링크를 눌러 인증해 주세요." + (wantChannel ? " 카카오톡 채널 추가 창도 함께 열었습니다." : ""), true);
+          showMsg("가입 확인 메일을 보냈습니다. 메일의 링크를 눌러 인증해 주세요.", true);
         } else {
           const { error } = await sb.auth.signInWithPassword({ email, password });
           if (error) throw error;

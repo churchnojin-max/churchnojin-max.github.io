@@ -20,7 +20,7 @@ window.ONESIGNAL_APP_ID = "";
 /* --- 회원/로그인/게시판(Supabase) ---
    Supabase ▸ Project Settings ▸ API 의 Project URL 과 anon(public) key.
    비어 있으면 로그인·게시판 기능이 "준비 중"으로 표시됩니다. */
-window.SUPABASE_URL = "";
+window.SUPABASE_URL = "https://vwuzmklacdwiqyqjrxyt.supabase.co";
 window.SUPABASE_ANON_KEY = "";
 
 /* --- 파일 업로드(Cloudflare R2 Worker) ---

@@ -129,13 +129,10 @@
           <h3 id="authTitle">로그인</h3>
           <p id="authSubtitle">${CH_NAME} 나눔터에 오신 것을 환영합니다.</p>
         </div>
-        <button class="kakao-btn" id="kakaoLogin"><span>💬</span> 카카오로 시작하기</button>
-        <div class="auth-divider"><span>또는 이메일로</span></div>
         <form id="authForm" class="auth-form">
           <div class="form-field" id="nameField" hidden><label>이름</label><input type="text" name="name" placeholder="홍길동" /></div>
           <div class="form-field"><label>이메일</label><input type="email" name="email" required placeholder="name@example.com" /></div>
           <div class="form-field"><label>비밀번호</label><input type="password" name="password" required minlength="6" placeholder="6자 이상" /></div>
-          <label class="auth-check" id="channelField" hidden><input type="checkbox" name="channel" id="channelConsent" checked /> <span>카카오톡 채널 추가에 동의합니다 (소식·QT 알림 받기)</span></label>
           <p class="auth-msg" id="authMsg" hidden></p>
           <button type="submit" class="btn btn-solid auth-submit" id="authSubmit">로그인</button>
         </form>
