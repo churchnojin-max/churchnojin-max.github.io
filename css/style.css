@@ -762,6 +762,7 @@ ul { list-style: none; }
 .form-card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:36px; max-width:680px; }
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .form-field { display:flex; flex-direction:column; gap:6px; }
+.form-field[hidden] { display:none; }
 .form-field.full { grid-column:1 / -1; }
 .form-field label { font-size:.85rem; color:var(--ink-soft); font-weight:500; }
 .form-field input, .form-field textarea, .form-field select { font-family:inherit; font-size:.95rem; padding:12px 14px; border:1px solid var(--line); border-radius:10px; }

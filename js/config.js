@@ -21,7 +21,7 @@ window.ONESIGNAL_APP_ID = "";
    Supabase ▸ Project Settings ▸ API 의 Project URL 과 anon(public) key.
    비어 있으면 로그인·게시판 기능이 "준비 중"으로 표시됩니다. */
 window.SUPABASE_URL = "https://vwuzmklacdwiqyqjrxyt.supabase.co";
-window.SUPABASE_ANON_KEY = "";
+window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3dXpta2xhY2R3aXF5cWpyeHl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MDE5MTAsImV4cCI6MjA5OTA3NzkxMH0.DSdstEsMoNGzCEWsXfDblY0KuxLS3Ay-MuePJrIjdDE";
 
 /* --- 파일 업로드(Cloudflare R2 Worker) ---
    Cloudflare Worker 배포 후 받은 주소. 예: "https://church-files.<계정>.workers.dev"
