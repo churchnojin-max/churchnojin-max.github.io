@@ -123,7 +123,7 @@ console.log('[gyojeok.js] v20260701di');
       ms.sort(function (a, b) { var ha = a['세대주'] || a['이름'], hb = b['세대주'] || b['이름']; if (ha !== hb) return ha.localeCompare(hb, 'ko'); return (a['이름'] === ha ? -1 : 1) - (b['이름'] === hb ? -1 : 1); });
       ALL = ms;
       var couples = ms.filter(function (m) { return m['배우자']; }).length / 2;
-      panel.innerHTML = '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;flex-wrap:wrap"><b>교적 명단 (' + ms.length + '명)</b><input type="text" id="gj_search" placeholder="🔍 이름 검색" style="padding:7px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;flex:1;min-width:140px;max-width:260px"><span style="color:var(--ink-soft);font-size:.85rem">부부 ' + Math.round(couples) + '쌍</span></div><p style="color:var(--ink-soft);font-size:.83rem;margin-bottom:8px">이름을 클릭하면 개인 신상을 볼 수 있습니다.</p><div style="overflow:auto;max-height:640px"><table class="fin-table"><thead><tr><th>이름</th><th>생년월일</th><th>세대주</th><th>관계</th><th>배우자</th><th>그룹</th><th>직책</th><th>휴대폰</th></tr></thead><tbody id="gj_tbody"></tbody></table></div></div>';
+      panel.innerHTML = '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;flex-wrap:wrap"><b>교적 명단 (' + ms.length + '명)</b><input type="text" id="gj_search" placeholder="🔍 이름 검색" style="padding:7px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;flex:1;min-width:140px;max-width:260px"><span style="color:var(--ink-soft);font-size:.85rem">부부 ' + Math.round(couples) + '쌍</span></div><p style="color:var(--ink-soft);font-size:.83rem;margin-bottom:8px">이름을 클릭하면 개인 신상을 볼 수 있습니다.</p><form id="gj_add" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#f7faff;border:1px solid #e3e7ee;border-radius:10px;padding:10px 12px;margin-bottom:12px"><input type="text" id="gj_add_name" placeholder="이름" autocomplete="off" style="padding:8px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;width:120px"><input type="text" id="gj_add_birth" inputmode="numeric" placeholder="생년월일 8자리(예: 19800101, 선택)" autocomplete="off" style="padding:8px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;width:250px"><button type="submit" class="btn btn-solid" style="padding:8px 18px;white-space:nowrap">➕ 교적 추가</button><span id="gj_add_msg" style="font-size:.85rem"></span></form><div style="overflow:auto;max-height:640px"><table class="fin-table"><thead><tr><th>이름</th><th>생년월일</th><th>세대주</th><th>관계</th><th>배우자</th><th>그룹</th><th>직책</th><th>휴대폰</th></tr></thead><tbody id="gj_tbody"></tbody></table></div></div>';
       var tbody = panel.querySelector('#gj_tbody');
       function draw(q) {
         q = (q || '').trim();
@@ -133,6 +133,19 @@ console.log('[gyojeok.js] v20260701di');
       }
       draw('');
       panel.querySelector('#gj_search').addEventListener('input', function () { draw(this.value); });
+      var addF = panel.querySelector('#gj_add');
+      if (addF) addF.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var nm = panel.querySelector('#gj_add_name').value.trim();
+        var bd = panel.querySelector('#gj_add_birth').value.replace(/[^0-9]/g, '');
+        var mEl = panel.querySelector('#gj_add_msg');
+        if (!nm) { mEl.style.color = '#c0392b'; mEl.textContent = '이름을 입력하세요.'; return; }
+        if (bd && bd.length !== 8) { mEl.style.color = '#c0392b'; mEl.textContent = '생년월일은 숫자 8자리로 입력하세요.'; return; }
+        var btn = addF.querySelector('button'); btn.disabled = true;
+        mEl.style.color = 'var(--ink-soft)'; mEl.textContent = '추가 중…';
+        WPF.call('addGyojeok', { name: nm, birth: bd }).then(function () { renderMembers(panel); })
+          .catch(function (err) { mEl.style.color = '#c0392b'; mEl.textContent = '오류: ' + err.message; btn.disabled = false; });
+      });
     }).catch(function (e) {
       panel.innerHTML = msgCard('조회 실패', e.message);
     });
