@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>자료실 | ○○교회</title>
+  <meta name="description" content="새가족·양육반·제자훈련·주일학교·중등부·청년부·신앙교육 등 ○○교회의 교육 자료를 한곳에서 내려받는 회원 전용 자료실." />
+
+  <!-- Open Graph (카카오톡·SNS 미리보기) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="○○교회" />
+  <meta property="og:title" content="○○교회 | OOO CHURCH" />
+  <meta property="og:description" content="믿음의 공동체. 예배 안내·주보·매일 말씀(QT)·나눔터까지, ○○교회에 오신 것을 환영합니다." />
+  <meta property="og:image" content="https://example.com/images/icon-512.png" />
+  <meta property="og:image:width" content="512" />
+  <meta property="og:image:height" content="512" />
+  <meta property="og:url" content="https://example.com/" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="manifest" href="manifest.json?v=20260730lib13" />
+  <meta name="theme-color" content="#032257" />
+  <link rel="icon" href="images/favicon-32.png?v=20260730lib13" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png?v=20260730lib13" />
+  <meta name="apple-mobile-web-app-title" content="○○교회" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=20260730dash2" />
+</head>
+<body>
+
+  <section class="page-hero">
+    <p class="ph-eyebrow">RESOURCES</p>
+    <h1>자료실</h1>
+    <p>교육·양육 자료를 한곳에 모았습니다. 로그인한 교인이 자유롭게 내려받을 수 있습니다.</p>
+  </section>
+
+  <!-- ===== 교육 자료실 (회원 전용) ===== -->
+  <section id="edu" class="block">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">LIBRARY</span>
+        <h2>교육 자료실</h2>
+        <p>리더 대본·교재 등 교육 자료를 카테고리별로 내려받을 수 있습니다. (로그인한 교인 전용)</p>
+      </div>
+      <div id="resourceArea"><p class="qt-loading">불러오는 중…</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 예배 자료실 (회원 전용) ===== -->
+  <section id="worship" class="block block-alt">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">WORSHIP</span>
+        <h2>예배 자료실</h2>
+        <p>예배 순서지·주보·PPT·찬양 악보·음원·영상 등 예배 자료를 카테고리별로 올리고 내려받을 수 있습니다. (로그인한 교인 전용)</p>
+      </div>
+      <div id="resourceAreaWorship"><p class="qt-loading">불러오는 중…</p></div>
+    </div>
+  </section>
+
+  <!-- ===== ○○교회 앱 (설치 / 최신화) ===== -->
+  <section id="app" class="block">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">APP</span>
+        <h2>○○교회 앱</h2>
+        <p>홈 화면에 앱으로 추가하면 더 빠르게 이용할 수 있습니다.<br class="askai-br" /><strong>상담 AI(말씀지기) 등 새 기능을 원활하게 이용하시려면, 가끔 ‘앱 업데이트’를 눌러 최신 상태로 유지해 주세요.</strong></p>
+      </div>
+      <div class="app-actions">
+        <button type="button" class="btn btn-solid" id="appInstallBtn">📲 앱 설치하기</button>
+        <button type="button" class="btn btn-line" id="appUpdateBtn">🔄 앱 업데이트</button>
+      </div>
+      <p class="app-hint" id="appHint">아이폰은 Safari에서 ‘공유 → 홈 화면에 추가’, 안드로이드는 브라우저 메뉴(⋮)에서 ‘앱 설치’로 설치됩니다.</p>
+    </div>
+  </section>
+
+  <!-- ===== 이동 유도 ===== -->
+  <section class="block block-alt">
+    <div class="container">
+      <div class="cta-flow">
+        <span class="cta-eyebrow">NEXT STEP</span>
+        <h3>공동체가 궁금하다면</h3>
+        <div class="cta-btns"><a class="btn btn-line" href="story.html">우리 이야기 보기 →</a></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  (function () {
+    var dp = null;
+    window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); dp = e; });
+    var ua = navigator.userAgent;
+    var isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    var hint = document.getElementById("appHint");
+    var installBtn = document.getElementById("appInstallBtn");
+    var updateBtn = document.getElementById("appUpdateBtn");
+
+    if (standalone && installBtn) {
+      installBtn.style.display = "none";
+      hint.textContent = "이미 앱으로 사용 중입니다. 상담 AI 등 새 기능을 원활하게 쓰시려면 ‘앱 업데이트’를 눌러 최신 상태로 유지해 주세요.";
+    }
+
+    if (installBtn) installBtn.addEventListener("click", async function () {
+      if (dp) { dp.prompt(); try { await dp.userChoice; } catch (e) {} dp = null; }
+      else if (isIOS) { hint.textContent = "아이폰·아이패드: Safari 화면 아래 ‘공유’ 버튼 → ‘홈 화면에 추가’ 를 누르면 설치됩니다."; }
+      else { hint.textContent = "브라우저 메뉴(⋮)에서 ‘앱 설치’ 또는 ‘홈 화면에 추가’ 를 누르면 설치됩니다."; }
+    });
+
+    if (updateBtn) updateBtn.addEventListener("click", async function () {
+      updateBtn.disabled = true;
+      var orig = updateBtn.textContent;
+      updateBtn.textContent = "업데이트 중…";
+      try {
+        if ("serviceWorker" in navigator) {
+          var regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(function (r) { return r.unregister().catch(function () {}); }));
+        }
+        if (window.caches) {
+          var keys = await caches.keys();
+          await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }
+      } catch (e) {}
+      location.replace("index.html?fresh=" + Date.now());
+    });
+  })();
+  </script>
+
+  <script src="js/church.js?v=1"></script>
+
+  <script src="js/brand.js?v=1"></script>
+
+  <script src="js/config.js?v=20260730lib13"></script>
+  <script src="js/bulletins.js?v=20260730sum"></script>
+  <script src="js/layout.js?v=20260730dash2"></script>
+  <script src="js/counsel.js?v=20260730lib13"></script>
+  <script src="js/main.js?v=20260730wait"></script>
+  <script src="js/upload.js?v=20260730lib13"></script>
+  <script src="js/resources.js?v=20260730lib13"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.k_logos.twa",
+    "sha256_cert_fingerprints": ["A8:89:C2:DB:78:D4:4D:61:2E:DC:17:DC:AA:12:85:89:AA:8C:DB:EA:80:10:9B:27:63:01:4B:02:83:BE:A0:15"]
+  }
+}]

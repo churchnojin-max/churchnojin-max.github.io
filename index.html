@@ -1,0 +1,297 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>○○교회 | OOO CHURCH</title>
+  <meta name="description" content="믿음의 공동체, ○○교회입니다. 성경을 따라, 은혜로 살아가는 공동체로 여러분을 환영합니다." />
+  <meta name="keywords" content="○○교회, 우리 동네 교회, 장로교회" />
+  <link rel="canonical" href="https://example.com/" />
+  <!-- Google Search Console 소유확인 -->
+  <meta name="google-site-verification" content="" />
+  <!-- 네이버 서치어드바이저 소유확인 -->
+  <meta name="naver-site-verification" content="" />
+
+  <!-- Open Graph (카카오톡·SNS 미리보기) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="○○교회" />
+  <meta property="og:title" content="○○교회 | OOO CHURCH" />
+  <meta property="og:description" content="믿음의 공동체. 예배 안내·주보·매일 말씀(QT)·나눔터까지, ○○교회에 오신 것을 환영합니다." />
+  <meta property="og:image" content="https://example.com/images/icon-512.png" />
+  <meta property="og:image:width" content="512" />
+  <meta property="og:image:height" content="512" />
+  <meta property="og:url" content="https://example.com/" />
+  <meta name="twitter:card" content="summary" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json?v=20260730news1" />
+  <meta name="theme-color" content="#032257" />
+  <link rel="icon" href="images/favicon-32.png?v=20260730lib13" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png?v=20260730lib13" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="○○교회" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=20260730dash2" />
+  <!-- 구조화 데이터(교회 정보) — 구글 검색 이해도 향상 -->
+  <style>
+    .hb-card{max-width:860px;margin:0 auto;border:1px solid var(--line,#e3e7ee);border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(3,34,87,.07)}
+    .hb-hd{display:flex;justify-content:space-between;align-items:center;background:var(--accent,#032257);color:#fff;padding:14px 26px}
+    .hb-hd-week{font-weight:700;font-size:.9rem;letter-spacing:.04em}
+    .hb-hd-date{font-size:.84rem;color:rgba(255,255,255,.75)}
+    .hb-body{display:grid;grid-template-columns:1fr 1fr;background:#fff}
+    .hb-col{padding:22px 24px}
+    .hb-col:first-child{border-right:1px solid var(--line,#e3e7ee)}
+    .hb-col-title{font-size:.74rem;font-weight:700;color:var(--accent,#032257);text-transform:uppercase;letter-spacing:.07em;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line,#e3e7ee)}
+    .hb-order{margin:0;padding-left:18px;font-size:.84rem;line-height:1.9;color:var(--ink,#1a2332)}
+    .hb-extra{margin:0 0 14px;padding-left:0;list-style:none;font-size:.83rem;line-height:1.85;color:var(--ink-soft,#7b8794)}
+    .hb-extra li::before{content:"▸ ";color:var(--accent,#032257);font-size:.8rem}
+    .hb-news{margin:0;padding-left:0;list-style:none;font-size:.82rem;line-height:1.75}
+    .hb-news li{padding:3px 0;border-bottom:1px dashed #eef1f5}
+    .hb-news li:last-child{border-bottom:none}
+    .hb-news strong{color:var(--accent,#032257);margin-right:5px}
+    .hb-ft{border-top:1px solid var(--line,#e3e7ee);padding:14px 24px;text-align:center;background:#fafbfd}
+    @media(max-width:640px){.hb-body{grid-template-columns:1fr}.hb-col:first-child{border-right:none;border-bottom:1px solid var(--line,#e3e7ee)}}
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Church",
+    "name": "○○교회",
+    "alternateName": "OOO CHURCH",
+    "url": "https://example.com/",
+    "logo": "https://example.com/images/icon-512.png",
+    "image": "https://example.com/images/icon-512.png",
+    "telephone": "+82-10-0000-0000",
+    "foundingDate": "1964",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "○○로 00",
+      "addressLocality": "화성시",
+      "addressRegion": "경기도",
+      "addressCountry": "KR"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ===== Hero ===== -->
+  <section id="home" class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <p class="hero-since">SINCE 1964</p>
+      <div class="hero-rotator" id="heroRotator">
+        <div class="hero-slide is-active">
+          <h1 class="hero-title">날마다<br />십자가 복음 앞에 서다</h1>
+          <p class="hero-sub">○○교회에 오신 당신을 환영합니다.</p>
+        </div>
+        <div class="hero-slide">
+          <h1 class="hero-title">내가 믿는 것은<br />무엇인가?</h1>
+          <a class="hero-cta" href="word.html?hc=open">하이델베르크 교리문답 바로 가기 →</a>
+        </div>
+        <div class="hero-slide">
+          <h1 class="hero-title">함께 기도해요</h1>
+          <a class="hero-cta" href="story.html#request">함께 드리는 기도 바로가기 →</a>
+        </div>
+      </div>
+      <div class="hero-verse">
+        “주의 말씀은 내 발에 등이요 내 길에 빛이니이다” <span>— 시편 119:105</span>
+      </div>
+      <div class="hero-dots" id="heroDots" aria-label="슬라이드 이동"></div>
+    </div>
+    <a href="#qt" class="hero-scroll" aria-label="아래로">↓</a>
+  </section>
+
+  <!-- ===== 공지사항 ===== -->
+  <section class="section" id="homeNotice">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">NOTICE</span>
+        <h2>공지사항</h2>
+      </div>
+      <div class="nt-wrap" id="homeNoticeBox"><p class="qt-loading">공지를 불러오는 중…</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 오늘의 QT ===== -->
+  <section id="qt" class="section section-alt">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">DAILY QT</span>
+        <h2>오늘의 말씀</h2>
+      </div>
+      <div class="qt-today" id="qtToday">
+        <p class="qt-loading">오늘의 말씀을 불러오는 중입니다…</p>
+      </div>
+      <div class="qt-listen-wrap">
+        <button type="button" class="qt-listen-btn" id="qtHomeTts" style="border:0;cursor:pointer;font:inherit">🔊 오늘의 말씀 듣기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 이번 주 말씀 하이라이트 ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">THIS SUNDAY</span>
+        <h2>이번 주 말씀</h2>
+      </div>
+      <div class="home-sermon" id="homeSermon"></div>
+    </div>
+  </section>
+
+  <!-- ===== 이번 주 주보 미리보기 ===== -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">THIS WEEK</span>
+        <h2>이번 주 주보</h2>
+      </div>
+      <div id="homeBulletin"></div>
+    </div>
+  </section>
+
+  <!-- ===== 우리들 소식 (앨범 미리보기) ===== -->
+  <section class="section" id="homeNews">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">ALBUM & NEWS</span>
+        <h2>우리들 소식</h2>
+      </div>
+      <div class="hn-box" id="hnBox">
+        <div class="hn-carousel" id="hnCarousel"><p class="qt-loading">소식을 불러오는 중…</p></div>
+        <div class="hn-actions">
+          <button type="button" class="btn btn-line" id="hnMore">소식 더 보기</button>
+          <button type="button" class="hn-add" id="hnAdd" hidden>＋ 사진 올리기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ○○교회 말씀지기 (AI 질문창) — 묵상 후 질문 ===== -->
+  <section id="askai" class="section askai">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">ASK · 말씀지기</span>
+        <h2>말씀, 더 궁금한 점이 있나요?</h2>
+        <p>오늘 묵상하며 궁금했던 용어나 의미를 ‘○○교회 말씀지기’에게 물어보세요.<br class="askai-br" />○○○ 목사님의 가르침을 학습한 AI가 함께 답을 찾아드립니다.</p>
+      </div>
+      <div class="askai-box">
+        <form class="askai-form" id="askForm" autocomplete="off">
+          <input type="text" id="askInput" placeholder="예: 이번 주 본문은 어떤 뜻인가요?" maxlength="300" aria-label="질문 입력" />
+          <button type="submit" id="askSend">물어보기</button>
+        </form>
+        <div class="askai-thread" id="askThread" hidden></div>
+        <div class="askai-suggest" id="askSuggest" aria-label="추천 질문"></div>
+        <p class="askai-note">⚠️ ‘○○교회 말씀지기’는 목사님 본인이 아닌 AI 도우미예요. 위급하거나 중대한 일은 목사님(010-0000-0000)께 직접 연락해 주세요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 5개 진입점 (흐름) ===== -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="flow-narrative">
+        <span class="eyebrow">WELCOME</span>
+        <p class="flow-line">처음 온 사람이 말씀을 만나고, 공동체 안에서 자라고, 세상으로 나아갑니다.</p>
+        <p>밖에서 안으로, 그리고 다시 밖으로 — 그 여정의 어디쯤에 계신가요?</p>
+      </div>
+
+      <div class="entry-grid">
+        <a class="entry-card" href="welcome.html">
+          <span class="entry-num">01</span>
+          <h3>처음 오셨나요</h3>
+          <p>예배 시간, 오시는 길, 새가족 등록까지. 부담 없이 들어오는 문입니다.</p>
+          <span class="entry-go">둘러보기 →</span>
+        </a>
+        <a class="entry-card" href="word.html">
+          <span class="entry-num">02</span>
+          <h3>말씀으로</h3>
+          <p>주일 설교와 교리, 매일 묵상. 신앙의 뿌리를 내리는 공간입니다.</p>
+          <span class="entry-go">말씀 보기 →</span>
+        </a>
+        <a class="entry-card" href="story.html">
+          <span class="entry-num">03</span>
+          <h3>우리 이야기</h3>
+          <p>성도들의 삶과 간증, 공동체의 온기가 담긴 이야기들.</p>
+          <span class="entry-go">이야기 →</span>
+        </a>
+        <a class="entry-card" href="story.html#board">
+          <span class="entry-num">04</span>
+          <h3>나눔터</h3>
+          <p>성도들이 글로 마음을 나누는 공간. 기도요청·간증·일상을 함께 나눠요.</p>
+          <span class="entry-go">나누러 가기 →</span>
+        </a>
+        <a class="entry-card" href="story.html#request">
+          <span class="entry-num">05</span>
+          <h3>기도나눔</h3>
+          <p>이번 주 기도 제목을 한마음으로. 공동체가 함께 기도합니다.</p>
+          <span class="entry-go">기도하기 →</span>
+        </a>
+        <a class="entry-card" href="world.html">
+          <span class="entry-num">06</span>
+          <h3>지역과 세상 속에서</h3>
+          <p>교회 안에만 머물지 않습니다. 지역과 열방을 섬기는 이야기.</p>
+          <span class="entry-go">섬김 보기 →</span>
+        </a>
+        <a class="entry-card" href="library.html">
+          <span class="entry-num">07</span>
+          <h3>자료실</h3>
+          <p>새가족·양육반·제자훈련 등 교육 자료를 한곳에서 내려받습니다. (로그인 교인 전용)</p>
+          <span class="entry-go">자료 보기 →</span>
+        </a>
+        <a class="entry-card" href="admin.html#tax">
+          <span class="entry-num">08</span>
+          <h3>연말정산</h3>
+          <p>기부금 영수증(연말정산)을 온라인으로 간편하게 신청하세요.</p>
+          <span class="entry-go">신청하기 →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 시작 CTA ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-flow">
+        <span class="cta-eyebrow">START HERE</span>
+        <h3>처음이라 어색하셔도 괜찮습니다</h3>
+        <div class="cta-btns">
+          <a class="btn btn-line" href="welcome.html">처음 방문 안내</a>
+          <a class="btn btn-line" href="word.html">이번 주 말씀 듣기</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== QT Modal ===== -->
+  <div class="modal" id="qtModal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box modal-box-qt" role="dialog" aria-modal="true" aria-label="매일 말씀 묵상">
+      <button class="modal-close" data-close aria-label="닫기">&times;</button>
+      <div class="qt-modal-v2">
+        <div class="qt-datebar" id="qtDateList"></div>
+        <div class="qt-detail" id="qtDetail"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/church.js?v=1"></script>
+
+  <script src="js/brand.js?v=1"></script>
+
+  <script src="js/config.js?v=20260730lib13"></script>
+  <script src="js/bulletins.js?v=20260730sum"></script>
+  <script src="js/layout.js?v=20260730dash2"></script>
+  <script src="js/counsel.js?v=20260730lib13"></script>
+  <script src="js/main.js?v=20260730wait"></script>
+  <script src="js/upload.js?v=20260730news1"></script>
+  <script src="js/categories.js?v=20260730news2"></script>
+  <script src="js/notices.js?v=20260730r3"></script>
+  <script src="js/home-news.js?v=20260730cam2"></script>
+</body>
+</html>
