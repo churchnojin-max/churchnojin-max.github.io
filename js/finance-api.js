@@ -162,6 +162,8 @@ window.WPF = (function () {
         if (f['이름'] && f['생년월일']) patch.member_key = f['이름'] + '|' + String(f['생년월일']).replace(/[^0-9]/g, '').slice(0, 8);
         return rest('PATCH', 'gyojeok?id=eq.' + encodeURIComponent(params.id), patch, 'return=minimal').then(function () { return { ok: true }; });
       }
+      case 'deleteGyojeok':
+        return rest('DELETE', 'gyojeok?id=eq.' + encodeURIComponent(params.id), null, 'return=minimal').then(function () { return { ok: true }; });
       case 'listVouchers':
         return Promise.all([
           restAll('offerings?select=*&order=id'),

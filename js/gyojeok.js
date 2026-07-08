@@ -116,7 +116,9 @@ console.log('[gyojeok.js] v20260701di');
 
   /* ── 교적 명단 ── */
   var ALL = [];
+  var membersPanel = null;
   function renderMembers(panel) {
+    membersPanel = panel;
     loading(panel);
     WPF.call('listGyojeok').then(function (r) {
       var ms = (r.members || []).filter(function (m) { return m['이름']; });
@@ -224,7 +226,7 @@ console.log('[gyojeok.js] v20260701di');
       box.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">' +
         '<div style="display:flex;gap:14px;align-items:center">' + avatar(cur, 84) + '<div><h3 style="margin:0;color:var(--accent,#032257)">' + esc(cur['이름']) + (cur['직책'] ? ' <span style="font-size:.8rem;color:#7b8794">' + esc(cur['직책']) + '</span>' : '') + '</h3><div style="color:#7b8794;font-size:.85rem;margin-top:3px">' + esc(cur['그룹'] || '') + (cur['세대주'] ? ' · ' + esc(cur['세대주']) + '의 가정' : '') + '</div></div></div>' +
-        '<div style="display:flex;gap:6px"><button class="btn btn-solid" id="gd_edit" style="padding:4px 14px">수정</button><button class="btn btn-line" id="gd_close" style="padding:4px 12px">닫기</button></div></div>' +
+        '<div style="display:flex;gap:6px"><button class="btn btn-solid" id="gd_edit" style="padding:4px 14px">수정</button><button class="btn btn-line" id="gd_delete" style="padding:4px 12px;color:#c0392b;border-color:#e6b0aa">삭제</button><button class="btn btn-line" id="gd_close" style="padding:4px 12px">닫기</button></div></div>' +
         '<div style="display:flex;gap:18px;flex-wrap:wrap"><div style="flex:1;min-width:240px">' +
         row('생년월일', birthOf(cur) + (age ? ' (' + age + ')' : '')) + row('성별', cur['성별']) + row('휴대폰', fmtPhone(cur['휴대폰'])) + row('신급', cur['신급']) + row('세례일', cur['세례일']) +
         '</div><div style="flex:1;min-width:240px">' +
@@ -234,6 +236,18 @@ console.log('[gyojeok.js] v20260701di');
         '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--accent,#032257)">가족 관계</b><button class="btn btn-line" id="gd_family" style="padding:3px 12px;font-size:.8rem">👪 가족 구성/수정</button></div><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.86rem"><thead><tr><th>이름</th><th>관계</th><th>생년월일</th><th>직책</th></tr></thead><tbody>' + famRows + '</tbody></table></div></div>';
       box.querySelector('#gd_close').onclick = close;
       box.querySelector('#gd_edit').onclick = function () { editMode(cur); };
+      box.querySelector('#gd_delete').onclick = function () {
+        var head = cur['세대주'] || cur['이름'];
+        var fam = ALL.filter(function (x) { return (x['세대주'] || x['이름']) === head; });
+        var warn = (cur['이름'] === head && fam.length > 1)
+          ? '\n\n⚠ ' + cur['이름'] + '님은 세대주입니다. 삭제하면 가족 연결이 끊어질 수 있으니, 먼저 가계도에서 세대주를 변경하는 것을 권합니다.' : '';
+        if (!confirm(cur['이름'] + '님의 교적을 삭제할까요?\n삭제하면 되돌릴 수 없습니다.' + warn)) return;
+        var delBtn = box.querySelector('#gd_delete'); delBtn.disabled = true; delBtn.textContent = '삭제 중…';
+        WPF.call('deleteGyojeok', { id: cur['교적ID'] }).then(function () {
+          close();
+          if (membersPanel && document.body.contains(membersPanel)) renderMembers(membersPanel);
+        }).catch(function (e) { delBtn.disabled = false; delBtn.textContent = '삭제'; alert('삭제 실패: ' + e.message); });
+      };
       box.querySelector('#gd_family').onclick = function () { familyMode(cur); };
       Array.prototype.forEach.call(box.querySelectorAll('.gd-fam'), function (a) { a.onclick = function (e) { e.preventDefault(); var f = ALL.filter(function (x) { return String(x['매칭키']) === a.dataset.key; })[0]; if (f) viewMode(f); }; });
       loadOngoingEdu().then(function () {
