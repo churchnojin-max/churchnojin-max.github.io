@@ -16,25 +16,44 @@
   const titleEl = document.getElementById("authTitle");
   const subEl = document.getElementById("authSubtitle");
   const nameField = document.getElementById("nameField");
+  const emailField = document.getElementById("emailField");
+  const passwordField = document.getElementById("passwordField");
+  const passwordInput = passwordField ? passwordField.querySelector("input") : null;
+  const passwordLabel = document.getElementById("passwordLabel");
+  const emailInput = form ? form.querySelector('input[name="email"]') : null;
   const channelField = document.getElementById("channelField");
+  const authOptions = document.getElementById("authOptions");
+  const authSwitch = document.querySelector(".auth-switch");
+  const rememberChk = document.getElementById("rememberEmail");
+  const forgotBtn = document.getElementById("authForgot");
   const submitBtn = document.getElementById("authSubmit");
   const toggleBtn = document.getElementById("authToggle");
   const kakaoBtn = document.getElementById("kakaoLogin"); // 이메일 전용이면 없음(null)
 
-  let mode = "login"; // 'login' | 'signup'
+  const REMEMBER_KEY = "nojin_saved_email";
+
+  let mode = "login"; // 'login' | 'signup' | 'reset'(새 비밀번호 설정)
 
   function openModal() { modal.hidden = false; document.body.style.overflow = "hidden"; }
   function closeModal() { modal.hidden = true; document.body.style.overflow = ""; if (msg) msg.hidden = true; }
 
   function setMode(m) {
     mode = m;
-    titleEl.textContent = m === "login" ? "로그인" : "회원가입";
-    submitBtn.textContent = m === "login" ? "로그인" : "회원가입";
-    nameField.hidden = m === "login";
-    if (channelField) channelField.hidden = m === "login";
-    toggleBtn.textContent = m === "login" ? "회원가입" : "로그인하기";
-    document.querySelector(".auth-switch").firstChild.textContent =
-      m === "login" ? "처음이신가요? " : "이미 회원이신가요? ";
+    const isReset = m === "reset";
+    titleEl.textContent = isReset ? "새 비밀번호 설정" : m === "login" ? "로그인" : "회원가입";
+    submitBtn.textContent = isReset ? "비밀번호 변경" : m === "login" ? "로그인" : "회원가입";
+    nameField.hidden = m !== "signup";
+    if (channelField) channelField.hidden = m !== "signup";
+    // 재설정 모드: 이메일 숨기고 비밀번호만 새로 입력
+    if (emailField) emailField.hidden = isReset;
+    if (emailInput) emailInput.required = !isReset;
+    if (passwordLabel) passwordLabel.textContent = isReset ? "새 비밀번호" : "비밀번호";
+    if (passwordInput) passwordInput.setAttribute("autocomplete", m === "login" ? "current-password" : "new-password");
+    if (authOptions) authOptions.hidden = m !== "login";
+    if (authSwitch) authSwitch.hidden = isReset;
+    if (toggleBtn) toggleBtn.textContent = m === "login" ? "회원가입" : "로그인하기";
+    if (authSwitch && authSwitch.firstChild)
+      authSwitch.firstChild.textContent = m === "login" ? "처음이신가요? " : "이미 회원이신가요? ";
     msg.hidden = true;
   }
 
@@ -89,11 +108,39 @@
     }
   }
 
+  // 저장된 이메일 미리 채우기
+  if (emailInput) {
+    try {
+      const saved = localStorage.getItem(REMEMBER_KEY);
+      if (saved) { emailInput.value = saved; if (rememberChk) rememberChk.checked = true; }
+    } catch (_) {}
+  }
+
   // 모달 동작
   if (modal) {
     modal.addEventListener("click", (e) => { if (e.target.hasAttribute("data-close")) closeModal(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) closeModal(); });
-    toggleBtn.addEventListener("click", () => setMode(mode === "login" ? "signup" : "login"));
+    toggleBtn.addEventListener("click", () => setMode(mode === "signup" ? "login" : "signup"));
+
+    // 비밀번호 찾기: 입력한 이메일로 재설정 메일 발송
+    if (forgotBtn) {
+      forgotBtn.addEventListener("click", async () => {
+        const email = (emailInput && emailInput.value || "").trim();
+        if (!email) { showMsg("먼저 이메일을 입력해 주세요.", false); if (emailInput) emailInput.focus(); return; }
+        forgotBtn.disabled = true;
+        try {
+          const { error } = await sb.auth.resetPasswordForEmail(email, {
+            redirectTo: location.origin + location.pathname,
+          });
+          if (error) throw error;
+          showMsg("비밀번호 재설정 메일을 보냈습니다. 메일의 링크를 눌러 새 비밀번호를 설정해 주세요.", true);
+        } catch (err) {
+          showMsg("오류: " + (err.message || "다시 시도해 주세요."), false);
+        } finally {
+          forgotBtn.disabled = false;
+        }
+      });
+    }
 
     if (kakaoBtn) {
       kakaoBtn.addEventListener("click", async () => {
@@ -111,7 +158,13 @@
       const email = fd.get("email"), password = fd.get("password"), name = (fd.get("name") || "").trim();
       submitBtn.disabled = true;
       try {
-        if (mode === "signup") {
+        if (mode === "reset") {
+          // 메일 링크로 진입한 상태(복구 세션)에서 새 비밀번호 저장
+          const { error } = await sb.auth.updateUser({ password });
+          if (error) throw error;
+          showMsg("비밀번호가 변경되었습니다. 이제 로그인됩니다.", true);
+          setTimeout(() => { closeModal(); location.reload(); }, 1200);
+        } else if (mode === "signup") {
           const { error } = await sb.auth.signUp({
             email, password, options: { data: { name: name || email.split("@")[0] } },
           });
@@ -120,6 +173,11 @@
         } else {
           const { error } = await sb.auth.signInWithPassword({ email, password });
           if (error) throw error;
+          // 이메일 기억하기
+          try {
+            if (rememberChk && rememberChk.checked) localStorage.setItem(REMEMBER_KEY, email);
+            else localStorage.removeItem(REMEMBER_KEY);
+          } catch (_) {}
           closeModal();
           location.reload();
         }
@@ -131,7 +189,15 @@
     });
   }
 
-  sb.auth.onAuthStateChange(() => renderAuth());
+  sb.auth.onAuthStateChange((event) => {
+    // 비밀번호 재설정 메일 링크로 돌아오면 새 비밀번호 입력 폼을 띄운다
+    if (event === "PASSWORD_RECOVERY" && modal) {
+      setMode("reset");
+      openModal();
+      if (passwordInput) passwordInput.focus();
+    }
+    renderAuth();
+  });
   renderAuth();
   window.dispatchEvent(new CustomEvent("sb-ready", { detail: { sb } }));
 })();

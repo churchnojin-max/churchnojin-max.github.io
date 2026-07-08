@@ -1156,6 +1156,11 @@ ul { list-style: none; }
 .auth-msg.ok { color: var(--accent); }
 .auth-switch { margin-top: 18px; font-size: .88rem; color: var(--ink-soft); }
 .auth-switch button { background: none; border: 0; color: var(--accent); font-weight: 700; cursor: pointer; font-family: inherit; }
+.auth-options { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: -2px; font-size: .85rem; }
+.auth-remember { display: flex; align-items: center; gap: 6px; color: var(--ink-soft); cursor: pointer; user-select: none; }
+.auth-remember input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+.auth-forgot { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; cursor: pointer; font-family: inherit; font-size: .85rem; }
+.auth-forgot:hover { text-decoration: underline; }
 
 .board-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .board-list { display: flex; flex-direction: column; gap: 12px; }

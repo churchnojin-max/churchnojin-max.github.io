@@ -130,9 +130,13 @@
           <p id="authSubtitle">${CH_NAME} 나눔터에 오신 것을 환영합니다.</p>
         </div>
         <form id="authForm" class="auth-form">
-          <div class="form-field" id="nameField" hidden><label>이름</label><input type="text" name="name" placeholder="홍길동" /></div>
-          <div class="form-field"><label>이메일</label><input type="email" name="email" required placeholder="name@example.com" /></div>
-          <div class="form-field"><label>비밀번호</label><input type="password" name="password" required minlength="6" placeholder="6자 이상" /></div>
+          <div class="form-field" id="nameField" hidden><label>이름</label><input type="text" name="name" autocomplete="name" placeholder="홍길동" /></div>
+          <div class="form-field" id="emailField"><label>이메일</label><input type="email" name="email" required autocomplete="username" placeholder="name@example.com" /></div>
+          <div class="form-field" id="passwordField"><label id="passwordLabel">비밀번호</label><input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="6자 이상" /></div>
+          <div class="auth-options" id="authOptions">
+            <label class="auth-remember"><input type="checkbox" id="rememberEmail" /> 이메일 기억하기</label>
+            <button type="button" class="auth-forgot" id="authForgot">비밀번호 찾기</button>
+          </div>
           <p class="auth-msg" id="authMsg" hidden></p>
           <button type="submit" class="btn btn-solid auth-submit" id="authSubmit">로그인</button>
         </form>
@@ -483,7 +487,7 @@
     sdk.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     sdk.onload = function () {
       const auth = document.createElement("script");
-      auth.src = "js/auth.js?v=20260701di";
+      auth.src = "js/auth.js?v=20260709auth1";
       document.body.appendChild(auth);
     };
     // SDK 로드 실패 시에도 버튼은 유지(클릭 시 모달은 위 핸들러가 처리)
