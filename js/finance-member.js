@@ -19,7 +19,7 @@ console.log('[finance-member.js] v20260701dj');
   // 로그인 토큰이 준비될 때까지 잠깐 대기(auth.js 로딩 시차)
   var tries = 0;
   function waitLogin() {
-    if (!window.FINANCE_API_URL) { box.hidden = true; return; }
+    if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) { box.hidden = true; return; }
     if (window.WPF && WPF.token()) { box.hidden = false; loadMe(); return; }
     if (tries++ < 20) { setTimeout(waitLogin, 400); return; }
     box.hidden = true; // 끝내 비로그인 → 섹션 숨김

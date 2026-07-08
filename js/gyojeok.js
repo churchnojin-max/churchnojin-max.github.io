@@ -17,7 +17,7 @@ console.log('[gyojeok.js] v20260701di');
 
   var tries = 0, tab = 'access';
   function boot() {
-    if (!window.FINANCE_API_URL) { root.innerHTML = msgCard('준비 중', '재정 API가 설정되지 않았습니다.'); return; }
+    if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) { root.innerHTML = msgCard('준비 중', '교적 기능을 사용하려면 Supabase 연결이 필요합니다.'); return; }
     if (!(window.WPF && WPF.token())) {
       if (tries++ < 20) { setTimeout(boot, 400); return; }
       root.innerHTML = msgCard('로그인이 필요합니다', '상단에서 로그인 후 이용해 주세요.'); return;

@@ -22,7 +22,7 @@ console.log('[affairs.js] v20260701dj');
   function findMember(key) { if (!key) return null; for (var i = 0; i < MEMBERS.length; i++) if (String(MEMBERS[i].key) === String(key)) return MEMBERS[i]; return null; }
   // 교적은 구글시트에만 있으므로 Apps Script API(listGyojeok, 관리자 권한)로 1회 로드
   function loadMembers() {
-    if (membersLoaded || !window.WPF || !window.FINANCE_API_URL) return;
+    if (membersLoaded || !window.WPF || !window.SUPABASE_URL) return;
     WPF.call('listGyojeok').then(function (r) {
       MEMBERS = (r.members || []).map(function (m) {
         return { name: m['이름'], key: m['매칭키'], birth: ymd(m['생년월일']),
@@ -236,7 +236,7 @@ console.log('[affairs.js] v20260701dj');
     function fileMid(f) { return f.member_key || ('name:' + (f.member_name || '')); }
     function ensureMembers() {
       if (membersLoaded && MEMBERS.length) return Promise.resolve();
-      if (!window.WPF || !window.FINANCE_API_URL) return Promise.resolve();
+      if (!window.WPF || !window.SUPABASE_URL) return Promise.resolve();
       return WPF.call('listGyojeok').then(function (r) {
         MEMBERS = (r.members || []).map(function (m) { return { name: m['이름'], key: m['매칭키'], birth: ymd(m['생년월일']), role: m['직책'] || '', group: m['그룹'] || m['소속그룹'] || '', head: m['세대주'] || '', rel: m['관계'] || '' }; }).filter(function (m) { return m.name; });
         membersLoaded = true;

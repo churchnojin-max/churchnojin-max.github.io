@@ -77,7 +77,7 @@ console.log('[dashboard.js] v20260705qtfallback');
   // ── 로그인 대기 → 정회원 확인 ──
   var tries = 0;
   function waitLogin() {
-    if (!window.FINANCE_API_URL) { showLocked('준비 중', '로그인 기능이 아직 설정되지 않았습니다.'); return; }
+    if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) { showLocked('준비 중', '대시보드를 사용하려면 Supabase 연결이 필요합니다.'); return; }
     if (window.WPF && WPF.token()) { boot(); return; }
     if (tries++ < 20) { setTimeout(waitLogin, 400); return; }
     showLocked('로그인이 필요합니다', '대시보드는 정회원 로그인 후 이용할 수 있습니다.', true);
