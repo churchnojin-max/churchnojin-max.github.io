@@ -237,6 +237,42 @@
       };
     }
 
+    // ===== 비밀번호 변경 =====
+    const pwForm = document.getElementById("pwForm");
+    const pwMsg = document.getElementById("pwMsg");
+    if (pwForm) {
+      pwForm.hidden = false;
+      pwForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const p1 = pwForm.elements.pw1.value, p2 = pwForm.elements.pw2.value;
+        pwMsg.style.color = "#c0392b";
+        if (p1.length < 6) { pwMsg.textContent = "비밀번호는 6자 이상이어야 합니다."; return; }
+        if (p1 !== p2) { pwMsg.textContent = "두 비밀번호가 일치하지 않습니다."; return; }
+        const btn = pwForm.querySelector('button[type="submit"]');
+        btn.disabled = true; pwMsg.style.color = "var(--ink-soft)"; pwMsg.textContent = "변경 중…";
+        try {
+          const sess = localSession();
+          const token = sess && sess.access_token;
+          if (!token) throw new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
+          const res = await fetch(window.SUPABASE_URL + "/auth/v1/user", {
+            method: "PUT",
+            headers: { apikey: window.SUPABASE_ANON_KEY, "Content-Type": "application/json", Authorization: "Bearer " + token },
+            body: JSON.stringify({ password: p1 }),
+          });
+          const txt = await res.text();
+          let d = null; try { d = txt ? JSON.parse(txt) : null; } catch (e2) { d = null; }
+          if (!res.ok) throw new Error((d && (d.msg || d.message || d.error_description || d.error)) || ("HTTP " + res.status));
+          pwForm.reset();
+          pwMsg.style.color = "var(--accent)"; pwMsg.textContent = "비밀번호가 변경되었습니다 ✓";
+        } catch (err) {
+          pwMsg.style.color = "#c0392b"; pwMsg.textContent = "오류: " + ((err && err.message) || err);
+        } finally {
+          btn.disabled = false;
+          setTimeout(() => { pwMsg.textContent = ""; }, 4000);
+        }
+      };
+    }
+
     const adminRows = await api("GET", `admins?uid=eq.${me.id}&select=uid`);
     const isAdmin = Array.isArray(adminRows) && adminRows.length > 0;
 
