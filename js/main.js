@@ -118,23 +118,79 @@ if (sermonDeck) {
   });
 }
 
-// ===== 1-2. 이 달의 봉사위원 (현재 달 기준 자동 표시) =====
-const committeeBox = document.getElementById("committee");
-if (committeeBox && typeof COMMITTEES !== "undefined" && COMMITTEES.length) {
+// ===== 1-2. 섬기는 사람들 + 이 달의 봉사위원 (홈페이지 설정/DB 우선, 없으면 하드코딩) =====
+(function () {
+  const escH = (t) => String(t == null ? "" : t).replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
   const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  // 현재 달과 일치하는 항목, 없으면 현재 달 이하 중 가장 최근, 그래도 없으면 첫 항목
-  const sorted = [...COMMITTEES].sort((a, b) => (a.month < b.month ? 1 : -1));
-  const c = sorted.find((x) => x.month === ym) || sorted.find((x) => x.month <= ym) || sorted[0];
-  committeeBox.innerHTML = `
-    <div class="committee-head">
-      <span class="w-en light">SERVICE TEAM</span>
-      <h4>${c.label} 봉사위원</h4>
-    </div>
-    <div class="committee-rows">
-      ${c.roles.map((r) => `<div class="committee-item"><span class="c-role">${r.role}</span><p class="c-names">${r.names}</p></div>`).join("")}
-    </div>`;
-}
+  const curYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  // 월 항목을 {label, roles:[{role,names}]} 표준형으로 변환
+  function monLabel(ym) { const mm = (ym || "").split("-")[1]; return mm ? Number(mm) + "월" : ""; }
+  function normMonth(m) {
+    if (!m) return null;
+    if (Array.isArray(m.roles)) return { label: m.label || monLabel(m.month), roles: m.roles.filter((r) => r && r.names) };
+    // 교회행정(DB) 형태: offering(헌금위원)/guide(안내위원)/parking(주차·사찰)
+    const roles = [];
+    if (m.offering) roles.push({ role: "헌금위원", names: m.offering });
+    if (m.guide) roles.push({ role: "안내위원", names: m.guide });
+    if (m.parking) roles.push({ role: "주차 · 사찰", names: m.parking });
+    return { label: m.label || monLabel(m.month), roles };
+  }
+  function pickCurrent(list) {
+    if (!list || !list.length) return null;
+    const sorted = [...list].sort((a, b) => (a.month < b.month ? 1 : -1));
+    return sorted.find((x) => x.month === curYM) || sorted.find((x) => x.month <= curYM) || sorted[0];
+  }
+  function renderCommittee(monthItem) {
+    const box = document.getElementById("committee");
+    if (!box) return;
+    const c = normMonth(monthItem);
+    if (!c || !c.roles.length) { box.innerHTML = ""; return; }
+    box.innerHTML = `
+      <div class="committee-head">
+        <span class="w-en light">SERVICE TEAM</span>
+        <h4>${escH(c.label)} 봉사위원</h4>
+      </div>
+      <div class="committee-rows">
+        ${c.roles.map((r) => `<div class="committee-item"><span class="c-role">${escH(r.role)}</span><p class="c-names">${escH(r.names)}</p></div>`).join("")}
+      </div>`;
+  }
+
+  // 봉사위원: DB(교회행정 통합) 우선, 없으면 하드코딩 COMMITTEES 폴백
+  const hardcoded = (typeof COMMITTEES !== "undefined" && COMMITTEES.length) ? COMMITTEES : null;
+  if (document.getElementById("committee")) {
+    if (window.SiteSettings) {
+      window.SiteSettings.committees()
+        .then((data) => {
+          const months = data && data.months;
+          if (months && months.length) renderCommittee(pickCurrent(months));
+          else if (hardcoded) renderCommittee(pickCurrent(hardcoded));
+        })
+        .catch(() => { if (hardcoded) renderCommittee(pickCurrent(hardcoded)); });
+    } else if (hardcoded) {
+      renderCommittee(pickCurrent(hardcoded));
+    }
+  }
+
+  // 섬기는 사람들: 설정값이 있으면 카드/행/기관부서 덮어쓰기(없으면 HTML 하드코딩 유지)
+  if (window.SiteSettings && document.getElementById("servantCards")) {
+    const rowsHtml = (arr) => arr
+      .filter((r) => r && (r.label || r.names))
+      .map((r) => `<div class="servant-row"><span class="row-label">${escH(r.label)}</span><span class="row-names">${escH(r.names)}</span></div>`)
+      .join("");
+    window.SiteSettings.homepage().then((hp) => {
+      const s = hp && hp.servants;
+      if (!s) return;
+      if (Array.isArray(s.cards) && s.cards.length) {
+        document.getElementById("servantCards").innerHTML = s.cards
+          .map((c) => `<div class="servant-card${c.highlight ? " highlight" : ""}"><span class="role">${escH(c.role)}</span><span class="name">${escH(c.name) || "○○○"}</span></div>`)
+          .join("");
+      }
+      if (Array.isArray(s.rows)) { const el = document.getElementById("servantRows"); if (el) el.innerHTML = rowsHtml(s.rows); }
+      if (Array.isArray(s.org)) { const el = document.getElementById("servantOrg"); if (el) el.innerHTML = rowsHtml(s.org); }
+    });
+  }
+})();
 
 // ===== 공용 TTS(글 읽어주기) — 브라우저 내장 Web Speech(무료). 한국어 목소리 자동 선택 =====
 // 긴 글은 문장 단위로 나눠 순차 재생(크롬의 긴 발화 끊김 버그 회피). window.WPCTts.toggle/stop 로 사용.

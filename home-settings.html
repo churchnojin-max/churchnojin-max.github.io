@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>홈페이지 설정 | ○○교회</title>
+  <meta name="robots" content="noindex" />
+  <link rel="manifest" href="manifest.json?v=20260730lib13" />
+  <meta name="theme-color" content="#223350" />
+  <link rel="icon" href="images/favicon-32.png?v=20260730lib13" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png?v=20260730lib13" />
+  <meta name="apple-mobile-web-app-title" content="○○교회" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=20260709hs1" />
+</head>
+<body>
+
+  <section class="page-hero">
+    <p class="ph-eyebrow">SITE SETTINGS</p>
+    <h1>홈페이지 설정</h1>
+    <p>관리자만 접근할 수 있습니다. 교회 로고, 섬기는 사람들, 월별 봉사자를 여기서 관리합니다.</p>
+  </section>
+
+  <section class="block">
+    <div class="container" style="max-width:900px">
+
+      <!-- 권한 없음 안내 -->
+      <div class="member-lock" id="hsLock" hidden>
+        <div class="lock-icon">🔒</div>
+        <h3 id="hsLockTitle">관리자 전용</h3>
+        <p id="hsLockMsg">관리자 계정으로 로그인해 주세요.</p>
+      </div>
+
+      <div id="hsLoading"><p class="qt-loading">확인 중입니다…</p></div>
+
+      <!-- 설정 본문(관리자 확인 후 표시) -->
+      <div id="hsBody" hidden>
+
+        <!-- 1) 교회 로고 -->
+        <div class="form-card hs-card">
+          <h3 class="sub-title" style="text-align:left;margin-bottom:6px;">교회 로고</h3>
+          <p class="hs-help">헤더·설치 배너·로그인 창에 표시되는 로고입니다. 정사각형 PNG(투명 배경) 권장. 업로드하면 자동으로 작게 최적화되어 저장됩니다.</p>
+          <div class="hs-logo-row">
+            <div class="hs-logo-preview"><img id="hsLogoImg" src="images/icon-192.png?v=20260625e" alt="현재 로고" /></div>
+            <div class="hs-logo-actions">
+              <label class="btn btn-line" style="cursor:pointer;">로고 이미지 선택
+                <input type="file" id="hsLogoFile" accept="image/png,image/jpeg,image/webp" hidden />
+              </label>
+              <button type="button" class="btn btn-line" id="hsLogoReset">기본 로고로 되돌리기</button>
+              <p class="hs-logo-note" id="hsLogoNote"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2) 섬기는 사람들 -->
+        <div class="form-card hs-card">
+          <h3 class="sub-title" style="text-align:left;margin-bottom:6px;">섬기는 사람들</h3>
+          <p class="hs-help">‘처음 오셨나요’ 페이지의 섬기는 사람들 목록입니다. 이름은 <b>· </b>(가운뎃점)으로 구분해 여러 명 입력할 수 있습니다.</p>
+
+          <h4 class="hs-sub">목회자 카드</h4>
+          <div id="hsCards" class="hs-list"></div>
+          <button type="button" class="btn btn-line hs-add" id="hsCardAdd">＋ 카드 추가</button>
+
+          <h4 class="hs-sub">직분자</h4>
+          <div id="hsRows" class="hs-list"></div>
+          <button type="button" class="btn btn-line hs-add" id="hsRowAdd">＋ 줄 추가</button>
+
+          <h4 class="hs-sub">기관 부서 봉사자</h4>
+          <div id="hsOrg" class="hs-list"></div>
+          <button type="button" class="btn btn-line hs-add" id="hsOrgAdd">＋ 줄 추가</button>
+
+          <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;align-items:center;">
+            <button type="button" class="btn btn-solid" id="hsServSave">섬기는 사람들 저장</button>
+            <span class="profile-msg" id="hsServMsg"></span>
+          </div>
+        </div>
+
+        <!-- 3) 월별 봉사자 (연 단위) -->
+        <div class="form-card hs-card">
+          <h3 class="sub-title" style="text-align:left;margin-bottom:6px;">월별 봉사자 <span style="font-weight:400;font-size:.85rem;color:var(--ink-soft)">(연 단위)</span></h3>
+          <p class="hs-help">홈 화면 하단 ‘이달의 봉사위원’과 <b>주보 제작</b>이 함께 사용하는 데이터입니다. 연도를 고르고 월별로 입력하세요. 비워 둔 달은 저장되지 않습니다.</p>
+          <div class="hs-year-row">
+            <label>연도</label>
+            <select id="hsYear"></select>
+          </div>
+          <div style="overflow:auto;margin-top:12px;">
+            <table class="fin-table hs-com-table">
+              <thead><tr><th style="width:64px">월</th><th>헌금위원</th><th>안내위원</th><th>주차 · 사찰</th></tr></thead>
+              <tbody id="hsComBody"></tbody>
+            </table>
+          </div>
+          <div class="form-actions" style="margin-top:20px;display:flex;gap:10px;align-items:center;">
+            <button type="button" class="btn btn-solid" id="hsComSave">월별 봉사자 저장</button>
+            <span class="profile-msg" id="hsComMsg"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <script src="js/church.js?v=1"></script>
+  <script src="js/brand.js?v=1"></script>
+  <script src="js/config.js?v=20260730lib13"></script>
+  <script src="js/layout.js?v=20260709hs1"></script>
+  <script src="js/home-settings.js?v=20260709hs1"></script>
+</body>
+</html>

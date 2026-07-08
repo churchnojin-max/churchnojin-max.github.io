@@ -1163,6 +1163,30 @@ ul { list-style: none; }
 .auth-forgot { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; cursor: pointer; font-family: inherit; font-size: .85rem; }
 .auth-forgot:hover { text-decoration: underline; }
 
+/* ===== 홈페이지 설정 페이지 ===== */
+.hs-card { max-width: 100%; margin-bottom: 26px; text-align: left; }
+.hs-help { color: var(--ink-soft); font-size: .9rem; line-height: 1.6; margin: 0 0 16px; }
+.hs-sub { margin: 22px 0 10px; font-size: .95rem; color: var(--accent); font-weight: 700; }
+.hs-list { display: flex; flex-direction: column; gap: 8px; }
+.hs-item { display: flex; align-items: center; gap: 8px; }
+.hs-in { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; font-size: .9rem; background: #fff; }
+.hs-in:focus { outline: none; border-color: var(--accent); }
+.hs-chk { display: flex; align-items: center; gap: 5px; font-size: .82rem; color: var(--ink-soft); white-space: nowrap; cursor: pointer; }
+.hs-chk input { accent-color: var(--accent); }
+.hs-del { flex: 0 0 auto; width: 32px; height: 32px; border: 1px solid var(--line); background: #fff; border-radius: 8px; color: #c0392b; cursor: pointer; font-size: .9rem; line-height: 1; }
+.hs-del:hover { background: #fbeceb; border-color: #e6b3ad; }
+.hs-add { margin-top: 10px; padding: 7px 16px; font-size: .85rem; }
+.hs-logo-row { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+.hs-logo-preview { width: 92px; height: 92px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 16px; background: var(--paper-alt, #f4f1ea); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hs-logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.hs-logo-actions { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.hs-logo-note { font-size: .84rem; margin: 2px 0 0; min-height: 1em; }
+.hs-year-row { display: flex; align-items: center; gap: 10px; }
+.hs-year-row select { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; font-size: .9rem; background: #fff; }
+.hs-com-table th { font-size: .82rem; color: var(--ink-soft); text-align: left; padding: 6px 8px; }
+.hs-com-table td { padding: 4px 8px; }
+.hs-com-table .hs-in { padding: 7px 10px; font-size: .86rem; }
+
 .board-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .board-list { display: flex; flex-direction: column; gap: 12px; }
 .board-item { text-align: left; width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; cursor: pointer; font-family: inherit; transition: .25s; }

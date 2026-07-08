@@ -42,6 +42,7 @@
       { href: "finance.html", label: "재정관리" },
       { href: "gyojeok.html", label: "교적관리" },
       { href: "affairs.html", label: "목회행정" },
+      { href: "home-settings.html", label: "홈페이지 설정" },
     ] },
   ];
 
@@ -88,6 +89,39 @@
       </div>
     </header>`;
   document.body.insertAdjacentHTML("afterbegin", headerHTML);
+
+  // ===== 홈페이지 설정(공개 읽기) — 로고 · 섬기는 사람들 · 월별 봉사위원 =====
+  // church_settings 의 공개 키를 익명 anon 키로 1회씩 읽어 캐시한다.
+  // (쓰기는 관리자 전용. 공개 읽기 정책은 supabase/homepage-settings.sql 참고)
+  window.SiteSettings = (function () {
+    const cache = {};
+    function fetchKey(key) {
+      if (cache[key]) return cache[key];
+      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+        cache[key] = Promise.resolve(null);
+        return cache[key];
+      }
+      const url = window.SUPABASE_URL + "/rest/v1/church_settings?key=eq." + key + "&select=data";
+      cache[key] = fetch(url, { headers: { apikey: window.SUPABASE_ANON_KEY } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((rows) => (rows && rows[0] && rows[0].data) || null)
+        .catch(() => null);
+      return cache[key];
+    }
+    return {
+      homepage: () => fetchKey("homepage"),
+      committees: () => fetchKey("committees"),
+    };
+  })();
+
+  // 헤더/설치배너/로그인창 로고를 설정값(dataURL)으로 교체
+  window.SiteSettings.homepage().then((hp) => {
+    const logo = hp && hp.logo;
+    if (!logo) return;
+    ["#header .logo-mark", ".install-icon", ".auth-logo"].forEach((sel) => {
+      document.querySelectorAll(sel).forEach((img) => { img.src = logo; });
+    });
+  });
 
   // ===== 푸터 =====
   const footerHTML = `
