@@ -1,5 +1,5 @@
 /****************************************************************
- * ○○교회 — 파일 업로드 중계 Worker (Cloudflare Workers + R2)
+ * 노진교회 — 파일 업로드 중계 Worker (Cloudflare Workers + R2)
  * --------------------------------------------------------------
  *  - POST   /upload        로그인 교인이 파일 업로드 → R2 저장 → { url, key } 반환
  *  - GET    /f/<key>       저장된 파일 보기/다운로드 (공개, 1년 캐시)
@@ -9,8 +9,8 @@
  *    1) R2 버킷 생성 (예: church-uploads)
  *    2) 이 Worker 생성 후 이 코드 붙여넣기
  *    3) Settings → Variables and Secrets 에 일반 변수 2개 추가
- *         SUPABASE_URL       = https://YOUR-PROJECT.supabase.co
- *         SUPABASE_ANON_KEY  = YOUR_SUPABASE_ANON_KEY
+ *         SUPABASE_URL       = https://vwuzmklacdwiqyqjrxyt.supabase.co
+ *         SUPABASE_ANON_KEY  = (js/config.js 의 window.SUPABASE_ANON_KEY 값)
  *    4) Settings → Bindings → R2 bucket 추가
  *         변수 이름(Variable name) = BUCKET   ← 반드시 이 이름
  *         버킷 = 위에서 만든 church-uploads
@@ -18,11 +18,10 @@
  *       window.R2_UPLOAD_URL 에 넣기
  ****************************************************************/
 
-// 업로드를 허용할 출처(우리 홈페이지)
+// 업로드를 허용할 출처(우리 홈페이지). [0]은 미매칭 시 기본값이므로 실제 도메인을 먼저.
 const ALLOW_ORIGINS = [
-  "https://example.com",
-  "https://www.example.com",
-  "https://kds08200820-del.github.io",
+  "https://churchnojin-max.github.io",
+  "http://localhost:8102",
   "http://localhost:5500",
   "http://127.0.0.1:5500",
 ];
