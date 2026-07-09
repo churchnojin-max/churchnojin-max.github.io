@@ -10,29 +10,29 @@
 
   var DEFAULT_LOGO = "images/icon-192.png?v=20260625e";
 
-  // 처음 편집 시 채워질 기본값(현재 welcome.html 내용과 동일)
+  // 주보 기준 기본값(welcome.html 폴백과 동일). '주보 기준으로 채우기'로 불러올 수 있음.
   var DEFAULT_SERVANTS = {
     cards: [
-      { role: "원로목사", name: "", highlight: false },
+      { role: "원로목사", name: "신동열", highlight: false },
       { role: "담임목사", name: "손병민", highlight: true },
-      { role: "협동목사", name: "", highlight: false },
     ],
     rows: [
-      { label: "원로장로", names: "조용상" },
-      { label: "시무장로", names: "신용화" },
-      { label: "안수집사", names: "서재필 · 임수만 · 이상돈" },
-      { label: "시무권사", names: "한춘택 · 이국휘 · 조희숙 · 최영자 · 유영자 · 이은숙 · 권술이 · 차영선 · 고영례 · 이삼순 · 조혜영 · 하경순 · 김애자 · 박경자 · 석만순" },
-      { label: "은퇴권사", names: "홍영숙 · 양재순 · 이기월" },
-      { label: "명예권사", names: "조용순 · 한분수" },
+      { label: "시무장로", names: "문명수" },
+      { label: "안수집사", names: "김종학" },
+      { label: "시무권사", names: "최지연 · 유금순 · 오성자 · 이경순" },
+      { label: "은퇴권사", names: "장정숙" },
+      { label: "협동권사", names: "박성애" },
     ],
     org: [
-      { label: "구제선교위원장", names: "이은숙" },
-      { label: "남전도회장", names: "조용상" },
-      { label: "마리아회장", names: "석만순" },
-      { label: "권사회장", names: "조희숙" },
-      { label: "주일학교부장", names: "김보라" },
-      { label: "중고등부부장", names: "김애자" },
-      { label: "피아노 반주", names: "김보라 · 신은경" },
+      { label: "루디아전도회", names: "회장 김은희 · 총무 고은성" },
+      { label: "에스더전도회", names: "회장 문선경 · 총무 장한주" },
+      { label: "바울전도회", names: "회장 김종학 · 총무 신성찬 · 지도 문명수" },
+      { label: "엘림회", names: "지도 이수현" },
+      { label: "찬양대", names: "지휘 신성찬 · 총무 임혜은 · 인도 최명철 · 반주 양유정" },
+      { label: "주일학교", names: "부장 신성호 · 총무 황귀순" },
+      { label: "식당", names: "총책임 오성자 · 부책임 최지연" },
+      { label: "차량 운행", names: "김종학 · 임희순" },
+      { label: "꽃꽂이", names: "김교선" },
     ],
   };
 
@@ -182,16 +182,25 @@
   // ====================== 2) 섬기는 사람들 ======================
   var cards = [], rows = [], org = [];
 
-  function initServants(s) {
+  function initServantsData(s) {
     cards = (s.cards || []).map(function (c) { return { role: c.role || "", name: c.name || "", highlight: !!c.highlight }; });
     rows = (s.rows || []).map(function (r) { return { label: r.label || "", names: r.names || "" }; });
     org = (s.org || []).map(function (r) { return { label: r.label || "", names: r.names || "" }; });
     renderCards(); renderRows(); renderOrg();
+  }
+  function initServants(s) {
+    initServantsData(s);
 
     $("hsCardAdd").addEventListener("click", function () { cards.push({ role: "", name: "", highlight: false }); renderCards(); });
     $("hsRowAdd").addEventListener("click", function () { rows.push({ label: "", names: "" }); renderRows(); });
     $("hsOrgAdd").addEventListener("click", function () { org.push({ label: "", names: "" }); renderOrg(); });
     $("hsServSave").addEventListener("click", saveServants);
+    var def = $("hsServDefault");
+    if (def) def.addEventListener("click", function () {
+      if (!confirm("현재 입력 내용을 주보 기준 기본값으로 바꿀까요? (저장을 눌러야 실제 반영됩니다)")) return;
+      initServantsData(JSON.parse(JSON.stringify(DEFAULT_SERVANTS)));
+      msg($("hsServMsg"), "주보 기준 기본값을 불러왔습니다. 확인 후 저장을 눌러 주세요.", true);
+    });
   }
 
   function renderCards() {

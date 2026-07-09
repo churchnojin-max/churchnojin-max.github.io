@@ -14,20 +14,12 @@
 const COMMITTEES = [
   {
     month: "2026-07",
-    label: "7월",
+    label: "7월 첫째 주",
     roles: [
-      { role: "헌금위원", names: "조선옥 · 한춘택 · 하경순" },
-      { role: "안내위원", names: "유영자 · 이은숙" },
-      { role: "주차 · 사찰", names: "한인구 · 고영례" },
-    ],
-  },
-  {
-    month: "2026-06",
-    label: "6월",
-    roles: [
-      { role: "헌금위원", names: "오은자 · 이상돈 · 임수만" },
-      { role: "안내위원", names: "조선옥 · 최영자" },
-      { role: "주차 · 사찰", names: "한동길 · 조희숙" },
+      { role: "예배 기도", names: "문명수 장로" },
+      { role: "헌금위원", names: "최명철 집사" },
+      { role: "오후 기도", names: "차민영 집사" },
+      { role: "예배실 · 주방", names: "4구역" },
     ],
   },
 ];
