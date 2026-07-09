@@ -1,14 +1,20 @@
 /* ============================================================
-   ○○교회 — 파일 업로드 공용 모듈 (Cloudflare R2 Worker 연동)
+   ○○교회 — 파일 업로드 공용 모듈
    window.ChurchUpload.upload(file, {folder, compress}) → { url, key }
    window.ChurchUpload.remove(key)
    window.ChurchUpload.compressImage(file) → File(압축본)
    - 이미지는 업로드 전 자동 축소·압축(최대 변 1600px, JPEG 82%)
-   - R2_UPLOAD_URL 미설정 시 isReady()=false
+   - 저장소: R2_UPLOAD_URL(Cloudflare R2)이 설정돼 있으면 R2,
+     아니면 Supabase Storage 공개 버킷('uploads')을 사용합니다.
+   - R2·Supabase 둘 다 없을 때만 isReady()=false
    ============================================================ */
 window.ChurchUpload = (function () {
+  var SB_BUCKET = "uploads"; // Supabase Storage 공개 버킷 (supabase/uploads-bucket.sql 참고)
   function base() { return (window.R2_UPLOAD_URL || "").replace(/\/$/, ""); }
-  function isReady() { return !!base(); }
+  function hasR2() { return !!base(); }
+  function hasSB() { return !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY); }
+  function sbBase() { return (window.SUPABASE_URL || "").replace(/\/$/, ""); }
+  function isReady() { return hasR2() || hasSB(); }
 
   function token() {
     try {
@@ -63,28 +69,64 @@ window.ChurchUpload = (function () {
     if (!token()) throw new Error("로그인이 필요합니다.");
     const folder = opts.folder || "uploads";
     const f = (opts.compress === false) ? file : await compressImage(file);
-    const res = await fetch(base() + "/upload", {
+    if (hasR2()) {
+      const res = await fetch(base() + "/upload", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token(),
+          "Content-Type": f.type || "application/octet-stream",
+          "x-filename": encodeURIComponent(f.name || "file"),
+          "x-folder": folder,
+        },
+        body: f,
+      });
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+      if (!res.ok) throw new Error(data.error || ("업로드 실패 (" + res.status + ")"));
+      return data; // { url, key }
+    }
+    return sbUpload(f, folder);
+  }
+
+  // ── Supabase Storage 공개 버킷 업로드 ──
+  async function sbUpload(f, folder) {
+    const ext = ((f.name || "").split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const rand = Math.random().toString(36).slice(2, 10);
+    const path = (folder || "uploads") + "/" + Date.now() + "_" + rand + "." + ext;
+    const res = await fetch(sbBase() + "/storage/v1/object/" + SB_BUCKET + "/" + path, {
       method: "POST",
       headers: {
         Authorization: "Bearer " + token(),
+        apikey: window.SUPABASE_ANON_KEY,
         "Content-Type": f.type || "application/octet-stream",
-        "x-filename": encodeURIComponent(f.name || "file"),
-        "x-folder": folder,
+        "x-upsert": "true",
       },
       body: f,
     });
-    let data = {};
-    try { data = await res.json(); } catch (e) {}
-    if (!res.ok) throw new Error(data.error || ("업로드 실패 (" + res.status + ")"));
-    return data; // { url, key }
+    if (!res.ok) {
+      let msg = "업로드 실패 (" + res.status + ")";
+      try { const j = await res.json(); if (j && (j.message || j.error)) msg = j.message || j.error; } catch (e) {}
+      if (res.status === 404 || /bucket/i.test(msg)) msg = "업로드 버킷이 없습니다. 관리자에게 문의해 주세요. (supabase/uploads-bucket.sql 실행 필요)";
+      throw new Error(msg);
+    }
+    return { url: sbBase() + "/storage/v1/object/public/" + SB_BUCKET + "/" + path, key: path };
   }
 
   async function remove(key) {
-    if (!isReady() || !key) return false;
+    if (!key) return false;
+    if (hasR2()) {
+      try {
+        const res = await fetch(base() + "/f/" + key.split("/").map(encodeURIComponent).join("/"), {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + token() },
+        });
+        return res.ok;
+      } catch (e) { return false; }
+    }
     try {
-      const res = await fetch(base() + "/f/" + key.split("/").map(encodeURIComponent).join("/"), {
+      const res = await fetch(sbBase() + "/storage/v1/object/" + SB_BUCKET + "/" + key.split("/").map(encodeURIComponent).join("/"), {
         method: "DELETE",
-        headers: { Authorization: "Bearer " + token() },
+        headers: { Authorization: "Bearer " + token(), apikey: window.SUPABASE_ANON_KEY },
       });
       return res.ok;
     } catch (e) { return false; }
