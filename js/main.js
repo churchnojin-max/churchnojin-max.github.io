@@ -1411,7 +1411,7 @@ const io = new IntersectionObserver(
 );
 revealTargets.forEach((el) => io.observe(el));
 
-// ===== 7. ○○○ 목사 저서 — 책 미리보기 모달 =====
+// ===== 7. 손병민 목사 저서 — 책 미리보기 모달 =====
 (function () {
   const modal = document.getElementById("bookModal");
   if (!modal) return;

@@ -140,8 +140,8 @@
     var coverBlock = '<div class="cover">' + (headlineHtml || '') +
       '<div class="since">' + sinceTxt + (d.no ? ' · No. ' + esc(d.no) : '') + '</div>' +
       '<div class="big">운 평 장 로 교 회</div>' +
-      '<div class="ld">담임목사 ○○○ · 원로목사 ○○○ · 협동목사 ○○○</div>' +
-      '<div class="ad">화성특례시 ○○로 00 · T. 010-0000-0000<br>' + esc(dotDate(rec.bdate)) + (d.week ? ' · ' + esc(d.week) : '') + ' · www.example.com</div></div>';
+      '<div class="ld">담임목사 손병민 · 원로목사 신동열</div>' +
+      '<div class="ad">경기도 화성시 장안면 화곡로 159-8 · T. 070-4355-1598<br>' + esc(dotDate(rec.bdate)) + (d.week ? ' · ' + esc(d.week) : '') + ' · churchnojin-max.github.io</div></div>';
 
     if (opts.layout === 'print3') {
       // 가로 3단 양면 — 앞면: 설교/예배순서·주중·헌금/봉사위원 / 뒷면: 칼럼·광고·표지
@@ -151,7 +151,7 @@
     }
     // 홈페이지 읽기(세로 1단)
     return '<div class="page">' + hdBanner + (headlineHtml || '') + sermSec + midSec + offerSec + comSec + colSec + newsSec + noteHtml +
-      '<div class="foot">○○교회 · 담임목사 ○○○ · 화성특례시 ○○로 00 · www.example.com</div></div>';
+      '<div class="foot">노진교회 · 담임목사 손병민 · 경기도 화성시 장안면 화곡로 159-8 · churchnojin-max.github.io</div></div>';
   }
 
   function fullHTML(rec, opts) {

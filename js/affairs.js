@@ -108,7 +108,7 @@ console.log('[affairs.js] v20260701dj');
         { k: 'member_name', label: '대상자', type: 'text', ph: '이름' },
         { k: 'category', label: '심방 종류', type: 'select', opts: ['일반심방', '병원심방', '구역심방', '새가족심방', '임종/장례', '경조사', '기타'] },
         { k: 'location', label: '장소', type: 'text', ph: '예: 자택, ○○병원' },
-        { k: 'pastor', label: '심방자', type: 'text', ph: '예: ○○○ 목사' },
+        { k: 'pastor', label: '심방자', type: 'text', ph: '예: 손병민 담임목사' },
         { k: 'content', label: '심방 내용', type: 'textarea', full: true }
       ],
       cols: [['visit_date', '일자'], ['member_name', '대상자'], ['category', '종류'], ['location', '장소'], ['pastor', '심방자'], ['content', '내용']]
@@ -119,7 +119,7 @@ console.log('[affairs.js] v20260701dj');
         { k: 'counsel_date', label: '일자', type: 'date' },
         { k: 'member_name', label: '대상자', type: 'text', ph: '이름' },
         { k: 'category', label: '분류', type: 'select', opts: ['신앙', '가정', '부부', '자녀', '진로/직업', '대인관계', '재정', '정서/심리', '기타'] },
-        { k: 'counselor', label: '상담자', type: 'text', ph: '예: ○○○ 목사' },
+        { k: 'counselor', label: '상담자', type: 'text', ph: '예: 손병민 담임목사' },
         { k: 'content', label: '상담 내용', type: 'textarea', full: true },
         { k: 'followup', label: '후속 조치', type: 'textarea', full: true },
         { k: 'is_private', label: '비공개(민감)', type: 'check' }
@@ -145,7 +145,7 @@ console.log('[affairs.js] v20260701dj');
         { k: 'service', label: '예배', type: 'select', opts: ['주일 낮 예배', '주일 밤 예배', '수요기도회', '금요기도회', '새벽기도', '매일 QT', '특별집회', '기타'] },
         { k: 'title', label: '제목', type: 'text' },
         { k: 'scripture', label: '본문(성경)', type: 'text', ph: '예: 요한복음 3:16' },
-        { k: 'preacher', label: '설교자', type: 'text', ph: '예: ○○○ 목사' },
+        { k: 'preacher', label: '설교자', type: 'text', ph: '예: 손병민 담임목사' },
         { k: 'media_url', label: '영상/음성 링크', type: 'text', ph: '유튜브 등 URL' },
         { k: 'file_url', label: '설교 원고/자료', type: 'file' },
         { k: 'content', label: '요약/메모', type: 'textarea', full: true }
@@ -2881,7 +2881,7 @@ console.log('[affairs.js] v20260701dj');
         '<div class="bd-boxhead">같은 시리즈의 설교</div>' +
         '<div id="se_series_docs" class="bd-serdocs"></div>' +
         '</div>' +
-        '<div class="af-field"><label>설교자</label><input type="text" id="se_preacher" value="' + esc(rec.preacher || '○○○ 목사') + '"></div>' +
+        '<div class="af-field"><label>설교자</label><input type="text" id="se_preacher" value="' + esc(rec.preacher || '손병민 담임목사') + '"></div>' +
         '<div class="af-field se-hide-worship"><label>QT</label><label class="sed-qt" id="se_qt_lbl"><input type="checkbox" id="se_qt_toggle" style="width:16px;height:16px;cursor:pointer;accent-color:#c79a2e;margin:0;flex:none">함께 만들기</label></div>' +
         '<div class="af-field se-hide-worship"><label>🏷 키워드 <span style="font-weight:400">(최대 3개)</span></label><input type="text" id="se_keywords" value="' + esc(rec.keywords || '') + '" placeholder="쉼표로 구분"></div>' +
         '<div class="af-field se-hide-worship"><label>📝 미리보기 요약</label><textarea id="se_summary" maxlength="500" placeholder="목록·카드 하단에 노출 (최대 500자, 2줄까지 표시)" style="min-height:74px">' + esc(rec.summary || '') + '</textarea></div>' +
@@ -4927,7 +4927,7 @@ console.log('[affairs.js] v20260701dj');
       // 주일 낮 예배
       '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">② 주일 낮 예배</h4>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px">' +
-      tI('설교 제목', 'bt_title', rec.title) + tI('본문', 'bt_scripture', rec.scripture, '예: 나훔 2:8-13') + tI('설교자', 'bt_preacher', rec.preacher || '○○○ 목사') +
+      tI('설교 제목', 'bt_title', rec.title) + tI('본문', 'bt_scripture', rec.scripture, '예: 나훔 2:8-13') + tI('설교자', 'bt_preacher', rec.preacher || '손병민 담임목사') +
       '</div>' +
       '<div class="af-field" style="margin-bottom:12px"><label>📜 표지 말씀 헤드라인 <button type="button" id="bt_headline_ai" class="btn btn-line" style="padding:2px 10px;font-size:.74rem;background:#f3eefc;border-color:#c4a8ee;margin-left:4px">✨ 자동</button> <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">1면 표지에 크게 들어갈 대표 말씀</span></label>' +
       '<textarea id="bt_headline" placeholder="✨ 자동을 누르면 그 주 설교 본문에서 대표 말씀을 뽑아 채웁니다." style="min-height:64px;line-height:1.6;font-family:\'Noto Serif KR\',serif">' + esc(d.headline || '') + '</textarea></div>' +
@@ -4939,7 +4939,7 @@ console.log('[affairs.js] v20260701dj');
       '<div>' + tI('수요기도회 — 강해 시리즈', 'bt_wed_series', d.wed_series, '예: 레위기 강해(1)') + '</div>' +
       '<div>' + tI('수요기도회 — 제목', 'bt_wed_title', d.wed_title, '예: 레위기란 어떤 책인가?') + '</div>' +
       '</div>' +
-      tI('수요기도회 — 날짜·본문·설교자 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">날짜 자동(그 주 수요일)</span>', 'bt_wed_line', d.wed_dateline, '예: 2026. 07. 01 · 레위기 1장1절 · ○○○ 목사') +
+      tI('수요기도회 — 날짜·본문·설교자 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">날짜 자동(그 주 수요일)</span>', 'bt_wed_line', d.wed_dateline, '예: 2026. 07. 01 · 에베소서 1장 · 손병민 담임목사') +
       '<div class="fin-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">' +
       '<div>' + tI('새벽기도회 본문', 'bt_dawn', d.dawn, '예: 나훔, 시편 강해') + '</div>' +
       '<div>' + tI('매일 QT 본문', 'bt_qt', d.qt, '예: 나훔 3장, 시편107편~109편') + '</div>' +
