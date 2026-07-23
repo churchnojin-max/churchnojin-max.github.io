@@ -2,66 +2,82 @@
   "date": "2026-07-23",
   "tags": [
     "일상",
-    "데일리",
-    "여행",
-    "맛집"
+    "데일리"
   ],
   "top3": [
     {
-      "username": "jjun.film__",
-      "fullName": "",
-      "followers": 8706,
-      "postsCount": 1077,
-      "bio": "🎞 ғɪʟᴍ & ᴅɪɢɪᴛᴀʟ 📸 Fujifilmxt5, Fujifilmxhalf, minoltax700 우린 카페 아니면 여행이겠지🙄",
-      "avg_engagement": 1263,
-      "engagement_rate": 14.51
+      "username": "emperor_kyung",
+      "fullName": "황재경",
+      "followers": 3717,
+      "postsCount": 121,
+      "bio": "@musclenex_mnex ambassador   할인코드(emperor)",
+      "avg_engagement": 398,
+      "engagement_rate": 10.71
     },
     {
-      "username": "jinyeon_anz_tarot",
-      "fullName": "연꽃 위에 비친 마음, 진연타로(안즈)",
-      "followers": 10556,
-      "postsCount": 9413,
-      "bio": "💙 진연타로 | 신점·타로 상담 🌐 사업자등록·카드결제 가능",
-      "avg_engagement": 1327,
-      "engagement_rate": 12.57
+      "username": "mayo_yaho",
+      "fullName": "마요 🧸",
+      "followers": 2156,
+      "postsCount": 200,
+      "bio": "말티푸 마요 24년생 공주 오늘의집 ftc 26기 𖠿 사람도 강아지도 좋아해요🤎 📩 협찬·광고 문의 DM",
+      "avg_engagement": 105,
+      "engagement_rate": 4.87
     },
     {
-      "username": "ssjinel",
-      "fullName": "이성진",
-      "followers": 34560,
-      "postsCount": 281,
-      "bio": "SUNGJIN / 이성진 광고 | 협찬 | 협업 | 촬영 문의 :DM💌 🇰🇷",
-      "avg_engagement": 2811,
-      "engagement_rate": 8.13
+      "username": "__jookyung",
+      "fullName": "주경",
+      "followers": 4022,
+      "postsCount": 312,
+      "bio": "contact DM 💌🕊️",
+      "avg_engagement": 126,
+      "engagement_rate": 3.13
     }
   ],
   "candidates": [
     {
-      "username": "jjun.film__",
-      "fullName": "",
-      "followers": 8706,
-      "postsCount": 1077,
-      "bio": "🎞 ғɪʟᴍ & ᴅɪɢɪᴛᴀʟ 📸 Fujifilmxt5, Fujifilmxhalf, minoltax700 우린 카페 아니면 여행이겠지🙄",
-      "avg_engagement": 1263,
-      "engagement_rate": 14.51
+      "username": "emperor_kyung",
+      "fullName": "황재경",
+      "followers": 3717,
+      "postsCount": 121,
+      "bio": "@musclenex_mnex ambassador   할인코드(emperor)",
+      "avg_engagement": 398,
+      "engagement_rate": 10.71
     },
     {
-      "username": "jinyeon_anz_tarot",
-      "fullName": "연꽃 위에 비친 마음, 진연타로(안즈)",
-      "followers": 10556,
-      "postsCount": 9413,
-      "bio": "💙 진연타로 | 신점·타로 상담 🌐 사업자등록·카드결제 가능",
-      "avg_engagement": 1327,
-      "engagement_rate": 12.57
+      "username": "mayo_yaho",
+      "fullName": "마요 🧸",
+      "followers": 2156,
+      "postsCount": 200,
+      "bio": "말티푸 마요 24년생 공주 오늘의집 ftc 26기 𖠿 사람도 강아지도 좋아해요🤎 📩 협찬·광고 문의 DM",
+      "avg_engagement": 105,
+      "engagement_rate": 4.87
     },
     {
-      "username": "ssjinel",
-      "fullName": "이성진",
-      "followers": 34560,
-      "postsCount": 281,
-      "bio": "SUNGJIN / 이성진 광고 | 협찬 | 협업 | 촬영 문의 :DM💌 🇰🇷",
-      "avg_engagement": 2811,
-      "engagement_rate": 8.13
+      "username": "__jookyung",
+      "fullName": "주경",
+      "followers": 4022,
+      "postsCount": 312,
+      "bio": "contact DM 💌🕊️",
+      "avg_engagement": 126,
+      "engagement_rate": 3.13
+    },
+    {
+      "username": "lmminseob",
+      "fullName": "민섭",
+      "followers": 96581,
+      "postsCount": 486,
+      "bio": "성균관대학교 스포츠과학 수원 권선동 PT문의",
+      "avg_engagement": 736,
+      "engagement_rate": 0.76
+    },
+    {
+      "username": "durijin1005",
+      "fullName": "20세기소녀♡",
+      "followers": 3847,
+      "postsCount": 7236,
+      "bio": "먹스타(당일먹방아님) , 방탄소년단 , bts , 일상 , 멍, 덕질, 동물스타... @doori171005 많이 공유 부탁드려요🙏",
+      "avg_engagement": 65,
+      "engagement_rate": 1.68
     }
   ]
 }
