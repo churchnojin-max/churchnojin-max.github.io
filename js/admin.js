@@ -209,7 +209,7 @@
           pForm.elements.address_detail ? pForm.elements.address_detail.value : ""
         );
         const bio = pForm.elements.bio.value.trim();
-        const payload = { id: me.id, name: name || null, email: me.email || null, role: role || null };
+        const payload = { name: name || null, email: me.email || null, role: role || null };
         if (phone) payload.phone = phone;
         if (birth) payload.birth = birth;
         if (address) payload.address = address;
@@ -224,7 +224,7 @@
           payload.family = fam.length ? JSON.stringify(fam) : null;
         }
         try {
-          await api("POST", "profiles?on_conflict=id", payload, { Prefer: "resolution=merge-duplicates,return=minimal" });
+          await api("PATCH", `profiles?id=eq.${me.id}`, payload, { Prefer: "return=minimal" });
           pMsg.textContent = "저장되었습니다 ✓";
           pMsg.style.color = "var(--accent)";
           const slotName = document.querySelector(".auth-name");
