@@ -237,41 +237,7 @@
       };
     }
 
-    // ===== 비밀번호 변경 =====
-    const pwForm = document.getElementById("pwForm");
-    const pwMsg = document.getElementById("pwMsg");
-    if (pwForm) {
-      pwForm.hidden = false;
-      pwForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const p1 = pwForm.elements.pw1.value, p2 = pwForm.elements.pw2.value;
-        pwMsg.style.color = "#c0392b";
-        if (p1.length < 6) { pwMsg.textContent = "비밀번호는 6자 이상이어야 합니다."; return; }
-        if (p1 !== p2) { pwMsg.textContent = "두 비밀번호가 일치하지 않습니다."; return; }
-        const btn = pwForm.querySelector('button[type="submit"]');
-        btn.disabled = true; pwMsg.style.color = "var(--ink-soft)"; pwMsg.textContent = "변경 중…";
-        try {
-          const sess = localSession();
-          const token = sess && sess.access_token;
-          if (!token) throw new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
-          const res = await fetch(window.SUPABASE_URL + "/auth/v1/user", {
-            method: "PUT",
-            headers: { apikey: window.SUPABASE_ANON_KEY, "Content-Type": "application/json", Authorization: "Bearer " + token },
-            body: JSON.stringify({ password: p1 }),
-          });
-          const txt = await res.text();
-          let d = null; try { d = txt ? JSON.parse(txt) : null; } catch (e2) { d = null; }
-          if (!res.ok) throw new Error((d && (d.msg || d.message || d.error_description || d.error)) || ("HTTP " + res.status));
-          pwForm.reset();
-          pwMsg.style.color = "var(--accent)"; pwMsg.textContent = "비밀번호가 변경되었습니다 ✓";
-        } catch (err) {
-          pwMsg.style.color = "#c0392b"; pwMsg.textContent = "오류: " + ((err && err.message) || err);
-        } finally {
-          btn.disabled = false;
-          setTimeout(() => { pwMsg.textContent = ""; }, 4000);
-        }
-      };
-    }
+    // (비밀번호·이메일 변경은 js/account.js 의 '계정 관리' 섹션이 담당합니다)
 
     const adminRows = await api("GET", `admins?uid=eq.${me.id}&select=uid`);
     const isAdmin = Array.isArray(adminRows) && adminRows.length > 0;
@@ -283,7 +249,7 @@
     const rows = (await api("GET", "profiles?select=*&order=created_at.desc")) || [];
 
     if (isAdmin) {
-      renderAdminTable(rows);
+      renderAdminTable(rows, me.id);
       if (countEl) countEl.textContent = `(${rows.length}명)`;
       loadTaxAdmin();
     } else {
@@ -294,35 +260,63 @@
   }
 
   // ===== 회원 목록 테이블 =====
-  function memberTable(list, admin) {
+  // 상태 표시: 정상 / 정지(사유 메모) / 탈퇴
+  function statTag(r) {
+    if (r.withdrawn_at) return `<span class="prov-tag" style="background:#ececec;color:#666">탈퇴</span>`;
+    if (r.suspended_at) return `<span class="prov-tag" style="background:#fdecea;color:#c0392b">정지</span>`;
+    return `<span class="prov-tag" style="background:#e8f3ec;color:#2f7d46">정상</span>`;
+  }
+  function suspendBtn(r, meId) {
+    if (r.withdrawn_at || r.id === meId) return "";
+    return r.suspended_at
+      ? `<button type="button" class="btn btn-line susp-btn" data-act="unsuspend" style="padding:4px 12px;font-size:.8rem;">정지 해제</button>`
+      : `<button type="button" class="btn btn-line susp-btn" data-act="suspend" style="padding:4px 12px;font-size:.8rem;color:#c0392b;border-color:#e4b6b0;">정지</button>`;
+  }
+  function memberTable(list, admin, meId) {
     return `
       <div class="member-table-wrap">
         <table class="member-table">
-          <thead><tr><th>이름/닉네임</th><th>직분</th><th>가입 방식</th><th>이메일</th><th>가입일</th>${admin ? "<th></th>" : ""}</tr></thead>
+          <thead><tr><th>이름/닉네임</th><th>직분</th><th>가입 방식</th><th>이메일</th><th>가입일</th><th>상태</th>${admin ? "<th></th>" : ""}</tr></thead>
           <tbody>
-            ${list.map((r) => `<tr data-uid="${esc(r.id)}">
+            ${list.map((r) => `<tr data-uid="${esc(r.id)}" data-search="${esc(((r.name || "") + " " + (r.email || "")).toLowerCase())}">
               <td>${esc(r.name) || "-"}</td>
-              <td>${admin
+              <td>${admin && !r.withdrawn_at
                 ? `<select class="role-input role-select">${roleOptions(r.role)}</select>`
                 : (esc(r.role) || "-")}</td>
               <td><span class="prov-tag prov-${esc(r.provider)}">${provLabel(r.provider)}</span></td>
               <td>${esc(r.email) || "-"}</td>
               <td>${fmt(r.created_at)}</td>
-              ${admin ? `<td><button type="button" class="btn btn-line role-save" style="padding:4px 12px;font-size:.8rem;">직분 저장</button></td>` : ""}
+              <td>${statTag(r)}${admin && r.suspended_at ? `<div style="font-size:.75rem;color:var(--ink-soft);margin-top:3px;">${r.suspend_note ? "사유: " + esc(r.suspend_note) : ""}${r.suspend_note ? " · " : ""}${fmt(r.suspended_at)}</div>` : ""}${admin && r.withdrawn_at ? `<div style="font-size:.75rem;color:var(--ink-soft);margin-top:3px;">${fmt(r.withdrawn_at)}</div>` : ""}</td>
+              ${admin ? `<td style="white-space:nowrap;">${r.withdrawn_at ? "" : `<button type="button" class="btn btn-line role-save" style="padding:4px 12px;font-size:.8rem;">직분 저장</button> `}${suspendBtn(r, meId)}</td>` : ""}
             </tr>`).join("")}
           </tbody>
         </table>
       </div>`;
   }
 
-  function renderAdminTable(rows) {
-    box.innerHTML = `<p class="member-role-note">관리자 모드 — 전체 회원을 볼 수 있고, 각 회원의 직분을 수정할 수 있습니다.</p>` + memberTable(rows, true);
+  function renderAdminTable(rows, meId) {
+    box.innerHTML = `<p class="member-role-note">관리자 모드 — 전체 회원을 보고, 직분 수정과 계정 정지를 할 수 있습니다.</p>
+      <div style="margin:10px 0 14px;max-width:420px;"><input type="search" id="memberSearch" placeholder="🔍 이름·이메일 검색 (일부만 입력해도 됩니다)" style="width:100%;padding:10px 14px;border:1px solid #dfe5ee;border-radius:10px;font:inherit;" /></div>`
+      + memberTable(rows, true, meId);
+
+    // 이름·이메일 부분 일치 검색
+    const search = box.querySelector("#memberSearch");
+    if (search) search.addEventListener("input", () => {
+      const q = search.value.trim().toLowerCase();
+      let shown = 0;
+      box.querySelectorAll("tr[data-uid]").forEach((tr) => {
+        const hit = !q || (tr.getAttribute("data-search") || "").indexOf(q) >= 0;
+        tr.style.display = hit ? "" : "none";
+        if (hit) shown++;
+      });
+      if (countEl) countEl.textContent = q ? `(${shown}/${rows.length}명)` : `(${rows.length}명)`;
+    });
+
     box.querySelectorAll("tr[data-uid]").forEach((tr) => {
       const uid = tr.getAttribute("data-uid");
       const input = tr.querySelector(".role-input");
       const btn = tr.querySelector(".role-save");
-      if (!uid || !input || !btn) return;
-      btn.addEventListener("click", async () => {
+      if (uid && input && btn) btn.addEventListener("click", async () => {
         const role = input.value.trim();
         btn.disabled = true;
         const old = btn.textContent;
@@ -336,6 +330,30 @@
           btn.style.color = "#c0392b";
           setTimeout(() => { btn.textContent = old; btn.style.color = ""; btn.disabled = false; }, 2500);
         }
+      });
+
+      // 계정 정지 / 정지 해제 (supabase/suspend.sql 의 admin_set_suspend 호출)
+      const sbtn = tr.querySelector(".susp-btn");
+      if (uid && sbtn) sbtn.addEventListener("click", async () => {
+        const suspend = sbtn.getAttribute("data-act") === "suspend";
+        let note = null;
+        if (suspend) {
+          note = prompt("정지 사유를 입력해 주세요 (관리자만 볼 수 있습니다):", "");
+          if (note === null) return;
+          if (!confirm("이 회원을 정지시킬까요?\n정지되면 즉시 로그아웃되고 다시 로그인할 수 없습니다.")) return;
+        } else {
+          if (!confirm("정지를 해제할까요? 다시 로그인할 수 있게 됩니다.")) return;
+        }
+        sbtn.disabled = true;
+        sbtn.textContent = "처리 중…";
+        try {
+          await api("POST", "rpc/admin_set_suspend", { target: uid, suspend: suspend, note: note || null }, { Prefer: "return=minimal" });
+        } catch (err) {
+          alert(/could not find the function|schema cache/i.test(err.message)
+            ? "정지 기능 준비가 필요합니다. 관리자가 Supabase ▸ SQL Editor 에서 supabase/suspend.sql 을 1회 실행해 주세요."
+            : "오류: " + err.message);
+        }
+        start(); // 목록 새로고침
       });
     });
   }

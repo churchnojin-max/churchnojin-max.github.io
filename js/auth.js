@@ -63,6 +63,20 @@
     msg.className = "auth-msg" + (ok ? " ok" : " err");
   }
 
+  // Supabase 오류를 성도님들이 이해할 수 있는 말로 바꿔 보여준다
+  // (탈퇴 계정은 이메일이 익명화되어 '없는 계정'이 되므로, banned 오류 = 정지된 계정)
+  function contactSuffix() {
+    const p = window.CHURCH && window.CHURCH.phone;
+    return p && !/^010-0000/.test(p) ? ` (${p})` : "";
+  }
+  function friendlyError(err) {
+    const m = (err && err.message) || "";
+    if (/banned/i.test(m)) return "이용약관 위반으로 계정이 정지되었습니다. 문의는 교회로 부탁드립니다" + contactSuffix() + ".";
+    if (/invalid login credentials/i.test(m)) return "이메일 또는 비밀번호가 올바르지 않습니다.";
+    if (/email not confirmed/i.test(m)) return "이메일 인증이 완료되지 않았습니다. 가입 확인 메일을 확인해 주세요.";
+    return "오류: " + (m || "다시 시도해 주세요.");
+  }
+
   // 헤더 로그인 상태 표시
   async function renderAuth() {
     const { data } = await sb.auth.getSession();
@@ -130,10 +144,10 @@
         forgotBtn.disabled = true;
         try {
           const { error } = await sb.auth.resetPasswordForEmail(email, {
-            redirectTo: location.origin + location.pathname,
+            redirectTo: location.origin + "/reset.html",
           });
           if (error) throw error;
-          showMsg("비밀번호 재설정 메일을 보냈습니다. 메일의 링크를 눌러 새 비밀번호를 설정해 주세요.", true);
+          showMsg("비밀번호 재설정 메일을 보냈습니다. 메일의 링크는 30분 동안 1회만 사용할 수 있습니다.", true);
         } catch (err) {
           showMsg("오류: " + (err.message || "다시 시도해 주세요."), false);
         } finally {
@@ -182,12 +196,26 @@
           location.reload();
         }
       } catch (err) {
-        showMsg("오류: " + (err.message || "다시 시도해 주세요."), false);
+        showMsg(friendlyError(err), false);
       } finally {
         submitBtn.disabled = false;
       }
     });
   }
+
+  // 카카오 로그인이 정지 계정으로 거부되면 주소 해시에 오류가 담겨 돌아온다 → 안내 표시
+  (function checkOAuthBanned() {
+    try {
+      const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+      const desc = (h.get("error_description") || "") + " " + (h.get("error_code") || "");
+      if (h.get("error") && /banned/i.test(desc)) {
+        history.replaceState(null, "", location.pathname + location.search);
+        const text = "이용약관 위반으로 계정이 정지되었습니다. 문의는 교회로 부탁드립니다" + contactSuffix() + ".";
+        if (modal) { setMode("login"); openModal(); showMsg(text, false); }
+        else alert(text);
+      }
+    } catch (_) {}
+  })();
 
   sb.auth.onAuthStateChange((event) => {
     // 비밀번호 재설정 메일 링크로 돌아오면 새 비밀번호 입력 폼을 띄운다

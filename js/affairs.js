@@ -1,8 +1,8 @@
-/* affairs.js — 행정관리(관리자 전용): 심방관리 · 상담관리
- * 데이터는 Supabase(visitations/counsels, 관리자 RLS)에 저장.
- * 콘솔: [affairs.js] v20260701dj
+/* affairs.js — 행정관리(관리자 전용): 심방관리 · 상담관리 · 메모장
+ * 데이터는 Supabase(visitations/counsels/memos 등, 관리자 RLS)에 저장.
+ * 콘솔: [affairs.js] v20260712memo
  */
-console.log('[affairs.js] v20260701dj');
+console.log('[affairs.js] v20260712memo2');
 
 (function () {
   var root = document.getElementById('afRoot');
@@ -165,7 +165,7 @@ console.log('[affairs.js] v20260701dj');
       cols: [['doc_date', '일자'], ['title', '제목'], ['category', '분류'], ['manager', '담당'], ['file_url', '파일'], ['content', '내용']]
     }
   };
-  var TAB_ORDER = [['dashboard', '설교 대시보드'], ['sermon', '설교관리'], ['worship', '예배매니저'], ['illus', '예화 클립'], ['bulletin', '주보제작'], ['visit', '심방관리'], ['counsel', '상담관리'], ['edu', '교육관리'], ['doc', '자료실'], ['library', '나의 도서관'], ['bible', '📖 성경 보기'], ['settings', '설정']];
+  var TAB_ORDER = [['dashboard', '설교 대시보드'], ['sermon', '설교관리'], ['worship', '예배매니저'], ['song', '🎵 찬양관리'], ['illus', '예화 클립'], ['bulletin', '주보제작'], ['visit', '심방관리'], ['counsel', '상담관리'], ['edu', '교육관리'], ['doc', '자료실'], ['library', '나의 도서관'], ['bible', '📖 성경 보기'], ['settings', '설정']];
 
   // ── 성경 66권(설교 권별 커버리지) ──
   var BIBLE_OT = ['창세기', '출애굽기', '레위기', '민수기', '신명기', '여호수아', '사사기', '룻기', '사무엘상', '사무엘하', '열왕기상', '열왕기하', '역대상', '역대하', '에스라', '느헤미야', '에스더', '욥기', '시편', '잠언', '전도서', '아가', '이사야', '예레미야', '예레미야애가', '에스겔', '다니엘', '호세아', '요엘', '아모스', '오바댜', '요나', '미가', '나훔', '하박국', '스바냐', '학개', '스가랴', '말라기'];
@@ -216,6 +216,7 @@ console.log('[affairs.js] v20260701dj');
     else if (tab === 'illus') renderIllustrations(p);
     else if (tab === 'sermon') renderSermon(p);
     else if (tab === 'worship') renderSermon(p, { worship: true });
+    else if (tab === 'song') renderWorshipSongs(p);
     else if (tab === 'bulletin') renderBulletinAdmin(p);
     else if (tab === 'library') renderLibrary(p);
     else if (tab === 'bible') renderBibleViewer(p);
@@ -580,7 +581,7 @@ console.log('[affairs.js] v20260701dj');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9500;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
     ov.innerHTML = '<div class="fin-card" style="max-width:560px;width:100%;background:#fff">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0;color:var(--accent,#223350)">🎵 찬송가 선택 (복수 선택)</h3><button class="btn btn-line" id="hp_close" style="padding:3px 11px">닫기</button></div>' +
-      '<input type="text" id="hp_q" placeholder="🔍 번호 또는 제목 검색 (숫자만 입력해도 바로 검색)" style="width:100%;padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;margin-bottom:8px">' +
+      '<input type="text" id="hp_q" placeholder="🔍 번호·제목·주제 검색 (예: 384, 갈 길, 감사 — 숫자만 입력해도 바로 검색)" style="width:100%;padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;margin-bottom:8px">' +
       '<div id="hp_sel" style="margin-bottom:8px;min-height:26px"></div>' +
       '<div id="hp_list" style="max-height:340px;overflow:auto;border:1px solid #eef1f5;border-radius:8px"></div>' +
       '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;justify-content:flex-end"><button class="btn btn-solid" id="hp_done" style="padding:8px 18px">선택 완료</button></div></div>';
@@ -597,8 +598,9 @@ console.log('[affairs.js] v20260701dj');
     }
     function drawList(q) {
       q = (q || '').trim().toLowerCase();
-      var rows = HY.filter(function (h) { return !q || String(h.no).indexOf(q) >= 0 || (h.title || '').toLowerCase().indexOf(q) >= 0; }).slice(0, 400);
-      listEl.innerHTML = rows.length ? rows.map(function (h) { return '<div class="hp-item" data-n="' + h.no + '" style="padding:8px 11px;border-bottom:1px solid #f0f0f0;cursor:pointer;display:flex;align-items:center;gap:8px;background:' + (sel[h.no] ? '#eef4ff' : '#fff') + '"><span style="flex:0 0 48px;font-weight:700;color:' + (sel[h.no] ? '#1f3a5f' : '#7b8794') + '">' + h.no + '장</span><span>' + esc(h.title || '') + '</span>' + (sel[h.no] ? '<span style="margin-left:auto;color:#1e874b">✓</span>' : '') + '</div>'; }).join('') : '<p style="padding:10px;color:#9aa5b1">결과 없음</p>';
+      // 번호·제목에 더해 주제(구간 매핑+제목 키워드)로도 검색 — 예: '감사' → 감사 주제 찬송 전부
+      var rows = HY.filter(function (h) { return !q || String(h.no).indexOf(q) >= 0 || (h.title || '').toLowerCase().indexOf(q) >= 0 || hymnThemes(h.no, h.title).some(function (t) { return t.indexOf(q) >= 0; }); });   // 645장 전곡 표시
+      listEl.innerHTML = rows.length ? rows.map(function (h) { var th = hymnThemes(h.no, h.title); return '<div class="hp-item" data-n="' + h.no + '" style="padding:8px 11px;border-bottom:1px solid #f0f0f0;cursor:pointer;display:flex;align-items:center;gap:8px;background:' + (sel[h.no] ? '#eef4ff' : '#fff') + '"><span style="flex:0 0 48px;font-weight:700;color:' + (sel[h.no] ? '#1f3a5f' : '#7b8794') + '">' + h.no + '장</span><span style="flex:1;min-width:0">' + esc(h.title || '') + '</span><span style="flex:none;font-size:.7rem;color:#a9b3c2;white-space:nowrap">' + esc(th.slice(0, 2).join('·')) + '</span>' + (sel[h.no] ? '<span style="flex:none;color:#1e874b">✓</span>' : '') + '</div>'; }).join('') : '<p style="padding:10px;color:#9aa5b1">결과 없음</p>';
       Array.prototype.forEach.call(listEl.querySelectorAll('.hp-item'), function (d) { d.onclick = function () { var n = Number(d.dataset.n); if (sel[n]) delete sel[n]; else sel[n] = 1; drawSel(); drawList(qEl.value); }; });
     }
     qEl.oninput = function () { drawList(this.value); };
@@ -608,6 +610,46 @@ console.log('[affairs.js] v20260701dj');
     setTimeout(function () { qEl.focus(); }, 40);
   }
   function hymnsLabel(s) { var a = String(s || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); return a.map(function (n) { var t = hymnTitle(n); return n + '장' + (t ? ' ' + t : ''); }).join(' · '); }
+  // 새벽·수요·금요 기도회의 제목 아래 머리글용 '찬송가 N장' 표기 (그 외 예배는 예배 순서에 찬송이 따로 있어 표기 안 함)
+  var HYMN_META_SERVICES = ['새벽기도', '수요기도회', '금요기도회'];
+  function hymnMetaLabel(hymnsStr, service) {
+    if (HYMN_META_SERVICES.indexOf(String(service || '')) < 0) return '';
+    var a = String(hymnsStr || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    return a.length ? '찬송가 ' + a.map(function (n) { return n + '장'; }).join(' · ') : '';
+  }
+  // 새찬송가(645장) 목차 구간 → 앱 주제태그 매핑 — 라이브러리에 등록 안 된 곡도 주제로 검색·추천되게
+  // (구간: 예배/송영 1-62 · 성부 63-79 · 성자 80-105 · 성탄 106-129 · 생애 130-142 · 고난 143-158 ·
+  //  부활 159-173 · 재림 174-181 · 성령 182-197 · 성경 198-206 · 교회 207-223 · 성례 224-233 · 천국 234-249 ·
+  //  구속 250-268 · 회개 269-282 · 구원 283-310 · 헌신 311-360 · 기도 361-369 · 인도·평안 370-419 ·
+  //  성결 420-426 · 동행 427-445 · 제자 446-469 · 치유 470-474 · 창조 475-478 · 소망 479-493 ·
+  //  전도 494-518 · 부르심 519-540 · 확신 541-549 · 절기·가정 550-594 · 예식 595-612 · 경배와찬양 613-645)
+  var HYMN_THEME_RANGES = [
+    [1, 62, ['찬양']], [63, 79, ['찬양', '평안']], [80, 98, ['찬양', '은혜']], [99, 105, ['성탄', '소망']],
+    [106, 129, ['성탄']], [130, 142, ['찬양']], [143, 158, ['십자가']], [159, 173, ['부활']],
+    [174, 181, ['소망']], [182, 197, ['성령']], [198, 206, ['믿음']], [207, 223, ['믿음']],
+    [224, 233, ['은혜']], [234, 249, ['소망']], [250, 268, ['십자가', '은혜']], [269, 282, ['회개']],
+    [283, 299, ['은혜']], [300, 310, ['은혜', '감사']], [311, 335, ['믿음']], [336, 360, ['믿음']],
+    [361, 369, ['기도']], [370, 419, ['평안', '인도']], [420, 426, ['회개', '믿음']], [427, 445, ['인도', '은혜']],
+    [446, 469, ['믿음', '십자가']], [470, 474, ['치유']], [475, 478, ['찬양', '감사']], [479, 493, ['소망']],
+    [494, 518, ['믿음']], [519, 540, ['회개', '인도']], [541, 549, ['믿음']], [550, 554, ['소망', '감사']],
+    [555, 559, ['평안']], [560, 570, ['인도', '평안']], [571, 579, ['감사']], [580, 586, ['믿음', '평안']],
+    [587, 594, ['감사']], [595, 605, ['믿음']], [606, 612, ['소망']], [613, 645, ['찬양']]
+  ];
+  function hymnThemes(no, title) {
+    no = Number(no); var out = [];
+    for (var i = 0; i < HYMN_THEME_RANGES.length; i++) {
+      var r = HYMN_THEME_RANGES[i];
+      if (no >= r[0] && no <= r[1]) { out = r[2].slice(); break; }
+    }
+    // 제목 키워드로 보강(예: '다 감사드리세' → 감사, '의원되신 예수님' → 치유)
+    var t = String(title || '');
+    Object.keys(THEME_KEYWORDS).forEach(function (th) {
+      if (out.indexOf(th) >= 0) return;
+      var kws = THEME_KEYWORDS[th];
+      for (var k = 0; k < kws.length; k++) { if (t.indexOf(kws[k]) >= 0) { out.push(th); break; } }
+    });
+    return out;
+  }
   // 교독문 본문을 인도자/회중/다같이 역할로 렌더
   function gyodokBodyHTML(body) {
     var lead = true;
@@ -714,14 +756,6 @@ console.log('[affairs.js] v20260701dj');
         }).join('');
       }
 
-      var recent = rows.slice(0, 6).map(function (r, i) {
-        return '<div style="display:flex;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid #f0f0f0">' +
-          '<div style="flex:0 0 84px;font-size:.8rem;color:#9aa5b1">' + esc(fmtD(r.sermon_date)) + '</div>' +
-          '<div style="flex:0 0 76px"><span class="fin-pill">' + esc(r.service || '-') + '</span></div>' +
-          '<div style="flex:1;min-width:0"><div class="rc-title" data-idx="' + i + '" title="클릭해서 내용 보기" style="font-weight:700;color:var(--accent,#223350);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목 없음)') + '</div>' +
-          (r.scripture ? '<div style="font-size:.78rem;color:#7b8794">' + esc(r.scripture) + '</div>' : '') + '</div></div>';
-      }).join('') || '<p style="color:#9aa5b1;font-size:.86rem">아직 설교 기록이 없습니다.</p>';
-
       panel.innerHTML =
         '<style>' +
         '.cov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:7px}' +
@@ -753,6 +787,14 @@ console.log('[affairs.js] v20260701dj');
         '<div style="font-size:.8rem;color:var(--ink-soft,#7b8794);font-weight:600">📖 성경읽기</div>' +
         '<div style="font-size:1.85rem;font-weight:800;color:#1e874b;line-height:1.1;margin-top:4px" id="bibleReadNum">–</div>' +
         '<div style="font-size:.75rem;color:#9aa5b1;margin-top:3px">구속사 365 참여 성도 · 눌러서 현황 보기</div></div>' +
+        '<div class="fin-card" id="videoMgrCard" style="margin:0;padding:16px 18px;cursor:pointer">' +
+        '<div style="font-size:.8rem;color:var(--ink-soft,#7b8794);font-weight:600">🎬 QT 영상 관리</div>' +
+        '<div style="font-size:1.85rem;font-weight:800;color:#7c3aed;line-height:1.1;margin-top:4px" id="videoMgrNum">–</div>' +
+        '<div style="font-size:.75rem;color:#9aa5b1;margin-top:3px" id="videoMgrSub">제작·검토·수정 · 눌러서 관리</div></div>' +
+        '<div class="fin-card" id="bibleAudioCard" style="margin:0;padding:16px 18px;cursor:pointer">' +
+        '<div style="font-size:.8rem;color:var(--ink-soft,#7b8794);font-weight:600">🎧 성경 음원 관리</div>' +
+        '<div style="font-size:1.85rem;font-weight:800;color:#2f6d8f;line-height:1.1;margin-top:4px" id="bibleAudioNum">–</div>' +
+        '<div style="font-size:.75rem;color:#9aa5b1;margin-top:3px">나의 성경읽기 낭독 · 눌러서 관리</div></div>' +
         '</div>' +
         '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">' +
         '<b style="color:var(--accent,#223350)">📖 성경 권별 커버리지</b>' +
@@ -766,25 +808,147 @@ console.log('[affairs.js] v20260701dj');
         '</div></div>' +
         '<div class="fin-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));align-items:start">' +
         '<div class="fin-card"><b style="color:var(--accent,#223350)">🗂 예배별 분포</b><div style="margin-top:10px">' + svcHTML + '</div></div>' +
-        '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--accent,#223350)">🕘 최근 설교</b><button class="btn btn-line" id="sd_goList" style="padding:4px 11px;font-size:.8rem">설교관리 →</button></div><div style="margin-top:8px">' + recent + '</div></div>' +
+        '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b style="color:var(--accent,#223350)">📝 메모</b><button class="btn btn-line" id="sd_memoList" style="padding:4px 11px;font-size:.8rem">메모 목록 보기</button></div><div id="sd_memoBody"><p class="qt-loading" style="margin:10px 0 0">불러오는 중…</p></div></div>' +
         '</div>';
 
       var cov = panel.querySelector('#sd_cov');
       panel.querySelector('#sd_only').onclick = function () { cov.classList.add('only'); };
       panel.querySelector('#sd_all').onclick = function () { cov.classList.remove('only'); };
-      var go = panel.querySelector('#sd_goList'); if (go) go.onclick = function () { tab = 'sermon'; render(); };
       // 책 클릭 → 그 책의 설교 목록 팝업
       Array.prototype.forEach.call(panel.querySelectorAll('.cov-cell.on[data-book]'), function (el) {
         el.onclick = function () { bookSermonsModal(el.dataset.book, coverList[el.dataset.book] || []); };
       });
-      // 최근 설교 제목 클릭 → 내용 보기
-      Array.prototype.forEach.call(panel.querySelectorAll('.rc-title'), function (t) { t.onclick = function () { sermonContentModal(rows[Number(t.dataset.idx)]); }; });
       Array.prototype.forEach.call(panel.querySelectorAll('.svc-label[data-svc]'), function (el) {
         el.onclick = function () { svcCalendarModal(el.dataset.svc, rows); };
       });
       loadQtAttendance(panel);
       loadTtsLog(panel);
       loadBibleStats(panel);
+      loadDashMemo(panel);
+      loadVideoMgr(panel);
+      loadBibleAudio(panel);
+    }
+
+    // ── 성경 음원(나의 성경읽기 낭독) 관리: R2 bible/ 목록·재생·삭제 ──
+    function bibleAdminApi(body) {
+      var s = sess();
+      var R2 = (window.R2_UPLOAD_URL || '').replace(/\/$/, '');
+      var tok = (s && s.token) || AK;
+      var opt = { method: 'POST', headers: { Authorization: 'Bearer ' + tok } }, ep = '/bible-audio-list';
+      if (body.action === 'delete') { ep = '/bible-audio-delete'; opt.headers['x-bible-name'] = body.name; }
+      return fetch(R2 + ep, opt).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j._http = r.status; return j; }); });
+    }
+    function loadBibleAudio(panel) {
+      var numEl = panel.querySelector('#bibleAudioNum'), card = panel.querySelector('#bibleAudioCard');
+      if (!numEl || !card) return;
+      if (!window.R2_UPLOAD_URL) { card.style.display = 'none'; return; } // 성경 음원은 Cloudflare R2 사용 시에만
+      bibleAdminApi({ action: 'list' }).then(function (j) {
+        var files = (j && j.ok && j.files) || null;
+        if (!files) { numEl.textContent = '–'; card.onclick = function () { alert('성경 음원 목록을 불러오지 못했습니다.\n(워커 재배포 또는 관리자 권한을 확인해 주세요)'); }; return; }
+        numEl.textContent = files.length + '장';
+        card.onclick = function () { bibleAudioModal(files.slice(), panel); };
+      }).catch(function () { numEl.textContent = '–'; });
+    }
+    function bibleAudioModal(files, panel) {
+      var R2 = (window.R2_UPLOAD_URL || '').replace(/\/$/, '');
+      var BIBLE_BOOKS = ['창세기', '출애굽기', '레위기', '민수기', '신명기', '여호수아', '사사기', '룻기', '사무엘상', '사무엘하', '열왕기상', '열왕기하', '역대상', '역대하', '에스라', '느헤미야', '에스더', '욥기', '시편', '잠언', '전도서', '아가', '이사야', '예레미야', '예레미야애가', '에스겔', '다니엘', '호세아', '요엘', '아모스', '오바댜', '요나', '미가', '나훔', '하박국', '스바냐', '학개', '스가랴', '말라기', '마태복음', '마가복음', '누가복음', '요한복음', '사도행전', '로마서', '고린도전서', '고린도후서', '갈라디아서', '에베소서', '빌립보서', '골로새서', '데살로니가전서', '데살로니가후서', '디모데전서', '디모데후서', '디도서', '빌레몬서', '히브리서', '야고보서', '베드로전서', '베드로후서', '요한일서', '요한이서', '요한삼서', '유다서', '요한계시록'];
+      function bookName(bid) { return BIBLE_BOOKS[bid - 1] || ('책' + bid); }
+      function parse(n) { var m = String(n).match(/^bible-(\d+)-(\d+)\.mp3$/); return m ? { bid: +m[1], ch: +m[2] } : null; }
+      function fmtBytes(x) { x = Number(x) || 0; return x >= 1048576 ? (x / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(x / 1024)) + 'KB'; }
+      function byBook() { var by = {}; files.forEach(function (f) { var p = parse(f.name); if (!p) return; (by[p.bid] = by[p.bid] || []).push({ f: f, ch: p.ch }); }); return by; }
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
+      ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:720px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#223350)">🎧 나의 성경읽기 음원 <span id="ba_cnt" style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + files.length + '장</span></h3><button class="btn btn-line" id="ba_close" style="padding:3px 11px">닫기</button></div>' +
+        '<p style="margin:0 0 12px;font-size:.76rem;color:#9aa5b1">음원이 있는 책을 누르면 장별 목록이 열립니다. 나의 성경읽기 "본문 읽기"에서 이 음성으로 재생됩니다.</p>' +
+        '<div id="ba_grid" style="max-height:66vh;overflow:auto"></div></div>';
+      document.body.appendChild(ov);
+      var close = pushBackClose(function () { ov.remove(); });
+      ov.querySelector('#ba_close').onclick = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      var grid = ov.querySelector('#ba_grid'), cntEl = ov.querySelector('#ba_cnt');
+
+      function cell(bid, by) {
+        var rows = by[bid], n = rows ? rows.length : 0, has = n > 0;
+        return '<button type="button" class="ba-cell" data-bid="' + bid + '"' + (has ? '' : ' disabled') +
+          ' style="text-align:center;border-radius:9px;padding:8px 4px;border:1px solid ' + (has ? '#cfe0cf' : '#eef1f5') + ';background:' + (has ? '#eef6ee' : '#fafbfc') + ';cursor:' + (has ? 'pointer' : 'default') + '">' +
+          '<div style="font-size:.8rem;font-weight:700;color:' + (has ? '#2f5133' : '#c3cad3') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(bookName(bid)) + '</div>' +
+          '<div style="font-size:.82rem;font-weight:800;color:' + (has ? '#2f6d8f' : '#d3d9e0') + '">' + (has ? n : '·') + '</div></button>';
+      }
+      function section(title, from, to, by) {
+        var cells = ''; for (var bid = from; bid <= to; bid++) cells += cell(bid, by);
+        return '<div style="font-size:.82rem;color:#7b8794;font-weight:700;margin:2px 0 7px">' + title + '</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:7px;margin-bottom:14px">' + cells + '</div>';
+      }
+      function renderGrid() {
+        cntEl.textContent = files.length + '장';
+        var by = byBook();
+        grid.innerHTML = section('구약 39권', 1, 39, by) + section('신약 27권', 40, 66, by);
+        Array.prototype.forEach.call(grid.querySelectorAll('.ba-cell:not([disabled])'), function (b) {
+          b.onclick = function () { bookChaptersModal(Number(b.dataset.bid)); };
+        });
+      }
+
+      function bookChaptersModal(bid) {
+        var ov2 = document.createElement('div');
+        ov2.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9720;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
+        ov2.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;padding:18px 20px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#223350)">' + esc(bookName(bid)) + ' <span id="bc_cnt" style="font-size:.84rem;color:#9aa5b1;font-weight:600"></span></h3><button class="btn btn-line" id="bc_close" style="padding:3px 11px">닫기</button></div>' +
+          '<div id="bc_body" style="max-height:64vh;overflow:auto"></div></div>';
+        document.body.appendChild(ov2);
+        var close2 = pushBackClose(function () { ov2.remove(); });
+        ov2.querySelector('#bc_close').onclick = close2;
+        ov2.addEventListener('click', function (e) { if (e.target === ov2) close2(); });
+        var bcBody = ov2.querySelector('#bc_body'), bcCnt = ov2.querySelector('#bc_cnt');
+        function paintChapters() {
+          var rows = (byBook()[bid] || []).sort(function (a, b) { return a.ch - b.ch; });
+          bcCnt.textContent = rows.length + '장';
+          if (!rows.length) { bcBody.innerHTML = '<p style="color:#9aa5b1;padding:8px 0">이 책의 음원이 없습니다.</p>'; return; }
+          bcBody.innerHTML = rows.map(function (r) {
+            var url = R2 + '/f/bible/' + encodeURIComponent(r.f.name);
+            return '<div style="display:flex;gap:9px;align-items:center;padding:6px 0;border-bottom:1px solid #f3f3f3">' +
+              '<div style="flex:0 0 48px;font-size:.85rem;color:#4a5568">' + r.ch + '장</div>' +
+              '<audio controls preload="none" src="' + esc(url) + '" style="flex:1;height:32px;max-width:230px"></audio>' +
+              '<div style="flex:0 0 auto;font-size:.72rem;color:#9aa5b1">' + fmtBytes(r.f.size) + '</div>' +
+              '<button class="btn btn-line bc-del" data-name="' + esc(r.f.name) + '" title="삭제" style="flex:0 0 auto;padding:3px 8px;color:#c0392b;border-color:#e6b3b3">🗑</button></div>';
+          }).join('');
+          Array.prototype.forEach.call(bcBody.querySelectorAll('.bc-del'), function (b) {
+            b.onclick = function () {
+              var name = b.dataset.name;
+              if (!confirm(name + ' 을(를) 삭제할까요?\n삭제 후 다시 생성할 수 있습니다.')) return;
+              b.disabled = true; b.textContent = '…';
+              bibleAdminApi({ action: 'delete', name: name }).then(function (j) {
+                if (!j.ok) throw new Error((j && j.error) || ('HTTP ' + j._http));
+                files = files.filter(function (x) { return x.name !== name; });
+                paintChapters(); renderGrid();
+                var numEl = panel && panel.querySelector('#bibleAudioNum'); if (numEl) numEl.textContent = files.length + '장';
+              }).catch(function (e) { b.disabled = false; b.textContent = '🗑'; alert('삭제 실패: ' + ((e && e.message) || '오류')); });
+            };
+          });
+        }
+        paintChapters();
+      }
+
+      renderGrid();
+    }
+
+    // ── QT 영상 관리 카드: 상태 요약 + 클릭 시 전체 관리 모달 ──
+    function loadVideoMgr(panel) {
+      var numEl = panel.querySelector('#videoMgrNum'), subEl = panel.querySelector('#videoMgrSub'), card = panel.querySelector('#videoMgrCard');
+      if (!card) return;
+      if (!window.VideoStudio) { card.style.display = 'none'; return; }
+      card.onclick = function () { if (window.VideoStudio) window.VideoStudio.openManager(); };
+      api('GET', 'video_jobs?select=status&limit=500').then(function (rows) {
+        rows = rows || [];
+        var done = 0, active = 0, review = 0;
+        rows.forEach(function (r) {
+          if (r.status === 'done') done++;
+          else if (r.status === 'review') review++;
+          else if (['pending', 'processing', 'regen', 'approved', 'revise'].indexOf(r.status) >= 0) active++;
+        });
+        if (numEl) numEl.textContent = done + '편';
+        if (subEl) subEl.innerHTML = (review ? '<span style="color:#a8742a;font-weight:700">🖼 검토 대기 ' + review + '</span> · ' : '') + (active ? '<span style="color:#5a5ad0;font-weight:700">🎬 제작중 ' + active + '</span> · ' : '') + '눌러서 관리';
+      }).catch(function () { if (subEl) subEl.textContent = '영상 관리 (video_jobs.sql 실행 필요)'; });
     }
 
     // ── 성경읽기 현황(구속사 365): 참여 성도 수 + 개인별 진도 ──
@@ -844,13 +1008,15 @@ console.log('[affairs.js] v20260701dj');
     // ── AI 음성: 저장소의 '실제 파일'을 열람·재생·삭제 ──
     //    (예전에는 생성 기록(tts_log)만 보여줘, 파일 삭제가 권한 문제로 조용히 실패해도
     //     "지워진 것처럼" 보이는 문제가 있었음 → 목록·삭제 모두 tts 함수(서비스 권한)로 처리)
+    // QT 음성은 Cloudflare R2에 저장됨(Supabase 용량 문제로 이전). 목록·삭제를 R2 워커로 처리(관리자 전용).
     function ttsAdminApi(body) {
       var s = sess();
-      return fetch(SB + '/functions/v1/tts', {
-        method: 'POST',
-        headers: { apikey: AK, Authorization: 'Bearer ' + ((s && s.token) || AK), 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).then(function (r) {
+      var R2 = (window.R2_UPLOAD_URL || '').replace(/\/$/, '');
+      var tok = (s && s.token) || AK;
+      var opt = { method: 'POST', headers: { Authorization: 'Bearer ' + tok } }, ep;
+      if (body.action === 'delete') { ep = '/qt-audio-delete'; opt.headers['x-qt-name'] = body.path; }
+      else { ep = '/qt-audio-list'; }
+      return fetch(R2 + ep, opt).then(function (r) {
         return r.json().catch(function () { return {}; }).then(function (j) { j._http = r.status; return j; });
       });
     }
@@ -858,6 +1024,7 @@ console.log('[affairs.js] v20260701dj');
       var numEl = panel.querySelector('#ttsLogNum');
       var card = panel.querySelector('#ttsLogCard');
       if (!numEl || !card) return;
+      if (!window.R2_UPLOAD_URL) { card.style.display = 'none'; return; } // AI 음성 파일 관리는 Cloudflare R2 사용 시에만
       Promise.all([
         ttsAdminApi({ action: 'list' }),
         api('GET', 'tts_log?select=qt_date,label,url,voice,created_at&order=created_at.desc&limit=300').catch(function () { return []; })
@@ -885,7 +1052,7 @@ console.log('[affairs.js] v20260701dj');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
       ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:680px;width:100%;padding:20px 22px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;color:var(--accent,#223350)">🔊 저장된 AI 음성 <span id="tl_cnt" style="font-size:.86rem;color:#9aa5b1;font-weight:600">' + files.length + '개</span></h3><button class="btn btn-line" id="tl_close" style="padding:3px 11px">닫기</button></div>' +
-        '<p style="margin:0 0 10px;font-size:.76rem;color:#9aa5b1">저장소에 실제로 존재하는 파일 목록입니다. 삭제하면 즉시 지워지며(오늘·내일 QT는 자동 생성이 다시 만듦), <b>14일이 지난 파일은 자동 삭제</b>되어 저장 공간이 항상 여유 있게 유지됩니다.</p>' +
+        '<p style="margin:0 0 10px;font-size:.76rem;color:#9aa5b1">저장소에 실제로 존재하는 파일 목록입니다. 삭제하면 즉시 지워지며(오늘·내일 QT는 자동 생성이 다시 만듦), <b>30일이 지난 파일은 자동 삭제</b>되어 저장 공간이 항상 여유 있게 유지됩니다.</p>' +
         '<div id="tl_body" style="max-height:62vh;overflow:auto"></div></div>';
       document.body.appendChild(ov);
       var close = pushBackClose(function () { ov.remove(); });
@@ -901,7 +1068,7 @@ console.log('[affairs.js] v20260701dj');
           var when = d ? fmtD(d) : fmtTime(f.created_at);
           var title = (lg && lg.label) || f.name;
           var sub = [(lg && lg.voice) || null, fmtBytes(f.size), fmtTime(f.created_at)].filter(Boolean).join(' · ');
-          var url = SB + '/storage/v1/object/public/tts-cache/' + encodeURIComponent(f.name);
+          var url = (window.R2_UPLOAD_URL || '').replace(/\/$/, '') + '/f/tts/' + encodeURIComponent(f.name);
           return '<div style="display:flex;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid #f0f0f0">' +
             '<div style="flex:0 0 78px;font-size:.8rem;color:#9aa5b1">' + esc(when) + '</div>' +
             '<div style="flex:1;min-width:0"><div style="font-weight:700;color:var(--accent,#223350);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(f.name) + '">' + esc(title) + '</div>' +
@@ -1331,7 +1498,7 @@ console.log('[affairs.js] v20260701dj');
     ov.style.cssText = 'position:fixed;inset:0;background:#f4f6fa;z-index:9000;overflow:auto';
     var thisYear = new Date().getFullYear();
     ov.innerHTML =
-      '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(34,51,80,.06)">' +
+      '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(3,34,87,.06)">' +
       '<div style="max-width:900px;margin:0 auto;padding:11px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
       '<button class="btn btn-line" id="qi_close" style="padding:8px 14px;border-radius:9px">‹ 닫기</button>' +
       '<div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:1.12rem;color:var(--accent,#223350)">📥 생명의 삶 가져오기</div>' +
@@ -1468,8 +1635,11 @@ console.log('[affairs.js] v20260701dj');
     ['교회사·인물', /교회사|역사|전기|인물|종교개혁|루터|어거스틴|아우구스티누스|청교도|위인/],
     ['역사', /세계사|한국사(?!회)|문명사|전쟁사|근현대사|근대사|조선왕조|일제강점|로마제국|십자군/],
     ['신앙·경건', /경건|큐티|묵상|기도|영성|확신|회복|은혜|믿음|신앙|영적|제자|소그룹|훈련/],
+    ['자기개발', /자기계발|자기개발|성공학|성공법칙|성공하는|습관의\s*힘|아주\s*작은\s*습관|시간\s*관리|시간관리|목표\s*달성|동기부여|자존감|마인드셋|자기경영|처세|그릿|끌어당김|부의\s*추월차선|설득의|협상의|인간관계론|데일\s*카네기|스티븐\s*코비/],
     ['철학·사상', /철학|사상|형이상학|윤리학|논리학|인식론|존재론|헤겔|칸트|니체|플라톤|아리스토텔레스|소크라테스|실존주의|현상학|변증법|인문학|쇼펜하우어|스토아/],
     ['소설·문학', /소설|장편|단편선|단편소설|단편집|시집|수필|동화|희곡|산문|우화|판타지|에세이|(?<![인천])문학/],
+    ['언어·문자', /훈민정음|동국정운|한글|국어|맞춤법|영문법|영어교재|어학|어휘|문법|언어학/],
+    ['건강·의학', /생활습관의학|건강|의학|질병|다이어트|운동처방|영양|면역|웰빙/],
     ['성경·주석', /주석|강해|틴데일|NICOT|NICNT|WBC|NAC|BECNT|100주년|현대성서|성경|개역|원어|구약|신약|히브리어|헬라어/i]
   ];
   function libHasBibleBook(t) {
@@ -1506,6 +1676,28 @@ console.log('[affairs.js] v20260701dj');
     for (var i = 0; i < LIB_SERIES_TAG.length; i++) if (LIB_SERIES_TAG[i][1].test(t)) return LIB_SERIES_TAG[i][0];
     return '';
   }
+  // ── 성경·주석 하위 '성경별' 필터: 제목에서 다루는 성경 책 1권 감지 ──
+  var BIBLE_ALL = BIBLE_OT.concat(BIBLE_NT);                       // 성경 순서(창세기→요한계시록)
+  var BIBLE_BY_LEN = BIBLE_ALL.slice().sort(function (a, b) { return b.length - a.length; }); // 긴 이름 우선(예: 예레미야애가⊃예레미야)
+  var LIB_BIBLE_EN2KR = { Genesis: '창세기', Exodus: '출애굽기', Leviticus: '레위기', Numbers: '민수기', Deuteronomy: '신명기', Joshua: '여호수아', Judges: '사사기', Ruth: '룻기', Samuel: '사무엘상', Kings: '열왕기상', Chronicles: '역대상', Ezra: '에스라', Nehemiah: '느헤미야', Esther: '에스더', Job: '욥기', Psalm: '시편', Psalms: '시편', Proverbs: '잠언', Ecclesiastes: '전도서', Isaiah: '이사야', Jeremiah: '예레미야', Lamentations: '예레미야애가', Ezekiel: '에스겔', Daniel: '다니엘', Hosea: '호세아', Joel: '요엘', Amos: '아모스', Obadiah: '오바댜', Jonah: '요나', Micah: '미가', Nahum: '나훔', Habakkuk: '하박국', Zephaniah: '스바냐', Haggai: '학개', Zechariah: '스가랴', Malachi: '말라기', Matthew: '마태복음', Mark: '마가복음', Luke: '누가복음', John: '요한복음', Acts: '사도행전', Romans: '로마서', Corinthians: '고린도전서', Galatians: '갈라디아서', Ephesians: '에베소서', Philippians: '빌립보서', Colossians: '골로새서', Thessalonians: '데살로니가전서', Timothy: '디모데전서', Titus: '디도서', Philemon: '빌레몬서', Hebrews: '히브리서', James: '야고보서', Peter: '베드로전서', Jude: '유다서', Revelation: '요한계시록' };
+  var HANGUL_RE = /[가-힣]/;
+  function libBible(t) {
+    if (!t) return '';
+    var i, nm, idx, before, after;
+    for (i = 0; i < BIBLE_BY_LEN.length; i++) {
+      nm = BIBLE_BY_LEN[i]; idx = t.indexOf(nm);
+      while (idx >= 0) {
+        before = idx > 0 ? t.charAt(idx - 1) : '';
+        after = t.charAt(idx + nm.length) || '';
+        // 앞 글자가 한글이면 다른 단어의 일부일 확률↑ (예: 신'학개'론) → 스킵. '아가페' 예외 처리.
+        if (!HANGUL_RE.test(before) && !(nm === '아가' && after === '페')) return nm;
+        idx = t.indexOf(nm, idx + 1);
+      }
+    }
+    var m = t.match(LIB_BIBLE_EN);
+    if (m && m[1]) { var w = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase(); if (LIB_BIBLE_EN2KR[w]) return LIB_BIBLE_EN2KR[w]; }
+    return '';
+  }
   // 정기간행물·잡지 종류 태그(하위 필터용). 이름 우선, 날짜만 있으면 월간 묵상·QT.
   var LIB_MAG_TAG = [
     ['월간목회', /월간목회/], ['목회와신학', /목회와신학/], ['생명의삶', /생명의\s*삶/], ['디사이플', /디사이플/],
@@ -1518,7 +1710,7 @@ console.log('[affairs.js] v20260701dj');
     return '';
   }
   // 도서관 목록 로컬 캐시(즉시 표시용). 분류 규칙 바뀌면 LIB_CACHE_VER +1 → 옛 캐시 무효화.
-  var LIB_LS_KEY = 'wpc_lib_cache', LIB_CACHE_VER = 10;
+  var LIB_LS_KEY = 'wpc_lib_cache', LIB_CACHE_VER = 11;
   function libLoadLS() {
     try { var o = JSON.parse(localStorage.getItem(LIB_LS_KEY) || 'null'); return (o && o.v === LIB_CACHE_VER && o.books && o.books.length) ? o.books : null; } catch (e) { return null; }
   }
@@ -1552,6 +1744,7 @@ console.log('[affairs.js] v20260701dj');
     b.cat = (ov && ov.cat) || libClassify(b.title);
     b.series = libSeries(b.title);
     b.pub = libMag(b.title);
+    b.bible = (b.cat === '성경·주석') ? libBible(b.title) : '';
     if (ov && ov.sub) {
       if (b.cat === '성경·주석') b.series = ov.sub;
       else if (b.cat === '정기간행물·잡지') b.pub = ov.sub;
@@ -1678,6 +1871,9 @@ console.log('[affairs.js] v20260701dj');
       '.lib-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px;align-items:center}.lib-chips .lbl{font-size:.78rem;color:#7b8794;font-weight:800;margin-right:2px}' +
       '.lib-schip{border:1px solid #e2e8f0;background:#fff;border-radius:999px;padding:5px 13px;font-size:.8rem;cursor:pointer;font-family:inherit;color:#475569;font-weight:600;transition:all .15s}.lib-schip:hover{border-color:#0e7c5a;color:#0c5a42}' +
       '.lib-schip.on{background:linear-gradient(135deg,#11785a,#0c4030);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(12,64,48,.26)}' +
+      '.lib-bchip{border:1px solid #e2e8f0;background:#fff;border-radius:999px;padding:5px 13px;font-size:.8rem;cursor:pointer;font-family:inherit;color:#475569;font-weight:600;transition:all .15s}.lib-bchip:hover{border-color:#0a4a6e;color:#0a3a58}' +
+      '.lib-bchip.on{background:linear-gradient(135deg,#0a4a6e,#08324c);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(8,50,76,.26)}' +
+      '.lib-biblechips{margin-top:-6px}' +
       '.lib-more{border:1px solid #e2e8f0;background:#fff;color:#33415c;font-weight:700;border-radius:999px;padding:10px 26px;cursor:pointer;font-family:inherit;transition:all .15s}.lib-more:hover{border-color:#0e7c5a;color:#0c5a42}' +
       '.lib-cnt{font-size:.8rem;color:#9aa5b1;margin-top:9px}' +
       '.lib-reroll{border:1px solid #e2e8f0;background:#fff;color:#475569;font-weight:700;border-radius:999px;padding:5px 14px;font-size:.8rem;cursor:pointer;font-family:inherit}.lib-reroll:hover{border-color:#0e7c5a;color:#0c5a42}' +
@@ -1690,7 +1886,8 @@ console.log('[affairs.js] v20260701dj');
       '.lib-catcard.lib-drop{border-style:solid !important;transform:translateY(-3px);box-shadow:0 0 0 3px color-mix(in srgb,var(--c,#0e7c5a) 38%,#fff),0 12px 26px rgba(15,37,64,.16)}' +
       // 목록 화면 상단 고정 분류 바
       '.lib-catbar{position:sticky;top:84px;z-index:6;background:rgba(255,255,255,.98);backdrop-filter:saturate(1.2) blur(2px);padding:10px 0 12px;margin-bottom:14px;border-bottom:1px solid #eef1f5}' +
-      '@media(max-width:640px){.lib-catbar{position:static;top:auto;backdrop-filter:none;margin-bottom:10px}}' +   // 모바일: 분류 바 고정 해제(스크롤되며 책이 보이게)
+      '@media(max-width:640px){.lib-catbar{position:static;top:auto;backdrop-filter:none;margin-bottom:10px}}' +   // 좁은 화면: 분류 바 고정 해제
+      '@media(hover:none) and (pointer:coarse){.lib-catbar{position:static!important;top:auto!important;backdrop-filter:none;margin-bottom:10px}}' +   // 터치 기기(폰·태블릿): 화면이 넓어도 고정 해제 → 스크롤되며 책이 보이게. PC(마우스)는 드래그 분류 위해 상단 고정 유지
       '.lib-catbar-hint{font-size:.74rem;font-weight:700;color:#9aa5b1;margin:0 2px 9px}' +
       '.lib-catbar .lib-cats{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:9px}' +
       '.lib-catbar .lib-catcard{padding:11px 13px 10px}.lib-catbar .lib-cat-name{font-size:.9rem}.lib-catbar .lib-cat-cnt{margin-top:6px}' +
@@ -1763,19 +1960,27 @@ console.log('[affairs.js] v20260701dj');
       listView(books, cat, q, close);
     }
     function listView(books, cat, q, close) {
-      var curCat = cat, curSub = '', PAGE = 60, shown = PAGE;
+      var curCat = cat, curSub = '', curBible = '', PAGE = 60, shown = PAGE;
       var isTrash = (cat === LIB_TRASH);
       // 분류 안 하위 필터: 성경·주석=시리즈, 정기간행물·잡지=종류
       var subField = (cat === '성경·주석') ? 'series' : (cat === '정기간행물·잡지') ? 'pub' : '';
       var subOrder = (subField === 'series') ? LIB_SERIES_TAG : (subField === 'pub') ? LIB_MAG_TAG : [];
       var subLabel = (subField === 'pub') ? '종류' : '시리즈';
-      function build(qq) { return books.filter(function (b) { return (!curCat || b.cat === curCat) && (!curSub || b[subField] === curSub) && (!qq || b.key.indexOf(qq) >= 0); }); }
+      var hasBibleFilter = (cat === '성경·주석');   // 성경·주석은 시리즈 + 성경별(권) 필터 동시 지원
+      function build(qq) { return books.filter(function (b) { return (!curCat || b.cat === curCat) && (!curSub || b[subField] === curSub) && (!curBible || b.bible === curBible) && (!qq || b.key.indexOf(qq) >= 0); }); }
       function curQ() { var el = panel.querySelector('#lib_q2'); return el ? el.value.trim().toLowerCase() : ''; }
       var subBar = '';
       if (subField) {
         var sc = {}; books.forEach(function (b) { if (b.cat === curCat && b[subField]) sc[b[subField]] = (sc[b[subField]] || 0) + 1; });
         var arr = subOrder.map(function (s) { return s[0]; }).filter(function (s) { return sc[s]; }).map(function (s) { return [s, sc[s]]; });
         if (arr.length) subBar = '<div class="lib-chips"><span class="lbl">' + subLabel + '</span><button class="lib-schip on" data-s="">전체</button>' + arr.map(function (x) { return '<button class="lib-schip" data-s="' + esc(x[0]) + '">' + esc(x[0]) + ' ' + x[1] + '</button>'; }).join('') + '</div>';
+      }
+      // 성경별(권) 필터 바 — 성경·주석 분류에서만, 성경 순서대로. 감지된 책만 노출.
+      var bibleBar = '';
+      if (hasBibleFilter) {
+        var bcnt = {}; books.forEach(function (b) { if (b.cat === curCat && b.bible) bcnt[b.bible] = (bcnt[b.bible] || 0) + 1; });
+        var barr = BIBLE_ALL.filter(function (s) { return bcnt[s]; });
+        if (barr.length) bibleBar = '<div class="lib-chips lib-biblechips"><span class="lbl">성경별</span><button class="lib-bchip on" data-b="">전체</button>' + barr.map(function (s) { return '<button class="lib-bchip" data-b="' + esc(s) + '">' + esc(s) + ' ' + bcnt[s] + '</button>'; }).join('') + '</div>';
       }
       var trashBar = isTrash ? '<div class="lib-trashbar"><span>🗑 삭제할 책을 모아둔 곳입니다. 다른 분류 칸으로 끌어다 놓으면 <b>복원</b>됩니다.</span><button class="lib-empty" id="lib_empty">휴지통 비우기 (영구 삭제)</button></div>' : '';
       var curList = build(q);
@@ -1784,7 +1989,7 @@ console.log('[affairs.js] v20260701dj');
         '<span class="lib-ltitle">' + (isTrash ? '🗑 휴지통' : (cat ? esc(cat) : '검색: ' + esc(q))) + '</span></div>' +
         '<input type="text" id="lib_q2" placeholder="🔍 이 안에서 검색" value="' + esc(q) + '" style="padding:9px 14px;border:1px solid #e2e8f0;border-radius:999px;font:inherit;min-width:200px;outline:none"></div>' +
         '<div class="lib-catbar"><div class="lib-catbar-hint">🗂 분류 · 책을 칸으로 끌어다 놓으면 이동 · 휴지통에 넣으면 삭제 대기</div>' + libCatBarHtml(books, curCat) + '</div>' +
-        trashBar + subBar +
+        trashBar + subBar + bibleBar +
         '<div class="lib-grid" id="lib_grid"></div>' +
         '<div style="text-align:center;margin:22px 0"><button class="lib-more" id="lib_more">더 보기</button><div class="lib-cnt" id="lib_cnt"></div></div></div>';
       var grid = panel.querySelector('#lib_grid'), moreBtn = panel.querySelector('#lib_more'), cntEl = panel.querySelector('#lib_cnt');
@@ -1843,6 +2048,13 @@ console.log('[affairs.js] v20260701dj');
         b.onclick = function () {
           curSub = b.dataset.s; shown = PAGE;
           Array.prototype.forEach.call(panel.querySelectorAll('.lib-schip'), function (x) { x.className = (x === b) ? 'lib-schip on' : 'lib-schip'; });
+          curList = build(curQ()); render();
+        };
+      });
+      Array.prototype.forEach.call(panel.querySelectorAll('.lib-bchip'), function (b) {
+        b.onclick = function () {
+          curBible = b.dataset.b; shown = PAGE;
+          Array.prototype.forEach.call(panel.querySelectorAll('.lib-bchip'), function (x) { x.className = (x === b) ? 'lib-bchip on' : 'lib-bchip'; });
           curList = build(curQ()); render();
         };
       });
@@ -2332,7 +2544,7 @@ console.log('[affairs.js] v20260701dj');
           '<td style="min-width:11em;word-break:keep-all"><b class="sm-title" data-id="' + esc(r.id) + '"' + (r.summary ? ' title="' + esc(String(r.summary).slice(0, 200)) + '"' : '') + ' style="cursor:pointer;color:var(--accent,#223350);text-decoration:underline;text-decoration-color:#cdd7e3;text-underline-offset:3px">' + esc(r.title || '(제목없음)') + '</b>' +
           (r.series ? '<div style="margin-top:2px">' + String(r.series).split(',').map(function (s) { s = s.trim(); return s ? '<span style="display:inline-block;font-size:.66rem;background:#eef3fa;color:#3a5a8c;border:1px solid #d9e4f2;border-radius:999px;padding:1px 7px;margin:1px 3px 0 0">📚 ' + esc(s) + '</span>' : ''; }).join('') + '</div>' : '') + '</td>' +
           '<td style="white-space:nowrap">' + esc(r.scripture || '') + '</td>' +
-          '<td style="white-space:nowrap">' + qtCell + '</td>' +
+          '<td style="white-space:nowrap">' + qtCell + (isQt && window.VideoStudio ? window.VideoStudio.chipHtml(ds) : '') + '</td>' +
           '<td style="white-space:nowrap">' +
           (isQt ? '<button class="btn btn-line sm-qt" data-id="' + esc(r.id) + '" style="padding:4px 9px;font-size:.78rem;background:#fff8e6;border-color:#e6c97a">📲 QT</button> <button class="btn btn-line sm-kakao" data-id="' + esc(r.id) + '" style="padding:4px 9px;font-size:.78rem;background:#fff8c4;border-color:#f4d641">💬 톡 복사</button>' : '') +
           ' <button class="btn btn-line sm-edit" data-id="' + esc(r.id) + '" style="padding:4px 9px;font-size:.78rem">수정</button>' +
@@ -2351,6 +2563,7 @@ console.log('[affairs.js] v20260701dj');
         '</div>';
 
       wireRows(listBox);
+      if (window.VideoStudio) window.VideoStudio.wireChips(listBox);
       listBox.querySelector('#sm_flt_svc').onchange = function () { smTableState.svc = this.value; smTableState.page = 1; renderTable(); };
       listBox.querySelector('#sm_flt_yr').onchange = function () { smTableState.year = this.value; smTableState.page = 1; renderTable(); };
       listBox.querySelector('#sm_flt_mo').onchange = function () { smTableState.month = this.value; smTableState.week = '전체'; smTableState.page = 1; renderTable(); };
@@ -2463,13 +2676,13 @@ console.log('[affairs.js] v20260701dj');
         '.sed-wrap.sed-mode-worship .sed-aside{order:2;position:static;left:auto;top:auto;width:100%;max-width:880px;margin:4px auto 0}' +
         '.sed-mode-worship .sed-aside>.af-field>label{font-size:1.35rem}' +
         '.sed-mode-worship #se_order .od-row{padding:10px 12px;margin-bottom:8px}' +
-        '.qtc-card{border:1px solid #e1e6ef;border-radius:12px;background:#fff;padding:14px 15px;box-shadow:0 4px 14px rgba(34,51,80,.05)}' +
+        '.qtc-card{border:1px solid #e1e6ef;border-radius:12px;background:#fff;padding:14px 15px;box-shadow:0 4px 14px rgba(3,34,87,.05)}' +
         '.qtc-h{font-size:1.02rem;font-weight:800;color:var(--accent,#223350);display:flex;align-items:center;gap:5px}' +
         '.qtc-sub{font-size:.74rem;color:#9aa5b1;margin:5px 0 9px;line-height:1.45}' +
         '.qtc-paste{width:100%;min-height:148px;border:1px solid #e2e8f0;border-radius:8px;padding:9px 11px;font:inherit;font-size:.82rem;line-height:1.5;outline:none;resize:vertical}.qtc-paste:focus{border-color:#9db4d6}' +
         '.qtc-rrow{font-size:.76rem;color:#41607f;background:#f3f7fc;border-radius:7px;padding:5px 9px;margin-top:5px;display:flex;gap:6px}.qtc-rrow b{color:#0a2c5c}' +
         // 문서(설교 원고) 페이지 — MS Word 스타일: 회색 캔버스 위 흰 페이지
-        '.sed-form{max-width:820px;margin:0 auto;background:#fff;border:1px solid #e7ebf2;border-radius:16px;box-shadow:0 12px 44px rgba(34,51,80,.09),0 2px 6px rgba(34,51,80,.04);padding:32px 42px 42px}' +
+        '.sed-form{max-width:820px;margin:0 auto;background:#fff;border:1px solid #e7ebf2;border-radius:16px;box-shadow:0 12px 44px rgba(3,34,87,.09),0 2px 6px rgba(3,34,87,.04);padding:32px 42px 42px}' +
         '.sed-mode-worship .sed-form{padding:26px 32px 34px}' +
         '.sed-form .af-field input,.sed-form .af-field select,.sed-form .af-field textarea{border:1px solid #e3e8f0;border-radius:9px;transition:border-color .15s,box-shadow .15s}' +
         '.sed-form .af-field input:focus,.sed-form .af-field select:focus,.sed-form .af-field textarea:focus{border-color:#9db4d6;box-shadow:0 0 0 3px rgba(60,110,200,.08);outline:none}' +
@@ -2479,7 +2692,7 @@ console.log('[affairs.js] v20260701dj');
         '.sed-aside-l.open{opacity:1;visibility:visible;transform:translateX(0)}' +
         '.sed-mode-worship .sed-aside-l{display:none!important}' +
         '.mb-close{margin-left:auto;border:none;background:none;font-size:1.05rem;line-height:1;color:#9aa5b1;cursor:pointer;padding:2px 4px;border-radius:6px}.mb-close:hover{background:#eceff4;color:#33415c}' +
-        '.mb-card{border:1px solid #d7e0ee;border-radius:14px;background:#fff;box-shadow:0 18px 50px rgba(34,51,80,.22);overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 92px)}' +
+        '.mb-card{border:1px solid #d7e0ee;border-radius:14px;background:#fff;box-shadow:0 18px 50px rgba(3,34,87,.22);overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 92px)}' +
         '.mb-head{font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.02rem;color:var(--accent,#223350);padding:13px 15px 12px;border-bottom:1px solid #eef1f5;background:linear-gradient(180deg,#fbfcfe 0%,#f3f7fb 100%);display:flex;align-items:center;gap:6px}' +
         '.mb-trans{display:flex;gap:5px;padding:11px 12px 7px}' +
         '.mb-trans button{flex:1;padding:6px 4px;border:1px solid #dde3ec;background:#fff;border-radius:999px;font:inherit;font-size:.79rem;font-weight:700;cursor:pointer;color:#3a4a63;transition:.14s}' +
@@ -2498,7 +2711,7 @@ console.log('[affairs.js] v20260701dj');
         '.sed-qt{display:flex;align-items:center;gap:7px;background:#fff7e3;border:1px solid #e8cd86;border-radius:8px;padding:0 11px;height:40px;font-size:.84rem;font-weight:500;color:#8a6d1f;cursor:pointer;user-select:none}' +
         '.sed-row2{display:grid;grid-template-columns:2.3fr 1fr;gap:12px;margin-bottom:12px}' +
         // 설교 원고 리치 에디터
-        '.se-toolbar{display:flex;flex-wrap:wrap;gap:1px;align-items:center;background:linear-gradient(180deg,#ffffff 0%,#f5f8fc 100%);border:1px solid #e3e8f0;border-bottom:none;border-radius:11px 11px 0 0;padding:7px 9px;position:sticky;top:60px;z-index:5;box-shadow:0 1px 0 rgba(34,51,80,.03)}' +
+        '.se-toolbar{display:flex;flex-wrap:wrap;gap:1px;align-items:center;background:linear-gradient(180deg,#ffffff 0%,#f5f8fc 100%);border:1px solid #e3e8f0;border-bottom:none;border-radius:11px 11px 0 0;padding:7px 9px;position:sticky;top:60px;z-index:5;box-shadow:0 1px 0 rgba(3,34,87,.03)}' +
         '.se-toolbar button{font:inherit;font-size:.86rem;border:1px solid transparent;background:none;border-radius:7px;padding:6px 9px;cursor:pointer;color:#33415c;line-height:1;min-width:32px;transition:background .12s,box-shadow .12s}' +
         '.se-toolbar button:hover{background:#eaf1fb;box-shadow:inset 0 0 0 1px #dbe6f5}.se-toolbar button:active{background:#d8e2f0}' +
         '.se-toolbar select{font:inherit;font-size:.82rem;border:1px solid #dde3ec;border-radius:7px;padding:6px 8px;background:#fff;cursor:pointer;color:#33415c}' +
@@ -2520,13 +2733,14 @@ console.log('[affairs.js] v20260701dj');
         '.se-caret{font-size:.6rem;color:#9aa5b1;position:absolute;right:2px;top:3px}' +
         '.se-pop-wrap{position:relative;display:inline-flex}' +
         // 색상 팔레트 — 화면 기준(fixed)으로 띄워 리본의 overflow(가로 스크롤)에 잘리지 않게 함. 위치는 열 때 버튼 좌표로 계산
-        '.se-pop{position:fixed;z-index:9999;background:#fff;border:1px solid #dde3ec;border-radius:12px;box-shadow:0 14px 40px rgba(34,51,80,.28);padding:9px;display:none;grid-template-columns:repeat(6,22px);gap:7px}' +
+        '.se-pop{position:fixed;z-index:9999;background:#fff;border:1px solid #dde3ec;border-radius:12px;box-shadow:0 14px 40px rgba(3,34,87,.28);padding:9px;display:none;grid-template-columns:repeat(6,22px);gap:7px}' +
         '.se-pop.open{display:grid}' +
         '.se-pop .se-sw{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.14);cursor:pointer;padding:0;min-width:0;transition:transform .1s}.se-pop .se-sw:hover{transform:scale(1.14)}' +
         '.se-pop .se-sw.se-none{background:repeating-linear-gradient(45deg,#fff,#fff 4px,#f1d0d0 4px,#f1d0d0 6px);position:relative}' +
         '.se-bible-btn{color:#1d4ed8!important;font-weight:700}.se-bible-btn:hover{background:#dbe9ff!important}' +
-        '.se-editor{min-height:56vh;border:1px solid #e3e8f0;border-radius:0 0 11px 11px;padding:26px 30px 34px;font-size:1.06rem;line-height:2;font-family:\'Noto Serif KR\',serif;background:#fff;outline:none;color:#1a1a1a}' +
-        '.se-editor:focus{border-color:#c4d2e6;box-shadow:inset 0 1px 4px rgba(34,51,80,.04)}' +
+        // word-break:keep-all — PDF 미리보기(.rp-paper)·워드와 동일하게 단어(어절) 단위로 줄바꿈(단어 중간에서 안 쪼개짐)
+        '.se-editor{min-height:56vh;border:1px solid #e3e8f0;border-radius:0 0 11px 11px;padding:26px 30px 34px;font-size:1.06rem;line-height:2;font-family:\'Noto Serif KR\',serif;background:#fff;outline:none;color:#1a1a1a;word-break:keep-all;overflow-wrap:break-word}' +
+        '.se-editor:focus{border-color:#c4d2e6;box-shadow:inset 0 1px 4px rgba(3,34,87,.04)}' +
         '.se-editor:empty:before{content:attr(data-ph);color:#aab3c0}' +
         '.se-editor h2{font-size:1.42em;font-weight:800;margin:.6em 0 .3em;color:#0a2c5c}' +
         '.se-editor h3{font-size:1.18em;font-weight:700;margin:.5em 0 .25em;color:#13314e}' +
@@ -2537,7 +2751,7 @@ console.log('[affairs.js] v20260701dj');
         '@media(max-width:1240px){.sed-lightov .sed-aside{position:static;left:auto;top:auto;width:auto;max-width:820px;margin:0 auto 20px}.sed-lightov .sed-form{max-width:820px}}' +
         '@media(max-width:560px){.sed-row2{grid-template-columns:1fr}.sed-aside-l{left:8px;right:8px;width:auto;top:64px}}' +
         // ═══ 설교 매니저 스튜디오(다크 3분할) — 헤더·리본·바인더·미리보기·상태바 ═══
-        '.sed-hd{position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#ffffff 0%,#f7f9fc 100%);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(34,51,80,.06)}' +
+        '.sed-hd{position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#ffffff 0%,#f7f9fc 100%);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(3,34,87,.06)}' +
         '.sed-brand{font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.18rem;letter-spacing:-.01em;color:var(--accent,#223350)}' +
         '.sed-sub{font-size:.7rem;color:#9aa5b1;margin-top:1px;letter-spacing:.02em}' +
         '.sed-status{font:inherit;font-size:.84rem;border:1px solid #dde3ec;border-radius:9px;padding:8px 10px;background:#fff;cursor:pointer;color:#33415c;font-weight:700}' +
@@ -2550,7 +2764,7 @@ console.log('[affairs.js] v20260701dj');
         '.sed-nosel-editor .se-editor,.sed-nosel-editor .rp-paper,.sed-nosel-editor #rp_flow{-webkit-user-select:none!important;user-select:none!important}' +
         '.mb-text,.mb-text .mb-verse{-webkit-user-select:text;user-select:text}' +
         // ⚙ 자동저장 설정창(팝오버)
-        '.se-setpop{position:fixed;z-index:40;width:232px;background:#fff;border:1px solid #dde3ec;border-radius:11px;box-shadow:0 10px 30px rgba(34,51,80,.18);padding:12px 14px;color:#33415c;font-size:.86rem}' +
+        '.se-setpop{position:fixed;z-index:40;width:232px;background:#fff;border:1px solid #dde3ec;border-radius:11px;box-shadow:0 10px 30px rgba(3,34,87,.18);padding:12px 14px;color:#33415c;font-size:.86rem}' +
         '.se-setpop-h{font-weight:800;color:var(--accent,#223350);margin-bottom:9px;font-size:.9rem}' +
         '.se-setpop-row{display:flex;align-items:center;gap:7px;margin-bottom:8px}' +
         '.se-setpop-row input[type=number]{font:inherit;border:1px solid #dde3ec;border-radius:6px;padding:4px 6px}' +
@@ -2582,6 +2796,20 @@ console.log('[affairs.js] v20260701dj');
         '.rp-paper .pdf-h{font-size:10.8px;font-weight:700;color:#1f3a63;margin:13px 0 7px}' +
         '.rp-paper .pdf-bible{font-size:12.6px;color:#33445c;line-height:1.55;margin:0 0 3px;padding-left:5px}' +
         '.rp-paper .pdf-p{font-size:14.4px;color:#1a1a1a;line-height:1.7;margin:0 0 10px}' +
+        // 서식 보존 미리보기 — 편집기(.se-editor)와 같은 규칙으로 원고 HTML을 그대로 렌더
+        '.rp-paper .pdf-rich{color:#1a1a1a;word-break:keep-all;overflow-wrap:break-word}' +
+        '.rp-paper .pdf-rich p{margin:.45em 0}' +
+        '.rp-paper .pdf-rich h1{font-size:1.62em;font-weight:800;margin:.6em 0 .3em;color:#08213f}' +
+        '.rp-paper .pdf-rich h2{font-size:1.42em;font-weight:800;margin:.6em 0 .3em;color:#0a2c5c}' +
+        '.rp-paper .pdf-rich h3{font-size:1.18em;font-weight:700;margin:.5em 0 .25em;color:#13314e}' +
+        '.rp-paper .pdf-rich blockquote{border-left:4px solid #cdd7e3;margin:.5em 0;padding:.15em 0 .15em 14px;color:#475569}' +
+        '.rp-paper .pdf-rich ul,.rp-paper .pdf-rich ol{margin:.45em 0;padding-left:1.5em}' +
+        '.rp-paper .pdf-rich mark{padding:0 1px}' +
+        '.rp-paper .pdf-rich img{max-width:100%;border-radius:4px}' +
+        // 수동 페이지 나눔(Ctrl+Enter) → 미리보기에선 다음 단(페이지)으로 넘김
+        '.rp-paper .pdf-rich .pg-manual-break{border:none;margin:0;height:0;break-after:column}' +
+        '.rp-paper .pdf-rich .pg-manual-break::after{content:none}' +
+        '.rp-paper .pdf-rich .se-note{background:#fef3c7;border-bottom:2px dotted #d4a53f}' +
         '.rp-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:9px 0 0}' +
         '.rp-nav button{font:inherit;font-size:.82rem;padding:4px 14px;border:1px solid #dde3ec;background:#fff;border-radius:8px;cursor:pointer;color:#33415c}' +
         '.rp-nav button:disabled{opacity:.35;cursor:default}' +
@@ -2640,6 +2868,16 @@ console.log('[affairs.js] v20260701dj');
         '.bd-serwrap{position:relative}' +
         '.bd-serlist{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:32;max-height:190px;overflow:auto;border:1px solid #e3e8f0;border-radius:9px;padding:4px;background:#fff;box-shadow:0 12px 30px rgba(0,0,0,.22)}' +
         '.bd-serlist.open{display:block}' +
+        // ── 🎵 찬송가 필드(새벽·수요·금요 기도회) — 선택 칩 + 라이브러리 주제 추천 목록 ──
+        '.se-hymnchip{display:inline-flex;align-items:center;gap:5px;background:#e7f0ff;color:#1f3a5f;border-radius:999px;padding:3px 10px;margin:0 4px 4px 0;font-size:.8rem;font-weight:700}' +
+        '.sed-dark .se-hymnchip{background:#243450;color:#cfe0f5}' +
+        '.se-hymnchip b{cursor:pointer;color:#c0392b}' +
+        '.se-hymnitem{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid #dfe5ee;border-radius:8px;margin-bottom:4px;background:#fff;font-size:.82rem;color:#33415c}' +
+        '.sed-dark .se-hymnitem{background:#161d29;border-color:#2a3547;color:#c3cede}' +
+        '.se-hymnitem .hy-no{flex:none;font-weight:700;color:#1f3a5f;min-width:42px}' +
+        '.sed-dark .se-hymnitem .hy-no{color:#9fc0ea}' +
+        '.se-hymnitem .hy-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+        '.se-hymnitem .hy-rot{flex:none;font-size:.68rem;white-space:nowrap}' +
         '.bd-seritem{display:block;width:100%;text-align:left;border:0;background:none;border-radius:7px;padding:5px 8px;cursor:pointer;font:inherit;font-size:.8rem;color:#3a4a63}' +
         '.bd-seritem span{color:#9aa5b1;font-size:.7rem}' +
         '.bd-seritem:hover{background:#f2f6fc}' +
@@ -2683,7 +2921,7 @@ console.log('[affairs.js] v20260701dj');
         '.sed-dark .sed-qt{background:#161d29;border-color:#2a3547;color:#c9d4e4}' +   // 주변 입력칸과 같은 색
         '.sed-dark .bd-tabs button{background:#161d29;border-color:#2a3547;color:#8394ab}' +
         '.sed-dark .bd-tabs button.on{background:#2c4a86;border-color:#2c4a86;color:#fff}' +
-        '.sed-dark .bd-chip{background:#1a2740;border-color:#223350;color:#a9c3ec}' +
+        '.sed-dark .bd-chip{background:#1a2740;border-color:#2f4570;color:#a9c3ec}' +
         '.sed-dark .bd-chip button{color:#6d84ad}' +
         '.sed-dark .bd-doc{background:#141b27;border-color:#242e3e}' +
         '.sed-dark .bd-doc b{color:#cdd8e8}.sed-dark .bd-doc span{color:#75839a}' +
@@ -2755,6 +2993,7 @@ console.log('[affairs.js] v20260701dj');
         '<button class="btn btn-line" id="se_preview" style="padding:8px 13px;border-radius:9px">👁 미리보기</button>' +
         (worshipMode ? '' : '<button class="btn btn-line" id="se_present" style="padding:8px 13px;border-radius:9px">🖥 발표자 모드</button>') +
         (worshipMode ? '' : '<button class="btn btn-line" id="se_pdf" style="padding:8px 13px;border-radius:9px">📄 내보내기</button>') +
+        (worshipMode ? '' : '<button class="btn btn-line" id="se_video" title="이 날짜의 QT로 이미지·영상을 자동 생성합니다 (집/교회 PC 워커가 처리)" style="padding:8px 13px;border-radius:9px">🎬 영상 제작</button>') +
         (worshipMode ? '<button class="btn btn-solid" id="se_export" style="padding:8px 18px;border-radius:9px;font-weight:700">📤 저장 후 내보내기</button>' : '') +
         '</div>' +
         '<div id="se_msg" class="fin-msg" style="flex-basis:100%;text-align:right;min-height:0;margin-top:-2px"></div>' +
@@ -2882,6 +3121,11 @@ console.log('[affairs.js] v20260701dj');
         '<div id="se_series_docs" class="bd-serdocs"></div>' +
         '</div>' +
         '<div class="af-field"><label>설교자</label><input type="text" id="se_preacher" value="' + esc(rec.preacher || '손병민 담임목사') + '"></div>' +
+        // 🎵 찬송가(새벽·수요·금요 기도회 전용) — 선택하면 PDF 제목 아래 '찬송가 N장'으로 표기
+        '<div class="af-field se-hide-worship" id="se_hymn_field" style="display:none"><label>🎵 찬송가 <span style="font-weight:400">(PDF 제목 아래 표기)</span></label>' +
+        '<div id="se_hymn_chips" style="min-height:20px;margin-bottom:6px"></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button type="button" class="btn btn-line" id="se_hymn_pick2" style="padding:7px 4px;font-size:.78rem">🔍 번호·제목 검색</button><button type="button" class="btn btn-line" id="se_hymn_reco_btn" style="padding:7px 4px;font-size:.78rem">✨ 주제 추천</button></div>' +
+        '<div id="se_hymn_reco" style="display:none;margin-top:8px"></div></div>' +
         '<div class="af-field se-hide-worship"><label>QT</label><label class="sed-qt" id="se_qt_lbl"><input type="checkbox" id="se_qt_toggle" style="width:16px;height:16px;cursor:pointer;accent-color:#c79a2e;margin:0;flex:none">함께 만들기</label></div>' +
         '<div class="af-field se-hide-worship"><label>🏷 키워드 <span style="font-weight:400">(최대 3개)</span></label><input type="text" id="se_keywords" value="' + esc(rec.keywords || '') + '" placeholder="쉼표로 구분"></div>' +
         '<div class="af-field se-hide-worship"><label>📝 미리보기 요약</label><textarea id="se_summary" maxlength="500" placeholder="목록·카드 하단에 노출 (최대 500자, 2줄까지 표시)" style="min-height:74px">' + esc(rec.summary || '') + '</textarea></div>' +
@@ -3125,6 +3369,126 @@ console.log('[affairs.js] v20260701dj');
         order.push({ label: 'CCM', detail: (v || '').trim(), url: '' });
         renderOrder();
       };
+      // ── 🎵 찬송가 필드(정보 패널) — 새벽기도·수요기도회·금요기도회에서만 표시 ──
+      // 찬양곡 라이브러리(worship_songs)의 찬송가 항목을 주제로 추천받거나, 번호·제목으로 검색해 넣는다.
+      // 선택 결과는 sermons.hymns(쉼표 구분 장 번호)에 저장되고 PDF 제목 아래 '찬송가 N장'으로 표기된다.
+      var hymnRecoLib = null;   // 라이브러리 찬송가 캐시(한 편집 세션 1회 로드)
+      function hymnFieldSync() {
+        var f = ov.querySelector('#se_hymn_field'); if (!f) return;
+        f.style.display = HYMN_META_SERVICES.indexOf(ov.querySelector('#se_service').value) >= 0 ? '' : 'none';
+      }
+      function hymnFieldNums() { return ov.querySelector('#se_hymns_v').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean); }
+      function hymnFieldSet(ns) {
+        ov.querySelector('#se_hymns_v').value = ns.join(',');
+        hymnFieldChips();
+        try { ov.dispatchEvent(new CustomEvent('wp:hymns')); } catch (e) { }   // 미리보기 머리글 갱신
+      }
+      function hymnFieldChips() {
+        var box = ov.querySelector('#se_hymn_chips'); if (!box) return;
+        var ns = hymnFieldNums();
+        box.innerHTML = ns.length
+          ? ns.map(function (n) { var t = hymnTitle(n); return '<span class="se-hymnchip" data-n="' + esc(n) + '">' + esc(n) + '장' + (t ? ' <span style="font-weight:400">' + esc(t) + '</span>' : '') + ' <b title="빼기">✕</b></span>'; }).join('')
+          : '<span style="font-size:.76rem;color:#9aa5b1">아직 선택한 찬송가가 없습니다.</span>';
+        Array.prototype.forEach.call(box.querySelectorAll('.se-hymnchip b'), function (x) {
+          x.onclick = function () { var n = x.parentNode.dataset.n; hymnFieldSet(hymnFieldNums().filter(function (v) { return v !== n; })); };
+        });
+      }
+      var hymnPick2 = ov.querySelector('#se_hymn_pick2');
+      if (hymnPick2) hymnPick2.onclick = function () { hymnPicker(hymnFieldNums(), function (ns) { hymnFieldSet(ns.map(String)); }); };
+      var hymnRecoBtn = ov.querySelector('#se_hymn_reco_btn');
+      if (hymnRecoBtn) hymnRecoBtn.onclick = function () {
+        var recoEl = ov.querySelector('#se_hymn_reco');
+        if (recoEl.style.display !== 'none') { recoEl.style.display = 'none'; return; }   // 다시 누르면 접기
+        recoEl.style.display = '';
+        recoEl.innerHTML = '<div style="font-size:.76rem;color:#9aa5b1">찬양 라이브러리에서 불러오는 중…</div>';
+        // 추천 대상 = 새찬송가 645곡 전체(구간 매핑+제목 키워드로 주제 부여).
+        // 라이브러리(worship_songs)에 같은 장 번호의 찬송가가 있으면 그 주제태그·용도·숙지도·3주 순환을 병합해 가산.
+        var load = hymnRecoLib ? Promise.resolve(hymnRecoLib)
+          : Promise.all([
+              api('GET', 'worship_songs?select=id,title,hymn_no,theme_tags,use_tags,familiarity&type=eq.' + encodeURIComponent('찬송가')).catch(function () { return []; }),
+              loadSongUsage()
+            ]).then(function (res) {
+              var byNo = {};
+              (res[0] || []).forEach(function (s) {
+                // 장 번호가 비어 있으면 곡명 앞 'N장'에서 유추(예: '384장 나의 갈 길 다가로독')
+                var no = s.hymn_no || (function () { var m = /^(\d{1,3})\s*장/.exec(String(s.title || '').trim()); return m ? parseInt(m[1], 10) : null; })();
+                if (no) byNo[no] = { id: s.id, theme_tags: s.theme_tags || [], use_tags: s.use_tags || [], familiarity: s.familiarity };
+              });
+              hymnRecoLib = { byNo: byNo, usage: res[1] || {} };
+              return hymnRecoLib;
+            });
+        load.then(function (lib) {
+          // 설교 제목·본문·키워드·요약·시리즈에서 주제를 자동 감지해 시작점으로
+          var detected = detectThemes({
+            title: ov.querySelector('#se_title').value, scripture: ov.querySelector('#se_scripture').value,
+            keywords: (ov.querySelector('#se_keywords') ? ov.querySelector('#se_keywords').value : ''),
+            summary: (ov.querySelector('#se_summary') ? ov.querySelector('#se_summary').value : ''),
+            series: seriesArr.join(', ')
+          });
+          var selTheme = {}; detected.forEach(function (t) { selTheme[t] = true; });
+          function drawReco() {
+            var svc = ov.querySelector('#se_service').value;
+            var useTag = (svc === '수요기도회') ? '수요예배' : '새벽기도';
+            var picked = songSelArr(selTheme);
+            var rows = (window.HYMNS || []).map(function (h) {
+              var L = lib.byNo[h.no] || null;
+              var themes = hymnThemes(h.no, h.title);
+              if (L) L.theme_tags.forEach(function (t) { if (themes.indexOf(t) < 0) themes.push(t); });   // 찬양관리에서 단 태그 병합
+              var sc = 0;
+              themes.forEach(function (t) { if (selTheme[t]) sc += 2; });
+              if (L && L.use_tags.indexOf(useTag) >= 0) sc += 1.5;
+              var rot = songRot(L && lib.usage[L.id] ? lib.usage[L.id].last : null);
+              if (rot.code === 'ok') sc += 1; else if (rot.code === 'new') sc += 0.3; else sc -= 2;   // 3주 순환: 최근 쓴 곡은 뒤로
+              if (L && L.familiarity === '매우 익숙') sc += 0.5;
+              return { no: h.no, title: h.title, themes: themes, sc: sc, rot: rot, inLib: !!L };
+            });
+            if (picked.length) rows = rows.filter(function (r) { return r.themes.some(function (t) { return selTheme[t]; }); });
+            rows.sort(function (a, b) { return b.sc - a.sc || a.no - b.no; });
+            rows = rows.slice(0, 12);
+            recoEl.innerHTML =
+              '<div style="font-size:.72rem;color:#8a93a0;margin-bottom:5px">주제를 눌러 걸러보세요' + (detected.length ? ' · 설교에서 감지된 주제: <b>' + esc(detected.join(', ')) + '</b>' : '') + '</div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">' + songChips(SONG_THEMES, selTheme, 'hymntheme') + '</div>' +
+              (rows.length
+                ? rows.map(function (r) {
+                    return '<div class="se-hymnitem"><span class="hy-no">' + r.no + '장</span><span class="hy-t" title="' + esc(r.title) + ' · ' + esc(r.themes.join('·')) + '">' + esc(r.title) + ' <span style="font-size:.68rem;color:#a9b3c2">' + esc(r.themes.slice(0, 2).join('·')) + '</span></span><span class="hy-rot">' + (r.inLib ? esc(r.rot.txt) : '') + '</span><button type="button" class="btn btn-line se-hymn-add" data-n="' + r.no + '" style="flex:none;padding:2px 9px;font-size:.78rem" title="찬송가로 추가">＋</button></div>';
+                  }).join('')
+                : '<div style="font-size:.76rem;color:#9aa5b1">선택한 주제에 맞는 찬송가가 없습니다.</div>');
+            Array.prototype.forEach.call(recoEl.querySelectorAll('.song-chip'), function (b) {
+              b.onclick = function () { var v = b.dataset.v; if (selTheme[v]) delete selTheme[v]; else selTheme[v] = true; drawReco(); };
+            });
+            Array.prototype.forEach.call(recoEl.querySelectorAll('.se-hymn-add'), function (b) {
+              b.onclick = function () {
+                var n = String(b.dataset.n), ns = hymnFieldNums();
+                if (ns.indexOf(n) < 0) { ns.push(n); hymnFieldSet(ns); }
+                b.textContent = '✓'; setTimeout(function () { b.textContent = '＋'; }, 900);
+              };
+            });
+          }
+          drawReco();
+        }).catch(function (e) {
+          recoEl.innerHTML = '<div style="font-size:.76rem;color:#c0392b">추천을 불러오지 못했습니다: ' + esc((e && e.message) || '') + '</div>';
+        });
+      };
+      ov.querySelector('#se_service').addEventListener('change', hymnFieldSync);
+      hymnFieldSync(); hymnFieldChips();
+      // 저장 시 선택한 찬송가를 배정 기록(sermon_songs·slot=hymn)에도 남겨 라이브러리 사용횟수·3주 순환에 반영
+      // (라이브러리에 같은 장 번호의 찬송가가 등록돼 있을 때만 — 테이블 미설치 등 실패는 조용히 무시)
+      function syncHymnUsage(sermonId) {
+        if (!sermonId) return;
+        var ns = hymnFieldNums().map(function (x) { return parseInt(x, 10); }).filter(Boolean);
+        api('DELETE', 'sermon_songs?sermon_id=eq.' + sermonId + '&slot=eq.hymn', null, 'return=minimal').then(function () {
+          if (!ns.length) return null;
+          // 라이브러리의 찬송가와 장 번호로 대조(hymn_no가 비면 곡명 앞 'N장'에서 유추)
+          return api('GET', 'worship_songs?select=id,hymn_no,title&type=eq.' + encodeURIComponent('찬송가')).then(function (rows) {
+            var seen = {}, payload = [];
+            (rows || []).forEach(function (r) {
+              var no = r.hymn_no || (function () { var m = /^(\d{1,3})\s*장/.exec(String(r.title || '').trim()); return m ? parseInt(m[1], 10) : null; })();
+              if (no && ns.indexOf(no) >= 0 && !seen[no]) { seen[no] = 1; payload.push({ sermon_id: sermonId, song_id: r.id, slot: 'hymn', position: payload.length }); }
+            });
+            return payload.length ? api('POST', 'sermon_songs', payload, 'return=minimal') : null;
+          });
+        }).catch(function () { });
+      }
       // QT 내보내기 체크박스: 켜면 우리말성경 본문칸·카카오톡 버튼 표시
       var qtToggle = ov.querySelector('#se_qt_toggle');
       var qtWrap = ov.querySelector('#se_qt_bible_wrap');
@@ -3385,6 +3749,7 @@ console.log('[affairs.js] v20260701dj');
         p.then(function (rows) {
           var saved = (rows && rows[0]) || data; if (rows && rows[0]) rec.id = rows[0].id;
           markSaved();
+          syncHymnUsage(rec.id);   // 찬송가 선택 → 라이브러리 사용횟수·순환 집계에 반영(실패 무시)
           if (shouldPairQt()) {
             msg.style.color = '#7b8794'; msg.textContent = '새벽기도 저장됨 · QT 함께 저장 중…';
             pairQt(data, function (ok) {
@@ -3419,6 +3784,16 @@ console.log('[affairs.js] v20260701dj');
           });
       }
       ov.querySelector('#se_save').onclick = function () { save(null); };
+      // ── 🎬 영상 제작 스튜디오 (전역 모듈 window.VideoStudio — 파일 하단 정의) ──
+      (function () {
+        var vbtn = ov.querySelector('#se_video'); if (!vbtn) return;
+        if (!window.VideoStudio) { vbtn.style.display = 'none'; return; }
+        vbtn.onclick = function () {
+          var date = ov.querySelector('#se_date').value;
+          if (!date) { var m2 = ov.querySelector('#se_msg'); m2.style.color = '#c0392b'; m2.textContent = '영상 제작에는 일자가 필요합니다.'; return; }
+          if (window.VideoStudio) window.VideoStudio.open(date, save);
+        };
+      })();
       // 👁 미리보기 — 저장 없이 현재 화면 그대로 아이패드 보기로 미리 확인(설교 본문 포함)
       ov.querySelector('#se_preview').onclick = function () {
         var msg = ov.querySelector('#se_msg');
@@ -3457,6 +3832,11 @@ console.log('[affairs.js] v20260701dj');
         var old = pdfBtn.textContent; pdfBtn.disabled = true; pdfBtn.textContent = '저장 중…';
         save(function (saved) {
           pdfBtn.textContent = 'PDF 생성 중…';
+          // 편집기 화면과 같은 결과가 나오게: 용지·여백(리본 설정) + 문서 전체 글꼴·크기·줄간격·자간을 함께 보낸다
+          var PAPmm = { A4: [210, 297], iPad: [180, 240], Letter: [216, 279], B5: [176, 250] };
+          var pSel = ov.querySelector('#wd_paper'), mSel = ov.querySelector('#wd_margin');
+          var pk = (pSel && PAPmm[pSel.value]) ? pSel.value : 'A4';
+          var csEd = window.getComputedStyle(ed);
           WPF.call('exportSermonPdf', {
             date: saved.sermon_date,
             title: saved.title || '',
@@ -3465,7 +3845,14 @@ console.log('[affairs.js] v20260701dj');
             scripture: saved.scripture || '',
             bibleText: saved.bible_text || '',
             contentHtml: saved.content || '',
-            seriesLine: seriesLineInfo()   // 시리즈 · N번째 설교 (제목 왼쪽 위 출력)
+            seriesLine: seriesLineInfo(),   // 시리즈 · N번째 설교 (제목 왼쪽 위 출력)
+            hymnLine: hymnMetaLabel(saved.hymns, saved.service),   // 새벽·수요·금요 기도회: 제목 아래 '찬송가 N장'
+            paper: { w: PAPmm[pk][0], h: PAPmm[pk][1], margin: Number(mSel && mSel.value) || 20 },
+            docStyle: {
+              fontFamily: csEd.fontFamily || "'Noto Serif KR', serif",
+              lineHeight: ed.style.lineHeight || '',              // 리본 '줄간격'을 직접 바꾼 경우만 전달 — 비면 성경 본문과 같은 1.55
+              letterSpacing: parseFloat(ed.style.letterSpacing) || 0
+            }
           }).then(function (r) {
             pdfBtn.disabled = false; pdfBtn.textContent = old;
             msg.style.color = 'green';
@@ -4120,7 +4507,7 @@ console.log('[affairs.js] v20260701dj');
             if (zoomR) zoomR.value = prefs.zoom;
             if (pgnumSel) pgnumSel.value = prefs.pgnum;
             try { localStorage.setItem(LSK, JSON.stringify(prefs)); } catch (e) { }
-            repaginate();
+            repaginate(true);   // 용지·여백이 바뀌면 모든 경계가 달라지므로 전체 재계산
           }
           // 실제 페이지 나눔: 원고 안의 문단(최상위 블록)을 훑어 한 쪽 분량을 넘기면 그 앞에 '빈 칸(간격)'을 끼워 다음 장으로 밀어냄
           // — 배경의 흰 용지/간격 줄무늬와 정확히 맞물려 진짜 워드처럼 페이지가 눈에 보이게 나뉜다.
@@ -4140,6 +4527,8 @@ console.log('[affairs.js] v20260701dj');
                 if (!wrapper) { wrapper = document.createElement('p'); ed.insertBefore(wrapper, node); }
                 wrapper.appendChild(node);
               } else {
+                // 자식이 하나도 없는 완전히 빈 P/DIV(과거 커서 마커 잔재로 쌓인 오염) 제거 — 의도한 빈 줄은 <p><br></p>라 안전
+                if ((node.tagName === 'P' || node.tagName === 'DIV') && !node.firstChild && !node.classList.contains('pg-break-spacer') && !node.classList.contains('pg-manual-break')) ed.removeChild(node);
                 wrapper = null;
               }
               node = next;
@@ -4154,47 +4543,68 @@ console.log('[affairs.js] v20260701dj');
             Array.prototype.slice.call(root.querySelectorAll('[data-splitbase]')).forEach(function (b) { bases[b.getAttribute('data-splitbase')] = b; });
             Array.prototype.slice.call(root.querySelectorAll('.pg-cont')).forEach(function (c) {
               var gid = c.getAttribute('data-splitcont'), base = bases[gid];
-              if (base) { while (c.firstChild) base.appendChild(c.firstChild); }
-              c.remove();
+              if (base) { while (c.firstChild) base.appendChild(c.firstChild); c.remove(); }
+              else { c.classList.remove('pg-cont'); c.removeAttribute('data-splitcont'); }   // 원본 문단이 삭제된 조각 — 내용을 버리지 않고 일반 문단으로 승격
             });
             Array.prototype.slice.call(root.querySelectorAll('[data-splitbase]')).forEach(function (b) { b.removeAttribute('data-splitbase'); b.normalize(); });
           }
           function pageScale() { var t = (wdSheet.style.transform || '').match(/scale\(([\d.]+)\)/); return t ? parseFloat(t[1]) : 1; }
           var GIDC = 0;
+          // Range.getClientRects는 '줄마다 하나'가 아니라 '인라인 조각(굵게·색·형광펜 등)마다 하나'를 준다 —
+          // 세로로 겹치는 조각들을 실제 한 '줄'로 묶는다(안 묶으면 줄 중간에서 쪼개져 "의|미"처럼 단어가 페이지 경계에 걸리고 간격 계산도 틀어짐).
+          function groupLineRects(rectList, pTopLayout, pRectTop, scale) {
+            var lines = [];
+            for (var i = 0; i < rectList.length; i++) {
+              var r = rectList[i];
+              if (r.width <= 0 && r.height <= 0) continue;
+              var top = pTopLayout + (r.top - pRectTop) / scale, bottom = pTopLayout + (r.bottom - pRectTop) / scale;
+              var L = lines.length ? lines[lines.length - 1] : null;
+              if (L && top < L.bottom - 2) {   // 앞 조각과 세로로 겹침 → 같은 줄
+                if (top < L.top) L.top = top;
+                if (bottom > L.bottom) L.bottom = bottom;
+                if (r.left < L.rect.left) L.rect = r;   // 줄의 맨 앞(가장 왼쪽) 조각을 줄 시작점으로
+              } else {
+                lines.push({ top: top, bottom: bottom, rect: r });
+              }
+            }
+            return lines;
+          }
           // 문단 p를, page 기준 y좌표 limitY 를 넘는 줄부터 새 문단(.pg-cont)으로 분리. 연속 조각 반환 / 'ALL'(첫 줄부터 넘침) / null(안 넘침)
           function splitParagraphAt(p, limitY) {
             var scale = pageScale();
             var pRectTop = p.getBoundingClientRect().top, pTopLayout = p.offsetTop;
-            // 실제 줄 상자들(Range.getClientRects = 줄마다 하나) — 줄 '바닥'이 한도를 넘지 않는 줄까지만 이번 페이지에(바닥 기준이라 하단 여백 침범 없음)
+            // 실제 줄 상자들 — 줄 '바닥'이 한도를 넘지 않는 줄까지만 이번 페이지에(바닥 기준이라 하단 여백 침범 없음)
             var lrng = document.createRange(); lrng.selectNodeContents(p); var lr = lrng.getClientRects();
             if (!lr.length) return null;
-            var lines = [];
-            for (var li = 0; li < lr.length; li++) lines.push({ top: pTopLayout + (lr[li].top - pRectTop) / scale, bottom: pTopLayout + (lr[li].bottom - pRectTop) / scale });
+            var lines = groupLineRects(lr, pTopLayout, pRectTop, scale);
+            if (!lines.length) return null;
             var firstBad = -1;
             for (var li2 = 0; li2 < lines.length; li2++) { if (lines[li2].bottom > limitY + 0.5) { firstBad = li2; break; } }
             if (firstBad < 0) return null;           // 모든 줄이 들어감
             if (firstBad === 0) return 'ALL';        // 첫 줄부터 안 들어감 → 통째로 다음 페이지
             var targetTop = lines[firstBad].top;
-            // 넘치는 첫 줄의 시작 위치를 찾는다. 먼저 caretRangeFromPoint로 한 번에(리플로 1회) 시도하고,
-            // 실패하면 문자 오프셋 이분 탐색으로 폴백 — 대량 문서에서 줄마다 getClientRects를 반복하던 지연을 줄인다.
-            var pos = null;
-            var badRect = lr[firstBad];
-            if (document.caretRangeFromPoint) {
-              try {
-                var cr = document.caretRangeFromPoint(badRect.left + 1, (badRect.top + badRect.bottom) / 2);
-                if (cr && p.contains(cr.startContainer) && cr.startContainer.nodeType === 3 && cr.startOffset > 0) pos = { node: cr.startContainer, offset: cr.startOffset };
-              } catch (e) { }
-            }
-            if (!pos) {
-              var walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null), nodes = [], total = 0, tn;
-              while (tn = walker.nextNode()) { nodes.push({ node: tn, start: total, len: tn.data.length }); total += tn.data.length; }
-              if (total === 0) return null;
-              var posAt = function (idx) { for (var i = 0; i < nodes.length; i++) { if (idx <= nodes[i].start + nodes[i].len) return { node: nodes[i].node, offset: idx - nodes[i].start }; } var L = nodes[nodes.length - 1]; return { node: L.node, offset: L.len }; };
-              var topAt = function (idx) { var pp = posAt(idx); var r = document.createRange(); r.setStart(pp.node, pp.offset); r.setEnd(pp.node, pp.offset); var rects = r.getClientRects(); var rect = rects.length ? rects[rects.length - 1] : r.getBoundingClientRect(); return pTopLayout + (rect.top - pRectTop) / scale; };
-              var lo = 0, hi = total, splitIdx = total;   // 넘치는 첫 줄의 시작 문자 오프셋(top은 offset에 단조 증가 → 이분 탐색)
-              while (lo < hi) { var midI = (lo + hi) >> 1; if (topAt(midI) >= targetTop - 0.5) { splitIdx = midI; hi = midI; } else lo = midI + 1; }
-              if (splitIdx >= total || splitIdx <= 0) return 'ALL';
-              pos = posAt(splitIdx);
+            // 넘치는 첫 줄의 시작 '글자'를 이분 탐색으로 찾는다 — 접힌 캐럿 rect는 줄바꿈 경계에서 '이전 줄 끝'으로
+            // 보고되는 모호성이 있어(한 글자 밀림 → 넘친 줄의 첫 글자가 앞 장에 남음), 글자 자체의 rect로 판정한다.
+            var walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null), nodes = [], total = 0, tn;
+            while (tn = walker.nextNode()) { nodes.push({ node: tn, start: total, len: tn.data.length }); total += tn.data.length; }
+            if (total === 0) return null;
+            var posAt = function (idx) { for (var i = 0; i < nodes.length; i++) { if (idx <= nodes[i].start + nodes[i].len) return { node: nodes[i].node, offset: idx - nodes[i].start }; } var L = nodes[nodes.length - 1]; return { node: L.node, offset: L.len }; };
+            var charTopAt = function (idx) {   // idx번째 글자의 윗변(레이아웃 좌표)
+              var a = posAt(idx), r = document.createRange();
+              r.setStart(a.node, a.offset);
+              var b = (a.offset < a.node.data.length) ? { node: a.node, offset: a.offset + 1 } : posAt(idx + 1);
+              try { r.setEnd(b.node, b.offset); } catch (e) { try { r.setEnd(a.node, a.node.data.length); } catch (e2) { } }
+              var rect = r.getBoundingClientRect();
+              return pTopLayout + (rect.top - pRectTop) / scale;
+            };
+            var lo = 0, hi = total - 1, splitIdx = total;   // 글자 top은 인덱스에 단조 증가 → 이분 탐색
+            while (lo <= hi) { var midI = (lo + hi) >> 1; if (charTopAt(midI) >= targetTop - 0.5) { splitIdx = midI; hi = midI - 1; } else lo = midI + 1; }
+            if (splitIdx >= total || splitIdx <= 0) return 'ALL';
+            var pos = posAt(splitIdx);
+            // 분할점이 텍스트 노드 경계면 '다음 노드의 시작'을 쓴다 — 사이에 낀 커서 마커·빈 인라인이
+            // 다음 장 조각으로 쓸려가(커서가 도로 내려감) 버리는 것을 방지, 앞조각에 남긴다.
+            if (pos.offset >= pos.node.data.length) {
+              for (var ni = 0; ni < nodes.length; ni++) { if (nodes[ni].node === pos.node && ni + 1 < nodes.length) { pos = { node: nodes[ni + 1].node, offset: 0 }; break; } }
             }
             var range = document.createRange(); range.setStart(pos.node, pos.offset); range.setEndAfter(p.lastChild);
             var frag = range.extractContents();
@@ -4214,6 +4624,9 @@ console.log('[affairs.js] v20260701dj');
             var mk = document.createElement('span'); mk.setAttribute('data-caretmk', '1');   // 빈 인라인 스팬 — 줄 레이아웃에 영향 없음
             var r2 = r.cloneRange(); r2.collapse(true);
             try { r2.insertNode(mk); } catch (e) { return null; }
+            // 커서가 최상위(ed 직속)에 있으면 마커가 normalize에서 새 <p>로 감싸져 '빈 문단'이 문서에 쌓임
+            // (undo 때마다 빈 줄이 늘어나던 오염의 근원) → 이 경우 마커를 쓰지 않는다
+            if (mk.parentNode === ed) { mk.parentNode.removeChild(mk); return null; }
             return mk;
           }
           function restoreCaretMarker(mk) {
@@ -4231,17 +4644,169 @@ console.log('[affairs.js] v20260701dj');
             return c.innerHTML;
           }
           wdCleanHtml = cleanHtml;
-          function repaginate() {
+          // ── 빠른 검증(읽기 전용): 기존 페이지 나눔이 아직 유효한지 훑어 무너진 첫 지점을 찾는다 ──
+          // 유효하면 원고 DOM을 전혀 건드리지 않고(병합·재분할·커서마커 없음), 무너졌으면 그 지점(보통 커서가 있는
+          // 페이지)부터만 다시 계산해 앞의 확정된 페이지들은 그대로 둔다 — 워드처럼 타이핑 중 깜빡임·지연이 없어짐.
+          var dirtySet = new Set();   // 마지막 계산 이후 편집된 최상위 블록들 — 경계에 걸쳐 쪼개진 문단의 줄 흐름 변화 감지용
+          function markDirty() {
+            try {
+              var s = window.getSelection(); if (!s || !s.rangeCount) return;
+              var nd = s.getRangeAt(0).startContainer;
+              while (nd && nd.parentNode !== ed) nd = nd.parentNode;
+              if (nd) dirtySet.add(nd);
+            } catch (e) { }
+          }
+          function firstLineHeightOf(el) {   // 블록 첫 줄의 실제 높이(인라인 조각들을 한 줄로 묶어 계산)
+            try {
+              var scale = pageScale();
+              var r = document.createRange(); r.selectNodeContents(el);
+              var rects = r.getClientRects(), top = null, bottom = null;
+              for (var i = 0; i < rects.length; i++) {
+                var rc = rects[i]; if (rc.width <= 0 && rc.height <= 0) continue;
+                if (top === null) { top = rc.top; bottom = rc.bottom; }
+                else if (rc.top < bottom - 2) { if (rc.top < top) top = rc.top; if (rc.bottom > bottom) bottom = rc.bottom; }
+                else break;
+              }
+              return top === null ? (el.offsetHeight || 18) : (bottom - top) / scale;
+            } catch (e) { return 24; }
+          }
+          // 블록의 '잉크' 기준 하단(레이아웃 좌표) — 줄 단위로 쪼개진 앞조각은 행간의 절반이 offsetHeight에 얹혀 있어
+          // (글자는 여백 안인데 블록 상자만 살짝 넘침) 잉크 기준으로 판정해야 분할 직후 상태가 '유효'로 안정된다.
+          function inkBottomOf(el) {
+            try {
+              var scale = pageScale();
+              var r = document.createRange(); r.selectNodeContents(el);
+              var rects = r.getClientRects(), max = null;
+              for (var i = 0; i < rects.length; i++) { var rc = rects[i]; if (rc.width <= 0 && rc.height <= 0) continue; if (max === null || rc.bottom > max) max = rc.bottom; }
+              if (max === null) return el.offsetTop + el.offsetHeight;
+              return el.offsetTop + (max - el.getBoundingClientRect().top) / scale;
+            } catch (e) { return el.offsetTop + el.offsetHeight; }
+          }
+          function validateScan(ph, mg, pageInnerH) {
+            var pageEndY = mg + pageInnerH, totalPages = 1;
+            var node = ed.firstChild, lastBlock = null, lastBottom = 0, manualNode = null;
+            while (node) {
+              if (node.nodeType !== 1) {
+                if (node.nodeType === 3 && node.textContent.trim()) return { node: node, pageEndY: pageEndY, totalPages: totalPages };   // 떠 있는 텍스트 → 문단으로 감싸 재계산 필요
+                node = node.nextSibling; continue;
+              }
+              var cl = node.classList;
+              if (cl.contains('pg-manual-break')) { manualNode = node; node = node.nextSibling; continue; }
+              if (cl.contains('pg-break-spacer')) {
+                var nb = node.nextSibling;
+                while (nb && nb.nodeType !== 1) {
+                  if (nb.nodeType === 3 && nb.textContent.trim()) return { node: lastBlock || node, pageEndY: pageEndY, totalPages: totalPages };
+                  nb = nb.nextSibling;
+                }
+                if (!nb || nb.classList.contains('pg-break-spacer') || nb.classList.contains('pg-manual-break'))
+                  return { node: lastBlock || node, pageEndY: pageEndY, totalPages: totalPages };   // 문서 끝/중복 스페이서 — 정리 필요
+                if (Math.abs(nb.offsetTop - (pageEndY + 2 * mg + GAP)) > 1.5)
+                  return { node: lastBlock || node, pageEndY: pageEndY, totalPages: totalPages };   // 다음 장 첫 블록이 위 여백선에 안 붙음
+                if (!manualNode && lastBlock) {
+                  // 페이지 하단이 한 줄(상자) 이상 비면(삭제 등) 다음 장 첫 줄을 이 페이지로 끌어올려야 함
+                  var isFront = nb.classList.contains('pg-cont') && (lastBlock.getAttribute('data-splitbase') || lastBlock.getAttribute('data-splitcont')) === nb.getAttribute('data-splitcont');
+                  var lb = isFront ? inkBottomOf(lastBlock) : lastBottom;   // 쪼개진 앞조각은 잉크 기준
+                  var csNb = getComputedStyle(nb);
+                  var lineBoxPx = parseFloat(csNb.lineHeight); if (!isFinite(lineBoxPx)) lineBoxPx = (parseFloat(csNb.fontSize) * 1.5) || 24;
+                  var unit = nb.tagName === 'P' ? Math.max(firstLineHeightOf(nb), lineBoxPx) : (nb.offsetHeight || 12);
+                  var collapse = isFront ? 0 : Math.max(parseFloat(csNb.marginTop) || 0, parseFloat(getComputedStyle(lastBlock).marginBottom) || 0);
+                  if (pageEndY - lb >= unit + collapse + 2) return { node: lastBlock, pageEndY: pageEndY, totalPages: totalPages };
+                  // 경계에 걸쳐 쪼개진 문단의 앞조각이 방금 편집됐다면, 높이가 그대로여도 어절 배치가 바뀌었을 수 있음
+                  if (isFront && dirtySet.has(lastBlock)) return { node: lastBlock, pageEndY: pageEndY, totalPages: totalPages };
+                }
+                pageEndY += ph + GAP; totalPages++; manualNode = null;
+                node = node.nextSibling; continue;
+              }
+              if (manualNode) return { node: manualNode, pageEndY: pageEndY, totalPages: totalPages };   // 수동 나눔 뒤에 스페이서가 없음
+              // 자식 없는 빈 문단(오염 — 과거 커서 마커 잔재/붙여넣기 부산물)은 그 자리에서 공간을 차지해 뒷 문단을
+              // 다음 장으로 잘못 밀어냄. 발견 즉시 재계산을 유도해 normalizeTopLevel이 청소하도록 한다(정체 상태 자가치유).
+              if ((node.tagName === 'P' || node.tagName === 'DIV') && !node.firstChild)
+                return { node: lastBlock || node, pageEndY: pageEndY, totalPages: totalPages };
+              var vb = node.offsetTop + node.offsetHeight;
+              if (vb > pageEndY + 2) {
+                // 쪼개진 앞조각(뒤에 스페이서+같은 gid 조각)은 행간 절반이 상자에 얹혀 있음 → 잉크 기준으로 재판정
+                var over = true;
+                var nx = node.nextSibling; while (nx && nx.nodeType !== 1) nx = nx.nextSibling;
+                if (nx && nx.classList.contains('pg-break-spacer')) {
+                  var nn = nx.nextSibling; while (nn && nn.nodeType !== 1) nn = nn.nextSibling;
+                  var gidN = node.getAttribute('data-splitbase') || node.getAttribute('data-splitcont');
+                  if (nn && nn.classList.contains('pg-cont') && gidN && nn.getAttribute('data-splitcont') === gidN && inkBottomOf(node) <= pageEndY + 2) over = false;
+                }
+                if (over) return { node: node, pageEndY: pageEndY, totalPages: totalPages };   // 이번 장을 진짜 넘침
+              }
+              lastBlock = node; lastBottom = vb;
+              node = node.nextSibling;
+            }
+            return { ok: true, totalPages: totalPages };
+          }
+          // startNode부터 문서 끝까지만 스페이서 제거 + 조각 되돌리기 — 그 앞의 확정된 페이지는 건드리지 않는다
+          function mergeSplitsFrom(startNode) {
+            var targets = {};   // gid → 이 영역 안의 병합 기준 조각
+            if (startNode.nodeType === 1) {
+              var g0 = startNode.getAttribute('data-splitbase') || (startNode.classList.contains('pg-cont') ? startNode.getAttribute('data-splitcont') : null);
+              if (g0) targets[g0] = startNode;
+            }
+            var n = startNode.nextSibling;
+            while (n) {
+              var next = n.nextSibling;
+              if (n.nodeType === 1) {
+                if (n.classList.contains('pg-break-spacer')) n.remove();
+                else if (n.classList.contains('pg-cont')) {
+                  var gid = n.getAttribute('data-splitcont'), t = targets[gid];
+                  if (t) { while (n.firstChild) t.appendChild(n.firstChild); n.remove(); }
+                  else targets[gid] = n;   // 원본이 영역 앞(확정 페이지)에 있음 — 이 조각을 그 페이지 첫 블록으로 유지
+                } else {
+                  var g = n.getAttribute('data-splitbase');
+                  if (g) targets[g] = n;
+                }
+              }
+              n = next;
+            }
+            Object.keys(targets).forEach(function (gid) {
+              var t = targets[gid];
+              if (t.getAttribute('data-splitbase') && !ed.querySelector('.pg-cont[data-splitcont="' + gid + '"]')) t.removeAttribute('data-splitbase');
+              if (t.normalize) t.normalize();
+            });
+          }
+          function repaginate(force) {
             var m = metrics(), ph = m.ph, mg = m.mg;
             var pageInnerH = ph - 2 * mg;
+            var startNode = null, pageEndY = mg + pageInnerH, totalPages = 1, partial = false;
+            if (!force) {
+              var scan = validateScan(ph, mg, pageInnerH);
+              if (scan.ok) {   // 나눔이 그대로 유효 — 페이지 수 표시만 갱신, 원고 DOM 무접촉(깜빡임 없음)
+                wdPage.style.minHeight = (scan.totalPages * ph + (scan.totalPages - 1) * GAP) + 'px';
+                renderCropMarks(scan.totalPages, ph, mg);
+                renderPageNums(scan.totalPages, ph);
+                dirtySet.clear();
+                return false;
+              }
+              partial = true; startNode = scan.node; pageEndY = scan.pageEndY; totalPages = scan.totalPages;
+              // 시작점이 스페이서면(문서 끝 잉여 스페이서 등) 지우고 다음 노드부터
+              while (startNode && startNode.nodeType === 1 && startNode.classList && startNode.classList.contains('pg-break-spacer')) { var sn = startNode.nextSibling; startNode.remove(); startNode = sn; }
+            }
             var hadFocus = (document.activeElement === ed);
             var caretMk = hadFocus ? insertCaretMarker() : null;   // 병합·분할 전에 커서 자리에 마커를 심고, 끝나면 그 자리로 정확히 복원
-            Array.prototype.slice.call(ed.querySelectorAll('.pg-break-spacer')).forEach(function (n) { n.remove(); });
-            mergeSplitsIn(ed);      // 이전 페이지 나눔 조각을 원래 문단으로 되돌린 뒤 처음부터 다시 계산
+            if (partial) {
+              if (startNode) mergeSplitsFrom(startNode);   // startNode가 없으면(끝의 잉여 스페이서만 정리) 재계산할 내용 없음
+            } else {
+              Array.prototype.slice.call(ed.querySelectorAll('.pg-break-spacer')).forEach(function (n) { n.remove(); });
+              mergeSplitsIn(ed);      // 이전 페이지 나눔 조각을 원래 문단으로 되돌린 뒤 처음부터 다시 계산
+            }
             normalizeTopLevel();
-            var pageEndY = mg + pageInnerH;   // 현재 페이지의 본문 하단 경계(wd-page 기준 y좌표)
-            var totalPages = 1, forceBreakAfter = false;
-            var kids = Array.prototype.slice.call(ed.children), i = 0, guard = 0;
+            while (startNode && startNode.parentNode && startNode.parentNode !== ed) startNode = startNode.parentNode;   // normalize가 <p>로 감쌌으면 그 문단부터
+            var kids = Array.prototype.slice.call(ed.children), i = 0, guard = 0, forceBreakAfter = false;
+            if (partial) {
+              if (!startNode) i = kids.length;
+              else {
+                i = kids.indexOf(startNode);
+                if (i < 0) {   // 안전망: 시작점을 잃으면 전체 재계산
+                  Array.prototype.slice.call(ed.querySelectorAll('.pg-break-spacer')).forEach(function (n) { n.remove(); });
+                  mergeSplitsIn(ed);
+                  kids = Array.prototype.slice.call(ed.children); i = 0; pageEndY = mg + pageInnerH; totalPages = 1;
+                }
+              }
+            }
             while (i < kids.length && guard++ < 4000) {
               var k = kids[i];
               if (k.classList && k.classList.contains('pg-manual-break')) { forceBreakAfter = true; i++; continue; }
@@ -4254,10 +4819,14 @@ console.log('[affairs.js] v20260701dj');
                   var res = splitParagraphAt(k, pageEndY);
                   if (res && res !== 'ALL') breakBefore = res;   // 넘치는 뒷부분(.pg-cont) 앞에서 나눔
                 }
+                var wantTop = pageEndY + 2 * mg + GAP;   // 다음 장 첫 블록이 와야 할 y(위 여백선 바로 아래)
                 var sp = document.createElement('div');
                 sp.className = 'pg-break-spacer'; sp.contentEditable = 'false';
-                sp.style.height = Math.max(0, Math.round(pageEndY - breakBefore.offsetTop) + 2 * mg + GAP) + 'px';
+                sp.style.height = Math.max(0, Math.round(wantTop - breakBefore.offsetTop)) + 'px';
                 ed.insertBefore(sp, breakBefore);
+                // 스페이서 삽입으로 문단 사이 여백 겹침이 풀리는 등의 오차를 실측해 보정 — 다음 장 첫 줄이 여백선에 정확히 붙음
+                var drift = Math.round(breakBefore.offsetTop - wantTop);
+                if (drift) sp.style.height = Math.max(0, (parseFloat(sp.style.height) || 0) - drift) + 'px';
                 pageEndY += ph + GAP; totalPages++; forceBreakAfter = false;
                 kids = Array.prototype.slice.call(ed.children);
                 i = kids.indexOf(breakBefore);   // 새 페이지 첫 조각부터 다시(그 조각도 또 넘칠 수 있음)
@@ -4270,6 +4839,8 @@ console.log('[affairs.js] v20260701dj');
             renderCropMarks(totalPages, ph, mg);
             renderPageNums(totalPages, ph);
             if (hadFocus) restoreCaretMarker(caretMk);
+            dirtySet.clear();
+            return true;
           }
           // Ctrl+Enter — 커서 다음의 글 전체가 다음 페이지로 넘어가도록 수동 페이지 나눔 삽입
           function insertManualBreak() {
@@ -4286,10 +4857,103 @@ console.log('[affairs.js] v20260701dj');
               }
             }
             syncContent();
-            repaginate();
+            repaginate(true);
+          }
+          // ── 페이지 경계에서의 Backspace/Delete: 워드처럼 자연스럽게 ──
+          // 간격(.pg-break-spacer)은 편집 불가·선택 불가 요소라 브라우저 기본 백스페이스가 그 앞에서 막혀
+          // '페이지 첫 줄에서 문단을 위로 못 올리는' 현상이 생김 → 경계를 건너뛰어 직접 처리한다.
+          function topBlockOf(node) { while (node && node.parentNode !== ed) node = node.parentNode; return node; }
+          function caretAtStartOf(block, r) {   // 캐럿 앞에 글자·이미지가 하나도 없으면 '블록 맨 앞'
+            var t = document.createRange(); t.selectNodeContents(block);
+            try { t.setEnd(r.startContainer, r.startOffset); } catch (e) { return false; }
+            if (t.toString().length) return false;
+            try { if (t.cloneContents().querySelector('img,video,iframe')) return false; } catch (e2) { }
+            return true;
+          }
+          function caretAtEndOf(block, r) {   // 캐럿 뒤에 글자·이미지가 없으면 '블록 맨 끝'(꼬리 <br>은 무시)
+            var t = document.createRange(); t.selectNodeContents(block);
+            try { t.setStart(r.startContainer, r.startOffset); } catch (e) { return false; }
+            if (t.toString().length) return false;
+            try { if (t.cloneContents().querySelector('img,video,iframe')) return false; } catch (e2) { }
+            return true;
+          }
+          function isBreakEl(el) { return el && el.nodeType === 1 && el.classList && (el.classList.contains('pg-break-spacer') || el.classList.contains('pg-manual-break')); }
+          function safeRepaginate(force) {   // 예기치 못한 원고 상태에서도 편집기가 멈추지 않게 — 실패 시 전체 재계산으로 복구
+            try { return repaginate(force); }
+            catch (err) { try { return repaginate(true); } catch (e2) { return false; } }
+          }
+          // ── 구조 편집(Enter · 경계 Backspace/Delete)은 '깨끗한 논리 문서'에서 처리 ──
+          // 먼저 간격(spacer)·쪼갠 조각(.pg-cont)을 모두 원상복구해 평범한 문서로 되돌린 뒤(cleanForEdit), 그 위에서
+          // 브라우저 기본 편집 명령을 실행하고, 곧바로 페이지 나눔을 다시 계산한다. 페이지 뷰가 아니라 논리 문서에서
+          // 편집하므로 경계마다 나던 특수 버그(커서 안 내려감·글자만 지워짐·문단이 안 올라옴)가 근본적으로 사라진다.
+          function cleanForEdit() {
+            var hadFocus = (document.activeElement === ed);
+            var mk = hadFocus ? insertCaretMarker() : null;   // 커서 자리를 마커로 잡아 두고
+            Array.prototype.slice.call(ed.querySelectorAll('.pg-break-spacer')).forEach(function (n) { n.remove(); });
+            mergeSplitsIn(ed);        // 쪼갠 조각을 원래 문단으로 되돌림(커서 마커도 함께 이동)
+            normalizeTopLevel();      // 떠 있는 텍스트 감싸기 + 빈 문단 청소
+            if (mk) restoreCaretMarker(mk);   // 커서를 원래 논리 위치로 복원
+          }
+          // 경계에 수동 페이지 나눔(Ctrl+Enter)이 있으면 그것만 제거 — 워드처럼 '페이지 나눔 해제'(문단 병합은 안 함)
+          function removeBreakBoundary(block, dir) {
+            var sib = dir < 0 ? 'previousElementSibling' : 'nextElementSibling';
+            var q = block[sib], manual = null;
+            while (isBreakEl(q)) { if (q.classList.contains('pg-manual-break')) manual = q; q = q[sib]; }
+            if (!manual) return false;
+            pushUndo();
+            manual.remove();
+            syncContent();
+            safeRepaginate(true);
+            keepCaretVisible();
+            try { ed.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) { }
+            return true;
+          }
+          function structuralEdit(kind) {   // kind: 'enter' | 'backspace' | 'forward'
+            pushUndo();               // 편집 전(깨끗한) 상태를 undo 한 단계로
+            cleanForEdit();
+            try {
+              if (kind === 'enter') document.execCommand('insertParagraph');
+              else if (kind === 'backspace') document.execCommand('delete');        // Backspace = 앞 글자/문단 병합
+              else document.execCommand('forwardDelete');                            // Delete = 뒷 글자/문단 병합
+            } catch (e) { }
+            syncContent();
+            safeRepaginate(true);     // 논리 편집 결과를 다시 페이지로 나눔(동기 — 깜빡임·경쟁 없음)
+            keepCaretVisible();
+            try { ed.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) { }   // 미리보기·자동저장 갱신
           }
           ed.addEventListener('keydown', function (e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); insertManualBreak(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); insertManualBreak(); return; }
+            if (e.isComposing || e.keyCode === 229) return;   // 한글 조합 중엔 관여하지 않음(조합 깨짐 방지)
+            // ── Enter: 경계·조각 근처에서만 '깨끗한 문서' 방식으로 확정 처리(그 외 문단 중간은 기본 동작 + 빠른 재계산) ──
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              var s = window.getSelection();
+              if (!s || !s.rangeCount) return;
+              var eb = topBlockOf(s.getRangeAt(0).startContainer);
+              if (!eb || eb.nodeType !== 1 || isBreakEl(eb)) return;
+              var nearBoundary = isBreakEl(eb.previousElementSibling) || isBreakEl(eb.nextElementSibling)
+                || eb.classList.contains('pg-cont') || eb.getAttribute('data-splitbase');
+              if (nearBoundary) { e.preventDefault(); structuralEdit('enter'); }
+              return;   // 경계 아니면 기본 Enter — input 이벤트의 빠른 재계산이 처리
+            }
+            // ── 경계 Backspace/Delete: 간격을 사이에 두고 앞/뒤와 한 번에 병합(워드와 동일) ──
+            if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              var s2 = window.getSelection();
+              if (!s2 || !s2.rangeCount || !s2.isCollapsed) return;   // 선택영역 삭제는 기본 동작에 맡김
+              var r = s2.getRangeAt(0);
+              var block = topBlockOf(r.startContainer);
+              if (!block || block.nodeType !== 1 || isBreakEl(block)) return;
+              try {   // 예기치 못한 원고 구조면 기본 동작으로 폴백(편집기가 죽지 않게)
+                if (e.key === 'Backspace') {
+                  if (!isBreakEl(block.previousElementSibling) || !caretAtStartOf(block, r)) return;   // 경계 아님 → 기본 동작 + 빠른 재계산
+                  e.preventDefault();
+                  if (!removeBreakBoundary(block, -1)) structuralEdit('backspace');   // 수동 나눔이면 나눔만 해제, 아니면 앞 문단과 병합
+                } else {
+                  if (!isBreakEl(block.nextElementSibling) || !caretAtEndOf(block, r)) return;
+                  e.preventDefault();
+                  if (!removeBreakBoundary(block, 1)) structuralEdit('forward');
+                }
+              } catch (err) { }
+            }
           });
           function renderPageNums(totalPages, ph) {
             if (!pgnumLayer) return;
@@ -4307,10 +4971,10 @@ console.log('[affairs.js] v20260701dj');
           if (marginSel) marginSel.onchange = function () { prefs.margin = Number(this.value) || 20; applyPage(); };
           if (zoomR) zoomR.oninput = function () { prefs.zoom = Number(this.value) || 100; applyPage(); };
           if (pgnumSel) pgnumSel.onchange = function () { prefs.pgnum = this.value; try { localStorage.setItem(LSK, JSON.stringify(prefs)); } catch (e) { } repaginate(); };
-          wdRepaginate = repaginate;   // 생명의삶 자동분류 등 코드로 ed.innerHTML을 바꿔치기하는 곳에서 재호출할 수 있게 바깥에 노출
+          wdRepaginate = function () { return repaginate(true); };   // 외부(자동분류·undo·서식 등)에서 원고를 통째로 바꾼 뒤엔 전체 재계산
           applyPage();
           // 웹폰트(본명조 등)가 늦게 로드되면 줄 높이가 바뀌므로, 로드 완료 후 페이지 나눔을 한 번 더 정확히 다시 계산
-          try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { repaginate(); }); } catch (e) { }
+          try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { repaginate(true); }); } catch (e) { }
           // 원고를 입력할 때마다(디바운스) 페이지 나눔·페이지 번호를 다시 계산
           var rpgT = null;
           // 페이지 나눔이 방금 커서 위치 바로 앞에 '간격(spacer)'을 끼워 넣으면, 화면은 그대로인데 실제 내용은 그 아래로 밀려나
@@ -4328,13 +4992,13 @@ console.log('[affairs.js] v20260701dj');
           var composing = false;
           function runRepaginate() {
             if (composing) { clearTimeout(rpgT); rpgT = setTimeout(runRepaginate, 200); return; }   // 조합 끝날 때까지 대기
-            repaginate(); keepCaretVisible();
+            if (safeRepaginate()) keepCaretVisible();   // 실제로 재구성했을 때만 커서 위치 보정
           }
-          // 입력이 멈춘 뒤 다음 유휴/프레임에 페이지 나눔 — 타이핑 프레임을 막지 않아 체감 지연을 줄인다
-          function schedRepaginate() { clearTimeout(rpgT); rpgT = setTimeout(function () { (window.requestAnimationFrame || window.setTimeout)(runRepaginate); }, 450); }
+          // 입력이 멈춘 뒤 다음 프레임에 페이지 나눔 — 유효하면 읽기만 하고 끝나므로 짧게 기다려도 부담 없음(워드처럼 즉각 반영)
+          function schedRepaginate() { clearTimeout(rpgT); rpgT = setTimeout(function () { (window.requestAnimationFrame || window.setTimeout)(runRepaginate); }, 160); }
           ed.addEventListener('compositionstart', function () { composing = true; });
           ed.addEventListener('compositionend', function () { composing = false; schedRepaginate(); });
-          ed.addEventListener('input', schedRepaginate);
+          ed.addEventListener('input', function () { markDirty(); schedRepaginate(); });
         })();
 
         // ── 발표자 모드: 저장 없이 현재 화면 그대로 아이패드 발표 보기 ──
@@ -4345,7 +5009,8 @@ console.log('[affairs.js] v20260701dj');
         var rpPaper = ov.querySelector('#rp_paper'), rpWrap = ov.querySelector('#rp_paperwrap'), rpInfo = ov.querySelector('#rp_pageinfo');
         var rpFlow = ov.querySelector('#rp_flow'), pgEl = ov.querySelector('#rp_pg'), pgPrev = ov.querySelector('#rp_pg_prev'), pgNext = ov.querySelector('#rp_pg_next');
         var sbCount = ov.querySelector('#sb_count'), zoomIn = ov.querySelector('#sb_zoom'), zoomV = ov.querySelector('#sb_zoom_v');
-        var PG_INW = 434, PG_GAP = 86, PG_STRIDE = PG_INW + PG_GAP;   // 한 페이지 본문 폭 + 여백×2 = 페이지 넘김 간격
+        // 한 페이지 본문 폭 + 여백×2 = 페이지 넘김 간격 — 용지·여백 설정에 따라 renderPreview에서 갱신됨
+        var PG_INW = 434, PG_GAP = 86, PG_STRIDE = PG_INW + PG_GAP;
         var pgIdx = 0, pgTotal = 1;
         function updatePg() {
           if (!rpFlow) return;
@@ -4373,16 +5038,32 @@ console.log('[affairs.js] v20260701dj');
           return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + W[d.getDay()] + ')';
         }
         // PDF 내보내기(Apps Script exportSermonPdf)와 동일한 최종 결과물을 그대로 재현
+        // — 원고는 평문이 아니라 편집기 서식(굵게·크기·색·인용·정렬) 그대로 보여준다
+        var PV_PAPmm = { A4: [210, 297], iPad: [180, 240], Letter: [216, 279], B5: [176, 250] };
+        function pvPaperInfo() {
+          var pSel = ov.querySelector('#wd_paper'), mSel = ov.querySelector('#wd_margin');
+          var pk = (pSel && PV_PAPmm[pSel.value]) ? pSel.value : 'A4';
+          return { key: pk, w: PV_PAPmm[pk][0], h: PV_PAPmm[pk][1], m: Number(mSel && mSel.value) || 20 };
+        }
         function renderPreview() {
           if (!rpPaper) return;
+          // 미리보기 종이를 실제 용지 비율·여백에 맞춤 (폭 520px 고정, 높이·패딩은 비율 환산)
+          var pp = pvPaperInfo(), PXMM = 96 / 25.4;
+          var factor = 520 / (pp.w * PXMM);                    // 편집기 화면 px → 미리보기 px 축척
+          var padPx = pp.m * PXMM * factor;
+          var pageH = Math.round(520 * pp.h / pp.w);
+          rpPaper.style.height = pageH + 'px';
+          rpPaper.style.padding = padPx.toFixed(1) + 'px';
+          PG_INW = 520 - 2 * padPx; PG_GAP = 2 * padPx; PG_STRIDE = PG_INW + PG_GAP;
+          rpFlow.style.height = (pageH - 2 * padPx).toFixed(1) + 'px';
+          rpFlow.style.columnWidth = PG_INW.toFixed(1) + 'px';
+          rpFlow.style.columnGap = PG_GAP.toFixed(1) + 'px';
           var t = ov.querySelector('#se_title').value.trim() || '(제목없음)';
           var svcV = ov.querySelector('#se_service').value, cu = ov.querySelector('#se_svc_custom');
           if (svcV === '기타' && cu && cu.value.trim()) svcV = cu.value.trim();
-          var meta = [fmtDateK(ov.querySelector('#se_date').value), svcV, ov.querySelector('#se_scripture').value.trim(), ov.querySelector('#se_preacher').value.trim()]
+          var meta = [fmtDateK(ov.querySelector('#se_date').value), svcV, hymnMetaLabel(ov.querySelector('#se_hymns_v').value, svcV), ov.querySelector('#se_scripture').value.trim(), ov.querySelector('#se_preacher').value.trim()]
             .filter(Boolean).join('   ·   ');
           var bible = (ov.querySelector('#se_bible') ? ov.querySelector('#se_bible').value : '').trim();
-          var plain = htmlToPlain(cleanContent() || '').trim();
-          var paras = plain ? plain.split(/\n{2,}/) : ['(설교 원고가 비어 있습니다)'];
           var sLine = seriesLineInfo();
           var html = (sLine ? '<div class="pdf-series">📚 ' + esc(sLine) + '</div>' : '') + '<div class="pdf-t">' + esc(t) + '</div>';
           if (meta) html += '<div class="pdf-meta">' + esc(meta) + '</div>';
@@ -4393,10 +5074,20 @@ console.log('[affairs.js] v20260701dj');
             html += '<hr class="pdf-hr">';
           }
           html += '<div class="pdf-h">설교 원고</div>';
-          paras.forEach(function (p) { var x = p.replace(/\n/g, ' ').trim(); if (x) html += '<p class="pdf-p">' + esc(x) + '</p>'; });
+          var rich = cleanContent() || '';
+          if (!htmlToPlain(rich).replace(/\s/g, '')) {
+            html += '<p class="pdf-p">(설교 원고가 비어 있습니다)</p>';
+          } else {
+            // zoom으로 편집기 px 크기를 종이 축척에 맞춰 통째로 줄임 — 인라인 서식(px)도 함께 비례
+            var st = 'zoom:' + factor.toFixed(4) +
+              ';font-size:18.7px' +                              // 14pt(÷0.75) — 성경 본문과 같은 크기
+              ';line-height:' + (ed.style.lineHeight || '1.55') + // 성경 본문과 같은 줄간격(리본에서 바꾸면 그 값)
+              (ed.style.letterSpacing ? ';letter-spacing:' + ed.style.letterSpacing : '');
+            html += '<div class="pdf-rich" style="' + st + '">' + rich + '</div>';
+          }
           if (rpFlow) rpFlow.innerHTML = html;
           updatePg();
-          if (rpInfo) rpInfo.textContent = '아이패드 크기(3:4) · 실제 PDF 내보내기와 동일한 양식';
+          if (rpInfo) rpInfo.textContent = pp.key + ' (' + pp.w + '×' + pp.h + '㎜) · 실제 PDF 내보내기와 동일한 양식';
           var txt = (ed.innerText || '').trim();
           var words = txt ? txt.split(/\s+/).length : 0, chars = txt.replace(/\s/g, '').length;
           if (sbCount) sbCount.textContent = pgTotal + ' 페이지 · ' + words + ' 단어 · ' + chars + ' 글자';
@@ -4409,6 +5100,9 @@ console.log('[affairs.js] v20260701dj');
         ['#se_title', '#se_scripture', '#se_preacher', '#se_bible', '#se_svc_custom'].forEach(function (sel) { var el = ov.querySelector(sel); if (el) el.addEventListener('input', schedPreview); });
         ov.querySelector('#se_service').addEventListener('change', schedPreview);
         ov.querySelector('#se_date').addEventListener('change', schedPreview);
+        // 용지·여백·줄간격·자간이 바뀌면 미리보기 종이·서식도 다시 계산
+        ['#wd_paper', '#wd_margin', '#se_lh', '#se_ls'].forEach(function (sel) { var el = ov.querySelector(sel); if (el) el.addEventListener('change', schedPreview); });
+        ov.addEventListener('wp:hymns', schedPreview);   // 찬송가 선택이 바뀌면 머리글의 '찬송가 N장' 갱신
         ov.querySelector('#qtc_run').addEventListener('click', function () { setTimeout(renderPreview, 350); });   // 자동분류 후 미리보기 갱신
         renderPreview();
 
@@ -4905,7 +5599,7 @@ console.log('[affairs.js] v20260701dj');
     function tI(label, id, val, ph) { return '<div class="af-field"><label>' + label + '</label><input type="text" id="' + id + '" value="' + esc(val || '') + '" placeholder="' + esc(ph || '') + '"></div>'; }
     var off = d.offering || {}, amt = d.offering_amounts || {}, com = d.committee || {};
     ov.innerHTML =
-      '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(34,51,80,.06)">' +
+      '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(3,34,87,.06)">' +
       '<div style="max-width:1100px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
       '<button class="btn btn-line" id="bt_close" style="padding:8px 14px;border-radius:9px">‹ 닫기</button>' +
       '<div style="flex:1;text-align:center"><div style="font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.2rem;color:var(--accent,#223350)">주보 제작</div><div style="font-size:.72rem;color:#9aa5b1">설교 연동 · 인쇄(PDF) · 홈페이지 게시</div></div>' +
@@ -4939,7 +5633,7 @@ console.log('[affairs.js] v20260701dj');
       '<div>' + tI('수요기도회 — 강해 시리즈', 'bt_wed_series', d.wed_series, '예: 레위기 강해(1)') + '</div>' +
       '<div>' + tI('수요기도회 — 제목', 'bt_wed_title', d.wed_title, '예: 레위기란 어떤 책인가?') + '</div>' +
       '</div>' +
-      tI('수요기도회 — 날짜·본문·설교자 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">날짜 자동(그 주 수요일)</span>', 'bt_wed_line', d.wed_dateline, '예: 2026. 07. 01 · 에베소서 1장 · 손병민 담임목사') +
+      tI('수요기도회 — 날짜·본문·설교자 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">날짜 자동(그 주 수요일)</span>', 'bt_wed_line', d.wed_dateline, '예: 2026. 07. 01 · 레위기 1장1절 · 손병민 담임목사') +
       '<div class="fin-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">' +
       '<div>' + tI('새벽기도회 본문', 'bt_dawn', d.dawn, '예: 나훔, 시편 강해') + '</div>' +
       '<div>' + tI('매일 QT 본문', 'bt_qt', d.qt, '예: 나훔 3장, 시편107편~109편') + '</div>' +
@@ -5878,6 +6572,713 @@ console.log('[affairs.js] v20260701dj');
   // ====================================================================
   //  설정 — 연간 봉사위원 (주보 제작 시 자동 채움)
   // ====================================================================
+  // ═══════════════ 메모장 — 교회 잡무 메모(포스트잇 보드) ═══════════════
+  var MEMO_CATS = ['일반', '할 일', '아이디어', '행사 준비', '전달사항', '기도제목', '기타'];
+  var MEMO_COLORS = [['#fffbe6', '노랑'], ['#e8f1fd', '파랑'], ['#e9f7ef', '초록'], ['#fdeef2', '분홍'], ['#f4eefb', '보라'], ['#ffffff', '흰색']];
+  var MEMO_BTN = 'border:1px solid rgba(3,34,87,.14);background:rgba(255,255,255,.72);border-radius:7px;padding:3px 9px;font-size:.76rem;cursor:pointer;font-family:inherit;color:#33415c';
+  function renderMemos(panel, opts) {
+    opts = opts || {};
+    var state = { q: '', cat: '', hideDone: false };
+    var NOTES = [];
+    var newColor = MEMO_COLORS[0][0];
+    var dashSel = null;
+
+    function swatches(cur) { return MEMO_COLORS.map(function (c) { return '<button type="button" class="mm-sw" data-c="' + c[0] + '" title="' + c[1] + '" style="width:24px;height:24px;border-radius:50%;cursor:pointer;background:' + c[0] + ';border:' + (cur === c[0] ? '2px solid var(--accent,#223350)' : '1px solid #cdd7e3') + '"></button>'; }).join(''); }
+    function bindSwatches(box, onPick) {
+      Array.prototype.forEach.call(box.querySelectorAll('.mm-sw'), function (b) {
+        b.onclick = function () { onPick(b.dataset.c); Array.prototype.forEach.call(box.querySelectorAll('.mm-sw'), function (x) { x.style.border = (x.dataset.c === b.dataset.c) ? '2px solid var(--accent,#223350)' : '1px solid #cdd7e3'; }); };
+      });
+    }
+
+    panel.innerHTML =
+      '<div class="fin-card">' +
+      '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><h3 style="margin:0 0 10px;color:var(--accent,#223350)">📝 새 메모</h3><span style="color:#9aa5b1;font-size:.82rem">교회에서 일어나는 잡다한 일들을 적어두고 관리하세요 · 내용 입력 후 Ctrl+Enter 로 바로 추가</span></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 170px;gap:10px">' +
+      '<input id="mm_title" placeholder="제목 (선택)" style="padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;min-width:0">' +
+      '<select id="mm_cat" style="padding:9px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' + MEMO_CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
+      '<textarea id="mm_content" placeholder="내용을 적어주세요… (예: 다음 주 강단 꽃꽂이 확인, 보일러 수리 기사 연락)" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;min-height:86px;resize:vertical"></textarea>' +
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px">' +
+      '<span style="display:inline-flex;align-items:center;gap:6px" id="mm_swbox"><span style="font-size:.82rem;color:#7b8794">색</span>' + swatches(newColor) + '</span>' +
+      '<label style="display:inline-flex;align-items:center;gap:5px;font-size:.86rem;color:#3a4a63;cursor:pointer"><input type="checkbox" id="mm_pin"> 📌 상단 고정</label>' +
+      '<button class="btn btn-solid" id="mm_add" style="padding:8px 18px;margin-left:auto">＋ 메모 추가</button>' +
+      '<span class="fin-msg" id="mm_msg"></span></div></div>' +
+      '<div class="fin-card">' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<input id="mm_q" placeholder="🔍 메모 검색" style="flex:1;min-width:160px;padding:8px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' +
+      '<select id="mm_fcat" style="padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"><option value="">전체 분류</option>' + MEMO_CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select>' +
+      '<label style="display:inline-flex;align-items:center;gap:5px;font-size:.86rem;color:#3a4a63;cursor:pointer"><input type="checkbox" id="mm_hide"> 완료 숨기기</label>' +
+      '<span id="mm_count" style="color:#7b8794;font-size:.84rem;margin-left:auto"></span></div>' +
+      '<div id="mm_grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:14px;align-items:start"><p class="qt-loading" style="grid-column:1/-1">불러오는 중…</p></div></div>';
+
+    var msgEl = panel.querySelector('#mm_msg');
+    function msg(t, c) { msgEl.style.color = c || '#7b8794'; msgEl.textContent = t; if (t) setTimeout(function () { if (msgEl.textContent === t) msgEl.textContent = ''; }, 3000); }
+    bindSwatches(panel.querySelector('#mm_swbox'), function (c) { newColor = c; });
+
+    var grid = panel.querySelector('#mm_grid');
+    function load() {
+      api('GET', 'memos?select=*&order=pinned.desc,updated_at.desc,created_at.desc')
+        .then(function (rows) { NOTES = rows || []; draw(); })
+        .catch(function (e) {
+          if (/relation .* does not exist|42P01|PGRST205|schema cache|Could not find the table/i.test(e.message)) grid.innerHTML = '<div style="grid-column:1/-1">' + msgCard('테이블 준비 필요', 'Supabase → SQL Editor 에서 supabase/memos.sql 을 1회 실행해 주세요.') + '</div>';
+          else grid.innerHTML = '<div style="grid-column:1/-1">' + msgCard('조회 실패', e.message) + '</div>';
+        });
+    }
+
+    function noteHTML(r) {
+      var col = r.color || MEMO_COLORS[0][0];
+      var strike = r.done ? 'text-decoration:line-through;' : '';
+      var dt = fmtD(r.created_at);
+      var edited = (fmtD(r.updated_at) && fmtD(r.updated_at) !== dt) ? ' · ✎ ' + fmtD(r.updated_at) : '';
+      return '<div class="mm-note" data-id="' + esc(r.id) + '" title="눌러서 수정" style="background:' + esc(col) + ';border:1px solid rgba(15,30,60,.1);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 4px rgba(15,30,60,.07);cursor:pointer;' + (r.done ? 'opacity:.62' : '') + '">' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        (r.category ? '<span class="fin-pill" style="background:rgba(255,255,255,.75);color:#3a4a63">' + esc(r.category) + '</span>' : '') +
+        (r.done ? '<span class="fin-pill" style="background:#e8f6ee;color:#1e874b">✓ 완료</span>' : '') +
+        '<button class="mm-pin" data-id="' + esc(r.id) + '" title="' + (r.pinned ? '고정 해제' : '상단 고정') + '" style="margin-left:auto;border:0;background:none;cursor:pointer;font-size:1rem;padding:0;' + (r.pinned ? '' : 'opacity:.28;filter:grayscale(1)') + '">📌</button></div>' +
+        (r.title ? '<b style="color:#1f2f49;' + strike + '">' + esc(r.title) + '</b>' : '') +
+        (r.content ? '<div style="font-size:.9rem;color:#3d4a5c;line-height:1.55;max-height:190px;overflow:auto;word-break:break-word;' + strike + '">' + nl2br(r.content) + '</div>' : '') +
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:4px">' +
+        '<span style="font-size:.74rem;color:#8b97a8;white-space:nowrap">' + esc(dt + edited) + '</span>' +
+        '<span style="margin-left:auto;display:inline-flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">' +
+        (opts.dashPick ? '<button class="mm-dash" data-id="' + esc(r.id) + '" title="' + (dashSel === r.id ? '대시보드 표시 해제 (자동으로 맨 위 메모가 표시됩니다)' : '대시보드 포스트잇으로 표시') + '" style="' + MEMO_BTN + (dashSel === r.id ? ';background:var(--accent,#223350);color:#fff;border-color:var(--accent,#223350)' : '') + '">📍' + (dashSel === r.id ? ' 표시 중' : '') + '</button>' : '') +
+        '<button class="mm-done" data-id="' + esc(r.id) + '" style="' + MEMO_BTN + '">' + (r.done ? '↩ 복원' : '✓ 완료') + '</button>' +
+        '<button class="mm-del" data-id="' + esc(r.id) + '" title="삭제" style="' + MEMO_BTN + ';color:#c0392b">🗑</button>' +
+        '</span></div></div>';
+    }
+
+    function draw() {
+      try { dashSel = localStorage.getItem('wpc_dash_memo'); } catch (e) { dashSel = null; }
+      var q = state.q.trim().toLowerCase();
+      var rows = NOTES.filter(function (r) {
+        if (state.cat && (r.category || '') !== state.cat) return false;
+        if (state.hideDone && r.done) return false;
+        if (q && ((r.title || '') + ' ' + (r.content || '') + ' ' + (r.category || '')).toLowerCase().indexOf(q) < 0) return false;
+        return true;
+      });
+      var pin = 0, done = 0;
+      NOTES.forEach(function (r) { if (r.pinned) pin++; if (r.done) done++; });
+      panel.querySelector('#mm_count').textContent = '전체 ' + NOTES.length + '건 · 📌 ' + pin + ' · ✓ ' + done + (rows.length !== NOTES.length ? ' · 표시 ' + rows.length : '');
+      grid.innerHTML = rows.length ? rows.map(noteHTML).join('') : '<p style="grid-column:1/-1;color:#9aa5b1;margin:6px 2px">' + (NOTES.length ? '조건에 맞는 메모가 없습니다.' : '아직 메모가 없습니다. 위에서 첫 메모를 남겨보세요 ✍') + '</p>';
+      var byId = {}; NOTES.forEach(function (r) { byId[r.id] = r; });
+      Array.prototype.forEach.call(grid.querySelectorAll('.mm-note'), function (el) { el.onclick = function () { var r = byId[el.dataset.id]; if (r) editMemo(r); }; });
+      Array.prototype.forEach.call(grid.querySelectorAll('.mm-pin'), function (b) {
+        b.onclick = function (e) { e.stopPropagation(); var r = byId[b.dataset.id]; if (!r) return; api('PATCH', 'memos?id=eq.' + r.id, { pinned: !r.pinned }, 'return=minimal').then(load).catch(function (er) { alert('저장 실패: ' + er.message); }); };
+      });
+      Array.prototype.forEach.call(grid.querySelectorAll('.mm-done'), function (b) {
+        b.onclick = function (e) { e.stopPropagation(); var r = byId[b.dataset.id]; if (!r) return; api('PATCH', 'memos?id=eq.' + r.id, { done: !r.done }, 'return=minimal').then(load).catch(function (er) { alert('저장 실패: ' + er.message); }); };
+      });
+      Array.prototype.forEach.call(grid.querySelectorAll('.mm-del'), function (b) {
+        b.onclick = function (e) { e.stopPropagation(); if (!confirm('이 메모를 삭제할까요?')) return; api('DELETE', 'memos?id=eq.' + b.dataset.id, null, 'return=minimal').then(load).catch(function (er) { alert('삭제 실패: ' + er.message); }); };
+      });
+      Array.prototype.forEach.call(grid.querySelectorAll('.mm-dash'), function (b) {
+        b.onclick = function (e) {
+          e.stopPropagation();
+          try { if (dashSel === b.dataset.id) localStorage.removeItem('wpc_dash_memo'); else localStorage.setItem('wpc_dash_memo', b.dataset.id); } catch (er) {}
+          draw();
+        };
+      });
+    }
+
+    var addBtn = panel.querySelector('#mm_add'), tEl = panel.querySelector('#mm_title'), cEl = panel.querySelector('#mm_content'), catEl = panel.querySelector('#mm_cat'), pinEl = panel.querySelector('#mm_pin');
+    function addMemo() {
+      var title = tEl.value.trim(), content = cEl.value.trim();
+      if (!title && !content) { msg('제목이나 내용을 입력해 주세요.', '#c0392b'); cEl.focus(); return; }
+      addBtn.disabled = true; msg('저장 중…');
+      api('POST', 'memos', { title: title || null, content: content || null, category: catEl.value, color: newColor, pinned: pinEl.checked, done: false }, 'return=minimal')
+        .then(function () { addBtn.disabled = false; tEl.value = ''; cEl.value = ''; pinEl.checked = false; msg('✓ 메모가 추가되었습니다', 'green'); load(); })
+        .catch(function (e) {
+          addBtn.disabled = false;
+          if (/42P01|PGRST205|does not exist|schema cache|Could not find the table/i.test(e.message)) msg('테이블 준비 필요 — supabase/memos.sql 을 실행해 주세요', '#c0392b');
+          else msg('저장 실패: ' + e.message, '#c0392b');
+        });
+    }
+    addBtn.onclick = addMemo;
+    cEl.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addMemo(); } });
+
+    panel.querySelector('#mm_q').oninput = function () { state.q = this.value; draw(); };
+    panel.querySelector('#mm_fcat').onchange = function () { state.cat = this.value; draw(); };
+    panel.querySelector('#mm_hide').onchange = function () { state.hideDone = this.checked; draw(); };
+
+    function editMemo(r) {
+      var mcol = r.color || MEMO_COLORS[0][0];
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9500;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
+      ov.innerHTML = '<div class="fin-card" style="max-width:560px;width:100%;background:#fff;margin-bottom:0">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="margin:0;color:var(--accent,#223350)">📝 메모 수정</h3><button class="btn btn-line" id="me_close" style="padding:3px 11px">닫기</button></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 160px;gap:10px">' +
+        '<input id="me_title" value="' + esc(r.title || '') + '" placeholder="제목 (선택)" style="padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;min-width:0">' +
+        '<select id="me_cat" style="padding:9px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' + MEMO_CATS.map(function (c) { return '<option' + (c === r.category ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
+        '<textarea id="me_content" style="width:100%;box-sizing:border-box;margin-top:10px;padding:10px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;min-height:150px;resize:vertical">' + esc(r.content || '') + '</textarea>' +
+        '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px">' +
+        '<span style="display:inline-flex;align-items:center;gap:6px" id="me_swbox"><span style="font-size:.82rem;color:#7b8794">색</span>' + swatches(mcol) + '</span>' +
+        '<label style="display:inline-flex;align-items:center;gap:5px;font-size:.86rem;color:#3a4a63;cursor:pointer"><input type="checkbox" id="me_pin"' + (r.pinned ? ' checked' : '') + '> 📌 고정</label>' +
+        '<label style="display:inline-flex;align-items:center;gap:5px;font-size:.86rem;color:#3a4a63;cursor:pointer"><input type="checkbox" id="me_done"' + (r.done ? ' checked' : '') + '> ✓ 완료</label></div>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:14px">' +
+        '<button class="btn btn-solid" id="me_save" style="padding:8px 18px">💾 저장</button>' +
+        '<button class="btn btn-line" id="me_del" style="padding:8px 14px;color:#c0392b">🗑 삭제</button>' +
+        '<span class="fin-msg" id="me_msg"></span></div></div>';
+      document.body.appendChild(ov);
+      var close = pushBackClose(function () { ov.remove(); });
+      ov.querySelector('#me_close').onclick = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      bindSwatches(ov.querySelector('#me_swbox'), function (c) { mcol = c; });
+      function mmsg(t, c) { var e = ov.querySelector('#me_msg'); e.style.color = c || '#7b8794'; e.textContent = t; }
+      ov.querySelector('#me_save').onclick = function () {
+        var title = ov.querySelector('#me_title').value.trim(), content = ov.querySelector('#me_content').value.trim();
+        if (!title && !content) { mmsg('제목이나 내용을 입력해 주세요.', '#c0392b'); return; }
+        mmsg('저장 중…');
+        api('PATCH', 'memos?id=eq.' + r.id, { title: title || null, content: content || null, category: ov.querySelector('#me_cat').value, color: mcol, pinned: ov.querySelector('#me_pin').checked, done: ov.querySelector('#me_done').checked, updated_at: new Date().toISOString() }, 'return=minimal')
+          .then(function () { close(); load(); }).catch(function (er) { mmsg('저장 실패: ' + er.message, '#c0392b'); });
+      };
+      ov.querySelector('#me_del').onclick = function () {
+        if (!confirm('이 메모를 삭제할까요?')) return;
+        api('DELETE', 'memos?id=eq.' + r.id, null, 'return=minimal').then(function () { close(); load(); }).catch(function (er) { mmsg('삭제 실패: ' + er.message, '#c0392b'); });
+      };
+    }
+
+    load();
+  }
+
+  // 메모장 전체(추가·수정·검색·대시보드 표시 선택)를 모달로 연다 — 대시보드 「메모 목록 보기」에서 사용
+  function memoBoardModal(onClose) {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9500;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
+    ov.innerHTML = '<div style="background:#f4f6fa;border-radius:14px;max-width:1080px;width:100%;padding:18px 20px;box-shadow:0 24px 60px rgba(0,0,0,.3)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap"><h3 style="margin:0;color:var(--accent,#223350)">📝 메모장</h3><span style="color:#9aa5b1;font-size:.8rem;margin-right:auto">메모의 📍 버튼을 누르면 그 메모가 대시보드 포스트잇에 표시됩니다</span><button class="btn btn-line" id="mb_close" style="padding:3px 11px">닫기</button></div>' +
+      '<div id="mb_body"></div></div>';
+    document.body.appendChild(ov);
+    var close = pushBackClose(function () { ov.remove(); if (onClose) onClose(); });
+    ov.querySelector('#mb_close').onclick = close;
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    renderMemos(ov.querySelector('#mb_body'), { dashPick: true });
+  }
+
+  // 대시보드 포스트잇: 📍 선택한 메모(없으면 맨 위 메모) 한 장만 표시
+  function loadDashMemo(panel) {
+    var body = panel.querySelector('#sd_memoBody');
+    if (!body) return;
+    function openBoard() { memoBoardModal(function () { loadDashMemo(panel); }); }
+    var btn = panel.querySelector('#sd_memoList');
+    if (btn) btn.onclick = openBoard;
+    // 포스트잇 한 장 HTML — featured(고정, 크게) / compact(스크롤 목록, 작게)
+    function memoCard(r, compact) {
+      var col = r.color || MEMO_COLORS[0][0];
+      var strike = r.done ? 'text-decoration:line-through;' : '';
+      var pad = compact ? '11px 13px 10px' : '16px 16px 14px';
+      var rot = compact ? 'rotate(-.3deg)' : 'rotate(-.6deg)';
+      var maxc = compact ? 78 : 170;
+      return '<div class="sd-memo-card" data-id="' + esc(r.id) + '" title="눌러서 메모장 열기" style="background:' + esc(col) + ';border:1px solid rgba(15,30,60,.12);border-radius:4px 14px 14px 14px;padding:' + pad + ';box-shadow:2px 4px 10px rgba(15,30,60,.13);cursor:pointer;transform:' + rot + (r.done ? ';opacity:.65' : '') + '">' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:' + (compact ? '5px' : '7px') + '">' +
+        (r.pinned ? '<span title="상단 고정">📌</span>' : '') +
+        (r.category ? '<span class="fin-pill" style="background:rgba(255,255,255,.75);color:#3a4a63">' + esc(r.category) + '</span>' : '') +
+        (r.done ? '<span class="fin-pill" style="background:#e8f6ee;color:#1e874b">✓ 완료</span>' : '') +
+        '<span style="margin-left:auto;font-size:.74rem;color:#8b97a8">' + esc(fmtD(r.updated_at || r.created_at)) + '</span></div>' +
+        (r.title ? '<b style="color:#1f2f49;display:block;margin-bottom:4px;' + strike + '">' + esc(r.title) + '</b>' : '') +
+        (r.content ? '<div style="font-size:' + (compact ? '.85rem' : '.9rem') + ';color:#3d4a5c;line-height:1.55;max-height:' + maxc + 'px;overflow:hidden;word-break:break-word;' + strike + '">' + nl2br(r.content) + '</div>' : '') +
+        '</div>';
+    }
+    api('GET', 'memos?select=*&order=pinned.desc,updated_at.desc,created_at.desc').then(function (rows) {
+      rows = rows || [];
+      var selId = null; try { selId = localStorage.getItem('wpc_dash_memo'); } catch (e) {}
+      var featIdx = -1;
+      if (selId) for (var i = 0; i < rows.length; i++) if (rows[i].id === selId) { featIdx = i; break; }
+      if (featIdx < 0 && rows.length) featIdx = 0;   // 📍 선택이 없으면 맨 위(고정 우선) 메모를 고정 자리에
+      if (featIdx < 0) { body.innerHTML = '<p style="color:#9aa5b1;font-size:.86rem;margin:10px 0 0">아직 메모가 없습니다. 「메모 목록 보기」에서 첫 메모를 남겨보세요 ✍</p>'; return; }
+      var feat = rows[featIdx];
+      var others = rows.filter(function (_, i) { return i !== featIdx; });
+      // 고정 메모는 상단에 그대로, 나머지 메모는 아래 스크롤 영역에서 훑어볼 수 있게
+      var listHTML = others.length
+        ? '<div style="display:flex;align-items:center;gap:8px;margin:15px 2px 9px;color:#8b97a8;font-size:.78rem"><span style="flex:1;height:1px;background:#e3e8f0"></span>다른 메모 ' + others.length + '개<span style="flex:1;height:1px;background:#e3e8f0"></span></div>' +
+          '<div id="sd_memoScroll" style="max-height:330px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:3px 6px 3px 3px;scrollbar-width:thin;scrollbar-color:#c3ccd8 transparent">' + others.map(function (r) { return memoCard(r, true); }).join('') + '</div>'
+        : '';
+      body.innerHTML = '<div style="margin-top:12px">' + memoCard(feat, false) + '</div>' + listHTML;
+      Array.prototype.forEach.call(body.querySelectorAll('.sd-memo-card'), function (c) { c.onclick = openBoard; });
+    }).catch(function (e) {
+      if (/relation .* does not exist|42P01|PGRST205|schema cache|Could not find the table/i.test(e.message)) body.innerHTML = '<p style="color:#c0392b;font-size:.84rem;margin:10px 0 0">테이블 준비 필요 — Supabase → SQL Editor 에서 supabase/memos.sql 을 1회 실행해 주세요.</p>';
+      else body.innerHTML = '<p style="color:#c0392b;font-size:.84rem;margin:10px 0 0">메모 조회 실패: ' + esc(e.message) + '</p>';
+    });
+  }
+
+  // ═══════════════ 🎵 찬양곡 라이브러리 — 예배 찬양 관리(관리자 전용) ═══════════════
+  // 노션 「찬양곡 라이브러리」를 옮긴 것. 곡을 모아 두고 검색·필터·태그로 관리 → 이후 설교와 연동해 예배 찬양을 배정.
+  var SONG_TYPES = ['CCM', '찬송가', '성가대곡', '복음성가'];
+  var SONG_THEMES = ['은혜', '감사', '회개', '치유', '부활', '성탄', '찬양', '기도', '성령', '십자가', '소망', '평안', '믿음', '인도'];
+  var SONG_USES = ['예배전찬양', '성가대특송', '응답찬양', '새벽기도', '수요예배'];
+  var SONG_DIFF = ['쉬움', '보통', '어려움'];
+  var SONG_FAMIL = ['매우 익숙', '보통', '새로운 곡'];
+  var SONG_TYPE_BG = { 'CCM': '#e8f1fd', '찬송가': '#e9f7ef', '성가대곡': '#f4eefb', '복음성가': '#fdeef2' };
+  var SONG_FAMIL_BG = { '매우 익숙': '#e8f6ee', '보통': '#fff6e0', '새로운 곡': '#fdecec' };
+  // 예배 찬양 슬롯(노션 설교계획의 찬양1·2·3·예배전·응답·성가대곡)
+  var SONG_SLOTS = [['pre', '예배전 찬양'], ['s1', '찬양 1'], ['s2', '찬양 2'], ['s3', '찬양 3'], ['resp', '응답 찬양'], ['choir', '성가대곡']];
+  var SONG_SLOT_LABEL = {}; SONG_SLOTS.forEach(function (s) { SONG_SLOT_LABEL[s[0]] = s[1]; });
+  SONG_SLOT_LABEL.hymn = '찬송가(새벽·수요)';   // 설교 편집기 찬송가 필드에서 자동 기록되는 슬롯
+  var songSubView = 'library';   // 찬양관리 탭 안의 하위 화면: library | assign
+  // 배정 기록(sermon_songs)에서 곡별 사용횟수·최근 사용일 집계 — 테이블이 없으면 조용히 빈 집계(라이브러리는 그대로 동작)
+  function loadSongUsage() {
+    return api('GET', 'sermon_songs?select=song_id,sermon:sermons(sermon_date)')
+      .then(function (rows) {
+        var m = {};
+        (rows || []).forEach(function (r) {
+          var d = r.sermon && r.sermon.sermon_date ? String(r.sermon.sermon_date).slice(0, 10) : null;
+          var e = m[r.song_id] || (m[r.song_id] = { count: 0, last: null });
+          e.count++; if (d && (!e.last || d > e.last)) e.last = d;
+        });
+        return m;
+      }).catch(function () { return {}; });
+  }
+  // 설교 본문·제목에서 찬양 주제를 뽑아내기 위한 키워드(각 주제태그별 트리거어) — 넓게 걸려 오탐되지 않게 변별력 있는 말만
+  var THEME_KEYWORDS = {
+    '은혜': ['은혜', '은총', '긍휼', '값없이'],
+    '감사': ['감사', '추수'],
+    '회개': ['회개', '죄악', '돌이키', '뉘우', '통회', '자복'],
+    '치유': ['치유', '고치', '고침', '낫게', '병든', '회복', '싸매'],
+    '부활': ['부활', '살아나', '빈 무덤', '다시 사', '생명의 주'],
+    '성탄': ['성탄', '성육신', '베들레헴', '탄생', '임마누엘', '아기 예수', '크리스마스'],
+    '찬양': ['찬양', '찬송', '경배', '할렐루야', '영광 돌'],
+    '기도': ['기도', '간구', '부르짖', '중보', '응답하'],
+    '성령': ['성령', '보혜사', '오순절', '방언', '은사', '기름 부'],
+    '십자가': ['십자가', '고난', '대속', '보혈', '골고다', '희생', '피 흘'],
+    '소망': ['소망', '천국', '재림', '영생', '기다림', '약속의'],
+    '평안': ['평안', '평화', '안식', '위로', '근심'],
+    '믿음': ['믿음', '신앙', '확신'],
+    '인도': ['인도', '목자', '동행', '이끄', '앞서 가', '발걸음']
+  };
+  // 성경 책 → 주제 힌트(강한 것만)
+  var BOOK_THEME = { '시편': ['찬양', '기도'], '요한계시록': ['소망'], '예레미야애가': ['회개'] };
+  // 슬롯 → 어울리는 추천용도(있으면 추천 점수 가산)
+  var SLOT_USE = { pre: '예배전찬양', resp: '응답찬양', choir: '성가대특송' };
+  // 설교 한 편에서 어울리는 주제태그 목록을 추출(제목·본문·키워드·요약·시리즈 + 성경 책 힌트)
+  function detectThemes(sm) {
+    if (!sm) return [];
+    var hay = [sm.title, sm.scripture, sm.keywords, sm.summary, sm.series].filter(Boolean).join('  ');
+    var found = {};
+    SONG_THEMES.forEach(function (t) {
+      var kws = THEME_KEYWORDS[t] || [t];
+      for (var i = 0; i < kws.length; i++) { if (hay.indexOf(kws[i]) >= 0) { found[t] = true; break; } }
+    });
+    try { var bk = bookOf(sm.scripture); if (bk && BOOK_THEME[bk]) BOOK_THEME[bk].forEach(function (t) { found[t] = true; }); } catch (e) { }
+    return Object.keys(found);
+  }
+  // 3주 순환 상태 — 최근 사용일 기준. 2주 이내 사용=쉬는 중(🔴), 3주 이상=순환 가능(🟢), 미사용(🆕)
+  function songRot(last) {
+    if (!last) return { code: 'new', txt: '🆕 미사용', bg: '#eef2f7', weeks: null };
+    var days = Math.floor((Date.parse(today() + 'T00:00:00') - Date.parse(String(last).slice(0, 10) + 'T00:00:00')) / 86400000);
+    var wk = Math.max(0, Math.floor(days / 7));
+    var when = wk === 0 ? '이번 주' : wk + '주 전';
+    if (days <= 14) return { code: 'recent', txt: '🔴 ' + when, bg: '#fdecec', weeks: wk };
+    return { code: 'ok', txt: '🟢 ' + when, bg: '#e8f6ee', weeks: wk };
+  }
+
+  function songPill(txt, bg) { return '<span class="fin-pill" style="background:' + (bg || '#eef2f7') + ';color:#3a4a63;margin:1px 3px 1px 0;white-space:nowrap">' + esc(txt) + '</span>'; }
+  function songChips(all, selMap, name) {
+    return all.map(function (t) {
+      var on = !!selMap[t];
+      return '<button type="button" class="song-chip" data-name="' + name + '" data-v="' + esc(t) + '" style="border:1px solid ' + (on ? 'var(--accent,#223350)' : '#d7dee9') + ';background:' + (on ? 'var(--accent,#223350)' : '#fff') + ';color:' + (on ? '#fff' : '#4a5a6e') + ';border-radius:999px;padding:4px 11px;font-size:.8rem;cursor:pointer;font-family:inherit">' + esc(t) + '</button>';
+    }).join('');
+  }
+  function bindSongChips(box, selMap) {
+    Array.prototype.forEach.call(box.querySelectorAll('.song-chip'), function (b) {
+      b.onclick = function () {
+        var v = b.dataset.v; if (selMap[v]) delete selMap[v]; else selMap[v] = true;
+        var on = !!selMap[v];
+        b.style.background = on ? 'var(--accent,#223350)' : '#fff';
+        b.style.color = on ? '#fff' : '#4a5a6e';
+        b.style.borderColor = on ? 'var(--accent,#223350)' : '#d7dee9';
+      };
+    });
+  }
+  function songSelArr(selMap) { return Object.keys(selMap).filter(function (k) { return selMap[k]; }); }
+  function safeUrl(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
+  // 곡 입력 필드(추가폼·수정모달 공용) — pfx로 id 접두사 구분
+  function songFieldsHTML(pfx, r) {
+    r = r || {};
+    var opt = function (arr, cur) { return '<option value="">—</option>' + arr.map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); };
+    var inp = 'padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;min-width:0;box-sizing:border-box';
+    return '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px">' +
+        '<input id="' + pfx + 'title" value="' + esc(r.title || '') + '" placeholder="곡명 *" style="' + inp + ';font-weight:600">' +
+        '<select id="' + pfx + 'type" style="' + inp + '">' + opt(SONG_TYPES, r.type) + '</select>' +
+        '<input id="' + pfx + 'hymn" type="number" min="1" value="' + (r.hymn_no != null ? esc(r.hymn_no) : '') + '" placeholder="찬양 번호" style="' + inp + '"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">' +
+        '<select id="' + pfx + 'diff" style="' + inp + '"><option value="">난이도</option>' + SONG_DIFF.map(function (x) { return '<option' + (x === r.difficulty ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>' +
+        '<select id="' + pfx + 'famil" style="' + inp + '"><option value="">회중숙지도</option>' + SONG_FAMIL.map(function (x) { return '<option' + (x === r.familiarity ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>' +
+        '<input id="' + pfx + 'transpose" value="' + esc(r.transpose || '') + '" placeholder="조옮김(예: G→A)" style="' + inp + '"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">' +
+        '<input id="' + pfx + 'yt" value="' + esc(r.youtube_url || '') + '" placeholder="▶ 유튜브 링크" style="' + inp + '">' +
+        '<input id="' + pfx + 'lyrics" value="' + esc(r.lyrics_url || '') + '" placeholder="📄 가사 링크" style="' + inp + '"></div>' +
+      '<div style="margin-top:12px"><div style="font-size:.82rem;color:#7b8794;margin-bottom:6px">주제 태그</div><div id="' + pfx + 'themebox" style="display:flex;flex-wrap:wrap;gap:6px">' + songChips(SONG_THEMES, {}, 'theme') + '</div></div>' +
+      '<div style="margin-top:12px"><div style="font-size:.82rem;color:#7b8794;margin-bottom:6px">추천 용도</div><div id="' + pfx + 'usebox" style="display:flex;flex-wrap:wrap;gap:6px">' + songChips(SONG_USES, {}, 'use') + '</div></div>' +
+      '<input id="' + pfx + 'note" value="' + esc(r.note || '') + '" placeholder="비고(선택)" style="' + inp + ';width:100%;margin-top:12px">';
+  }
+  function gatherSong(scope, pfx, themeSel, useSel) {
+    var g = function (id) { var e = scope.querySelector('#' + pfx + id); return e ? String(e.value).trim() : ''; };
+    var hymn = g('hymn');
+    return {
+      title: g('title'),
+      type: g('type') || null,
+      theme_tags: songSelArr(themeSel),
+      use_tags: songSelArr(useSel),
+      difficulty: g('diff') || null,
+      familiarity: g('famil') || null,
+      hymn_no: hymn ? (parseInt(hymn, 10) || null) : null,
+      transpose: g('transpose') || null,
+      youtube_url: g('yt') || null,
+      lyrics_url: g('lyrics') || null,
+      note: g('note') || null
+    };
+  }
+
+  // 찬양관리 탭: 하위 화면(라이브러리 / 예배 배정) 전환
+  function renderWorshipSongs(panel) {
+    panel.innerHTML = '<div class="fin-tabs" style="margin-bottom:14px">' +
+      '<button data-sv="library"' + (songSubView === 'library' ? ' class="active"' : '') + '>🎵 찬양곡 라이브러리</button>' +
+      '<button data-sv="assign"' + (songSubView === 'assign' ? ' class="active"' : '') + '>📅 예배 찬양 배정</button>' +
+      '</div><div id="song_sub"></div>';
+    Array.prototype.forEach.call(panel.querySelectorAll('[data-sv]'), function (b) {
+      b.onclick = function () { if (b.dataset.sv === songSubView) return; songSubView = b.dataset.sv; renderWorshipSongs(panel); };
+    });
+    var sp = panel.querySelector('#song_sub');
+    if (songSubView === 'assign') renderSongAssign(sp); else renderSongLibrary(sp);
+  }
+
+  function renderSongLibrary(panel) {
+    var state = { q: '', type: '', theme: '', sort: 'title' };
+    var SONGS = [], USAGE = {};
+    var addTheme = {}, addUse = {};
+
+    panel.innerHTML =
+      '<div class="fin-card">' +
+      '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><h3 style="margin:0 0 10px;color:var(--accent,#223350)">🎵 찬양곡 추가</h3><span style="color:#9aa5b1;font-size:.82rem">예배 찬양을 모아 두고 검색·태그로 관리하세요 · 이후 설교와 연동해 예배 찬양을 배정합니다</span></div>' +
+      songFieldsHTML('ws_') +
+      '<div style="display:flex;align-items:center;gap:12px;margin-top:12px"><button class="btn btn-solid" id="ws_add" style="padding:8px 20px">＋ 곡 추가</button><span class="fin-msg" id="ws_msg"></span></div>' +
+      '</div>' +
+      '<div class="fin-card">' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<input id="ws_q" placeholder="🔍 곡명·태그·비고 검색" style="flex:1;min-width:160px;padding:8px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' +
+      '<select id="ws_ftype" style="padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"><option value="">전체 유형</option>' + SONG_TYPES.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select>' +
+      '<select id="ws_ftheme" style="padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"><option value="">전체 주제</option>' + SONG_THEMES.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select>' +
+      '<select id="ws_sort" style="padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"><option value="title">곡명순</option><option value="rotation">순환 우선(오래 안 쓴 순)</option><option value="used">많이 쓴 순</option><option value="recent">최근 추가순</option><option value="hymn">번호순</option></select>' +
+      '<span id="ws_count" style="color:#7b8794;font-size:.84rem;margin-left:auto"></span></div>' +
+      '<div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:.88rem;min-width:860px">' +
+      '<thead><tr style="text-align:left;color:#7b8794;font-size:.8rem;border-bottom:2px solid #eef2f7">' +
+      '<th style="padding:8px 8px">곡명</th><th style="padding:8px 8px">유형</th><th style="padding:8px 8px">주제</th><th style="padding:8px 8px">용도</th><th style="padding:8px 8px">난이도</th><th style="padding:8px 8px">숙지도</th><th style="padding:8px 8px">사용</th><th style="padding:8px 8px">순환</th><th style="padding:8px 8px">링크</th></tr></thead>' +
+      '<tbody id="ws_tbody"><tr><td colspan="9" class="qt-loading" style="padding:16px">불러오는 중…</td></tr></tbody></table></div></div>';
+
+    var msgEl = panel.querySelector('#ws_msg');
+    function msg(t, c) { msgEl.style.color = c || '#7b8794'; msgEl.textContent = t; if (t) setTimeout(function () { if (msgEl.textContent === t) msgEl.textContent = ''; }, 3000); }
+    bindSongChips(panel.querySelector('#ws_themebox'), addTheme);
+    bindSongChips(panel.querySelector('#ws_usebox'), addUse);
+
+    var tbody = panel.querySelector('#ws_tbody');
+    function load() {
+      Promise.all([api('GET', 'worship_songs?select=*&order=title.asc'), loadSongUsage()])
+        .then(function (res) { SONGS = res[0] || []; USAGE = res[1] || {}; draw(); })
+        .catch(function (e) {
+          if (/relation .* does not exist|42P01|PGRST205|schema cache|Could not find the table/i.test(e.message)) tbody.innerHTML = '<tr><td colspan="9">' + msgCard('테이블 준비 필요', 'Supabase → SQL Editor 에서 supabase/worship_songs.sql 을 1회 실행해 주세요.') + '</td></tr>';
+          else tbody.innerHTML = '<tr><td colspan="9">' + msgCard('조회 실패', e.message) + '</td></tr>';
+        });
+    }
+    function filterSort() {
+      var q = state.q.trim().toLowerCase();
+      var rows = SONGS.filter(function (r) {
+        if (state.type && (r.type || '') !== state.type) return false;
+        if (state.theme && (r.theme_tags || []).indexOf(state.theme) < 0) return false;
+        if (q) {
+          var hay = ((r.title || '') + ' ' + (r.note || '') + ' ' + (r.transpose || '') + ' ' + (r.theme_tags || []).join(' ') + ' ' + (r.use_tags || []).join(' ') + ' ' + (r.hymn_no || '')).toLowerCase();
+          if (hay.indexOf(q) < 0) return false;
+        }
+        return true;
+      });
+      rows.sort(function (a, b) {
+        if (state.sort === 'recent') return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+        if (state.sort === 'hymn') { var x = a.hymn_no == null ? Infinity : a.hymn_no, y = b.hymn_no == null ? Infinity : b.hymn_no; return x - y || String(a.title || '').localeCompare(String(b.title || ''), 'ko'); }
+        if (state.sort === 'used') { var ca = (USAGE[a.id] || {}).count || 0, cb = (USAGE[b.id] || {}).count || 0; return cb - ca || String(a.title || '').localeCompare(String(b.title || ''), 'ko'); }
+        if (state.sort === 'rotation') { var la = (USAGE[a.id] || {}).last || '', lb = (USAGE[b.id] || {}).last || ''; return String(la).localeCompare(String(lb)) || String(a.title || '').localeCompare(String(b.title || ''), 'ko'); }   // 오래 안 쓴 순(미사용 먼저)
+        return String(a.title || '').localeCompare(String(b.title || ''), 'ko');
+      });
+      return rows;
+    }
+    function rowHTML(r) {
+      var titleSub = [];
+      if (r.hymn_no != null) titleSub.push('찬양 ' + esc(r.hymn_no) + '장');
+      if (r.transpose) titleSub.push(esc(r.transpose));
+      var links = '';
+      var yt = safeUrl(r.youtube_url), ly = safeUrl(r.lyrics_url);
+      if (yt) links += '<a href="' + esc(yt) + '" target="_blank" rel="noopener" class="ws-link" title="유튜브" style="text-decoration:none;margin-right:8px">▶</a>';
+      if (ly) links += '<a href="' + esc(ly) + '" target="_blank" rel="noopener" class="ws-link" title="가사" style="text-decoration:none">📄</a>';
+      var u = USAGE[r.id] || { count: 0, last: null };
+      var rot = songRot(u.last);
+      return '<tr data-id="' + esc(r.id) + '" class="ws-row" title="눌러서 수정" style="border-bottom:1px solid #f0f3f7;cursor:pointer">' +
+        '<td style="padding:9px 8px"><b style="color:#1f2f49">' + esc(r.title || '(제목없음)') + '</b>' + (titleSub.length ? '<div style="font-size:.76rem;color:#9aa5b1;margin-top:2px">' + titleSub.join(' · ') + '</div>' : '') + '</td>' +
+        '<td style="padding:9px 8px">' + (r.type ? songPill(r.type, SONG_TYPE_BG[r.type]) : '') + '</td>' +
+        '<td style="padding:9px 8px;max-width:180px">' + (r.theme_tags || []).map(function (t) { return songPill(t); }).join('') + '</td>' +
+        '<td style="padding:9px 8px;max-width:150px">' + (r.use_tags || []).map(function (t) { return songPill(t, '#eaf0f8'); }).join('') + '</td>' +
+        '<td style="padding:9px 8px;color:#5b6b7d">' + esc(r.difficulty || '') + '</td>' +
+        '<td style="padding:9px 8px">' + (r.familiarity ? songPill(r.familiarity, SONG_FAMIL_BG[r.familiarity]) : '') + '</td>' +
+        '<td style="padding:9px 8px;color:#5b6b7d;white-space:nowrap">' + (u.count ? u.count + '회' : '<span style="color:#c3ccd8">0</span>') + '</td>' +
+        '<td style="padding:9px 8px;white-space:nowrap"' + (u.last ? ' title="최근 사용: ' + esc(fmtD(u.last)) + '"' : '') + '>' + songPill(rot.txt, rot.bg) + '</td>' +
+        '<td style="padding:9px 8px;font-size:1.05rem;white-space:nowrap">' + (links || '<span style="color:#c3ccd8">—</span>') + '</td></tr>';
+    }
+    function draw() {
+      var rows = filterSort();
+      panel.querySelector('#ws_count').textContent = '전체 ' + SONGS.length + '곡' + (rows.length !== SONGS.length ? ' · 표시 ' + rows.length : '');
+      tbody.innerHTML = rows.length ? rows.map(rowHTML).join('') : '<tr><td colspan="9" style="padding:16px;color:#9aa5b1">' + (SONGS.length ? '조건에 맞는 곡이 없습니다.' : '아직 등록된 찬양곡이 없습니다. 위에서 첫 곡을 추가해 보세요 🎵') + '</td></tr>';
+      var byId = {}; SONGS.forEach(function (r) { byId[r.id] = r; });
+      Array.prototype.forEach.call(tbody.querySelectorAll('.ws-link'), function (a) { a.onclick = function (e) { e.stopPropagation(); }; });
+      Array.prototype.forEach.call(tbody.querySelectorAll('.ws-row'), function (tr) { tr.onclick = function () { var r = byId[tr.dataset.id]; if (r) editSong(r); }; });
+    }
+
+    var addBtn = panel.querySelector('#ws_add');
+    addBtn.onclick = function () {
+      var data = gatherSong(panel, 'ws_', addTheme, addUse);
+      if (!data.title) { msg('곡명을 입력해 주세요.', '#c0392b'); panel.querySelector('#ws_title').focus(); return; }
+      addBtn.disabled = true; msg('저장 중…');
+      api('POST', 'worship_songs', data, 'return=minimal')
+        .then(function () {
+          addBtn.disabled = false; msg('✓ 곡이 추가되었습니다', 'green');
+          panel.querySelector('#ws_title').value = ''; panel.querySelector('#ws_hymn').value = ''; panel.querySelector('#ws_transpose').value = ''; panel.querySelector('#ws_yt').value = ''; panel.querySelector('#ws_lyrics').value = ''; panel.querySelector('#ws_note').value = '';
+          addTheme = {}; addUse = {};
+          panel.querySelector('#ws_themebox').innerHTML = songChips(SONG_THEMES, {}, 'theme'); bindSongChips(panel.querySelector('#ws_themebox'), addTheme);
+          panel.querySelector('#ws_usebox').innerHTML = songChips(SONG_USES, {}, 'use'); bindSongChips(panel.querySelector('#ws_usebox'), addUse);
+          load();
+        })
+        .catch(function (e) {
+          addBtn.disabled = false;
+          if (/42P01|PGRST205|does not exist|schema cache|Could not find the table/i.test(e.message)) msg('테이블 준비 필요 — supabase/worship_songs.sql 을 실행해 주세요', '#c0392b');
+          else msg('저장 실패: ' + e.message, '#c0392b');
+        });
+    };
+    panel.querySelector('#ws_q').oninput = function () { state.q = this.value; draw(); };
+    panel.querySelector('#ws_ftype').onchange = function () { state.type = this.value; draw(); };
+    panel.querySelector('#ws_ftheme').onchange = function () { state.theme = this.value; draw(); };
+    panel.querySelector('#ws_sort').onchange = function () { state.sort = this.value; draw(); };
+
+    function editSong(r) {
+      var eTheme = {}, eUse = {};
+      (r.theme_tags || []).forEach(function (t) { eTheme[t] = true; });
+      (r.use_tags || []).forEach(function (t) { eUse[t] = true; });
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9500;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
+      ov.innerHTML = '<div class="fin-card" style="max-width:640px;width:100%;background:#fff;margin-bottom:0">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0;color:var(--accent,#223350)">🎵 찬양곡 수정</h3><button class="btn btn-line" id="we_close" style="padding:3px 11px">닫기</button></div>' +
+        songFieldsHTML('we_', r) +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:14px">' +
+        '<button class="btn btn-solid" id="we_save" style="padding:8px 18px">💾 저장</button>' +
+        '<button class="btn btn-line" id="we_del" style="padding:8px 14px;color:#c0392b">🗑 삭제</button>' +
+        '<span class="fin-msg" id="we_msg"></span></div></div>';
+      document.body.appendChild(ov);
+      // 태그 선택 상태 반영(수정 대상 곡의 태그를 켜 둔 상태로 다시 그림)
+      ov.querySelector('#we_themebox').innerHTML = songChips(SONG_THEMES, eTheme, 'theme');
+      ov.querySelector('#we_usebox').innerHTML = songChips(SONG_USES, eUse, 'use');
+      bindSongChips(ov.querySelector('#we_themebox'), eTheme);
+      bindSongChips(ov.querySelector('#we_usebox'), eUse);
+      var close = pushBackClose(function () { ov.remove(); });
+      ov.querySelector('#we_close').onclick = close;
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      function emsg(t, c) { var e = ov.querySelector('#we_msg'); e.style.color = c || '#7b8794'; e.textContent = t; }
+      ov.querySelector('#we_save').onclick = function () {
+        var data = gatherSong(ov, 'we_', eTheme, eUse);
+        if (!data.title) { emsg('곡명을 입력해 주세요.', '#c0392b'); return; }
+        data.updated_at = new Date().toISOString();
+        emsg('저장 중…');
+        api('PATCH', 'worship_songs?id=eq.' + r.id, data, 'return=minimal').then(function () { close(); load(); }).catch(function (er) { emsg('저장 실패: ' + er.message, '#c0392b'); });
+      };
+      ov.querySelector('#we_del').onclick = function () {
+        if (!confirm('이 찬양곡을 삭제할까요?')) return;
+        api('DELETE', 'worship_songs?id=eq.' + r.id, null, 'return=minimal').then(function () { close(); load(); }).catch(function (er) { emsg('삭제 실패: ' + er.message, '#c0392b'); });
+      };
+    }
+
+    load();
+  }
+
+  // ── 📅 예배 찬양 배정: 설교(예배)를 골라 슬롯별로 찬양 지정 + 3주 순환 힌트 ──
+  function renderSongAssign(panel) {
+    var SERMONS = [], SONGS = [], USAGE = {}, COUNTS = {}, sel = null, slotMap = {}, q = '', dateFilter = '', recThemes = {};
+    panel.innerHTML = '<div class="fin-card" style="text-align:center;padding:30px"><p class="qt-loading">불러오는 중…</p></div>';
+
+    function isMissing(e) { return /relation .* does not exist|42P01|PGRST205|schema cache|Could not find the table/i.test((e && e.message) || ''); }
+    function loadCounts() { return api('GET', 'sermon_songs?select=sermon_id').then(function (rows) { var m = {}; (rows || []).forEach(function (r) { m[r.sermon_id] = (m[r.sermon_id] || 0) + 1; }); return m; }).catch(function () { return {}; }); }
+
+    Promise.all([
+      api('GET', 'sermons?select=id,sermon_date,service,title&order=sermon_date.desc&limit=300'),
+      api('GET', 'worship_songs?select=*&order=title.asc'),
+      loadSongUsage(), loadCounts()
+    ]).then(function (res) {
+      SERMONS = res[0] || []; SONGS = res[1] || []; USAGE = res[2] || {}; COUNTS = res[3] || {};
+      build();
+    }).catch(function (e) {
+      panel.innerHTML = isMissing(e)
+        ? msgCard('테이블 준비 필요', 'Supabase → SQL Editor 에서 supabase/worship_songs.sql 과 supabase/sermon_songs.sql 을 1회씩 실행해 주세요.')
+        : msgCard('불러오기 실패', (e && e.message) || '데이터를 불러오지 못했습니다.');
+    });
+
+    function build() {
+      panel.innerHTML =
+        '<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">' +
+        '<div class="fin-card" style="flex:1 1 300px;max-width:380px;min-width:250px;margin-bottom:0">' +
+        '<h3 style="margin:0 0 10px;color:var(--accent,#223350);font-size:1.02rem">📅 예배 선택</h3>' +
+        '<div style="display:flex;gap:7px;align-items:center;margin-bottom:8px">' +
+        '<span style="font-size:.9rem">📅</span>' +
+        '<input type="date" id="as_date" style="flex:1;min-width:0;box-sizing:border-box;padding:7px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit" title="날짜로 예배 찾기">' +
+        '<button type="button" id="as_dateclear" class="btn btn-line" style="padding:6px 10px;font-size:.8rem">전체</button></div>' +
+        '<input id="as_q" placeholder="🔍 예배·제목 검색" style="width:100%;box-sizing:border-box;padding:8px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;margin-bottom:10px">' +
+        '<div id="as_list" style="max-height:480px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#c3ccd8 transparent"></div></div>' +
+        '<div class="fin-card" style="flex:2 1 400px;min-width:280px;margin-bottom:0" id="as_right"></div></div>';
+      panel.querySelector('#as_q').oninput = function () { q = this.value.trim().toLowerCase(); drawList(); };
+      var dEl = panel.querySelector('#as_date');
+      dEl.onchange = function () {
+        dateFilter = this.value || '';
+        drawList();
+        if (dateFilter) { var m = SERMONS.filter(function (r) { return String(r.sermon_date || '').slice(0, 10) === dateFilter; }); if (m.length) selectSermon(m[0]); }   // 그 날짜의 첫 예배 자동 선택
+      };
+      panel.querySelector('#as_dateclear').onclick = function () { dateFilter = ''; if (dEl) dEl.value = ''; drawList(); };
+      drawList();
+      renderRight();
+    }
+
+    function drawList() {
+      var box = panel.querySelector('#as_list'); if (!box) return;
+      var rows = SERMONS.filter(function (r) {
+        if (dateFilter && String(r.sermon_date || '').slice(0, 10) !== dateFilter) return false;
+        if (!q) return true;
+        return ((fmtD(r.sermon_date) || '') + ' ' + (r.sermon_date || '') + ' ' + (r.service || '') + ' ' + (r.title || '')).toLowerCase().indexOf(q) >= 0;
+      });
+      if (!rows.length) { box.innerHTML = '<p style="color:#9aa5b1;font-size:.86rem;margin:6px 2px">' + (SERMONS.length ? '조건에 맞는 예배가 없습니다.' : '등록된 설교가 없습니다. 먼저 설교관리에서 설교를 추가하세요.') + '</p>'; return; }
+      box.innerHTML = rows.map(function (r) {
+        var on = sel && sel.id === r.id, n = COUNTS[r.id] || 0;
+        return '<div class="as-sm" data-id="' + esc(r.id) + '" style="padding:9px 11px;border-radius:9px;cursor:pointer;border:1px solid ' + (on ? 'var(--accent,#223350)' : '#eef2f7') + ';background:' + (on ? '#eef4ff' : '#fff') + ';margin-bottom:6px">' +
+          '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.78rem;color:#8b97a8">' + esc(fmtD(r.sermon_date) || '') + '</span>' + (r.service ? '<span class="fin-pill" style="background:#eef2f7;color:#3a4a63">' + esc(r.service) + '</span>' : '') + '<span style="margin-left:auto;font-size:.76rem;color:' + (n ? '#2f5d3a' : '#c3ccd8') + '">🎵 ' + n + '</span></div>' +
+          '<div style="font-weight:600;color:#26364e;margin-top:3px">' + esc(r.title || '(제목없음)') + '</div></div>';
+      }).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('.as-sm'), function (el) {
+        el.onclick = function () { var r = SERMONS.filter(function (s) { return s.id === el.dataset.id; })[0]; if (r) selectSermon(r); };
+      });
+    }
+
+    function selectSermon(r) {
+      sel = r; slotMap = {};
+      recThemes = {}; detectThemes(r).forEach(function (t) { recThemes[t] = true; });   // 설교 본문·제목에서 주제 자동 추출
+      drawList();
+      var right = panel.querySelector('#as_right');
+      right.innerHTML = '<p class="qt-loading">배정 불러오는 중…</p>';
+      api('GET', 'sermon_songs?select=*&sermon_id=eq.' + r.id).then(function (rows) {
+        (rows || []).forEach(function (a) { slotMap[a.slot] = { id: a.id, song_id: a.song_id }; });
+        renderRight();
+      }).catch(function (e) {
+        right.innerHTML = isMissing(e) ? msgCard('테이블 준비 필요', 'supabase/sermon_songs.sql 을 실행해 주세요.') : msgCard('불러오기 실패', (e && e.message) || '배정을 불러오지 못했습니다.');
+      });
+    }
+
+    function songById(id) { for (var i = 0; i < SONGS.length; i++) if (SONGS[i].id === id) return SONGS[i]; return null; }
+    function pickerOptions(cur) {
+      var sorted = SONGS.slice().sort(function (a, b) {
+        var ra = songRot((USAGE[a.id] || {}).last).code === 'recent' ? 1 : 0;
+        var rb = songRot((USAGE[b.id] || {}).last).code === 'recent' ? 1 : 0;
+        return (ra - rb) || String(a.title || '').localeCompare(String(b.title || ''), 'ko');   // 최근 사용 곡은 아래로, 순환 가능 곡을 위로
+      });
+      return '<option value="">— 없음 —</option>' + sorted.map(function (s) {
+        var rot = songRot((USAGE[s.id] || {}).last);
+        return '<option value="' + esc(s.id) + '"' + (cur === s.id ? ' selected' : '') + '>' + esc((s.title || '') + (s.type ? ' (' + s.type + ')' : '') + ' · ' + rot.txt) + '</option>';
+      }).join('');
+    }
+    function slotBadge(slot) {
+      var a = slotMap[slot]; if (!a || !a.song_id) return '';
+      var s = songById(a.song_id); if (!s) return '<span style="color:#c3ccd8;font-size:.8rem">(삭제된 곡)</span>';
+      var rot = songRot((USAGE[s.id] || {}).last);
+      var links = '';
+      var yt = safeUrl(s.youtube_url), ly = safeUrl(s.lyrics_url);
+      if (yt) links += ' <a href="' + esc(yt) + '" target="_blank" rel="noopener" style="text-decoration:none">▶</a>';
+      if (ly) links += ' <a href="' + esc(ly) + '" target="_blank" rel="noopener" style="text-decoration:none">📄</a>';
+      return songPill(rot.txt, rot.bg) + '<span style="font-size:1rem">' + links + '</span>';
+    }
+
+    function renderRight() {
+      var right = panel.querySelector('#as_right'); if (!right) return;
+      if (!sel) { right.innerHTML = '<div style="text-align:center;color:#9aa5b1;padding:40px 12px">← 왼쪽에서 찬양을 배정할 예배(설교)를 선택하세요.</div>'; return; }
+      var head = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px"><span style="font-size:.82rem;color:#8b97a8">' + esc(fmtD(sel.sermon_date) || '') + '</span>' + (sel.service ? '<span class="fin-pill" style="background:#eef2f7;color:#3a4a63">' + esc(sel.service) + '</span>' : '') + '</div>' +
+        '<h3 style="margin:0 0 14px;color:var(--accent,#223350)">' + esc(sel.title || '(제목없음)') + '</h3>';
+      var slots = SONG_SLOTS.map(function (s) {
+        var cur = (slotMap[s[0]] || {}).song_id || '';
+        return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:11px">' +
+          '<div style="flex:0 0 82px;font-weight:600;color:#3a4a63;font-size:.9rem">' + esc(s[1]) + '</div>' +
+          '<select class="as-slot" data-slot="' + s[0] + '" style="flex:1;min-width:180px;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' + pickerOptions(cur) + '</select>' +
+          '<span class="as-badge" data-slot="' + s[0] + '" style="display:inline-flex;align-items:center;gap:4px">' + slotBadge(s[0]) + '</span></div>';
+      }).join('');
+      right.innerHTML = head + slots +
+        '<div style="margin-top:10px;font-size:.8rem;color:#9aa5b1">🟢 순환가능 · 🔴 최근 사용(3주 순환상 쉬는 중) · 🆕 미사용 — 목록은 순환 가능한 곡이 위로 정렬됩니다.</div>' +
+        '<div class="fin-msg" id="as_msg" style="margin-top:8px"></div>' +
+        '<div style="margin-top:16px;padding:14px;background:#fbfdff;border:1px solid #eef2f7;border-radius:12px">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px"><b style="color:var(--accent,#223350)">💡 주제 기반 추천</b><span style="font-size:.77rem;color:#9aa5b1">설교 제목·본문에서 뽑은 주제(누르면 켜고 끄기) + 순환을 고려해 어울리는 곡을 제안합니다</span></div>' +
+        '<div id="as_recthemes" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>' +
+        '<div id="as_rec"></div></div>';
+      Array.prototype.forEach.call(right.querySelectorAll('.as-slot'), function (selEl) {
+        selEl.onchange = function () { assignSlot(selEl.dataset.slot, selEl.value); };
+      });
+      renderRec();
+    }
+
+    function renderRec() {
+      var thBox = panel.querySelector('#as_recthemes'), recBox = panel.querySelector('#as_rec');
+      if (!thBox || !recBox) return;
+      // 주제 칩(자동 감지 + 수동 토글로 보정)
+      thBox.innerHTML = SONG_THEMES.map(function (t) {
+        var on = !!recThemes[t];
+        return '<button type="button" class="rec-th" data-v="' + esc(t) + '" style="border:1px solid ' + (on ? 'var(--accent,#223350)' : '#d7dee9') + ';background:' + (on ? 'var(--accent,#223350)' : '#fff') + ';color:' + (on ? '#fff' : '#8894a6') + ';border-radius:999px;padding:3px 10px;font-size:.78rem;cursor:pointer;font-family:inherit">' + esc(t) + '</button>';
+      }).join('');
+      Array.prototype.forEach.call(thBox.querySelectorAll('.rec-th'), function (b) {
+        b.onclick = function () { var v = b.dataset.v; if (recThemes[v]) delete recThemes[v]; else recThemes[v] = true; renderRec(); };
+      });
+      var themeKeys = Object.keys(recThemes).filter(function (k) { return recThemes[k]; });
+      var assigned = {}; Object.keys(slotMap).forEach(function (s) { if (slotMap[s] && slotMap[s].song_id) assigned[slotMap[s].song_id] = true; });
+      var scored = SONGS.map(function (s) {
+        var tags = s.theme_tags || [], match = 0, matched = [];
+        tags.forEach(function (t) { if (recThemes[t]) { match++; matched.push(t); } });
+        var rot = songRot((USAGE[s.id] || {}).last);
+        var rotB = rot.code === 'ok' ? 3 : (rot.code === 'new' ? 1 : -6);
+        return { s: s, match: match, matched: matched, rot: rot, score: match * 10 + rotB };
+      });
+      var picks;
+      if (themeKeys.length) {
+        picks = scored.filter(function (x) { return x.match > 0; }).sort(function (a, b) { return b.score - a.score || String(a.s.title || '').localeCompare(String(b.s.title || ''), 'ko'); }).slice(0, 8);
+      } else {
+        var rank = { ok: 0, 'new': 1, recent: 2 };
+        picks = scored.sort(function (a, b) { return (rank[a.rot.code] - rank[b.rot.code]) || String(a.s.title || '').localeCompare(String(b.s.title || ''), 'ko'); }).slice(0, 8);
+      }
+      if (!SONGS.length) { recBox.innerHTML = '<p style="color:#9aa5b1;font-size:.85rem;margin:2px">라이브러리에 곡이 없습니다. 먼저 「찬양곡 라이브러리」에서 곡을 추가하세요.</p>'; return; }
+      if (!picks.length) { recBox.innerHTML = '<p style="color:#9aa5b1;font-size:.85rem;margin:2px">' + (themeKeys.length ? '선택한 주제에 맞는 곡이 없습니다. 주제를 바꾸거나 라이브러리에서 곡에 주제태그를 달아 주세요.' : '주제를 하나 이상 선택하면 어울리는 곡을 추천합니다.') + '</p>'; return; }
+      var slotOpts = SONG_SLOTS.map(function (s) { return '<option value="' + s[0] + '">' + esc(s[1]) + '</option>'; }).join('');
+      recBox.innerHTML = picks.map(function (x) {
+        var s = x.s, alreadyIn = assigned[s.id];
+        return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #f2f5f9">' +
+          '<b style="color:#26364e">' + esc(s.title || '') + '</b>' +
+          (s.type ? '<span class="fin-pill" style="background:' + (SONG_TYPE_BG[s.type] || '#eef2f7') + ';color:#3a4a63">' + esc(s.type) + '</span>' : '') +
+          (x.matched.length ? '<span style="font-size:.76rem;color:#5b6b7d">' + x.matched.map(function (t) { return '#' + esc(t); }).join(' ') + '</span>' : '') +
+          songPill(x.rot.txt, x.rot.bg) +
+          (alreadyIn ? '<span style="font-size:.74rem;color:#2f5d3a">✓ 이미 배정됨</span>' : '') +
+          '<select class="rec-assign" data-song="' + esc(s.id) + '" style="margin-left:auto;padding:5px 8px;border:1px solid #dfe5ee;border-radius:7px;font:inherit;font-size:.82rem"><option value="">＋ 배정할 슬롯…</option>' + slotOpts + '</select></div>';
+      }).join('');
+      Array.prototype.forEach.call(recBox.querySelectorAll('.rec-assign'), function (selEl) {
+        selEl.onchange = function () { var slot = selEl.value; if (!slot) return; assignSlot(slot, selEl.dataset.song); };
+      });
+    }
+
+    function amsg(t, c) { var e = panel.querySelector('#as_msg'); if (e) { e.style.color = c || '#7b8794'; e.textContent = t; if (t) setTimeout(function () { if (e.textContent === t) e.textContent = ''; }, 2500); } }
+    function assignSlot(slot, songId) {
+      if (!sel) return;
+      amsg('저장 중…');
+      // 슬롯당 한 곡: 기존 배정 제거 후(있으면) 새로 삽입
+      api('DELETE', 'sermon_songs?sermon_id=eq.' + sel.id + '&slot=eq.' + encodeURIComponent(slot), null, 'return=minimal')
+        .then(function () { return songId ? api('POST', 'sermon_songs', { sermon_id: sel.id, song_id: songId, slot: slot }, 'return=minimal') : null; })
+        .then(function () {
+          // 로컬 갱신 + 사용집계 재로딩(순환 배지·정렬 최신화)
+          if (songId) slotMap[slot] = { song_id: songId }; else delete slotMap[slot];
+          COUNTS[sel.id] = Object.keys(slotMap).length;
+          return loadSongUsage();
+        })
+        .then(function (m) { USAGE = m || USAGE; renderRight(); drawList(); amsg('✓ 저장됨', 'green'); })
+        .catch(function (e) { amsg(isMissing(e) ? '테이블 준비 필요 — sermon_songs.sql 실행' : ('저장 실패: ' + e.message), '#c0392b'); });
+    }
+  }
+
   function renderSettings(panel) {
     panel.innerHTML =
       '<div class="fin-card"><h3 style="margin:0 0 4px;color:var(--accent,#223350)">교회 기본 정보</h3>' +
@@ -6028,6 +7429,557 @@ console.log('[affairs.js] v20260701dj');
       qtImportModal(txt);
     } catch (e) { /* noop */ }
   }
+
+  // ════════════════════════════════════════════════════════════
+  // 🎬 VideoStudio — 영상 제작 스튜디오 전역 모듈
+  //  · 어디서나 열기(편집기 버튼·게시판 칩), 진행 감시·알림, 완성 후 수정
+  // ════════════════════════════════════════════════════════════
+  (function () {
+    if (!window.VIDEO_STUDIO) return; // 영상 스튜디오는 교회 PC 작업기·Cloudflare 설정 후 config.js 에서 window.VIDEO_STUDIO = true 로 켭니다
+    var ACTIVE = ['pending', 'processing', 'review', 'regen', 'approved', 'revise'];
+    var DEF = { orientation: 'portrait', scene_count: 6, voice: 'female', style: 'storybook', narrative: 'grandma', approvals: 'all', subtitle: { style: 'box', size: 'medium', position: 'bottom' }, instagram: true };
+    var jobs = {};          // date → 최신 작업
+    var prevStatus = {};    // job.id → 직전 상태 (알림 감지)
+    var vsTimer = null, vsLastStatus = null, notifAsked = false;
+
+    function statusChip(j) {
+      if (!j) return '';
+      var m = (j.progress || '').match(/^(\d{1,3})%/);
+      var pct = m ? m[1] + '%' : '';
+      if (j.status === 'done' && j.video_url) return '<div class="vs-chip" data-date="' + esc(j.sermon_date) + '" data-act="play" data-url="' + esc(j.video_url) + '" style="margin-top:3px;cursor:pointer"><span class="fin-pill" style="background:#e8f0ff;color:#2c4a86">▶ 영상 재생</span></div>';
+      if (j.status === 'review') {
+        var rl = /스토리 검토/.test(j.progress || '') ? '📝 스토리 검토 대기!' : (/영상 검토/.test(j.progress || '') ? '🎞 영상 검토 대기!' : '🖼 이미지 검토 대기!');
+        return '<div class="vs-chip" data-date="' + esc(j.sermon_date) + '" data-act="open" style="margin-top:3px;cursor:pointer"><span class="fin-pill" style="background:#fff1cc;color:#a8742a;font-weight:700">' + rl + '</span></div>';
+      }
+      if (j.status === 'error') return '<div class="vs-chip" data-date="' + esc(j.sermon_date) + '" data-act="open" style="margin-top:3px;cursor:pointer"><span class="fin-pill" style="background:#fdeaea;color:#c0392b">⚠ 제작 실패</span></div>';
+      if (ACTIVE.indexOf(j.status) >= 0) return '<div class="vs-chip" data-date="' + esc(j.sermon_date) + '" data-act="open" style="margin-top:3px;cursor:pointer"><span class="fin-pill" style="background:#eef;color:#5a5ad0">🎬 제작중 ' + pct + '</span></div>';
+      return '';
+    }
+    function chipHtml(date) { return statusChip(jobs[date]); }
+    function refreshChips() {
+      Array.prototype.forEach.call(document.querySelectorAll('.vs-chip'), function (el) {
+        var d = el.getAttribute('data-date');
+        var html = chipHtml(d);
+        if (html) { var tmp = document.createElement('div'); tmp.innerHTML = html; el.replaceWith(tmp.firstChild); }
+      });
+    }
+    function wireChips(box) {
+      if (box._vsWired) return; box._vsWired = true;
+      box.addEventListener('click', function (e) {
+        var chip = e.target.closest ? e.target.closest('.vs-chip') : null;
+        if (!chip) return;
+        if (chip.getAttribute('data-act') === 'play') window.open(chip.getAttribute('data-url'), '_blank');
+        else openStudio(chip.getAttribute('data-date'), null);
+      });
+    }
+
+    // ── 전역 감시: 25초마다 작업 상태 확인 → 칩 갱신 + 검토/완성 알림 ──
+    function toast(text, date) {
+      var t = document.createElement('div');
+      t.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:99999;background:#1c2836;color:#fff;padding:13px 18px;border-radius:12px;box-shadow:0 10px 34px rgba(0,0,0,.4);font-size:.88rem;cursor:pointer;max-width:320px';
+      t.innerHTML = text + (date ? ' <b style="color:#8ab4ff">열기 ›</b>' : '');
+      t.onclick = function () { t.remove(); if (date) openStudio(date, null); };
+      document.body.appendChild(t);
+      setTimeout(function () { t.remove(); }, 15000);
+    }
+    function browserNotify(text, date) {
+      try {
+        if (window.Notification && Notification.permission === 'granted') {
+          var n = new Notification('영상 제작', { body: text });
+          n.onclick = function () { window.focus(); if (date) openStudio(date, null); n.close(); };
+        }
+      } catch (e) { }
+    }
+    function watch() {
+      api('GET', 'video_jobs?select=id,sermon_date,status,progress,video_url,claimed_by,error&order=created_at.desc&limit=40').then(function (rows) {
+        var next = {};
+        (rows || []).forEach(function (j) { if (!next[j.sermon_date]) next[j.sermon_date] = j; });
+        (rows || []).forEach(function (j) {
+          var prev = prevStatus[j.id];
+          if (prev && prev !== j.status) {
+            if (j.status === 'review') {
+              var wl = /스토리 검토/.test(j.progress || '') ? '📝 스토리(내레이션)가 준비되었습니다' : (/영상 검토/.test(j.progress || '') ? '🎞 영상이 준비되었습니다' : '🖼 이미지가 준비되었습니다');
+              toast(wl.replace('준비되었습니다', '') + ' <b>' + esc(j.sermon_date) + '</b> — 검토·승인해 주세요', j.sermon_date);
+              browserNotify(j.sermon_date + ' ' + wl + ' — 검토·승인해 주세요', j.sermon_date);
+            }
+            if (j.status === 'done') { toast('🎉 <b>' + esc(j.sermon_date) + '</b> 영상이 완성되었습니다', j.sermon_date); browserNotify(j.sermon_date + ' 영상 완성', j.sermon_date); }
+            if (j.status === 'error') { toast('⚠ <b>' + esc(j.sermon_date) + '</b> 영상 제작 실패', j.sermon_date); }
+          }
+          prevStatus[j.id] = j.status;
+        });
+        jobs = next;
+        refreshChips();
+      }).catch(function () { });
+    }
+    setInterval(watch, 25000);
+    setTimeout(watch, 2500);
+
+    // ── 스튜디오 팝업 ──
+    function esc2(s) { return esc(s); }
+    function closeStudio() { if (vsTimer) { clearInterval(vsTimer); vsTimer = null; } var m = document.getElementById('vs_ov'); if (m) m.remove(); vsLastStatus = null; }
+
+    function openStudio(date, saveFn) {
+      closeStudio();
+      if (!notifAsked && window.Notification && Notification.permission === 'default') { notifAsked = true; try { Notification.requestPermission(); } catch (e) { } }
+      var m = document.createElement('div');
+      m.id = 'vs_ov';
+      m.style.cssText = 'position:fixed;inset:0;background:rgba(8,12,20,.72);z-index:99990;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 14px';
+      m.innerHTML =
+        '<div style="background:#fff;border-radius:16px;max-width:880px;width:100%;padding:22px 24px;box-shadow:0 30px 80px rgba(0,0,0,.5)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<h3 style="margin:0;color:var(--accent,#223350)">🎬 영상 제작 스튜디오 <span style="font-size:.85rem;color:#9aa5b1;font-weight:600">' + esc2(date) + ' QT</span></h3>' +
+        '<button class="btn btn-line" id="vs_close" style="padding:4px 12px">닫기</button></div>' +
+        '<p style="margin:0 0 12px;font-size:.78rem;color:#9aa5b1">설정 → 이미지 생성 → <b>검토·승인</b> → 영상 변환 → 완성. 팝업을 닫아도 제작은 계속되며, 게시판의 <b>🎬 제작중</b> 칩이나 알림으로 다시 열 수 있습니다.</p>' +
+        '<div id="vs_body"></div></div>';
+      document.body.appendChild(m);
+      m.querySelector('#vs_close').onclick = closeStudio;
+      m.addEventListener('click', function (e) { if (e.target === m) closeStudio(); });
+      api('GET', 'video_jobs?select=*&sermon_date=eq.' + encodeURIComponent(date) + '&order=created_at.desc&limit=1').then(function (rows) {
+        var j = rows && rows[0];
+        if (j && ACTIVE.indexOf(j.status) >= 0) startPolling(date);
+        else renderSettings(date, j, saveFn);
+      }).catch(function (e) {
+        var hint = /video_jobs|relation|PGRST2|schema cache|Could not find/i.test(e.message || '') ? ' — Supabase에서 supabase/video_jobs.sql·video_studio.sql·video_revise.sql 을 실행해 주세요.' : '';
+        var b = document.getElementById('vs_body'); if (b) b.innerHTML = '<p style="color:#c0392b">조회 실패: ' + esc2(e.message) + hint + '</p>';
+      });
+    }
+
+    function fld(label, inner) { return '<label style="display:block;font-size:.78rem;color:#7b8794"><span style="display:block;margin-bottom:4px;font-weight:700;color:#3a4a5e">' + label + '</span>' + inner.replace('<select', '<select style="width:100%;padding:7px 10px;border:1px solid #dde3ec;border-radius:8px"') + '</label>'; }
+
+    function renderSettings(date, lastJob, saveFn) {
+      var b = document.getElementById('vs_body'); if (!b) return;
+      b.innerHTML =
+        (lastJob && lastJob.status === 'done' && lastJob.video_url ? '<p style="font-size:.85rem;margin:0 0 10px">완성된 영상: <a href="' + esc2(lastJob.video_url) + '" target="_blank">▶ 보기</a>' + (lastJob.review && lastJob.review.scenes ? ' · <a href="#" id="vs_gorevise">🔧 영상 수정</a>' : '') + ' — 새로 제작하면 최신본으로 바뀝니다.</p>' : '') +
+        (lastJob && lastJob.status === 'error' ? '<p style="font-size:.82rem;color:#c0392b;margin:0 0 10px">지난 작업 실패: ' + esc2(lastJob.error || '') + '</p>' : '') +
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">' +
+        '<b style="font-size:.85rem;color:#3a4a5e">📁 제작 프레임</b>' +
+        '<select id="vs_preset" style="padding:6px 10px;border:1px solid #dde3ec;border-radius:8px;min-width:170px"><option value="">— 저장된 프레임 —</option></select>' +
+        '<button class="btn btn-line" id="vs_preset_load" style="padding:5px 12px">불러오기</button>' +
+        '<button class="btn btn-line" id="vs_preset_save" style="padding:5px 12px">현재 설정 저장</button></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">' +
+        fld('화면', '<select id="vs_ori"><option value="portrait">세로 9:16 (쇼츠·릴스)</option><option value="landscape">가로 16:9 (유튜브)</option></select>') +
+        fld('그림 화풍', '<select id="vs_style"><option value="storybook">동화책 (수채화·색연필)</option><option value="cinematic">실사 시네마틱</option></select>') +
+        fld('이야기 형식', '<select id="vs_narr"><option value="grandma">엄마가 아이에게 들려주기</option><option value="plain">일반 내레이션</option></select>') +
+        fld('승인 단계', '<select id="vs_appr"><option value="all">모든 단계 (스토리·이미지·영상)</option><option value="images">이미지만</option><option value="none">승인 없이 전자동</option></select>') +
+        fld('장면 수', '<select id="vs_n"><option>4</option><option>5</option><option selected>6</option><option>8</option></select>') +
+        fld('목소리', '<select id="vs_voice"><option value="female">여성 (선히)</option><option value="male">남성 (인준)</option></select>') +
+        fld('자막 스타일', '<select id="vs_substyle"><option value="box">박스형 (세련)</option><option value="outline">테두리형 (기본)</option><option value="none">자막 없음</option></select>') +
+        fld('자막 크기', '<select id="vs_subsize"><option value="small">작게</option><option value="medium" selected>보통</option><option value="large">크게</option></select>') +
+        fld('자막 위치', '<select id="vs_subpos"><option value="bottom">하단</option><option value="center">중앙</option></select>') +
+        fld('인스타그램', '<label style="display:flex;align-items:center;gap:6px;font-size:.85rem"><input type="checkbox" id="vs_ig" checked> 완성 시 자동 게시</label>') +
+        '</div>' +
+        '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">' +
+        '<button class="btn btn-solid" id="vs_start" style="padding:9px 22px;font-weight:700">🎬 제작 시작</button></div>' +
+        '<div id="vs_setmsg" style="font-size:.8rem;color:#9aa5b1;min-height:18px;text-align:right"></div>';
+      var gorev = b.querySelector('#vs_gorevise');
+      if (gorev) gorev.onclick = function (e) { e.preventDefault(); renderRevise(date, lastJob); };
+      function gatherSettings() {
+        return {
+          orientation: b.querySelector('#vs_ori').value,
+          style: b.querySelector('#vs_style').value,
+          narrative: b.querySelector('#vs_narr').value,
+          approvals: b.querySelector('#vs_appr').value,
+          scene_count: Number(b.querySelector('#vs_n').value),
+          voice: b.querySelector('#vs_voice').value,
+          subtitle: { style: b.querySelector('#vs_substyle').value, size: b.querySelector('#vs_subsize').value, position: b.querySelector('#vs_subpos').value },
+          instagram: b.querySelector('#vs_ig').checked
+        };
+      }
+      function applySettings(s2) {
+        try {
+          b.querySelector('#vs_ori').value = s2.orientation || 'portrait';
+          b.querySelector('#vs_style').value = s2.style || 'storybook';
+          b.querySelector('#vs_narr').value = s2.narrative || 'grandma';
+          b.querySelector('#vs_appr').value = s2.approvals || 'all';
+          b.querySelector('#vs_n').value = String(s2.scene_count || 6);
+          b.querySelector('#vs_voice').value = s2.voice || 'female';
+          var sub = s2.subtitle || {};
+          b.querySelector('#vs_substyle').value = sub.style || 'box';
+          b.querySelector('#vs_subsize').value = sub.size || 'medium';
+          b.querySelector('#vs_subpos').value = sub.position || 'bottom';
+          b.querySelector('#vs_ig').checked = s2.instagram !== false;
+        } catch (e) { }
+      }
+      function loadPresets() {
+        api('GET', 'video_presets?select=id,name,settings&order=name.asc').then(function (rows) {
+          var sel = b.querySelector('#vs_preset'); if (!sel) return;
+          sel.innerHTML = '<option value="">— 저장된 프레임 —</option>' + (rows || []).map(function (p) { return '<option value="' + p.id + '">' + esc2(p.name) + '</option>'; }).join('');
+          sel._rows = rows || [];
+        }).catch(function () { });
+      }
+      loadPresets();
+      b.querySelector('#vs_preset_load').onclick = function () {
+        var sel = b.querySelector('#vs_preset');
+        var row = (sel._rows || []).filter(function (p) { return String(p.id) === sel.value; })[0];
+        if (!row) { alert('불러올 프레임을 선택하세요.'); return; }
+        applySettings(row.settings || {});
+        b.querySelector('#vs_setmsg').textContent = '✓ 프레임 "' + row.name + '" 을 불러왔습니다';
+      };
+      b.querySelector('#vs_preset_save').onclick = function () {
+        var name = prompt('이 설정을 저장할 프레임 이름:', '기본 QT 쇼츠');
+        if (!name) return;
+        api('POST', 'video_presets?on_conflict=name', { name: name.trim(), settings: gatherSettings() }, 'resolution=merge-duplicates,return=minimal')
+          .then(function () { b.querySelector('#vs_setmsg').textContent = '✓ 프레임 저장됨'; loadPresets(); })
+          .catch(function (e) { alert('프레임 저장 실패: ' + e.message + '\n(video_studio.sql 실행이 필요할 수 있습니다)'); });
+      };
+      b.querySelector('#vs_start').onclick = function () {
+        var btn = this; btn.disabled = true;
+        // 중복 방지: 진행 중 작업(모든 날짜) 확인
+        api('GET', 'video_jobs?select=id,sermon_date,status&status=in.(' + ACTIVE.join(',') + ')&order=created_at.asc').then(function (act) {
+          act = act || [];
+          var same = act.filter(function (a) { return a.sermon_date === date; })[0];
+          if (same) { startPolling(date); return; }
+          var others = act.filter(function (a) { return a.sermon_date !== date; });
+          if (others.length && !confirm('현재 다른 날짜(' + others.map(function (a) { return a.sermon_date; }).join(', ') + ') 작업이 진행 중입니다.\n지금 시작하면 대기열에 추가되어 순서대로 처리됩니다. 계속할까요?')) { btn.disabled = false; return; }
+          var doPost = function () {
+            api('POST', 'video_jobs', { sermon_date: date, settings: gatherSettings() }, 'return=minimal')
+              .then(function () { startPolling(date); setTimeout(watch, 1500); })
+              .catch(function (e) { btn.disabled = false; alert('제작 요청 실패: ' + e.message); });
+          };
+          if (saveFn) saveFn(function () { doPost(); }, function () { btn.disabled = false; });
+          else doPost();
+        }).catch(function (e) { btn.disabled = false; alert('확인 실패: ' + e.message); });
+      };
+    }
+
+    function startPolling(date) {
+      if (vsTimer) clearInterval(vsTimer);
+      var tick = function () {
+        api('GET', 'video_jobs?select=*&sermon_date=eq.' + encodeURIComponent(date) + '&order=created_at.desc&limit=1').then(function (rows) {
+          var j = rows && rows[0]; if (!j) return;
+          renderState(date, j);
+        }).catch(function () { });
+      };
+      vsTimer = setInterval(tick, 8000);
+      tick();
+    }
+
+    function renderState(date, j) {
+      var b = document.getElementById('vs_body'); if (!b) { if (vsTimer) { clearInterval(vsTimer); vsTimer = null; } return; }
+      if (j.status === 'review') {
+        var stage = (j.review && j.review.stage) || 'images';
+        var key = 'review:' + stage;
+        if (vsLastStatus !== key) {
+          if (stage === 'story') renderStory(date, j);
+          else if (stage === 'video') renderVideoReview(date, j);
+          else renderReview(date, j);
+        }
+        vsLastStatus = key; return;
+      }
+      vsLastStatus = j.status;
+      if (j.status === 'done') {
+        if (vsTimer) { clearInterval(vsTimer); vsTimer = null; }
+        var ig = /인스타그램 게시 완료/.test(j.progress || '') ? '<p style="font-size:.85rem;color:#1d7a45;margin:6px 0 0">📸 인스타그램에도 자동 게시되었습니다.</p>'
+          : (/인스타 실패/.test(j.progress || '') ? '<p style="font-size:.82rem;color:#a8742a;margin:6px 0 0">영상은 완성됐지만 인스타 게시는 실패했습니다: ' + esc2((j.progress || '').split('인스타 실패:')[1] || '') + '</p>'
+            : (/수정본/.test(j.progress || '') ? '<p style="font-size:.82rem;color:#7b8794;margin:6px 0 0">수정본입니다 — 인스타 재게시가 필요하면 파일을 받아 수동으로 올려주세요.</p>' : ''));
+        b.innerHTML = '<div style="text-align:center;padding:26px 10px">' +
+          '<div style="font-size:2rem">🎉</div><h4 style="margin:8px 0;color:var(--accent,#223350)">영상이 완성되었습니다</h4>' +
+          '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">' +
+          '<a class="btn btn-solid" href="' + esc2(j.video_url || '#') + '" target="_blank" style="padding:10px 26px;font-weight:700">▶ 영상 보기</a>' +
+          (j.review && j.review.scenes ? '<button class="btn btn-line" id="vs_revise" style="padding:10px 20px">🔧 영상 수정</button>' : '') +
+          '<button class="btn btn-line" id="vs_again" style="padding:10px 16px">새로 제작</button></div>' + ig + '</div>';
+        var rv = b.querySelector('#vs_revise');
+        if (rv) rv.onclick = function () { renderRevise(date, j); };
+        b.querySelector('#vs_again').onclick = function () { renderSettings(date, j, null); };
+        setTimeout(watch, 1000);
+        return;
+      }
+      if (j.status === 'error') {
+        if (vsTimer) { clearInterval(vsTimer); vsTimer = null; }
+        b.innerHTML = '<p style="color:#c0392b;font-size:.9rem">제작 실패: ' + esc2(j.error || '오류') + '</p>' +
+          '<button class="btn btn-solid" id="vs_retry" style="padding:8px 18px">다시 설정하고 제작</button>';
+        b.querySelector('#vs_retry').onclick = function () { renderSettings(date, j, null); };
+        return;
+      }
+      var p = j.progress || '';
+      var mm = p.match(/^(\d{1,3})%\s*·\s*(.*)$/);
+      var pct = (j.status === 'pending' || j.status === 'revise') ? 2 : (mm ? Number(mm[1]) : 5);
+      var msg = j.status === 'pending' ? '워커 대기 중 — PC 워커가 곧 가져갑니다'
+        : (j.status === 'revise' ? '수정 대기 중 — 워커가 곧 가져갑니다' : (mm ? mm[2] : (p || '진행 중')));
+      b.innerHTML = '<div style="padding:14px 4px">' +
+        '<div style="display:flex;justify-content:space-between;font-size:.85rem;color:#3a4a5e;margin-bottom:6px"><span>🎬 ' + esc2(msg) + (j.claimed_by ? ' <span style="color:#9aa5b1">(' + esc2(j.claimed_by) + ')</span>' : '') + '</span><b>' + pct + '%</b></div>' +
+        '<div style="height:10px;background:#e8edf5;border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.max(2, Math.min(100, pct)) + '%;background:linear-gradient(90deg,#4f8cff,#8a6cff);border-radius:6px;transition:width .9s ease"></i></div>' +
+        '<p style="font-size:.76rem;color:#9aa5b1;margin-top:10px">이미지가 준비되면 <b>알림</b>과 함께 이 화면이 검토 화면으로 바뀝니다. 팝업을 닫아도 제작은 계속되고, 게시판 칩으로 다시 열 수 있습니다.</p></div>';
+    }
+
+    function sceneCards(scenes, mediaFn, extraLabel) {
+      return scenes.map(function (sc, i) {
+        return '<div class="vs-card" data-i="' + (i + 1) + '" style="border:1px solid #e2e8f2;border-radius:12px;overflow:hidden;background:#fafbfd">' +
+          mediaFn(sc) +
+          '<div style="padding:9px 10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:.8rem;color:#3a4a5e">장면 ' + (i + 1) + '</b>' +
+          '<label style="font-size:.75rem;color:#c0392b;display:flex;gap:4px;align-items:center"><input type="checkbox" class="vs-regen"> ' + extraLabel + '</label></div>' +
+          '<input class="vs-sub" value="' + esc2(sc.subtitle) + '" placeholder="자막" style="width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.8rem;margin-bottom:5px">' +
+          '<textarea class="vs-narr" rows="2" placeholder="내레이션" style="width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.8rem;resize:vertical">' + esc2(sc.narration) + '</textarea>' +
+          '<details style="margin-top:4px"><summary style="font-size:.72rem;color:#9aa5b1;cursor:pointer">프롬프트 (재생성 시 반영)</summary>' +
+          '<textarea class="vs-iprompt" rows="2" style="width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.74rem;resize:vertical">' + esc2(sc.image_prompt) + '</textarea>' +
+          '<textarea class="vs-mprompt" rows="2" placeholder="모션 프롬프트" style="width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.74rem;resize:vertical;margin-top:3px">' + esc2(sc.motion_prompt || '') + '</textarea></details>' +
+          '</div></div>';
+      }).join('');
+    }
+    function collectCards(b, review) {
+      var out = JSON.parse(JSON.stringify(review));
+      var checked = [];
+      Array.prototype.forEach.call(b.querySelectorAll('.vs-card'), function (card, i) {
+        out.scenes[i].subtitle = card.querySelector('.vs-sub').value;
+        out.scenes[i].narration = card.querySelector('.vs-narr').value;
+        out.scenes[i].image_prompt = card.querySelector('.vs-iprompt').value;
+        var mp = card.querySelector('.vs-mprompt'); if (mp) out.scenes[i].motion_prompt = mp.value;
+        if (card.querySelector('.vs-regen').checked) checked.push(i + 1);
+      });
+      return { out: out, checked: checked };
+    }
+
+    function renderReview(date, j) {
+      var b = document.getElementById('vs_body'); if (!b) return;
+      var scenes = (j.review && j.review.scenes) || [];
+      b.innerHTML =
+        '<div style="background:#fff7e0;border:1px solid #f0dfa8;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.84rem;color:#7a5d1e"><b>🖼 이미지 검토</b> — 각 장면을 확인하세요. 자막·내레이션은 바로 수정, 마음에 안 드는 장면은 "다시 생성" 체크 후 재생성. <b>승인해야 영상 변환이 시작됩니다.</b></div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">' +
+        sceneCards(scenes, function (sc) { return '<a href="' + esc2(sc.image_url) + '" target="_blank" title="크게 보기"><img src="' + esc2(sc.image_url) + '" style="width:100%;aspect-ratio:9/16;object-fit:contain;background:#eef1f6;display:block"></a>'; }, '다시 생성') +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:8px">' +
+        '<button class="btn btn-line" id="vs_cancel" style="padding:8px 16px;color:#c0392b;border-color:#e5b5b0">작업 취소</button>' +
+        '<div style="display:flex;gap:8px">' +
+        '<button class="btn btn-line" id="vs_do_regen" style="padding:8px 16px">🔄 선택 장면 다시 생성</button>' +
+        '<button class="btn btn-solid" id="vs_approve" style="padding:8px 22px;font-weight:700">✔ 승인 — 영상 제작 계속</button></div></div>' +
+        '<div id="vs_revmsg" style="font-size:.8rem;color:#9aa5b1;min-height:18px;text-align:right;margin-top:4px"></div>';
+      b.querySelector('#vs_approve').onclick = function () {
+        var c = collectCards(b, j.review); delete c.out.regen;
+        this.disabled = true;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'approved', review: c.out }, 'return=minimal')
+          .then(function () { vsLastStatus = 'approved'; b.querySelector('#vs_revmsg').textContent = '✓ 승인됨 — 영상 변환을 시작합니다'; })
+          .catch(function (e) { alert('승인 실패: ' + e.message); });
+      };
+      b.querySelector('#vs_do_regen').onclick = function () {
+        var c = collectCards(b, j.review);
+        if (!c.checked.length) { alert('다시 생성할 장면을 체크하세요.'); return; }
+        c.out.regen = c.checked;
+        this.disabled = true;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'regen', review: c.out }, 'return=minimal')
+          .then(function () { vsLastStatus = 'regen'; b.querySelector('#vs_revmsg').textContent = '🔄 재생성 요청됨 (' + c.checked.join(', ') + '번)'; })
+          .catch(function (e) { alert('요청 실패: ' + e.message); });
+      };
+      b.querySelector('#vs_cancel').onclick = function () {
+        if (!confirm('이 영상 제작을 취소할까요?')) return;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'canceled' }, 'return=minimal')
+          .then(function () { closeStudio(); setTimeout(watch, 1000); })
+          .catch(function (e) { alert('취소 실패: ' + e.message); });
+      };
+    }
+
+    // ── 📝 스토리 검토: 이미지 생성 전에 내레이션·자막·장면 구성을 승인 ──
+    function renderStory(date, j) {
+      var b = document.getElementById('vs_body'); if (!b) return;
+      var scenes = (j.review && j.review.scenes) || [];
+      var cards = scenes.map(function (sc, i) {
+        return '<div class="vs-card" data-i="' + (i + 1) + '" style="border:1px solid #e2e8f2;border-radius:12px;background:#fafbfd;padding:10px 12px">' +
+          '<b style="font-size:.8rem;color:#3a4a5e">장면 ' + (i + 1) + '</b>' +
+          '<div style="font-size:.72rem;color:#9aa5b1;margin:3px 0 4px">내레이션 (엄마 목소리로 낭독됩니다)</div>' +
+          '<textarea class="vs-narr" rows="3" style="width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.84rem;resize:vertical">' + esc2(sc.narration) + '</textarea>' +
+          '<div style="font-size:.72rem;color:#9aa5b1;margin:5px 0 3px">자막</div>' +
+          '<input class="vs-sub" value="' + esc2(sc.subtitle) + '" style="width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.8rem">' +
+          '<details style="margin-top:5px"><summary style="font-size:.72rem;color:#9aa5b1;cursor:pointer">그림·모션 프롬프트</summary>' +
+          '<textarea class="vs-iprompt" rows="2" style="width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.74rem;resize:vertical;margin-top:3px">' + esc2(sc.image_prompt) + '</textarea>' +
+          '<textarea class="vs-mprompt" rows="1" style="width:100%;padding:6px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.74rem;resize:vertical;margin-top:3px">' + esc2(sc.motion_prompt || '') + '</textarea></details>' +
+          '<label style="display:none"><input type="checkbox" class="vs-regen"></label>' +
+          '</div>';
+      }).join('');
+      b.innerHTML =
+        '<div style="background:#eef7ff;border:1px solid #bcd6f5;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.84rem;color:#2c4a86"><b>📝 스토리 검토</b> — 이미지를 만들기 전에 내레이션과 장면 구성을 확인하세요. 자유롭게 고친 뒤 승인하면 이 내용대로 이미지를 생성합니다.</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">' + cards + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:8px">' +
+        '<button class="btn btn-line" id="vs_cancel" style="padding:8px 16px;color:#c0392b;border-color:#e5b5b0">작업 취소</button>' +
+        '<div style="display:flex;gap:8px">' +
+        '<button class="btn btn-line" id="vs_story_regen" style="padding:8px 16px">🔄 스토리 전체 다시 구성</button>' +
+        '<button class="btn btn-solid" id="vs_approve" style="padding:8px 22px;font-weight:700">✔ 승인 — 이미지 생성 시작</button></div></div>' +
+        '<div id="vs_revmsg" style="font-size:.8rem;color:#9aa5b1;min-height:18px;text-align:right;margin-top:4px"></div>';
+      b.querySelector('#vs_approve').onclick = function () {
+        var c = collectCards(b, j.review); delete c.out.regen;
+        this.disabled = true;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'approved', review: c.out }, 'return=minimal')
+          .then(function () { vsLastStatus = 'approved'; b.querySelector('#vs_revmsg').textContent = '✓ 승인됨 — 이미지 생성을 시작합니다'; })
+          .catch(function (e) { alert('승인 실패: ' + e.message); });
+      };
+      b.querySelector('#vs_story_regen').onclick = function () {
+        if (!confirm('스토리 전체를 처음부터 다시 구성할까요? (지금 수정한 내용은 사라집니다)')) return;
+        var c = collectCards(b, j.review);
+        c.out.regen = [1];
+        this.disabled = true;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'regen', review: c.out }, 'return=minimal')
+          .then(function () { vsLastStatus = 'regen'; b.querySelector('#vs_revmsg').textContent = '🔄 스토리를 다시 구성합니다'; })
+          .catch(function (e) { alert('요청 실패: ' + e.message); });
+      };
+      b.querySelector('#vs_cancel').onclick = function () {
+        if (!confirm('이 영상 제작을 취소할까요?')) return;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'canceled' }, 'return=minimal')
+          .then(function () { closeStudio(); setTimeout(watch, 1000); })
+          .catch(function (e) { alert('취소 실패: ' + e.message); });
+      };
+    }
+
+    // ── 🎞 영상 검토: 배포(인스타) 전에 완성 영상을 확인·승인 ──
+    function renderVideoReview(date, j) {
+      var b = document.getElementById('vs_body'); if (!b) return;
+      var scenes = (j.review && j.review.scenes) || [];
+      var cards = scenes.map(function (sc, i) {
+        var isWan = !!sc.clip_url;
+        return '<div class="vs-card" data-i="' + (i + 1) + '" style="border:1px solid #e2e8f2;border-radius:12px;overflow:hidden;background:#fafbfd">' +
+          (isWan ? '<video controls preload="metadata" src="' + esc2(sc.clip_url) + '" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#000"></video>'
+            : '<img src="' + esc2(sc.image_url) + '" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block">') +
+          '<div style="padding:8px 10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><b style="font-size:.78rem;color:#3a4a5e">장면 ' + (i + 1) + (isWan ? ' · AI 모션' : ' · 줌인') + '</b>' +
+          '<label style="font-size:.73rem;color:' + (isWan ? '#c0392b' : '#b9c2cd') + ';display:flex;gap:4px;align-items:center"><input type="checkbox" class="vs-regen"' + (isWan ? '' : ' disabled') + '> 다시 생성</label></div>' +
+          '<input class="vs-sub" value="' + esc2(sc.subtitle) + '" style="width:100%;padding:5px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.78rem;margin-bottom:4px">' +
+          '<textarea class="vs-narr" rows="2" style="width:100%;padding:5px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.78rem;resize:vertical">' + esc2(sc.narration) + '</textarea>' +
+          '<details><summary style="font-size:.7rem;color:#9aa5b1;cursor:pointer">프롬프트</summary>' +
+          '<textarea class="vs-iprompt" rows="2" style="width:100%;padding:5px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.72rem">' + esc2(sc.image_prompt) + '</textarea>' +
+          '<textarea class="vs-mprompt" rows="1" style="width:100%;padding:5px 8px;border:1px solid #dde3ec;border-radius:7px;font-size:.72rem;margin-top:3px">' + esc2(sc.motion_prompt || '') + '</textarea></details>' +
+          '</div></div>';
+      }).join('');
+      b.innerHTML =
+        '<div style="background:#f3eeff;border:1px solid #d3c4f5;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.84rem;color:#5b3aa8"><b>🎞 영상 검토</b> — 완성된 영상을 확인하세요. <b>승인해야 배포(인스타그램 게시)됩니다.</b> 자막·내레이션을 고치거나 AI 모션 장면을 다시 만들려면 "수정 반영 — 재조립"을 누르세요.</div>' +
+        (j.video_url ? '<video controls src="' + esc2(j.video_url) + '" style="width:100%;max-width:360px;display:block;margin:0 auto 14px;border-radius:12px;background:#000"></video>' : '') +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">' + cards + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:8px">' +
+        '<button class="btn btn-line" id="vs_cancel" style="padding:8px 16px;color:#c0392b;border-color:#e5b5b0">작업 취소</button>' +
+        '<div style="display:flex;gap:8px">' +
+        '<button class="btn btn-line" id="vs_video_regen" style="padding:8px 16px">🔧 수정 반영 — 재조립</button>' +
+        '<button class="btn btn-solid" id="vs_approve" style="padding:8px 22px;font-weight:700">✔ 승인 — 배포</button></div></div>' +
+        '<div id="vs_revmsg" style="font-size:.8rem;color:#9aa5b1;min-height:18px;text-align:right;margin-top:4px"></div>';
+      b.querySelector('#vs_approve').onclick = function () {
+        var c = collectCards(b, j.review); delete c.out.regen;
+        this.disabled = true;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'approved', review: c.out }, 'return=minimal')
+          .then(function () { vsLastStatus = 'approved'; b.querySelector('#vs_revmsg').textContent = '✓ 승인됨 — 배포를 진행합니다'; })
+          .catch(function (e) { alert('승인 실패: ' + e.message); });
+      };
+      b.querySelector('#vs_video_regen').onclick = function () {
+        var c = collectCards(b, j.review);
+        c.out.regen = c.checked;
+        var note = c.checked.length ? 'AI 모션 ' + c.checked.length + '개 장면을 다시 만들고 재조립합니다.' : '자막·내레이션 수정만 반영해 재조립합니다.';
+        if (!confirm(note + '\n진행할까요?')) return;
+        this.disabled = true;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'regen', review: c.out }, 'return=minimal')
+          .then(function () { vsLastStatus = 'regen'; b.querySelector('#vs_revmsg').textContent = '🔧 재조립을 시작합니다'; })
+          .catch(function (e) { alert('요청 실패: ' + e.message); });
+      };
+      b.querySelector('#vs_cancel').onclick = function () {
+        if (!confirm('이 영상 제작을 취소할까요? (배포되지 않습니다)')) return;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'canceled' }, 'return=minimal')
+          .then(function () { closeStudio(); setTimeout(watch, 1000); })
+          .catch(function (e) { alert('취소 실패: ' + e.message); });
+      };
+    }
+
+    // ── 완성 후 수정: 장면별 클립 재생성/자막·내레이션 수정 → 재조립 ──
+    function renderRevise(date, j) {
+      var b = document.getElementById('vs_body'); if (!b) return;
+      var scenes = (j.review && j.review.scenes) || [];
+      var hasClips = scenes.some(function (sc) { return sc.clip_url; });
+      b.innerHTML =
+        '<div style="background:#e8f2ff;border:1px solid #bcd6f5;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.84rem;color:#2c4a86"><b>🔧 영상 수정</b> — 장면별 클립을 재생해 보고, 다시 만들 장면만 체크하세요. 체크 없이도 자막·내레이션 수정만 반영해 재조립할 수 있습니다.' + (hasClips ? '' : '<br><span style="color:#a8742a">※ 이 영상은 장면 클립이 보관되지 않은 이전 버전이라, 체크한 장면은 이미지 기준으로 새로 만들어집니다.</span>') + '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">' +
+        sceneCards(scenes, function (sc) {
+          return sc.clip_url
+            ? '<video controls preload="metadata" src="' + esc2(sc.clip_url) + '" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#000"></video>'
+            : '<img src="' + esc2(sc.image_url) + '" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block">';
+        }, '클립 다시 생성') +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:8px">' +
+        '<button class="btn btn-line" id="vs_back" style="padding:8px 16px">‹ 뒤로</button>' +
+        '<button class="btn btn-solid" id="vs_do_revise" style="padding:8px 22px;font-weight:700">🔧 수정 반영 — 재제작</button></div>' +
+        '<div id="vs_revmsg" style="font-size:.8rem;color:#9aa5b1;min-height:18px;text-align:right;margin-top:4px"></div>';
+      b.querySelector('#vs_back').onclick = function () { vsLastStatus = null; renderState(date, j); };
+      b.querySelector('#vs_do_revise').onclick = function () {
+        var c = collectCards(b, j.review);
+        var note = c.checked.length ? '체크한 ' + c.checked.length + '개 장면 클립을 새로 만들고 재조립합니다.' : '클립은 그대로 두고 자막·내레이션 수정만 반영해 재조립합니다.';
+        if (!confirm(note + '\n진행할까요?')) return;
+        c.out.revideo = c.checked;
+        c.out.revise_requested = true;
+        this.disabled = true;
+        api('PATCH', 'video_jobs?id=eq.' + j.id, { status: 'revise', review: c.out }, 'return=minimal')
+          .then(function () { vsLastStatus = null; startPolling(date); setTimeout(watch, 1500); })
+          .catch(function (e) { alert('수정 요청 실패: ' + e.message); });
+      };
+    }
+
+    // ── 영상 관리 센터: 전체 작업 목록 + 상태별 조치 ──
+    function statusBadge(j) {
+      var m = (j.progress || '').match(/^(\d{1,3})%/);
+      var pct = m ? ' ' + m[1] + '%' : '';
+      var map = {
+        done: ['#e8f0ff', '#2c4a86', '✓ 완성'],
+        review: ['#fff1cc', '#a8742a', '🖼 검토 대기'],
+        pending: ['#eef', '#5a5ad0', '⏳ 대기'],
+        processing: ['#eef', '#5a5ad0', '🎬 제작중' + pct],
+        regen: ['#eef', '#5a5ad0', '🔄 재생성중' + pct],
+        approved: ['#eef', '#5a5ad0', '🎬 변환중' + pct],
+        revise: ['#eef', '#5a5ad0', '🔧 수정중' + pct],
+        error: ['#fdeaea', '#c0392b', '⚠ 실패'],
+        canceled: ['#eee', '#7b8794', '취소됨']
+      };
+      var s = map[j.status] || ['#eee', '#7b8794', j.status];
+      return '<span class="fin-pill" style="background:' + s[0] + ';color:' + s[1] + '">' + s[2] + '</span>';
+    }
+    function openManager() {
+      var m = document.createElement('div');
+      m.id = 'vm_ov';
+      m.style.cssText = 'position:fixed;inset:0;background:rgba(8,12,20,.72);z-index:99988;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 14px';
+      m.innerHTML =
+        '<div style="background:#fff;border-radius:16px;max-width:820px;width:100%;padding:22px 24px;box-shadow:0 30px 80px rgba(0,0,0,.5)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+        '<h3 style="margin:0;color:var(--accent,#223350)">🎬 QT 영상 관리</h3>' +
+        '<button class="btn btn-line" id="vm_close" style="padding:4px 12px">닫기</button></div>' +
+        '<div id="vm_body"><p class="qt-loading">불러오는 중…</p></div></div>';
+      document.body.appendChild(m);
+      m.querySelector('#vm_close').onclick = function () { m.remove(); };
+      m.addEventListener('click', function (e) { if (e.target === m) m.remove(); });
+      function reload() {
+        api('GET', 'video_jobs?select=id,sermon_date,status,progress,video_url,claimed_by,error,created_at&order=created_at.desc&limit=60').then(function (rows) {
+          rows = rows || [];
+          var body = m.querySelector('#vm_body'); if (!body) return;
+          if (!rows.length) { body.innerHTML = '<p style="color:#9aa5b1;font-size:.9rem;padding:10px 0">아직 제작한 영상이 없습니다. 설교관리에서 매일 QT를 열고 🎬 영상 제작을 눌러보세요.</p>'; return; }
+          var rowsHtml = rows.map(function (j) {
+            var canRevise = j.status === 'done';
+            var canRetry = j.status === 'error' || j.status === 'canceled';
+            var canReview = j.status === 'review';
+            var canDelete = ['done', 'error', 'canceled'].indexOf(j.status) >= 0;
+            return '<tr data-id="' + j.id + '" data-date="' + esc(j.sermon_date) + '">' +
+              '<td style="white-space:nowrap;font-weight:600">' + esc(j.sermon_date) + '</td>' +
+              '<td>' + statusBadge(j) + (j.claimed_by ? '<div style="font-size:.68rem;color:#9aa5b1;margin-top:2px">' + esc(j.claimed_by) + '</div>' : '') + (j.status === 'error' && j.error ? '<div style="font-size:.68rem;color:#c0392b;margin-top:2px;max-width:200px;white-space:normal">' + esc(String(j.error).slice(0, 120)) + '</div>' : '') + '</td>' +
+              '<td style="text-align:right;white-space:nowrap">' +
+              (j.video_url ? '<button class="btn btn-line vm-play" style="padding:3px 9px;font-size:.76rem">▶ 재생</button> ' : '') +
+              (canReview ? '<button class="btn btn-solid vm-open" style="padding:3px 9px;font-size:.76rem;background:#a8742a;border-color:#a8742a">🖼 검토</button> ' : '') +
+              (canRevise ? '<button class="btn btn-line vm-revise" style="padding:3px 9px;font-size:.76rem">🔧 수정</button> ' : '') +
+              (canRetry ? '<button class="btn btn-line vm-open" style="padding:3px 9px;font-size:.76rem">↻ 다시</button> ' : '') +
+              (!canReview && !canRevise && !canRetry && !j.video_url ? '<button class="btn btn-line vm-open" style="padding:3px 9px;font-size:.76rem">열기</button> ' : '') +
+              (canDelete ? '<button class="btn btn-line vm-del" style="padding:3px 9px;font-size:.76rem;color:#c0392b">삭제</button>' : '') +
+              '</td></tr>';
+          }).join('');
+          body.innerHTML =
+            '<div style="overflow:auto"><table class="fin-table" style="min-width:520px;width:100%"><thead><tr>' +
+            '<th>일자</th><th>상태</th><th style="text-align:right">관리</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' +
+            '<p style="font-size:.74rem;color:#9aa5b1;margin-top:10px">최근 60건. 상태는 자동으로 갱신됩니다. 검토·수정·재생은 각 행의 버튼을 누르세요.</p>';
+          function idOf(el) { var tr = el.closest('tr'); return { id: tr.getAttribute('data-id'), date: tr.getAttribute('data-date') }; }
+          Array.prototype.forEach.call(body.querySelectorAll('.vm-play'), function (b) { b.onclick = function () { var j = rows.filter(function (r) { return String(r.id) === idOf(b).id; })[0]; if (j && j.video_url) window.open(j.video_url, '_blank'); }; });
+          Array.prototype.forEach.call(body.querySelectorAll('.vm-open'), function (b) { b.onclick = function () { m.remove(); openStudio(idOf(b).date, null); }; });
+          Array.prototype.forEach.call(body.querySelectorAll('.vm-revise'), function (b) { b.onclick = function () { m.remove(); openStudio(idOf(b).date, null); }; });
+          Array.prototype.forEach.call(body.querySelectorAll('.vm-del'), function (b) {
+            b.onclick = function () {
+              if (!confirm('이 영상 작업 기록을 삭제할까요?\n(이미 게시된 영상 파일은 지워지지 않습니다)')) return;
+              api('DELETE', 'video_jobs?id=eq.' + idOf(b).id, null, 'return=minimal').then(reload).catch(function (e) { alert('삭제 실패: ' + e.message); });
+            };
+          });
+        }).catch(function (e) {
+          var body = m.querySelector('#vm_body'); if (body) body.innerHTML = '<p style="color:#c0392b">불러오기 실패: ' + esc(e.message) + '</p>';
+        });
+      }
+      reload();
+    }
+
+    window.VideoStudio = { open: openStudio, chipHtml: chipHtml, wireChips: wireChips, openManager: openManager };
+  })();
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

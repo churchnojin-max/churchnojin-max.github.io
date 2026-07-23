@@ -43,3 +43,8 @@ window.FORMSUBMIT_EMAIL = "";
 window.LIBRARY_API_URL = "";
 /* 책 폴더 ID(드라이브 폴더 주소 .../folders/XXXX 의 XXXX). */
 window.LIBRARY_FOLDER_ID = "";
+
+/* --- 영상 제작 스튜디오 (선택) ---
+   설교 영상 자동 제작 기능. 교회 PC 작업 프로그램과 Cloudflare 설정이 필요해
+   기본은 꺼져 있습니다. 준비가 되면 true 로 바꾸세요. */
+window.VIDEO_STUDIO = false;

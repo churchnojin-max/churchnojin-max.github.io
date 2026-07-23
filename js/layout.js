@@ -131,7 +131,7 @@
           <span class="logo-kr">${CH_NAME}</span>
           <span class="logo-en">${CH_EN_LINE}</span>
         </div>
-        <nav class="footer-nav">${NAV.filter((n) => !n.adminOnly && !n.memberOnly).map((n) => `<a href="${n.href}">${n.label}</a>`).join("")}<a href="bylaws.html">정관</a><a href="privacy.html">개인정보처리방침</a><a href="withdraw.html">회원탈퇴</a></nav>
+        <nav class="footer-nav">${NAV.filter((n) => !n.adminOnly && !n.memberOnly).map((n) => `<a href="${n.href}">${n.label}</a>`).join("")}<a href="bylaws.html">정관</a><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a><a href="withdraw.html">회원탈퇴</a></nav>
         <div class="footer-actions">
           ${KAKAO_ON ? `<a class="kakao-channel-btn" href="${C.kakaoChannel}" target="_blank" rel="noopener">💬 카카오톡 채널 추가</a>` : ""}
           ${GIVE_ON ? `<a class="give-btn" id="giveOnlineBtn" href="javascript:void(0)">💝 온라인헌금</a>` : ""}
@@ -521,7 +521,7 @@
     sdk.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     sdk.onload = function () {
       const auth = document.createElement("script");
-      auth.src = "js/auth.js?v=20260709auth1";
+      auth.src = "js/auth.js?v=20260723up1";
       document.body.appendChild(auth);
     };
     // SDK 로드 실패 시에도 버튼은 유지(클릭 시 모달은 위 핸들러가 처리)

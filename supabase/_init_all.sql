@@ -1864,3 +1864,140 @@ create policy "admin all worship_templates" on public.worship_templates for all
   using (exists (select 1 from public.admins a where a.uid = auth.uid()))
   with check (exists (select 1 from public.admins a where a.uid = auth.uid()));
 
+-- ####################  memos.sql  ####################
+
+-- 메모장(memos): 교회에서 일어나는 잡다한 일들을 기록·관리하는 관리자 전용 메모.
+-- 관리자(admins 테이블에 등록된 사용자)만 읽기/쓰기 가능.
+-- Supabase → SQL Editor 에 붙여넣고 1회 실행하세요.
+
+create table if not exists public.memos (
+  id uuid primary key default gen_random_uuid(),
+  title text,               -- 제목(선택)
+  content text,             -- 내용
+  category text,            -- 분류(할 일·아이디어·전달사항 등)
+  color text,               -- 메모지 색(hex)
+  pinned boolean default false,   -- 상단 고정
+  done boolean default false,     -- 완료 표시
+  created_by uuid default auth.uid(),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table public.memos enable row level security;
+
+drop policy if exists "admin all memos" on public.memos;
+create policy "admin all memos" on public.memos for all
+  using (exists (select 1 from public.admins a where a.uid = auth.uid()))
+  with check (exists (select 1 from public.admins a where a.uid = auth.uid()));
+
+
+-- ####################  worship_songs.sql  ####################
+
+-- 찬양곡 라이브러리(worship_songs): 예배 찬양을 체계적으로 모아 두고 검색·필터·순환 관리하는 관리자 전용 DB.
+-- 노션 「찬양곡 라이브러리」를 앱으로 옮긴 것. 관리자(admins 테이블 등록자)만 읽기/쓰기 가능.
+-- Supabase → SQL Editor 에 붙여넣고 1회 실행하세요.
+
+create table if not exists public.worship_songs (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,            -- 곡명
+  type text,                      -- 유형: CCM · 찬송가 · 성가대곡 · 복음성가
+  theme_tags text[] default '{}', -- 주제태그(여러 개): 은혜·감사·회개·치유·부활·성탄·찬양·기도·성령·십자가·소망·평안·믿음·인도
+  use_tags text[] default '{}',   -- 추천용도(여러 개): 예배전찬양·성가대특송·응답찬양·새벽기도·수요예배
+  difficulty text,                -- 난이도: 쉬움 · 보통 · 어려움
+  familiarity text,               -- 회중숙지도: 매우 익숙 · 보통 · 새로운 곡
+  hymn_no int,                    -- 기쁨으로찬양(찬송가) 번호
+  transpose text,                 -- 조옮김 코드(예: G→A)
+  youtube_url text,               -- 유튜브 링크
+  lyrics_url text,                -- 가사 링크
+  note text,                      -- 비고
+  created_by uuid default auth.uid(),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index if not exists worship_songs_title_idx on public.worship_songs (title);
+
+alter table public.worship_songs enable row level security;
+
+drop policy if exists "admin all worship_songs" on public.worship_songs;
+create policy "admin all worship_songs" on public.worship_songs for all
+  using (exists (select 1 from public.admins a where a.uid = auth.uid()))
+  with check (exists (select 1 from public.admins a where a.uid = auth.uid()));
+
+
+-- ####################  sermon_songs.sql  ####################
+
+-- 예배 찬양 배정(sermon_songs): 설교(예배)마다 찬양을 슬롯별로 지정 — 찬양곡 라이브러리(worship_songs)와 연결.
+-- 노션 「설교계획」의 찬양1·2·3·예배전·응답·성가대곡 relation을 옮긴 것.
+-- 이 배정 기록에서 곡별 '사용횟수'와 '최근 사용일(3주 순환)'이 자동 계산됩니다.
+-- 선행: supabase/worship_songs.sql 을 먼저 실행. 그 다음 이 파일을 SQL Editor 에서 1회 실행하세요.
+
+create table if not exists public.sermon_songs (
+  id uuid primary key default gen_random_uuid(),
+  sermon_id uuid not null references public.sermons(id) on delete cascade,
+  song_id   uuid not null references public.worship_songs(id) on delete cascade,
+  slot text not null,   -- pre(예배전) · s1·s2·s3(찬양1~3) · resp(응답) · choir(성가대곡)
+  position int default 0,
+  created_by uuid default auth.uid(),
+  created_at timestamptz default now()
+);
+
+create index if not exists sermon_songs_sermon_idx on public.sermon_songs (sermon_id);
+create index if not exists sermon_songs_song_idx   on public.sermon_songs (song_id);
+
+alter table public.sermon_songs enable row level security;
+
+drop policy if exists "admin all sermon_songs" on public.sermon_songs;
+create policy "admin all sermon_songs" on public.sermon_songs for all
+  using (exists (select 1 from public.admins a where a.uid = auth.uid()))
+  with check (exists (select 1 from public.admins a where a.uid = auth.uid()));
+
+
+-- ####################  suspend.sql  ####################
+
+-- ============================================================
+--  노진교회 — 회원 계정 정지 (관리자 전용)
+--  Supabase → SQL Editor 에 붙여넣고 RUN 하세요. (여러 번 실행해도 안전)
+--
+--  · 관리자만 실행 가능, 관리자 계정과 탈퇴 회원은 정지 불가
+--  · 정지 시: 정지 표시 + 사유 메모 저장 + 로그인 차단 + 열린 세션 종료
+--  · 해제 시: 표시·메모 삭제 + 로그인 다시 허용
+-- ============================================================
+
+alter table public.profiles add column if not exists suspended_at timestamptz;
+alter table public.profiles add column if not exists suspend_note text;
+
+create or replace function public.admin_set_suspend(target uuid, suspend boolean, note text default null)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.admins a where a.uid = auth.uid()) then
+    raise exception '관리자만 사용할 수 있습니다';
+  end if;
+  if exists (select 1 from public.admins a where a.uid = target) then
+    raise exception '관리자 계정은 정지할 수 없습니다';
+  end if;
+  if exists (select 1 from public.profiles p where p.id = target and p.withdrawn_at is not null) then
+    raise exception '이미 탈퇴한 회원입니다';
+  end if;
+
+  if suspend then
+    update public.profiles
+       set suspended_at = now(),
+           suspend_note = nullif(trim(coalesce(note, '')), '')
+     where id = target;
+    update auth.users set banned_until = now() + interval '100 years' where id = target;
+    -- 이미 로그인돼 있던 기기도 바로 끊는다
+    delete from auth.sessions where user_id = target;
+    delete from auth.refresh_tokens where user_id = target::text;
+  else
+    update public.profiles set suspended_at = null, suspend_note = null where id = target;
+    update auth.users set banned_until = null where id = target;
+  end if;
+end; $$;
+
+revoke all on function public.admin_set_suspend(uuid, boolean, text) from public, anon;
+grant execute on function public.admin_set_suspend(uuid, boolean, text) to authenticated;
+

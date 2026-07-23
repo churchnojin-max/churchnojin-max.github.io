@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -68,19 +68,11 @@
         </div>
       </form>
 
-      <!-- 비밀번호 변경 (로그인 시에만 표시) -->
-      <form class="form-card" id="pwForm" hidden style="max-width:640px;margin-bottom:28px;">
-        <h3 class="sub-title" style="text-align:left;margin-bottom:6px;">비밀번호 변경</h3>
-        <p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:16px;">새 비밀번호를 입력해 변경하세요. (6자 이상)</p>
-        <div class="form-grid">
-          <div class="form-field full"><label>새 비밀번호</label><input type="password" name="pw1" minlength="6" autocomplete="new-password" placeholder="6자 이상" /></div>
-          <div class="form-field full"><label>새 비밀번호 확인</label><input type="password" name="pw2" minlength="6" autocomplete="new-password" placeholder="한 번 더 입력" /></div>
-        </div>
-        <div class="form-actions" style="margin-top:18px;display:flex;gap:10px;align-items:center;">
-          <button type="submit" class="btn btn-solid">비밀번호 변경</button>
-          <span class="profile-msg" id="pwMsg"></span>
-        </div>
-      </form>
+      <!-- 계정 관리: 이메일·비밀번호 변경 (이메일 가입자, 로그인 시에만 표시) -->
+      <div class="form-card" id="accountBox" hidden style="max-width:640px;margin-bottom:28px;">
+        <h3 class="sub-title" style="text-align:left;margin-bottom:6px;">계정 관리</h3>
+        <div id="accountBody"></div>
+      </div>
 
       <!-- 교적 인증 · 진행중인 교육 (로그인 시에만 표시) -->
       <div class="form-card" id="offeringBox" hidden style="max-width:640px;margin-bottom:34px;">
@@ -133,7 +125,8 @@
   <script src="js/layout.js?v=20260709hs1"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
   <script src="js/main.js?v=20260709hs1"></script>
-  <script src="js/admin.js?v=20260730lib13"></script>
+  <script src="js/admin.js?v=20260723up1"></script>
+  <script src="js/account.js?v=20260723up1"></script>
   <script src="js/finance-api.js?v=20260730lib14"></script>
   <script src="js/finance-member.js?v=20260730lib15"></script>
 </body>
