@@ -57,6 +57,11 @@
   td a:hover { color: var(--gold); }
   .empty { text-align: center; color: var(--dim); padding: 40px 0; }
   .tablebox { overflow-x: auto; }
+  .contents { display: flex; gap: 8px; margin: 8px 0 2px; flex-wrap: wrap; }
+  .contents a { display: block; position: relative; }
+  .contents img { width: 92px; height: 92px; object-fit: cover; border-radius: 10px; display: block; }
+  .contents .cnt { position: absolute; left: 0; right: 0; bottom: 0; font-size: .68rem; text-align: center;
+    background: rgba(10,10,30,.72); color: var(--grey); border-radius: 0 0 10px 10px; padding: 2px 0; }
 </style>
 </head>
 <body>
@@ -101,19 +106,35 @@ fetch("data/index.json?t=" + Date.now())
       <div class="stat"><div class="num">${days[0].date.slice(5).replace("-", "/")}</div><div class="label">최근 분석일</div></div>`;
 
     const L = days[0];
-    document.getElementById("latest").innerHTML = `
-      <a href="${L.card}" target="_blank"><img src="${L.card}" alt="오늘의 카드"></a>
-      <div class="info">
-        <div class="tags">📅 ${L.date} · 해시태그: ${L.tags.map(t => "#" + t).join(" ")}</div>
-        ${L.top3.map((p, i) => `
-          <div class="rowcard">
-            <div class="rank">${i + 1}</div>
-            <div>
-              <a href="https://www.instagram.com/${p.username}/" target="_blank">@${p.username}</a>
-              <div class="meta">팔로워 ${fmt(p.followers)} · 반응 ${fmt(p.avg_engagement)} · 반응률 ${p.engagement_rate}%</div>
-            </div>
-          </div>`).join("")}
-      </div>`;
+    const renderLatest = (detail) => {
+      const byName = {};
+      (detail && detail.top3 || []).forEach(p => byName[p.username] = p);
+      document.getElementById("latest").innerHTML = `
+        <a href="${L.card}" target="_blank"><img src="${L.card}" alt="오늘의 카드"></a>
+        <div class="info">
+          <div class="tags">📅 ${L.date} · 해시태그: ${L.tags.map(t => "#" + t).join(" ")}</div>
+          ${L.top3.map((p, i) => {
+            const posts = (byName[p.username] || {}).top_posts || [];
+            const thumbs = posts.map(t => `
+              <a href="${t.url}" target="_blank" title="${(t.caption || "").replace(/"/g, "")}">
+                ${t.thumb ? `<img src="${t.thumb}" alt="콘텐츠">` : ""}
+                <span class="cnt">❤${fmt(t.likes)} 💬${fmt(t.comments)}</span>
+              </a>`).join("");
+            return `
+            <div class="rowcard">
+              <div class="rank">${i + 1}</div>
+              <div style="flex:1">
+                <a href="https://www.instagram.com/${p.username}/" target="_blank">@${p.username}</a>
+                <div class="meta">팔로워 ${fmt(p.followers)} · 반응 ${fmt(p.avg_engagement)} · 반응률 ${p.engagement_rate}%</div>
+                ${thumbs ? `<div class="contents">${thumbs}</div>` : ""}
+              </div>
+            </div>`;
+          }).join("")}
+        </div>`;
+    };
+    renderLatest(null);
+    fetch(`data/${L.date}.json?t=` + Date.now())
+      .then(r => r.json()).then(renderLatest).catch(() => {});
 
     document.getElementById("history").innerHTML = days.slice(1).map(d => `
       <a class="day" href="${d.card}" target="_blank">

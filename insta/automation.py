@@ -176,6 +176,20 @@ def analyze_profiles(client, usernames):
             for x in posts if (x.get("likesCount") or 0) >= 0
         ]
         avg = sum(engs) / len(engs) if engs else 0
+        # 반응 좋은 순으로 대표 콘텐츠 3개 보관 (벤치마킹 검토용)
+        ranked_posts = sorted(
+            posts,
+            key=lambda x: max(x.get("likesCount") or 0, 0) + (x.get("commentsCount") or 0),
+            reverse=True,
+        )[:3]
+        top_posts = [{
+            "url": x.get("url", ""),
+            "caption": (x.get("caption") or "").replace("\n", " ")[:120],
+            "likes": max(x.get("likesCount") or 0, 0),
+            "comments": x.get("commentsCount") or 0,
+            "type": x.get("type", ""),
+            "displayUrl": x.get("displayUrl", ""),
+        } for x in ranked_posts]
         profiles.append({
             "username": p.get("username", ""),
             "fullName": p.get("fullName", ""),
@@ -184,8 +198,33 @@ def analyze_profiles(client, usernames):
             "bio": (p.get("biography") or "").replace("\n", " ")[:100],
             "avg_engagement": round(avg),
             "engagement_rate": round(avg / followers * 100, 2) if followers else 0,
+            "top_posts": top_posts,
         })
     return profiles
+
+
+def save_content_thumbs(top3, today):
+    """TOP3 인플루언서의 대표 콘텐츠 섬네일을 내려받아 저장 (실패해도 계속)"""
+    folder = INSTA / "content" / today
+    folder.mkdir(parents=True, exist_ok=True)
+    for p in top3:
+        for i, post in enumerate(p.get("top_posts", [])):
+            src = post.pop("displayUrl", "")
+            post["thumb"] = ""
+            if not src:
+                continue
+            try:
+                r = requests.get(src, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+                r.raise_for_status()
+                from io import BytesIO
+                img = Image.open(BytesIO(r.content)).convert("RGB")
+                w = 480
+                img = img.resize((w, int(img.height * w / img.width)))
+                name = f"{p['username']}_{i}.jpg".replace("/", "_")
+                img.save(folder / name, "JPEG", quality=80)
+                post["thumb"] = f"content/{today}/{name}"
+            except Exception as e:
+                log(f"섬네일 저장 실패({p['username']} {i}): {e}")
 
 
 def pick_top3(profiles):
@@ -293,6 +332,41 @@ def write_report(top3, profiles, today_str):
 
 
 # ---------- 4단계: 저장소 반영 + 인스타그램 게시 ----------
+def telegram_report(top3, today_str, card_path):
+    """텔레그램으로 오늘의 서칭·검토 결과 보고 (설정 안 되어 있으면 조용히 건너뜀)"""
+    token = os.environ.get("TELEGRAM_TOKEN", "")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if not token or not chat_id:
+        log("텔레그램 미설정 — 보고 건너뜀")
+        return
+    api = f"https://api.telegram.org/bot{token}"
+    try:
+        with open(card_path, "rb") as f:
+            requests.post(
+                f"{api}/sendPhoto",
+                data={"chat_id": chat_id, "caption": f"📈 {today_str} 인플루언서 분석 완료"},
+                files={"photo": f},
+                timeout=60,
+            )
+        lines = [f"오늘의 TOP3 상세 ({today_str})", ""]
+        for i, p in enumerate(top3):
+            lines.append(f"{i+1}위 @{p['username']} — 팔로워 {fmt_num(p['followers'])}, 반응률 {p['engagement_rate']}%")
+            for j, post in enumerate(p.get("top_posts", [])):
+                cap = clean_text(post.get("caption", ""))[:40]
+                lines.append(f"   콘텐츠{j+1}: ❤{fmt_num(post['likes'])} 💬{fmt_num(post['comments'])} {cap}")
+                lines.append(f"   {post['url']}")
+            lines.append("")
+        lines.append("전체 기록: https://churchnojin-max.github.io/insta/")
+        requests.post(
+            f"{api}/sendMessage",
+            data={"chat_id": chat_id, "text": "\n".join(lines), "disable_web_page_preview": "true"},
+            timeout=60,
+        )
+        log("텔레그램 보고 완료")
+    except Exception as e:
+        log(f"텔레그램 보고 실패(계속 진행): {e}")
+
+
 def git_push_data(today):
     def git(*args):
         r = subprocess.run(["git", *args], cwd=REPO, capture_output=True, text=True)
@@ -300,7 +374,7 @@ def git_push_data(today):
             raise RuntimeError(f"git {' '.join(args)}: {r.stderr.strip()[:300]}")
     git("config", "user.name", "insta-bot")
     git("config", "user.email", "insta-bot@users.noreply.github.com")
-    git("add", "insta/data", "insta/cards", "insta/reports")
+    git("add", "insta/data", "insta/cards", "insta/reports", "insta/content")
     r = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=REPO)
     if r.returncode == 0:
         log("저장할 변경 사항 없음")
@@ -380,9 +454,11 @@ def main():
         log("소개할 계정 없음 — 종료")
         return
 
-    make_card(top3, today_str)
+    save_content_thumbs(top3, today)
+    card_path = make_card(top3, today_str)
     caption = make_caption(top3, today_str)
     write_report(top3, profiles, today_str)
+    telegram_report(top3, today_str, card_path)
     save_json(DATA / f"{today}.json", {"date": today, "tags": tags, "top3": top3, "candidates": profiles})
 
     index = load_json(DATA / "index.json", {"days": []})
