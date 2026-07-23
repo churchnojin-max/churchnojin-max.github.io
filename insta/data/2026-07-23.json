@@ -1,0 +1,67 @@
+{
+  "date": "2026-07-23",
+  "tags": [
+    "일상",
+    "데일리",
+    "여행",
+    "맛집"
+  ],
+  "top3": [
+    {
+      "username": "jjun.film__",
+      "fullName": "",
+      "followers": 8706,
+      "postsCount": 1077,
+      "bio": "🎞 ғɪʟᴍ & ᴅɪɢɪᴛᴀʟ 📸 Fujifilmxt5, Fujifilmxhalf, minoltax700 우린 카페 아니면 여행이겠지🙄",
+      "avg_engagement": 1263,
+      "engagement_rate": 14.51
+    },
+    {
+      "username": "jinyeon_anz_tarot",
+      "fullName": "연꽃 위에 비친 마음, 진연타로(안즈)",
+      "followers": 10556,
+      "postsCount": 9413,
+      "bio": "💙 진연타로 | 신점·타로 상담 🌐 사업자등록·카드결제 가능",
+      "avg_engagement": 1327,
+      "engagement_rate": 12.57
+    },
+    {
+      "username": "ssjinel",
+      "fullName": "이성진",
+      "followers": 34560,
+      "postsCount": 281,
+      "bio": "SUNGJIN / 이성진 광고 | 협찬 | 협업 | 촬영 문의 :DM💌 🇰🇷",
+      "avg_engagement": 2811,
+      "engagement_rate": 8.13
+    }
+  ],
+  "candidates": [
+    {
+      "username": "jjun.film__",
+      "fullName": "",
+      "followers": 8706,
+      "postsCount": 1077,
+      "bio": "🎞 ғɪʟᴍ & ᴅɪɢɪᴛᴀʟ 📸 Fujifilmxt5, Fujifilmxhalf, minoltax700 우린 카페 아니면 여행이겠지🙄",
+      "avg_engagement": 1263,
+      "engagement_rate": 14.51
+    },
+    {
+      "username": "jinyeon_anz_tarot",
+      "fullName": "연꽃 위에 비친 마음, 진연타로(안즈)",
+      "followers": 10556,
+      "postsCount": 9413,
+      "bio": "💙 진연타로 | 신점·타로 상담 🌐 사업자등록·카드결제 가능",
+      "avg_engagement": 1327,
+      "engagement_rate": 12.57
+    },
+    {
+      "username": "ssjinel",
+      "fullName": "이성진",
+      "followers": 34560,
+      "postsCount": 281,
+      "bio": "SUNGJIN / 이성진 광고 | 협찬 | 협업 | 촬영 문의 :DM💌 🇰🇷",
+      "avg_engagement": 2811,
+      "engagement_rate": 8.13
+    }
+  ]
+}
