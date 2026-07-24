@@ -11,16 +11,24 @@ const sermonNewer = document.getElementById("sermonNewer");
 const sermonOlder = document.getElementById("sermonOlder");
 let active = 0; // 0 = 이번 주(최신)
 
-function cardInner(b) {
+const SERMON_YOUTUBE_URL = "https://www.youtube.com/@노진교회";
+
+function cardInner(b, i) {
   return `
     <div class="sermon-meta">
       <span class="sermon-date">${b.dateLabel} · 주일 낮 예배</span>
       <h3 class="sermon-title">${b.title}</h3>
       <p class="sermon-ref">${b.scripture}</p>
-      <p class="sermon-preacher">설교 · ${b.preacher}</p>
+      <p class="sermon-preacher">
+        설교 · ${b.preacher}
+        <a href="${SERMON_YOUTUBE_URL}" target="_blank" rel="noopener" class="sermon-yt-link">▶ 유튜브로 듣기</a>
+      </p>
     </div>
     <blockquote class="sermon-quote">${b.quote}</blockquote>
-    ${b.summary ? `<span class="sermon-more">설교 요약 보기 →</span>` : ""}`;
+    <div class="sermon-actions">
+      <button type="button" class="sermon-listen-btn" data-i="${i}">🔊 음성으로 듣기</button>
+      ${b.summary ? `<span class="sermon-more">설교 요약 보기 →</span>` : ""}
+    </div>`;
 }
 
 function renderSide(b) {
@@ -62,7 +70,7 @@ function layoutDeck() {
 
 function buildDeck() {
   sermonDeck.innerHTML = WEEKS.map(
-    (b, i) => `<article class="sermon-feature deck-card" data-i="${i}">${cardInner(b)}</article>`
+    (b, i) => `<article class="sermon-feature deck-card" data-i="${i}">${cardInner(b, i)}</article>`
   ).join("");
   sermonDots.innerHTML = WEEKS.map(
     (_, i) => `<button class="sdot" data-i="${i}" aria-label="${i + 1}주 전 말씀"></button>`
@@ -106,6 +114,14 @@ if (sermonDeck) {
   // 카드 클릭(탭): 활성 카드 → 설교 요약 열기 / 뒤 카드 → 앞으로 가져오기
   sermonDeck.addEventListener("click", (e) => {
     if (swiped) { swiped = false; return; } // 스와이프 동작은 탭으로 처리하지 않음
+    const listenBtn = e.target.closest(".sermon-listen-btn");
+    if (listenBtn) {
+      const b = WEEKS[Number(listenBtn.dataset.i)];
+      const text = (b && (b.summary || b.quote)) || "";
+      if (text && window.WPCTts) window.WPCTts.toggle(text, listenBtn, "🔊 음성으로 듣기");
+      return;
+    }
+    if (e.target.closest(".sermon-yt-link")) return; // 새 탭으로 이동(기본 링크 동작)만 하고 카드 전환은 막음
     const card = e.target.closest(".deck-card");
     if (!card) return;
     const i = Number(card.dataset.i);

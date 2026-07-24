@@ -415,10 +415,26 @@ ul { list-style: none; }
 .sermon-title { font-family: "Noto Serif KR", serif; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; margin: 14px 0; }
 .sermon-ref { font-size: 1.05rem; color: rgba(255,255,255,.85); }
 .sermon-preacher { margin-top: 18px; font-size: .95rem; color: rgba(255,255,255,.7); }
+.sermon-yt-link {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 10px;
+  font-size: .8rem; font-weight: 600; color: #fff;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.3);
+  padding: 4px 11px; border-radius: 20px; vertical-align: middle;
+  transition: background .2s ease, border-color .2s ease;
+}
+.sermon-yt-link:hover { background: rgba(255,255,255,.24); border-color: rgba(255,255,255,.5); }
 .sermon-quote {
   font-family: "Noto Serif KR", serif; font-size: 1.05rem; line-height: 1.9;
   color: rgba(255,255,255,.92); border-left: 3px solid var(--gold); padding-left: 24px;
 }
+.sermon-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 22px; }
+.sermon-listen-btn {
+  font-family: inherit; font-size: .85rem; font-weight: 600; color: #fff; cursor: pointer;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.3);
+  padding: 8px 16px; border-radius: 20px;
+  transition: background .2s ease, border-color .2s ease;
+}
+.sermon-listen-btn:hover { background: rgba(255,255,255,.24); border-color: rgba(255,255,255,.5); }
 .sermon-side { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .side-card { background: var(--paper-alt); border: 1px solid var(--line); border-radius: 12px; padding: 28px 30px; }
 .side-tag { display: inline-block; font-size: .78rem; font-weight: 700; color: #fff; background: var(--accent-soft); padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; }
@@ -1525,12 +1541,12 @@ a.auth-name:hover { background: rgba(255,255,255,.18); border-color: rgba(255,25
    설교 카드 클릭 → 요약 보기
    ============================================================ */
 .sermon-more {
-  display: inline-block; margin-top: 22px;
+  display: inline-block;
   font-size: .92rem; font-weight: 500; color: var(--gold);
   letter-spacing: .02em; cursor: pointer;
 }
 .sermon-feature.is-active { cursor: pointer; }
-.sermon-feature:not(.is-active) .sermon-more { display: none; }
+.sermon-feature:not(.is-active) .sermon-actions { display: none; }
 
 /* 요약 모달 본문 */
 .sm-points { display: flex; flex-direction: column; gap: 16px; margin: 4px 0 8px; }
