@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=20260724fix4" />
+  <link rel="stylesheet" href="css/style.css?v=20260724hero-new" />
   <!-- 구조화 데이터(교회 정보) — 구글 검색 이해도 향상 -->
   <style>
     .hb-card{max-width:860px;margin:0 auto;border:1px solid var(--line,#e3e7ee);border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(34,51,80,.07)}
@@ -80,30 +80,32 @@
 <body>
 
   <!-- ===== Hero ===== -->
-  <section id="home" class="hero">
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <p class="hero-since">SINCE 1964</p>
-      <div class="hero-rotator" id="heroRotator">
-        <div class="hero-slide is-active">
-          <h1 class="hero-title">날마다<br />십자가 복음 앞에 서다</h1>
-          <p class="hero-sub">○○교회에 오신 당신을 환영합니다.</p>
-        </div>
-        <div class="hero-slide">
-          <h1 class="hero-title">내가 믿는 것은<br />무엇인가?</h1>
-          <a class="hero-cta" href="word.html?hc=open">하이델베르크 교리문답 바로 가기 →</a>
-        </div>
-        <div class="hero-slide">
-          <h1 class="hero-title">함께 기도해요</h1>
-          <a class="hero-cta" href="story.html#request">함께 드리는 기도 바로가기 →</a>
+  <section id=”home” class=”hero”>
+    <div class=”hero-overlay”></div>
+    <div class=”hero-inner”>
+      <div class=”hero-left”>
+        <p class=”hero-tagline”>하나님을 기쁘시게 하는<br />아름다운 교회</p>
+        <div class=”hero-cards”>
+          <a href=”https://www.youtube.com/@노진교회” class=”hero-card” target=”_blank”>
+            <div class=”card-icon”>▶</div>
+            <h3>노진교회 유튜브</h3>
+            <p>설교와 찬양을 온라인에서</p>
+          </a>
+          <a href=”welcome.html#worship” class=”hero-card”>
+            <div class=”card-icon”>🕐</div>
+            <h3>예배 안내</h3>
+            <p>주일 오전 11시 함께 예배합니다</p>
+          </a>
+          <a href=”welcome.html#newfamily” class=”hero-card”>
+            <div class=”card-icon”>🤝</div>
+            <h3>새가족 안내</h3>
+            <p>처음이신 분을 따뜻하게 환영합니다</p>
+          </a>
         </div>
       </div>
-      <div class="hero-verse">
-        “주의 말씀은 내 발에 등이요 내 길에 빛이니이다” <span>— 시편 119:105</span>
-      </div>
-      <div class="hero-dots" id="heroDots" aria-label="슬라이드 이동"></div>
+      <div class=”hero-photo”></div>
     </div>
-    <a href="#qt" class="hero-scroll" aria-label="아래로">↓</a>
+    <a href=”#qt” class=”hero-scroll” aria-label=”아래로”>↓</a>
   </section>
 
   <!-- ===== 공지사항 ===== -->
