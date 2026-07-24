@@ -283,6 +283,7 @@
     renderComBody(sel.value);
 
     $("hsComSave").addEventListener("click", saveCommittees);
+    initSchedule();
   }
   function renderComBody(year) {
     var body = $("hsComBody");
@@ -290,8 +291,11 @@
     for (var m = 1; m <= 12; m++) {
       var ym = year + "-" + (m < 10 ? "0" + m : m);
       var cur = allMonths[ym] || {};
+      var uploadedBadge = (cur.roles && cur.roles.length)
+        ? ' <span class="hs-badge-uploaded" title="예배 봉사 스케줄표 업로드로 자동 반영됨(아래 입력칸에 값을 넣고 저장하면 이 값으로 대체됩니다)">📄 자동반영</span>'
+        : "";
       html += '<tr data-ym="' + ym + '">' +
-        '<td style="white-space:nowrap;font-weight:600">' + m + "월</td>" +
+        '<td style="white-space:nowrap;font-weight:600">' + m + "월" + uploadedBadge + "</td>" +
         '<td><input type="text" class="hs-in com-off" value="' + esc(cur.offering || "") + '" placeholder="이름 · 이름" /></td>' +
         '<td><input type="text" class="hs-in com-guide" value="' + esc(cur.guide || "") + '" placeholder="이름 · 이름" /></td>' +
         '<td><input type="text" class="hs-in com-park" value="' + esc(cur.parking || "") + '" placeholder="이름 · 이름" /></td>' +
@@ -310,6 +314,9 @@
       if (off || guide || park) {
         allMonths[ym] = { month: ym, offering: off, guide: guide, parking: park };
         if (prev.prayer) allMonths[ym].prayer = prev.prayer; // 주보용 기도자 정보 보존
+      } else if (prev.roles && prev.roles.length) {
+        // 예배 봉사 스케줄표 업로드로 자동 반영된 달은, 표 입력칸이 비어 있어도 보존
+        allMonths[ym] = prev;
       } else if (prev.prayer) {
         allMonths[ym] = { month: ym, prayer: prev.prayer };
       } else {
@@ -325,5 +332,198 @@
       .then(function () { msg($("hsComMsg"), "✓ 저장되었습니다. (홈 화면은 새로고침 후 반영)", true); })
       .catch(function (e) { msg($("hsComMsg"), "저장 실패: " + e.message, false); })
       .then(function () { $("hsComSave").disabled = false; });
+  }
+
+  // ====================== 4) 예배 봉사 스케줄표 업로드(엑셀 → 월별 자동 반영) ======================
+  var SCHED_SKIP_HEADERS = ["월", "주", "주차", "날짜", "일자"];
+  function initSchedule() {
+    var fileInput = $("hsSchedFile");
+    if (!fileInput) return;
+    fileInput.addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      handleScheduleFile(file);
+    });
+  }
+
+  function handleScheduleFile(file) {
+    var note = $("hsSchedNote");
+    var preview = $("hsSchedPreview");
+    preview.hidden = true;
+    preview.innerHTML = "";
+    if (typeof XlsxLite === "undefined") {
+      msg(note, "엑셀 리더를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.", false);
+      return;
+    }
+    msg(note, "읽는 중…", true);
+    XlsxLite.readSheet(file)
+      .then(function (book) {
+        if (!book.sheetNames.length) throw new Error("시트를 찾을 수 없습니다.");
+        return book.getSheetGrid(0).then(function (grid) {
+          return { sheetName: book.sheetNames[0], grid: grid };
+        });
+      })
+      .then(function (r) { renderSchedulePreview(r.sheetName, r.grid, file.name); msg(note, "", true); })
+      .catch(function (e) { msg(note, "파일을 읽지 못했습니다: " + e.message, false); });
+  }
+
+  // 연도 추출: 시트명 → 파일명 → 사용자에게 직접 확인
+  function resolveYear(sheetName, fileName) {
+    var m = /(20\d{2})/.exec(sheetName || "") || /(20\d{2})/.exec(fileName || "");
+    var guess = m ? Number(m[1]) : new Date().getFullYear();
+    var input = window.prompt("이 스케줄표는 몇 년도 기준인가요? (시트명: " + sheetName + ")", String(guess));
+    if (input === null) return null; // 취소
+    var y = Number(String(input).trim());
+    return (y >= 2000 && y < 2100) ? y : guess;
+  }
+
+  function parseScheduleGrid(grid, year) {
+    var header = (grid[0] || []).map(function (h) { return String(h == null ? "" : h).trim(); });
+    var monthCol = -1, dateCol = -1;
+    var roleCols = []; // [{idx, role}]
+    header.forEach(function (h, i) {
+      if (!h) return;
+      if (monthCol < 0 && /^월$/.test(h)) { monthCol = i; return; }
+      if (dateCol < 0 && /날짜|일자/.test(h)) { dateCol = i; return; }
+      if (/^주\d*차?$/.test(h) || h === "주차") return; // 참고용 열은 역할로 취급하지 않음
+      roleCols.push({ idx: i, role: h });
+    });
+
+    var monthly = {};   // { 'YYYY-MM': { role: [names...] } }
+    var warnings = [];  // [{ label, message }]
+    var weekday = ["일", "월", "화", "수", "목", "금", "토"];
+
+    for (var r = 1; r < grid.length; r++) {
+      var row = grid[r] || [];
+      var monthText = monthCol >= 0 ? String(row[monthCol] == null ? "" : row[monthCol]).trim() : "";
+      if (!monthText) continue; // 빈 행 · 하단 메모 행은 건너뜀
+      var monthMatch = /^(\d{1,2})\s*월$/.exec(monthText);
+      if (!monthMatch) continue; // "노란행: ..." 같은 하단 메모 줄은 건너뜀
+      var monthNum = Number(monthMatch[1]);
+      if (monthNum < 1 || monthNum > 12) continue;
+
+      var dateText = dateCol >= 0 ? String(row[dateCol] == null ? "" : row[dateCol]).trim() : "";
+      var rowLabel = monthText + (dateText ? " (" + dateText + ")" : "");
+      var day = null;
+      if (dateText) {
+        var dm = /^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})$/.exec(dateText);
+        if (dm) {
+          var dMonth = Number(dm[1]), dDay = Number(dm[2]);
+          if (dMonth !== monthNum) {
+            warnings.push({ label: rowLabel, message: "‘월’ 열(" + monthNum + "월)과 날짜의 월(" + dMonth + "월)이 서로 다릅니다." });
+          }
+          day = dDay;
+          var dt = new Date(year, dMonth - 1, dDay);
+          if (dt.getMonth() !== dMonth - 1 || dt.getDate() !== dDay) {
+            warnings.push({ label: rowLabel, message: "존재하지 않는 날짜입니다(" + year + "년 기준)." });
+          } else if (dt.getDay() !== 0) {
+            warnings.push({ label: rowLabel, message: year + "년 " + dMonth + "월 " + dDay + "일은 주일(일요일)이 아니라 " + weekday[dt.getDay()] + "요일입니다." });
+          }
+        } else {
+          warnings.push({ label: rowLabel, message: "날짜 형식을 이해하지 못했습니다(‘" + dateText + "’). 예: 7/5" });
+        }
+      }
+
+      var ym = String(year) + "-" + (monthNum < 10 ? "0" + monthNum : String(monthNum));
+      if (!monthly[ym]) monthly[ym] = {};
+      roleCols.forEach(function (rc) {
+        var v = row[rc.idx];
+        var name = v == null ? "" : String(v).trim();
+        if (!name) return;
+        if (!monthly[ym][rc.role]) monthly[ym][rc.role] = [];
+        if (monthly[ym][rc.role].indexOf(name) < 0) monthly[ym][rc.role].push(name);
+      });
+    }
+
+    return { monthly: monthly, warnings: warnings, roleCols: roleCols };
+  }
+
+  var pendingSchedule = null; // 반영 대기 중인 { months: {ym: roles[]} }
+
+  function renderSchedulePreview(sheetName, grid, fileName) {
+    var preview = $("hsSchedPreview");
+    if (!grid.length) { msg($("hsSchedNote"), "빈 파일입니다.", false); return; }
+
+    var year = resolveYear(sheetName, fileName);
+    if (year === null) return; // 사용자 취소
+
+    var parsed = parseScheduleGrid(grid, year);
+    var yms = Object.keys(parsed.monthly).sort();
+    if (!yms.length) {
+      msg($("hsSchedNote"), "인식할 수 있는 데이터를 찾지 못했습니다. 첫 행이 항목명(월/날짜/역할…)인지 확인해 주세요.", false);
+      return;
+    }
+
+    pendingSchedule = { months: {} };
+    yms.forEach(function (ym) {
+      var rolesObj = parsed.monthly[ym];
+      var roles = parsed.roleCols
+        .map(function (rc) { return { role: rc.role, names: (rolesObj[rc.role] || []).join(" · ") }; })
+        .filter(function (r) { return r.names; });
+      pendingSchedule.months[ym] = roles;
+    });
+
+    var html = "";
+    if (parsed.warnings.length) {
+      html += '<div class="hs-sched-warn">⚠️ 확인이 필요한 항목 ' + parsed.warnings.length + '건<ul>' +
+        parsed.warnings.map(function (w) { return "<li>" + esc(w.label) + " — " + esc(w.message) + "</li>"; }).join("") +
+        "</ul></div>";
+    }
+    yms.forEach(function (ym) {
+      var mm = Number(ym.split("-")[1]);
+      html += '<div class="hs-sched-month"><h5>' + mm + "월</h5>" +
+        pendingSchedule.months[ym].map(function (r) {
+          return '<div class="hs-sched-role"><span class="role">' + esc(r.role) + '</span><span class="names">' + esc(r.names) + "</span></div>";
+        }).join("") +
+        "</div>";
+    });
+    html += '<div class="hs-sched-actions">' +
+      '<button type="button" class="btn btn-solid" id="hsSchedApply">이 내용으로 월별 봉사자에 반영</button>' +
+      '<button type="button" class="btn btn-line" id="hsSchedCancel">취소</button>' +
+      '<span class="profile-msg" id="hsSchedApplyMsg"></span>' +
+      "</div>";
+    preview.innerHTML = html;
+    preview.hidden = false;
+
+    $("hsSchedCancel").addEventListener("click", function () {
+      pendingSchedule = null;
+      preview.hidden = true;
+      preview.innerHTML = "";
+    });
+    $("hsSchedApply").addEventListener("click", applySchedule);
+  }
+
+  function applySchedule() {
+    if (!pendingSchedule) return;
+    var applyMsg = $("hsSchedApplyMsg");
+    var yms = Object.keys(pendingSchedule.months);
+    var overwriteCount = yms.filter(function (ym) { return allMonths[ym]; }).length;
+    if (overwriteCount > 0 && !confirm(overwriteCount + "개월은 이미 입력된 값이 있습니다. 업로드한 스케줄표 내용으로 덮어쓸까요?")) return;
+
+    yms.forEach(function (ym) {
+      allMonths[ym] = { month: ym, roles: pendingSchedule.months[ym] };
+    });
+
+    $("hsSchedApply").disabled = true;
+    var months = Object.keys(allMonths).sort().map(function (k) { return allMonths[k]; });
+    saveSetting("committees", { months: months })
+      .then(function () {
+        msg(applyMsg, "✓ 반영되었습니다. (홈 화면은 새로고침 후 반영)", true);
+        // 연도 선택 목록에 새 연도가 없으면 추가하고 표 다시 그리기
+        var sel = $("hsYear");
+        var newYears = {};
+        yms.forEach(function (ym) { newYears[ym.split("-")[0]] = 1; });
+        Array.prototype.forEach.call(sel.options, function (o) { delete newYears[o.value]; });
+        Object.keys(newYears).sort().forEach(function (y) {
+          var opt = document.createElement("option");
+          opt.value = y; opt.textContent = y + "년";
+          sel.appendChild(opt);
+        });
+        renderComBody(sel.value);
+        pendingSchedule = null;
+      })
+      .catch(function (e) { msg(applyMsg, "저장 실패: " + e.message, false); })
+      .then(function () { $("hsSchedApply").disabled = false; });
   }
 })();

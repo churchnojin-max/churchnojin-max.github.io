@@ -1254,6 +1254,18 @@ ul { list-style: none; }
 .hs-com-table th { font-size: .82rem; color: var(--ink-soft); text-align: left; padding: 6px 8px; }
 .hs-com-table td { padding: 4px 8px; }
 .hs-com-table .hs-in { padding: 7px 10px; font-size: .86rem; }
+.hs-badge-uploaded { font-size: .72rem; font-weight: 500; color: var(--accent-soft); background: var(--paper-alt); border: 1px solid var(--line); border-radius: 20px; padding: 2px 8px; margin-left: 6px; white-space: nowrap; }
+
+/* 예배 봉사 스케줄표 업로드 미리보기 */
+.hs-sched-preview { margin-top: 18px; display: flex; flex-direction: column; gap: 16px; }
+.hs-sched-warn { background: #fbeceb; border: 1px solid #e6b3ad; border-radius: 10px; padding: 12px 16px; font-size: .86rem; color: #a83226; line-height: 1.6; }
+.hs-sched-warn ul { margin: 6px 0 0; padding-left: 18px; }
+.hs-sched-month { border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; background: #fff; }
+.hs-sched-month h5 { font-family: "Noto Serif KR", serif; font-size: 1rem; color: var(--accent); margin: 0 0 8px; }
+.hs-sched-role { display: flex; gap: 8px; font-size: .86rem; padding: 3px 0; }
+.hs-sched-role .role { flex: 0 0 110px; color: var(--ink-soft); }
+.hs-sched-role .names { flex: 1; }
+.hs-sched-actions { display: flex; gap: 10px; align-items: center; }
 
 .board-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .board-list { display: flex; flex-direction: column; gap: 12px; }

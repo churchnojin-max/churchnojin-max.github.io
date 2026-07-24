@@ -78,7 +78,18 @@
           </div>
         </div>
 
-        <!-- 3) 월별 봉사자 (연 단위) -->
+        <!-- 3) 예배 봉사 스케줄표 업로드 (엑셀 자동 반영) -->
+        <div class="form-card hs-card">
+          <h3 class="sub-title" style="text-align:left;margin-bottom:6px;">예배 봉사 스케줄표 업로드</h3>
+          <p class="hs-help">주별 스케줄표(.xlsx)를 올리면 첫 행을 항목명으로 자동 인식하고, 같은 달의 담당자들을 모아 아래 <b>월별 봉사자</b>에 자동으로 채워 넣습니다. 날짜가 주일(일요일)이 아니면 경고로 표시되니 반영 전에 확인해 주세요.</p>
+          <label class="btn btn-line" style="cursor:pointer;">엑셀 파일 선택
+            <input type="file" id="hsSchedFile" accept=".xlsx" hidden />
+          </label>
+          <span class="profile-msg" id="hsSchedNote" style="margin-left:10px;"></span>
+          <div id="hsSchedPreview" class="hs-sched-preview" hidden></div>
+        </div>
+
+        <!-- 4) 월별 봉사자 (연 단위) -->
         <div class="form-card hs-card">
           <h3 class="sub-title" style="text-align:left;margin-bottom:6px;">월별 봉사자 <span style="font-weight:400;font-size:.85rem;color:var(--ink-soft)">(연 단위)</span></h3>
           <p class="hs-help">홈 화면 하단 ‘이달의 봉사위원’과 <b>주보 제작</b>이 함께 사용하는 데이터입니다. 연도를 고르고 월별로 입력하세요. 비워 둔 달은 저장되지 않습니다.</p>
@@ -106,6 +117,8 @@
   <script src="js/brand.js?v=1"></script>
   <script src="js/config.js?v=20260730lib13"></script>
   <script src="js/layout.js?v=20260709hs1"></script>
-  <script src="js/home-settings.js?v=20260709hs2"></script>
+  <script src="js/jszip.min.js"></script>
+  <script src="js/xlsx-lite.js?v=1"></script>
+  <script src="js/home-settings.js?v=20260724sched1"></script>
 </body>
 </html>
