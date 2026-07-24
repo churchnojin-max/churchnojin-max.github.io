@@ -2,7 +2,7 @@
    HTML/CSS/JS는 브라우저 HTTP 캐시까지 우회(no-store)해 항상 새로 받습니다.
    (업데이트 후 옛 화면이 남는 캐시 문제 방지)
    SW_VERSION: 이 값을 바꾸면 브라우저가 서비스워커를 새로 설치→모든 캐시 삭제→즉시 적용. */
-const SW_VERSION = "20260724-hero-newlayout-v8";
+const SW_VERSION = "20260724-watermark-removal-final";
 self.addEventListener("install", () => self.skipWaiting());
 
 self.addEventListener("activate", (e) => {
