@@ -45,18 +45,15 @@ ul { list-style: none; }
 }
 .logo { display: flex; flex-direction: column; line-height: 1.15; }
 .logo-kr {
-  font-family: "Noto Serif KR", serif; font-weight: 700;
+  font-family: "Noto Sans KR", sans-serif; font-weight: 700;
   font-size: 1.25rem; color: #fff; letter-spacing: .04em;
-  text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 1px rgba(0,0,0,.7);
-  transition: color .4s ease, text-shadow .4s ease;
+  transition: color .4s ease;
 }
 .logo-en {
   font-family: "Cormorant Garamond", serif; font-size: .72rem;
   letter-spacing: .28em; color: rgba(255,255,255,.7);
-  text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 1px rgba(0,0,0,.7);
-  transition: color .4s ease, text-shadow .4s ease;
+  transition: color .4s ease;
 }
-#header.scrolled .logo-kr, #header.scrolled .logo-en { text-shadow: none; }
 .hdr-dash-btn {
   display: inline-flex; align-items: center; margin-left: 10px; white-space: nowrap;
   font-size: .8rem; font-weight: 600; color: #fff;
@@ -70,11 +67,10 @@ ul { list-style: none; }
 @media (max-width: 480px) { .hdr-dash-btn { margin-left: 8px; padding: 5px 11px; font-size: .76rem; } }
 .nav-menu { display: flex; gap: 22px; flex-wrap: nowrap; }
 .nav-menu a {
-  font-size: .92rem; font-weight: 500; color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 1px rgba(0,0,0,.7);
-  position: relative; transition: color .3s ease, text-shadow .3s ease; white-space: nowrap;
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: .92rem; font-weight: 600; color: #fff;
+  position: relative; transition: color .3s ease; white-space: nowrap;
 }
-#header.scrolled .nav-menu a { text-shadow: none; }
 .nav-menu a::after {
   content: ""; position: absolute; left: 0; bottom: -6px; width: 0; height: 1.5px;
   background: var(--gold); transition: width .3s ease;
