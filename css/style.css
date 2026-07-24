@@ -99,7 +99,7 @@ ul { list-style: none; }
   position: relative; min-height: 100vh; display: flex;
   align-items: flex-start; justify-content: flex-start; text-align: left;
   background:
-    linear-gradient(90deg, rgba(16,22,42,.75) 0%, rgba(16,22,42,.75) 35%, rgba(16,22,42,0) 100%),
+    linear-gradient(90deg, rgba(16,22,42,.75) 0%, rgba(16,22,42,.75) 30%, rgba(16,22,42,0) 42%),
     url("../images/hero-church.jpg") right 2% bottom / 75% auto no-repeat;
   color: #fff; overflow: hidden; padding-top: 80px;
 }
