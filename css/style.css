@@ -100,7 +100,7 @@ ul { list-style: none; }
   align-items: flex-start; justify-content: flex-start; text-align: left;
   background:
     linear-gradient(90deg, rgba(16,22,42,.75) 0%, rgba(16,22,42,.50) 60%, rgba(16,22,42,.15) 100%),
-    url("../images/hero-church.jpg") right bottom / 75% auto no-repeat;
+    url("../images/hero-church.jpg") right 2% bottom / 75% auto no-repeat;
   color: #fff; overflow: hidden; padding-top: 80px;
 }
 .hero-overlay {
