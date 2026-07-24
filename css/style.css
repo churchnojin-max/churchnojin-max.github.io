@@ -99,12 +99,9 @@ ul { list-style: none; }
   position: relative; min-height: 100vh; display: flex;
   align-items: center; justify-content: center; text-align: center;
   background:
-    radial-gradient(130% 95% at 90% -12%, rgba(255,240,214,.30) 0%, rgba(255,235,205,.12) 20%, rgba(255,232,200,.04) 40%, transparent 62%),
-    linear-gradient(rgba(16,22,42,.55), rgba(16,22,42,.64)),
-    radial-gradient(circle at 30% 20%, #39507e 0%, transparent 55%),
-    radial-gradient(circle at 75% 70%, #1d2b49 0%, transparent 60%),
-    linear-gradient(160deg, #1a2440 0%, #2a3b62 55%, #151e38 100%);
-  background-size: cover; color: #fff; overflow: hidden;
+    linear-gradient(rgba(16,22,42,.52), rgba(16,22,42,.60)),
+    url("../images/hero-church.jpg") center 35% / cover no-repeat;
+  color: #fff; overflow: hidden;
 }
 .hero-overlay {
   position: absolute; inset: 0;
