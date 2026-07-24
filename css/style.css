@@ -37,6 +37,7 @@ ul { list-style: none; }
   position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
   transition: background .4s ease, box-shadow .4s ease, padding .4s ease;
   padding: 22px 0;
+  background: linear-gradient(to bottom, rgba(10,14,28,.55) 0%, rgba(10,14,28,.28) 60%, rgba(10,14,28,0) 100%);
 }
 .nav-inner {
   max-width: 1280px; margin: 0 auto; padding: 0 32px;
@@ -46,13 +47,16 @@ ul { list-style: none; }
 .logo-kr {
   font-family: "Noto Serif KR", serif; font-weight: 700;
   font-size: 1.25rem; color: #fff; letter-spacing: .04em;
-  transition: color .4s ease;
+  text-shadow: 0 1px 6px rgba(0,0,0,.5);
+  transition: color .4s ease, text-shadow .4s ease;
 }
 .logo-en {
   font-family: "Cormorant Garamond", serif; font-size: .72rem;
   letter-spacing: .28em; color: rgba(255,255,255,.7);
-  transition: color .4s ease;
+  text-shadow: 0 1px 6px rgba(0,0,0,.5);
+  transition: color .4s ease, text-shadow .4s ease;
 }
+#header.scrolled .logo-kr, #header.scrolled .logo-en { text-shadow: none; }
 .hdr-dash-btn {
   display: inline-flex; align-items: center; margin-left: 10px; white-space: nowrap;
   font-size: .8rem; font-weight: 600; color: #fff;
@@ -67,8 +71,10 @@ ul { list-style: none; }
 .nav-menu { display: flex; gap: 22px; flex-wrap: nowrap; }
 .nav-menu a {
   font-size: .92rem; font-weight: 500; color: rgba(255,255,255,.92);
-  position: relative; transition: color .3s ease; white-space: nowrap;
+  text-shadow: 0 1px 6px rgba(0,0,0,.5);
+  position: relative; transition: color .3s ease, text-shadow .3s ease; white-space: nowrap;
 }
+#header.scrolled .nav-menu a { text-shadow: none; }
 .nav-menu a::after {
   content: ""; position: absolute; left: 0; bottom: -6px; width: 0; height: 1.5px;
   background: var(--gold); transition: width .3s ease;
@@ -1140,7 +1146,7 @@ ul { list-style: none; }
 #header.scrolled .notify-btn:hover { background: var(--paper-alt); }
 .notify-btn.on { background: var(--accent); border-color: var(--accent); }
 .auth-slot { display: flex; align-items: center; gap: 10px; margin-left: 18px; }
-.auth-btn { font-family: inherit; font-size: .85rem; font-weight: 500; padding: 7px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.5); background: transparent; color: #fff; cursor: pointer; transition: .2s; white-space: nowrap; }
+.auth-btn { font-family: inherit; font-size: .85rem; font-weight: 500; padding: 7px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.5); background: rgba(0,0,0,.18); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.4); cursor: pointer; transition: .2s; white-space: nowrap; }
 .auth-btn:hover { background: #fff; color: var(--accent); }
 #header.scrolled .auth-btn { border-color: var(--accent-soft); color: var(--accent); }
 #header.scrolled .auth-btn:hover { background: var(--accent); color: #fff; }
