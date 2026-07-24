@@ -380,19 +380,20 @@
 
   function parseScheduleGrid(grid, year) {
     var header = (grid[0] || []).map(function (h) { return String(h == null ? "" : h).trim(); });
-    var monthCol = -1, dateCol = -1;
+    var monthCol = -1, dateCol = -1, weekCol = -1;
     var roleCols = []; // [{idx, role}]
     header.forEach(function (h, i) {
       if (!h) return;
       if (monthCol < 0 && /^월$/.test(h)) { monthCol = i; return; }
       if (dateCol < 0 && /날짜|일자/.test(h)) { dateCol = i; return; }
-      if (/^주\d*차?$/.test(h) || h === "주차") return; // 참고용 열은 역할로 취급하지 않음
+      if (weekCol < 0 && /^주\d*차?$/.test(h)) { weekCol = i; return; } // 주차 열은 역할이 아니라 각 담당자 앞에 붙는 라벨로 사용
       roleCols.push({ idx: i, role: h });
     });
 
-    var monthly = {};   // { 'YYYY-MM': { role: [names...] } }
+    var monthly = {};   // { 'YYYY-MM': { role: [{week, name}...] } } — 주차 순서를 그대로 보존(중복 제거 없음)
     var warnings = [];  // [{ label, message }]
     var weekday = ["일", "월", "화", "수", "목", "금", "토"];
+    var weekCounter = {}; // 주차 열이 없을 때 등장 순서로 'N주차'를 대신 매길 카운터
 
     for (var r = 1; r < grid.length; r++) {
       var row = grid[r] || [];
@@ -405,7 +406,6 @@
 
       var dateText = dateCol >= 0 ? String(row[dateCol] == null ? "" : row[dateCol]).trim() : "";
       var rowLabel = monthText + (dateText ? " (" + dateText + ")" : "");
-      var day = null;
       if (dateText) {
         var dm = /^(\d{1,2})\s*[\/.\-]\s*(\d{1,2})$/.exec(dateText);
         if (dm) {
@@ -413,7 +413,6 @@
           if (dMonth !== monthNum) {
             warnings.push({ label: rowLabel, message: "‘월’ 열(" + monthNum + "월)과 날짜의 월(" + dMonth + "월)이 서로 다릅니다." });
           }
-          day = dDay;
           var dt = new Date(year, dMonth - 1, dDay);
           if (dt.getMonth() !== dMonth - 1 || dt.getDate() !== dDay) {
             warnings.push({ label: rowLabel, message: "존재하지 않는 날짜입니다(" + year + "년 기준)." });
@@ -426,13 +425,18 @@
       }
 
       var ym = String(year) + "-" + (monthNum < 10 ? "0" + monthNum : String(monthNum));
+      var weekText = weekCol >= 0 ? String(row[weekCol] == null ? "" : row[weekCol]).trim() : "";
+      if (!weekText) {
+        weekCounter[ym] = (weekCounter[ym] || 0) + 1;
+        weekText = weekCounter[ym] + "주차";
+      }
       if (!monthly[ym]) monthly[ym] = {};
       roleCols.forEach(function (rc) {
         var v = row[rc.idx];
         var name = v == null ? "" : String(v).trim();
         if (!name) return;
         if (!monthly[ym][rc.role]) monthly[ym][rc.role] = [];
-        if (monthly[ym][rc.role].indexOf(name) < 0) monthly[ym][rc.role].push(name);
+        monthly[ym][rc.role].push({ week: weekText, name: name });
       });
     }
 
@@ -459,7 +463,11 @@
     yms.forEach(function (ym) {
       var rolesObj = parsed.monthly[ym];
       var roles = parsed.roleCols
-        .map(function (rc) { return { role: rc.role, names: (rolesObj[rc.role] || []).join(" · ") }; })
+        .map(function (rc) {
+          var entries = rolesObj[rc.role] || [];
+          var names = entries.map(function (e) { return (e.week ? e.week + " " : "") + e.name; }).join(" · ");
+          return { role: rc.role, names: names };
+        })
         .filter(function (r) { return r.names; });
       pendingSchedule.months[ym] = roles;
     });

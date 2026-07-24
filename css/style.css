@@ -321,19 +321,19 @@ ul { list-style: none; }
 
 /* 이 달의 봉사위원 */
 .committee {
-  max-width: 760px; margin: 44px auto 0; background: var(--accent); color: #fff;
+  max-width: 880px; margin: 44px auto 0; background: var(--accent); color: #fff;
   border-radius: 16px; padding: 34px 40px;
 }
 .committee-head { text-align: center; margin-bottom: 22px; }
 .committee-head .w-en { display: block; }
 .committee-head h4 { font-family: "Noto Serif KR", serif; font-size: 1.35rem; font-weight: 700; margin-top: 4px; }
-.committee-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.committee-rows { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .committee-item {
   background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
-  border-radius: 12px; padding: 18px 20px; text-align: center;
+  border-radius: 12px; padding: 20px 22px; text-align: center;
 }
-.c-role { display: block; font-size: .82rem; color: var(--gold); margin-bottom: 7px; letter-spacing: .03em; }
-.c-names { font-size: .98rem; font-weight: 500; line-height: 1.6; word-break: keep-all; }
+.c-role { display: block; font-size: .92rem; color: var(--gold); margin-bottom: 8px; letter-spacing: .03em; }
+.c-names { font-size: 1.12rem; font-weight: 500; line-height: 1.7; word-break: keep-all; }
 @media (max-width: 680px) {
   .committee-rows { grid-template-columns: 1fr; }
   .committee { padding: 28px 24px; }
