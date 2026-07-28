@@ -52,7 +52,12 @@ console.log('[finance.js] v20260701di');
     if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) { root.innerHTML = msgCard('준비 중', '재정 기능을 사용하려면 Supabase 연결이 필요합니다.'); return; }
     if (!(window.WPF && WPF.token())) {
       if (tries++ < 20) { setTimeout(boot, 400); return; }
-      root.innerHTML = msgCard('로그인이 필요합니다', '상단에서 로그인 후 이용해 주세요.'); return;
+      root.innerHTML = msgCard('로그인이 필요합니다', '아래 버튼을 눌러 로그인해 주세요.');
+      var lb = document.createElement('button');
+      lb.type = 'button'; lb.className = 'btn btn-line'; lb.style.marginTop = '12px'; lb.textContent = '로그인';
+      lb.onclick = function () { var m = document.getElementById('authModal'); if (m) { m.hidden = false; document.body.style.overflow = 'hidden'; } };
+      root.querySelector('.fin-card').appendChild(lb);
+      return;
     }
     root.innerHTML = '<p class="qt-loading">권한 확인 중입니다…</p>';
     WPF.call('me').then(function (me) {

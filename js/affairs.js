@@ -7406,7 +7406,12 @@ console.log('[affairs.js] v20260712memo2');
     var s = sess();
     if (!s || !s.uid || !s.token) {
       if (tries++ < 20) { setTimeout(boot, 400); return; }
-      root.innerHTML = msgCard('로그인이 필요합니다', '상단에서 로그인 후 이용해 주세요.'); return;
+      root.innerHTML = msgCard('로그인이 필요합니다', '아래 버튼을 눌러 로그인해 주세요.');
+      var lb = document.createElement('button');
+      lb.type = 'button'; lb.className = 'btn btn-line'; lb.style.marginTop = '12px'; lb.textContent = '로그인';
+      lb.onclick = function () { var m = document.getElementById('authModal'); if (m) { m.hidden = false; document.body.style.overflow = 'hidden'; } };
+      root.querySelector('.fin-card').appendChild(lb);
+      return;
     }
     api('GET', 'admins?uid=eq.' + s.uid + '&select=uid').then(function (rows) {
       if (!rows || !rows.length) { root.innerHTML = msgCard('접근 권한이 없습니다', '행정관리는 관리자만 이용할 수 있습니다.'); return; }
