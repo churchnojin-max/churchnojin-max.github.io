@@ -6929,6 +6929,7 @@ console.log('[affairs.js] v20260712memo2');
   // 찬양관리 탭: 하위 화면(라이브러리 / 예배 배정) 전환
   function renderWorshipSongs(panel) {
     panel.innerHTML = '<div class="fin-tabs" style="margin-bottom:14px">' +
+      '<button data-sv="monthly"' + (songSubView === 'monthly' ? ' class="active"' : '') + '>⭐ 이달의 찬양</button>' +
       '<button data-sv="library"' + (songSubView === 'library' ? ' class="active"' : '') + '>🎵 찬양곡 라이브러리</button>' +
       '<button data-sv="assign"' + (songSubView === 'assign' ? ' class="active"' : '') + '>📅 예배 찬양 배정</button>' +
       '</div><div id="song_sub"></div>';
@@ -6936,7 +6937,145 @@ console.log('[affairs.js] v20260712memo2');
       b.onclick = function () { if (b.dataset.sv === songSubView) return; songSubView = b.dataset.sv; renderWorshipSongs(panel); };
     });
     var sp = panel.querySelector('#song_sub');
-    if (songSubView === 'assign') renderSongAssign(sp); else renderSongLibrary(sp);
+    if (songSubView === 'assign') renderSongAssign(sp);
+    else if (songSubView === 'monthly') renderMonthlySong(sp);
+    else renderSongLibrary(sp);
+  }
+
+  /* ── 이달의 찬양: 유튜브 링크 하나로 바로 재생 + 악보 함께 보기 (church_settings.monthly_song) ── */
+  function ytId(url) {
+    var m = String(url || '').match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : '';
+  }
+  // 단일 영상 무한반복은 loop=1 만으로는 동작하지 않고 playlist=<같은 id> 가 함께 있어야 한다.
+  function ytEmbedHTML(url, loop) {
+    var id = ytId(url);
+    if (!id) return '<p style="color:#9aa5b1;font-size:.86rem">유튜브 주소를 넣으면 여기에서 바로 재생됩니다.</p>';
+    var q = 'rel=0&modestbranding=1' + (loop ? '&loop=1&playlist=' + id : '');
+    return '<div style="position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;background:#000">' +
+      '<iframe src="https://www.youtube.com/embed/' + id + '?' + q + '" title="이달의 찬양" ' +
+      'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen ' +
+      'style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div>';
+  }
+  function curYM() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+
+  function renderMonthlySong(panel) {
+    var DATA = { months: {} }, ym = curYM(), sheets = [];
+    panel.innerHTML = '<div class="fin-card"><p class="qt-loading">불러오는 중…</p></div>';
+
+    api('GET', 'church_settings?key=eq.monthly_song&select=data').then(function (rows) {
+      DATA = (rows && rows[0] && rows[0].data) || {};
+      if (!DATA.months) DATA.months = {};
+      draw();
+    }).catch(function (e) {
+      panel.innerHTML = /42P01|PGRST205|does not exist|schema cache|Could not find the table/i.test(e.message || '')
+        ? msgCard('테이블 준비 필요', 'Supabase → SQL Editor 에서 supabase/church_settings.sql 을 1회 실행해 주세요.')
+        : msgCard('조회 실패', e.message);
+    });
+
+    function drawSheets() {
+      var box = panel.querySelector('#ms_sheets');
+      if (!box) return;
+      if (!sheets.length) { box.innerHTML = '<p style="color:#9aa5b1;font-size:.86rem">아직 올린 악보가 없습니다. 위 <b>＋ 악보 올리기</b>로 이미지나 PDF를 올려 보세요.</p>'; return; }
+      box.innerHTML = sheets.map(function (s, i) {
+        var isPdf = /\.pdf($|\?)/i.test(s.url || '') || /\.pdf$/i.test(s.name || '');
+        var body = isPdf
+          ? '<iframe src="' + esc(s.url) + '" title="' + esc(s.name || '악보') + '" style="width:100%;height:70vh;border:1px solid #e3e7ee;border-radius:10px"></iframe>'
+          : '<img src="' + esc(s.url) + '" alt="' + esc(s.name || '악보') + '" style="width:100%;border:1px solid #e3e7ee;border-radius:10px;display:block">';
+        return '<div style="margin-bottom:16px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">' +
+          '<span style="font-size:.85rem;color:#5b6b7d">' + esc(s.name || ('악보 ' + (i + 1))) + '</span>' +
+          '<span style="white-space:nowrap"><a href="' + esc(s.url) + '" target="_blank" rel="noopener" class="btn btn-line" style="padding:3px 10px;font-size:.76rem;text-decoration:none">새 창에서 보기</a> ' +
+          '<button class="btn btn-line ms-del" data-i="' + i + '" style="padding:3px 10px;font-size:.76rem;color:#c0392b">빼기</button></span></div>' +
+          body + '</div>';
+      }).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('.ms-del'), function (b) {
+        b.onclick = function () {
+          if (!confirm('이 악보를 목록에서 뺄까요?\n(저장을 눌러야 최종 반영됩니다)')) return;
+          sheets.splice(Number(b.dataset.i), 1); drawSheets();
+        };
+      });
+    }
+
+    function drawPlayer() {
+      var p = panel.querySelector('#ms_pv_player');
+      if (p) p.innerHTML = ytEmbedHTML(panel.querySelector('#ms_yt').value.trim(), panel.querySelector('#ms_loop').checked);
+    }
+
+    function draw() {
+      var c = DATA.months[ym] || {};
+      sheets = (c.sheets || []).slice();
+      panel.innerHTML =
+        '<div class="fin-card">' +
+        '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px">' +
+        '<h3 style="margin:0;color:var(--accent,#223350)">⭐ 이달의 찬양</h3>' +
+        '<span style="color:#9aa5b1;font-size:.82rem">유튜브 주소만 넣으면 아래에서 바로 재생됩니다 · 악보를 올리면 같이 볼 수 있어요</span></div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">' +
+        '<div class="af-field" style="flex:0 0 155px"><label>월</label><input type="month" id="ms_ym" value="' + esc(ym) + '"></div>' +
+        '<div class="af-field" style="flex:1;min-width:170px"><label>곡 제목</label><input type="text" id="ms_title" value="' + esc(c.title || '') + '" placeholder="예: 주 은혜임을"></div>' +
+        '<div class="af-field" style="flex:2;min-width:240px"><label>유튜브 주소</label><input type="text" id="ms_yt" value="' + esc(c.youtube || '') + '" placeholder="https://www.youtube.com/watch?v=..."></div>' +
+        '</div>' +
+        '<label style="display:inline-flex;align-items:center;gap:7px;margin-top:12px;cursor:pointer;font-size:.9rem">' +
+        '<input type="checkbox" id="ms_loop"' + (c.loop === false ? '' : ' checked') + ' style="width:17px;height:17px;cursor:pointer"> 🔁 무한 반복 재생</label>' +
+        '<div style="display:flex;gap:10px;align-items:center;margin-top:14px">' +
+        '<button class="btn btn-solid" id="ms_save" style="padding:8px 22px">저장</button><span class="fin-msg" id="ms_msg"></span></div>' +
+        '</div>' +
+        '<div class="fin-card"><b>미리보기</b>' +
+        '<div id="ms_pv_title" style="font-weight:700;color:var(--accent,#223350);font-size:1.05rem;margin:8px 0 6px"></div>' +
+        '<div id="ms_pv_player"></div></div>' +
+        '<div class="fin-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b>악보</b>' +
+        '<label class="btn btn-line" style="cursor:pointer;padding:6px 14px;font-size:.84rem">＋ 악보 올리기' +
+        '<input type="file" id="ms_file" accept="image/*,application/pdf,.pdf" multiple hidden></label></div>' +
+        '<span class="fin-msg" id="ms_upmsg" style="display:block;margin-top:6px"></span>' +
+        '<div id="ms_sheets" style="margin-top:12px"></div></div>';
+
+      var titleIn = panel.querySelector('#ms_title'), pvTitle = panel.querySelector('#ms_pv_title');
+      function syncTitle() { pvTitle.textContent = titleIn.value.trim(); }
+      titleIn.oninput = syncTitle; syncTitle();
+      // 주소는 입력 중이 아니라 다 쓴 뒤(포커스 아웃/엔터)에 한 번만 다시 불러온다
+      panel.querySelector('#ms_yt').onchange = drawPlayer;
+      panel.querySelector('#ms_loop').onchange = drawPlayer;
+      drawPlayer();
+      drawSheets();
+
+      panel.querySelector('#ms_ym').onchange = function () { ym = this.value || ym; draw(); };
+
+      var fileIn = panel.querySelector('#ms_file'), upmsg = panel.querySelector('#ms_upmsg');
+      fileIn.onchange = function () {
+        var fs = Array.prototype.slice.call(fileIn.files || []);
+        if (!fs.length) return;
+        if (!window.ChurchUpload || !ChurchUpload.isReady()) { upmsg.style.color = '#c0392b'; upmsg.textContent = '업로드 서버가 설정되지 않았습니다.'; return; }
+        upmsg.style.color = '#7b8794'; upmsg.textContent = '업로드 중…';
+        var chain = Promise.resolve();
+        fs.forEach(function (f) {
+          chain = chain.then(function () {
+            return ChurchUpload.upload(f, { folder: 'monthly-song', compress: false })
+              .then(function (r) { sheets.push({ url: r.url, name: f.name }); });
+          });
+        });
+        chain.then(function () {
+          upmsg.style.color = 'green'; upmsg.textContent = '✓ 올렸습니다 — 저장을 눌러야 반영됩니다';
+          fileIn.value = ''; drawSheets();
+        }).catch(function (e) { upmsg.style.color = '#c0392b'; upmsg.textContent = '업로드 실패: ' + ((e && e.message) || e); });
+      };
+
+      panel.querySelector('#ms_save').onclick = function () {
+        var msgEl = panel.querySelector('#ms_msg');
+        var newYm = panel.querySelector('#ms_ym').value || ym;
+        var yt = panel.querySelector('#ms_yt').value.trim();
+        if (yt && !ytId(yt)) { msgEl.style.color = '#c0392b'; msgEl.textContent = '유튜브 주소를 다시 확인해 주세요.'; return; }
+        DATA.months[newYm] = { title: titleIn.value.trim(), youtube: yt, loop: panel.querySelector('#ms_loop').checked, sheets: sheets };
+        ym = newYm;
+        msgEl.style.color = '#7b8794'; msgEl.textContent = '저장 중…';
+        api('POST', 'church_settings?on_conflict=key', { key: 'monthly_song', data: DATA, updated_at: new Date().toISOString() }, 'resolution=merge-duplicates,return=minimal')
+          .then(function () { msgEl.style.color = 'green'; msgEl.textContent = '✓ 저장되었습니다'; })
+          .catch(function (e) {
+            msgEl.style.color = '#c0392b';
+            msgEl.textContent = /42P01|PGRST205|does not exist|schema cache/i.test(e.message || '') ? 'church_settings.sql 실행이 필요합니다' : ('저장 실패: ' + e.message);
+          });
+      };
+    }
   }
 
   function renderSongLibrary(panel) {

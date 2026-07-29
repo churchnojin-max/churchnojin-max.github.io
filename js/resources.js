@@ -24,6 +24,7 @@
     {
       el: document.getElementById("resourceAreaWorship"),
       cats: [
+        { id: "bulletin", label: "주보" },
         { id: "worship-sunday", label: "주일예배" },
         { id: "praise", label: "찬양 자료" },
         { id: "choir", label: "성가대 자료" },
