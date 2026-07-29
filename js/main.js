@@ -180,11 +180,10 @@ if (sermonDeck) {
   function renderCommittee(monthItem) {
     const box = document.getElementById("committee");
     if (!box) return;
-    const c = normMonth(monthItem);
 
-    // 새 형식: weeks 배열이 있으면 새 레이아웃 사용
-    if (c && c.weeks && c.weeks.length) {
-      const curWeek = currentSundayWeek();
+    // 새 형식: weeks 배열이 있으면 새 레이아웃 사용 (normMonth는 구형식 전용이라 여기서 먼저 검사)
+    if (monthItem && Array.isArray(monthItem.weeks) && monthItem.weeks.length) {
+      const c = monthItem;
       const monthLabel = c.month ? c.month.slice(5) + "월" : "";
       box.innerHTML = `
         <div class="committee-head">
@@ -210,6 +209,7 @@ if (sermonDeck) {
     }
 
     // 구 형식: roles 배열 (이전 7월 데이터 등)
+    const c = normMonth(monthItem);
     if (!c || !c.roles.length) { box.innerHTML = ""; return; }
     const curWeek = currentSundayWeek();
     box.innerHTML = `
