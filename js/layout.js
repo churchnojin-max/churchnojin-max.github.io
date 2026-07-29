@@ -4,8 +4,7 @@
    ============================================================ */
 (function () {
   const NAV = [
-    { href: "dashboard.html", label: "대시보드", memberOnly: true },
-    { href: "welcome.html", label: "처음 오셨나요", sub: [
+    { href: "welcome.html", label: "교회소개", sub: [
       { href: "welcome.html#worship", label: "예배 안내" },
       { href: "welcome.html#directions", label: "교회 가는 길" },
       { href: "welcome.html#about", label: "우리 교회는 어떤 곳" },

@@ -157,18 +157,39 @@ if (sermonDeck) {
     const sorted = [...list].sort((a, b) => (a.month < b.month ? 1 : -1));
     return sorted.find((x) => x.month === curYM) || sorted.find((x) => x.month <= curYM) || sorted[0];
   }
+  // "1주차 최명철 · 2주차 김영희" 형태를 주차별로 분리(주차 표기가 없으면 그대로 한 줄)
+  function parseWeekNames(str) {
+    return String(str || "").split("·").map((s) => s.trim()).filter(Boolean).map((p) => {
+      const m = /^(\d+)\s*주\s*차\s*(.+)$/.exec(p);
+      return m ? { week: Number(m[1]), name: m[2] } : { week: null, name: p };
+    });
+  }
+  // 이번 달에서 오늘이 몇 번째 주일(일요일) 구간인지 계산
+  function currentSundayWeek() {
+    const d = new Date();
+    const sundayDate = d.getDate() - d.getDay();
+    return sundayDate < 1 ? 1 : Math.ceil(sundayDate / 7);
+  }
   function renderCommittee(monthItem) {
     const box = document.getElementById("committee");
     if (!box) return;
     const c = normMonth(monthItem);
     if (!c || !c.roles.length) { box.innerHTML = ""; return; }
+    const curWeek = currentSundayWeek();
     box.innerHTML = `
       <div class="committee-head">
         <span class="w-en light">SERVICE TEAM</span>
         <h4>${escH(c.label)} 봉사위원</h4>
       </div>
       <div class="committee-rows">
-        ${c.roles.map((r) => `<div class="committee-item"><span class="c-role">${escH(r.role)}</span><p class="c-names">${escH(r.names)}</p></div>`).join("")}
+        ${c.roles.map((r) => {
+          const items = parseWeekNames(r.names);
+          const hasWeeks = items.some((it) => it.week != null);
+          const body = hasWeeks
+            ? items.map((it) => `<div class="c-week-row${it.week === curWeek ? " is-now" : ""}">${it.week ? `<span class="c-week">${it.week}주차</span>` : ""}<span class="c-week-name">${escH(it.name)}</span></div>`).join("")
+            : `<p class="c-names">${escH(r.names)}</p>`;
+          return `<div class="committee-item"><span class="c-role">${escH(r.role)}</span>${body}</div>`;
+        }).join("")}
       </div>`;
   }
 

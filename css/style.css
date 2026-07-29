@@ -333,14 +333,22 @@ ul { list-style: none; }
 }
 .committee-head { text-align: center; margin-bottom: 22px; }
 .committee-head .w-en { display: block; }
-.committee-head h4 { font-family: "Noto Serif KR", serif; font-size: 1.35rem; font-weight: 700; margin-top: 4px; }
+.committee-head h4 { font-family: "Noto Serif KR", serif; font-size: 1.5rem; font-weight: 700; margin-top: 4px; }
 .committee-rows { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .committee-item {
   background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
   border-radius: 12px; padding: 20px 22px; text-align: center;
 }
-.c-role { display: block; font-size: .92rem; color: var(--gold); margin-bottom: 8px; letter-spacing: .03em; }
-.c-names { font-size: 1.12rem; font-weight: 500; line-height: 1.7; word-break: keep-all; }
+.c-role { display: block; font-size: 1.05rem; color: var(--gold); margin-bottom: 10px; letter-spacing: .03em; font-weight: 700; }
+.c-names { font-size: 1.28rem; font-weight: 500; line-height: 1.8; word-break: keep-all; }
+.c-week-row {
+  display: flex; justify-content: center; align-items: baseline; gap: 10px;
+  font-size: 1.28rem; font-weight: 500; line-height: 1.9; word-break: keep-all;
+}
+.c-week-row .c-week { font-size: 1.05rem; color: rgba(255,255,255,.65); min-width: 52px; text-align: right; }
+.c-week-row .c-week-name { font-weight: 700; }
+.c-week-row.is-now { background: rgba(255,255,255,.14); border-radius: 8px; }
+.c-week-row.is-now .c-week { color: var(--gold); font-weight: 700; }
 @media (max-width: 680px) {
   .committee-rows { grid-template-columns: 1fr; }
   .committee { padding: 28px 24px; }
