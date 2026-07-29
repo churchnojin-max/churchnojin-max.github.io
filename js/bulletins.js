@@ -13,6 +13,61 @@
    (해당 달 데이터가 없으면 가장 최근 달을 표시) */
 const COMMITTEES = [
   {
+    month: "2026-08",
+    weeks: [
+      {
+        week: "1주차",
+        date: "8/2",
+        roles: [
+          { role: "낮예배 대표기도", name: "" },
+          { role: "헌금위원", name: "" },
+          { role: "오후예배 대표기도", name: "" },
+          { role: "식당봉사", name: "" },
+        ],
+      },
+      {
+        week: "2주차",
+        date: "8/9",
+        roles: [
+          { role: "낮예배 대표기도", name: "" },
+          { role: "헌금위원", name: "" },
+          { role: "오후예배 대표기도", name: "" },
+          { role: "식당봉사", name: "" },
+        ],
+      },
+      {
+        week: "3주차",
+        date: "8/16",
+        roles: [
+          { role: "낮예배 대표기도", name: "" },
+          { role: "헌금위원", name: "" },
+          { role: "오후예배 대표기도", name: "" },
+          { role: "식당봉사", name: "" },
+        ],
+      },
+      {
+        week: "4주차",
+        date: "8/23",
+        roles: [
+          { role: "낮예배 대표기도", name: "" },
+          { role: "헌금위원", name: "" },
+          { role: "오후예배 대표기도", name: "" },
+          { role: "식당봉사", name: "" },
+        ],
+      },
+      {
+        week: "5주차",
+        date: "8/30",
+        roles: [
+          { role: "낮예배 대표기도", name: "" },
+          { role: "헌금위원", name: "" },
+          { role: "오후예배 대표기도", name: "" },
+          { role: "식당봉사", name: "" },
+        ],
+      },
+    ],
+  },
+  {
     month: "2026-07",
     label: "7월 첫째 주",
     roles: [

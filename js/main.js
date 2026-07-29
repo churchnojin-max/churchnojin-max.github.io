@@ -181,6 +181,35 @@ if (sermonDeck) {
     const box = document.getElementById("committee");
     if (!box) return;
     const c = normMonth(monthItem);
+
+    // 새 형식: weeks 배열이 있으면 새 레이아웃 사용
+    if (c && c.weeks && c.weeks.length) {
+      const curWeek = currentSundayWeek();
+      const monthLabel = c.month ? c.month.slice(5) + "월" : "";
+      box.innerHTML = `
+        <div class="committee-head">
+          <span class="w-en light">SERVICE TEAM</span>
+          <h4>${monthLabel} 봉사위원</h4>
+        </div>
+        <div class="committee-weeks">
+          ${c.weeks.map((w) => `
+            <div class="committee-week">
+              <div class="week-label">${w.week}(${w.date})</div>
+              <div class="week-roles">
+                ${w.roles.map((r) => `
+                  <div class="week-role">
+                    <div class="role-title">${escH(r.role)}</div>
+                    <div class="role-name">${escH(r.name || "")}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>`;
+      return;
+    }
+
+    // 구 형식: roles 배열 (이전 7월 데이터 등)
     if (!c || !c.roles.length) { box.innerHTML = ""; return; }
     const curWeek = currentSundayWeek();
     box.innerHTML = `
