@@ -717,19 +717,6 @@ window.WPCTts = WPCTts;
         <span class="qt-card-more">묵상 전문 읽기 →</span>
       </button>`;
     document.getElementById("qtOpen").addEventListener("click", () => openModal(entry.date));
-
-    // '오늘의 말씀 듣기'(TTS) → 본문 모달을 열어(팝업) 낭독 시작 (대시보드와 동일 컨셉)
-    const homeTts = document.getElementById("qtHomeTts");
-    if (homeTts) {
-      if (!(window.WPCTts && window.WPCTts.supported)) { homeTts.style.display = "none"; }
-      else {
-        homeTts.onclick = () => {
-          openModal(entry.date);                          // 오늘 큐티 본문 팝업(모달)
-          const mb = document.getElementById("qtTtsBtn"); // 모달 안의 낭독 버튼을 눌러 재생 시작
-          if (mb) mb.click();
-        };
-      }
-    }
   }
 
   const escQt = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -828,8 +815,8 @@ window.WPCTts = WPCTts;
       .then((rank) => { if (rank) box.innerHTML = `<div style="${AMEN_DONE}">✓ 오늘 ${rank}번째 아멘! 은혜 충만한 하루 되세요 🙌</div>`; })
       .catch(() => {});
   }
-  function loadHomeAmen(date) {
-    const box = document.getElementById("qtAmenBox");
+  function loadHomeAmen(date, boxId) {
+    const box = document.getElementById(boxId || "qtAmenBox");
     if (!box) return;
     const cd = dotToDash(date), SB = window.SUPABASE_URL, AK = window.SUPABASE_ANON_KEY;
     const sess = qtSession();
@@ -842,8 +829,8 @@ window.WPCTts = WPCTts;
       .then((r) => (r.ok ? r.json() : []))
       .then((rows) => {
         if (rows && rows.length) { amenDoneBox(box, cd, sess); return; }
-        box.innerHTML = `<label style="display:flex;align-items:center;gap:10px;margin-top:16px;padding:14px 16px;background:#eef5ef;border:1px solid #cfe3d4;border-radius:12px;color:#2f5133;font-size:.95rem;cursor:pointer"><input type="checkbox" id="qtAmenInput" style="width:18px;height:18px"> 🙏 기도문까지 읽고, 오늘의 큐티에 <b>아멘</b> 합니다</label>`;
-        const chk = document.getElementById("qtAmenInput");
+        box.innerHTML = `<label style="display:flex;align-items:center;gap:10px;margin-top:16px;padding:14px 16px;background:#eef5ef;border:1px solid #cfe3d4;border-radius:12px;color:#2f5133;font-size:.95rem;cursor:pointer"><input type="checkbox" class="qt-amen-input" style="width:18px;height:18px"> 🙏 기도문까지 읽고, 오늘의 큐티에 <b>아멘</b> 합니다</label>`;
+        const chk = box.querySelector(".qt-amen-input");
         chk.addEventListener("change", () => {
           if (!chk.checked) return;
           chk.disabled = true;
@@ -924,6 +911,9 @@ window.WPCTts = WPCTts;
   if (yearOlderBtn) yearOlderBtn.addEventListener("click", () => jumpYear(1));
   modal.addEventListener("click", (e) => { if (e.target.hasAttribute("data-close")) closeModal(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) closeModal(); });
+
+  // 홈 화면의 '묵상 체크하기' — 교회 QT 데이터 유무와 무관하게 오늘 날짜로 항상 표시(TTS 버튼 자리 대체)
+  if (document.getElementById("qtAmenBoxHome")) loadHomeAmen(todayStr(), "qtAmenBoxHome");
 
   function afterEntries() {
     entries = entries
