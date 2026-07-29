@@ -61,8 +61,10 @@ console.log('[gyojeok.js] v20260701di');
         '</div>';
     }
 
+    // '등록일'이 실제로 찍힌 사람만 새가족(이 화면으로 등록된 사람)으로 취급 — 기존 성도/목회자는 등록일이 없어 제외됨
+    function isNewFamily(m) { return !!m['등록일']; }
     function regMonthOf(m) {
-      var d = m['등록일'] || (m['생성일'] ? String(m['생성일']).slice(0, 10) : '');
+      var d = m['등록일'] || '';
       return d ? d.slice(0, 7) : '';
     }
     function statsChart(all) {
@@ -83,18 +85,18 @@ console.log('[gyojeok.js] v20260701di');
       });
       return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" style="max-width:320px;display:block;margin:0 auto">' + bars + labels + '</svg>';
     }
-    function recentListHtml(all) {
-      var withDate = all.filter(function (m) { return regMonthOf(m); });
-      var sorted = withDate.slice().sort(function (a, b) {
-        var da = a['등록일'] || String(a['생성일'] || '').slice(0, 10), db = b['등록일'] || String(b['생성일'] || '').slice(0, 10);
-        return db < da ? -1 : db > da ? 1 : 0;
-      });
-      var top = sorted.slice(0, 8);
-      if (!top.length) return '<p style="color:#9aa5b1;font-size:.85rem">등록 내역이 없습니다.</p>';
+    // 새가족(등록일이 찍힌 사람)만 대상으로 이름 검색. 검색어가 없으면 최근 8명만, 검색 중에는 개수 제한 없이 전부 보여줘
+    // 정보가 미흡해도(생년월일·연락처 등이 비어 있어도) 이름만으로 항상 찾을 수 있게 함
+    function recentListHtml(all, q) {
+      q = (q || '').trim();
+      var newFam = all.filter(isNewFamily);
+      var rows = q ? newFam.filter(function (m) { return String(m['이름'] || '').indexOf(q) >= 0; }) : newFam;
+      var sorted = rows.slice().sort(function (a, b) { return String(b['등록일']).localeCompare(String(a['등록일'])); });
+      var top = q ? sorted : sorted.slice(0, 8);
+      if (!top.length) return '<p style="color:#9aa5b1;font-size:.85rem">' + (q ? '검색 결과가 없습니다.' : '아직 등록된 새가족이 없습니다.') + '</p>';
       return top.map(function (m) {
-        var d = m['등록일'] || String(m['생성일'] || '').slice(0, 10);
         return '<div class="nf-recent-row" data-key="' + esc(m['매칭키']) + '" style="display:flex;justify-content:space-between;gap:8px;padding:7px 4px;border-bottom:1px solid #f0f3f7;cursor:pointer">' +
-          '<span style="font-weight:600;color:var(--accent,#223350)">' + esc(m['이름']) + '</span><span style="color:#9aa5b1;font-size:.82rem">' + esc(d) + '</span></div>';
+          '<span style="font-weight:600;color:var(--accent,#223350)">' + esc(m['이름']) + '</span><span style="color:#9aa5b1;font-size:.82rem">' + esc(m['등록일']) + '</span></div>';
       }).join('');
     }
 
@@ -132,16 +134,27 @@ console.log('[gyojeok.js] v20260701di');
         '<button type="button" class="btn btn-solid" id="nf_submit">등록하기</button><span class="fin-msg" id="nf_msg"></span>' +
         '</div></div>' +
         '<div class="fin-card" style="flex:1;min-width:280px">' +
-        '<b>월별 신규 등록</b>' +
+        '<b>월별 신규 등록</b><span style="color:#9aa5b1;font-size:.78rem"> · 새가족만 집계됩니다</span>' +
         '<div style="margin-top:10px">' + statsChart(all) + '</div>' +
-        '<div style="margin-top:16px;border-top:1px solid #eef1f5;padding-top:10px"><b style="font-size:.88rem">최근 등록자</b><p style="color:#9aa5b1;font-size:.78rem;margin:4px 0 6px">이름을 클릭하면 신상을 볼 수 있어요.</p><div id="nf_recent">' + recentListHtml(all) + '</div></div>' +
+        '<div style="margin-top:16px;border-top:1px solid #eef1f5;padding-top:10px">' +
+        '<b style="font-size:.88rem">새가족 명단</b>' +
+        '<p style="color:#9aa5b1;font-size:.78rem;margin:4px 0 6px">정보가 아직 미흡해도 이름으로 찾아 이어서 채워 넣을 수 있어요.</p>' +
+        '<input type="text" id="nf_recent_q" placeholder="🔍 이름 검색" style="width:100%;padding:7px 10px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;margin-bottom:8px">' +
+        '<div id="nf_recent">' + recentListHtml(all, '') + '</div></div>' +
         '</div></div>';
 
-      Array.prototype.forEach.call(panel.querySelectorAll('.nf-recent-row'), function (row) {
-        row.onclick = function () {
-          var m = ALL.filter(function (x) { return String(x['매칭키']) === row.dataset.key; })[0];
-          if (m) showDetail(m);
-        };
+      function bindRecentClicks() {
+        Array.prototype.forEach.call(panel.querySelectorAll('.nf-recent-row'), function (row) {
+          row.onclick = function () {
+            var m = ALL.filter(function (x) { return String(x['매칭키']) === row.dataset.key; })[0];
+            if (m) showDetail(m);
+          };
+        });
+      }
+      bindRecentClicks();
+      panel.querySelector('#nf_recent_q').addEventListener('input', function () {
+        panel.querySelector('#nf_recent').innerHTML = recentListHtml(all, this.value);
+        bindRecentClicks();
       });
 
       var famList = panel.querySelector('#nf_famlist');
@@ -184,7 +197,7 @@ console.log('[gyojeok.js] v20260701di');
           var chain = Promise.resolve();
           famRows.forEach(function (f) {
             chain = chain.then(function () {
-              return WPF.call('addGyojeok', { name: f.name, birth: f.birth, fields: { 음력생일: f.lunar, 세대주: headName, 관계: f.rel } }).then(function (fr) {
+              return WPF.call('addGyojeok', { name: f.name, birth: f.birth, fields: { 음력생일: f.lunar, 등록일: regDate || null, 세대주: headName, 관계: f.rel } }).then(function (fr) {
                 if (f.rel === '배우자') return WPF.call('updateGyojeok', { id: headId, fields: { 배우자: fr.name, 배우자매칭키: fr.key } });
               });
             });
