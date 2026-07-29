@@ -581,7 +581,8 @@ console.log('[dashboard.js] v20260705qtfallback');
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (rows) {
         var q = rows && rows[0];
-        if (!q) { el.innerHTML = '<div class="qt-today"><p class="qt-loading">아직 등록된 큐티가 없습니다.</p></div>'; return; }
+        var dailyLinkHTML = '<div class="qt-daily-link-row"><a class="qt-d-daily-link" href="https://sum.su.or.kr:8888/bible/today" target="_blank" rel="noopener">📖 매일성경에서 오늘의 묵상 보기 →</a></div>';
+        if (!q) { el.innerHTML = '<div class="qt-today"><p class="qt-loading">아직 등록된 큐티가 없습니다.</p></div>' + dailyLinkHTML; return; }
         var qDate = String(q.sermon_date || t).slice(0, 10);
         var isToday = (qDate === t);
         var dotDate = qDate.replace(/-/g, '.');
@@ -596,6 +597,7 @@ console.log('[dashboard.js] v20260705qtfallback');
           '</button>' +
           '<div id="dashQtFull" hidden style="margin-top:18px"></div>' +
           '</div>' +
+          dailyLinkHTML +
           '<div class="qt-listen-wrap"><button type="button" class="qt-listen-btn" id="dashTtsBtn" style="border:0;cursor:pointer;font:inherit">🔊 오늘의 말씀 듣기</button></div>';
         var opened = false;
         function renderFullOnce() {
@@ -603,7 +605,6 @@ console.log('[dashboard.js] v20260705qtfallback');
           full.dataset.loaded = '1';
           full.innerHTML =
             '<div class="form-card qtc-card">' +
-            '<a class="qt-d-daily-link" href="https://sum.su.or.kr:8888/bible/today" target="_blank" rel="noopener">📖 매일성경에서 오늘의 묵상 보기 →</a>' +
             (q.qt_bible_text ? '<div class="qtc-bible">' + bibleVersesHTML(q.qt_bible_text) + '</div>' : '') +
             (q.content ? '<div class="qtc-head">📝 묵상</div><div class="qtc-body">' + toParaHTML(q.content) + '</div>' : '') +
             (q.prayer ? '<div class="qtc-head">🙏 기도</div><div class="qtc-body">' + toParaHTML(q.prayer) + '</div>' : '') +
