@@ -43,6 +43,11 @@ console.log('[gyojeok.js] v20260701di');
   }
 
   /* ── 새가족 등록: 등록카드 한 장을 그대로 입력 → 세대주+가족까지 한 번에 생성 ── */
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function todayISO() { var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function calSel(attr, isLunar) { return '<select ' + attr + ' style="width:70px"><option value="0"' + (isLunar ? '' : ' selected') + '>양력</option><option value="1"' + (isLunar ? ' selected' : '') + '>음력</option></select>'; }
+  var VISITED_OPTS = ['미실시', '완료'];
+
   function renderNewFamily(panel) {
     var FAM_REL = ['배우자', '부', '모', '장남', '차남', '삼남', '아들', '장녀', '차녀', '삼녀', '딸', '자녀', '형제', '자매', '기타'];
     var rowSeq = 0;
@@ -50,90 +55,152 @@ console.log('[gyojeok.js] v20260701di');
       return '<div class="nf-famrow" data-row="' + id + '" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:8px">' +
         '<div class="af-field" style="flex:1;min-width:110px"><label>이름</label><input type="text" class="nf-f-name"></div>' +
         '<div class="af-field" style="flex:1;min-width:140px"><label>생년월일(선택)</label><input type="text" class="nf-f-birth" inputmode="numeric" placeholder="8자리, 예: 20100321"></div>' +
+        '<div class="af-field" style="flex:0;min-width:76px"><label>양/음</label>' + calSel('class="nf-f-cal"', false) + '</div>' +
         '<div class="af-field" style="flex:1;min-width:100px"><label>관계</label><select class="nf-f-rel">' + FAM_REL.map(function (r) { return '<option' + (r === '배우자' ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></div>' +
         '<button type="button" class="btn btn-line nf-f-remove" style="padding:8px 12px">삭제</button>' +
         '</div>';
     }
-    panel.innerHTML =
-      '<div class="fin-card">' +
-      '<b>새가족 등록</b>' +
-      '<p style="color:var(--ink-soft);font-size:.85rem;margin:6px 0 16px">방문 시 작성한 등록카드를 그대로 입력하세요. 함께 오신 가족이 있으면 아래에 추가하면 자동으로 한 가정으로 연결됩니다. 등록하면 회원상태는 우선 <b>정회원후보</b>로 저장됩니다.</p>' +
-      '<div style="border-bottom:1px solid #eef1f5;padding-bottom:14px;margin-bottom:14px">' +
-      '<div style="font-size:.85rem;color:var(--accent,#223350);font-weight:700;margin-bottom:8px">등록자(세대주)</div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-      '<div class="af-field" style="flex:1;min-width:110px"><label>이름*</label><input type="text" id="nf_name"></div>' +
-      '<div class="af-field" style="flex:1;min-width:140px"><label>생년월일(선택)</label><input type="text" id="nf_birth" inputmode="numeric" placeholder="8자리, 예: 19800101"></div>' +
-      '<div class="af-field" style="flex:1;min-width:90px"><label>성별</label><select id="nf_sex"><option value=""></option><option>남</option><option>여</option></select></div>' +
-      '<div class="af-field" style="flex:1;min-width:140px"><label>휴대폰</label><input type="text" id="nf_phone" inputmode="numeric" placeholder="01012345678"></div>' +
-      '<div class="af-field" style="flex:2;min-width:200px"><label>주소</label><input type="text" id="nf_address"></div>' +
-      '</div></div>' +
-      '<div style="font-size:.85rem;color:var(--accent,#223350);font-weight:700;margin-bottom:8px">함께 오신 가족 (선택)</div>' +
-      '<div id="nf_famlist"></div>' +
-      '<button type="button" class="btn btn-line" id="nf_addrow" style="margin-bottom:14px">＋ 가족 추가</button>' +
-      '<div style="display:flex;gap:10px;align-items:center;border-top:1px solid #eef1f5;padding-top:14px">' +
-      '<button type="button" class="btn btn-solid" id="nf_submit">등록하기</button><span class="fin-msg" id="nf_msg"></span>' +
-      '</div></div>';
-    var famList = panel.querySelector('#nf_famlist');
-    function addRow() { rowSeq++; var d = document.createElement('div'); d.innerHTML = famRowHtml(rowSeq); var el = d.firstChild; famList.appendChild(el); el.querySelector('.nf-f-remove').onclick = function () { el.remove(); }; }
-    panel.querySelector('#nf_addrow').onclick = addRow;
 
-    function resetForm() {
-      panel.querySelector('#nf_name').value = ''; panel.querySelector('#nf_birth').value = '';
-      panel.querySelector('#nf_sex').value = ''; panel.querySelector('#nf_phone').value = ''; panel.querySelector('#nf_address').value = '';
-      famList.innerHTML = '';
+    function regMonthOf(m) {
+      var d = m['등록일'] || (m['생성일'] ? String(m['생성일']).slice(0, 10) : '');
+      return d ? d.slice(0, 7) : '';
+    }
+    function statsChart(all) {
+      var now = new Date();
+      var months = [];
+      for (var i = 5; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push(d.getFullYear() + '-' + pad2(d.getMonth() + 1)); }
+      var counts = {}; months.forEach(function (m) { counts[m] = 0; });
+      all.forEach(function (m) { var ym = regMonthOf(m); if (counts[ym] != null) counts[ym]++; });
+      var maxV = Math.max.apply(null, months.map(function (m) { return counts[m]; }).concat([1]));
+      var n = months.length, W = 280, H = 140, PT = 16, PB = 24, PL = 8, PR = 8;
+      var ph = H - PT - PB, pw = W - PL - PR, baseY = PT + ph, bw = Math.min(30, pw / n - 10);
+      var bars = '', labels = '';
+      months.forEach(function (m, i) {
+        var cx = PL + (i + 0.5) * (pw / n), v = counts[m], h = maxV ? (v / maxV) * ph : 0;
+        bars += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + (baseY - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="4" fill="#223350" opacity="' + (v ? '0.85' : '0.15') + '"></rect>';
+        bars += '<text x="' + cx.toFixed(1) + '" y="' + (baseY - h - 6).toFixed(1) + '" text-anchor="middle" font-size="11" fill="#223350" font-weight="700">' + (v || '') + '</text>';
+        labels += '<text x="' + cx.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="#8a8a8e">' + Number(m.slice(5)) + '월</text>';
+      });
+      return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" style="max-width:320px;display:block;margin:0 auto">' + bars + labels + '</svg>';
+    }
+    function recentListHtml(all) {
+      var withDate = all.filter(function (m) { return regMonthOf(m); });
+      var sorted = withDate.slice().sort(function (a, b) {
+        var da = a['등록일'] || String(a['생성일'] || '').slice(0, 10), db = b['등록일'] || String(b['생성일'] || '').slice(0, 10);
+        return db < da ? -1 : db > da ? 1 : 0;
+      });
+      var top = sorted.slice(0, 8);
+      if (!top.length) return '<p style="color:#9aa5b1;font-size:.85rem">등록 내역이 없습니다.</p>';
+      return top.map(function (m) {
+        var d = m['등록일'] || String(m['생성일'] || '').slice(0, 10);
+        return '<div class="nf-recent-row" data-key="' + esc(m['매칭키']) + '" style="display:flex;justify-content:space-between;gap:8px;padding:7px 4px;border-bottom:1px solid #f0f3f7;cursor:pointer">' +
+          '<span style="font-weight:600;color:var(--accent,#223350)">' + esc(m['이름']) + '</span><span style="color:#9aa5b1;font-size:.82rem">' + esc(d) + '</span></div>';
+      }).join('');
     }
 
-    panel.querySelector('#nf_submit').onclick = function () {
-      var msg = panel.querySelector('#nf_msg');
-      var name = panel.querySelector('#nf_name').value.trim();
-      var birth = panel.querySelector('#nf_birth').value.replace(/[^0-9]/g, '');
-      var sex = panel.querySelector('#nf_sex').value;
-      var phone = panel.querySelector('#nf_phone').value.replace(/[^0-9]/g, '');
-      var address = panel.querySelector('#nf_address').value.trim();
-      if (!name) { msg.style.color = '#c0392b'; msg.textContent = '등록자 이름은 필수입니다.'; return; }
-      if (birth && birth.length !== 8) { msg.style.color = '#c0392b'; msg.textContent = '등록자 생년월일은 8자리이거나 비워 두세요.'; return; }
-      var famRows = Array.prototype.map.call(famList.querySelectorAll('.nf-famrow'), function (r) {
-        return { name: r.querySelector('.nf-f-name').value.trim(), birth: r.querySelector('.nf-f-birth').value.replace(/[^0-9]/g, ''), rel: r.querySelector('.nf-f-rel').value };
-      }).filter(function (f) { return f.name; });
-      for (var i = 0; i < famRows.length; i++) {
-        if (famRows[i].birth && famRows[i].birth.length !== 8) { msg.style.color = '#c0392b'; msg.textContent = '가족 생년월일은 8자리이거나 비워 두세요.'; return; }
-      }
-      var btn = panel.querySelector('#nf_submit'); btn.disabled = true;
-      msg.style.color = 'var(--ink-soft)'; msg.textContent = '등록 중…';
+    panel.innerHTML = '<div class="fin-card"><p style="color:var(--ink-soft)">불러오는 중…</p></div>';
+    WPF.call('listGyojeok').then(function (lr) {
+      var all = (lr.members || []).filter(function (m) { return m['이름']; });
+      ALL = all; // showDetail의 가족 조회가 참조하는 공용 목록도 최신화
 
-      // 등록 흐름: 등록자 생성 → 목록 재조회로 id 확보 → 등록자 상세정보/세대주 저장 → 가족 각자 생성+연결
-      WPF.call('addGyojeok', { name: name, birth: birth }).then(function (r) {
-        return WPF.call('listGyojeok').then(function (lr) {
-          var all = (lr.members || []).filter(function (m) { return m['이름']; });
-          var head = all.filter(function (x) { return String(x['매칭키']) === r.key; })[0];
-          if (!head) throw new Error('등록자를 찾지 못했습니다.');
-          return WPF.call('updateGyojeok', { id: head['교적ID'], fields: { 성별: sex, 휴대폰: phone, 주소: address, 세대주: head['이름'], 관계: '세대주' } }).then(function () {
-            var chain = Promise.resolve();
-            famRows.forEach(function (f) {
-              chain = chain.then(function () {
-                return WPF.call('addGyojeok', { name: f.name, birth: f.birth }).then(function (fr) {
-                  return WPF.call('listGyojeok').then(function (lr2) {
-                    var all2 = (lr2.members || []).filter(function (m) { return m['이름']; });
-                    var fm = all2.filter(function (x) { return String(x['매칭키']) === fr.key; })[0];
-                    if (!fm) return;
-                    var updates = [WPF.call('updateGyojeok', { id: fm['교적ID'], fields: { 세대주: head['이름'], 관계: f.rel } })];
-                    if (f.rel === '배우자') updates.push(WPF.call('updateGyojeok', { id: head['교적ID'], fields: { 배우자: fm['이름'], 배우자매칭키: fm['매칭키'] } }));
-                    return Promise.all(updates);
-                  });
-                });
+      panel.innerHTML =
+        '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">' +
+        '<div class="fin-card" style="flex:2;min-width:340px">' +
+        '<b>새가족 등록</b>' +
+        '<p style="color:var(--ink-soft);font-size:.85rem;margin:6px 0 16px">방문 시 작성한 등록카드를 그대로 입력하세요. 함께 오신 가족이 있으면 아래에 추가하면 자동으로 한 가정으로 연결됩니다. 등록하면 회원상태는 우선 <b>정회원후보</b>로 저장됩니다.</p>' +
+        '<div style="border-bottom:1px solid #eef1f5;padding-bottom:14px;margin-bottom:14px">' +
+        '<div style="font-size:.85rem;color:var(--accent,#223350);font-weight:700;margin-bottom:8px">등록자(세대주)</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<div class="af-field" style="flex:1;min-width:110px"><label>이름*</label><input type="text" id="nf_name"></div>' +
+        '<div class="af-field" style="flex:1;min-width:140px"><label>생년월일(선택)</label><input type="text" id="nf_birth" inputmode="numeric" placeholder="8자리, 예: 19800101"></div>' +
+        '<div class="af-field" style="flex:0;min-width:76px"><label>양/음</label>' + calSel('id="nf_birth_cal"', false) + '</div>' +
+        '<div class="af-field" style="flex:1;min-width:90px"><label>성별</label><select id="nf_sex"><option value=""></option><option>남</option><option>여</option></select></div>' +
+        '<div class="af-field" style="flex:1;min-width:140px"><label>휴대폰</label><input type="text" id="nf_phone" inputmode="numeric" placeholder="01012345678"></div>' +
+        '<div class="af-field" style="flex:2;min-width:200px"><label>주소</label><input type="text" id="nf_address"></div>' +
+        '<div class="af-field" style="flex:1;min-width:150px"><label>등록일</label><input type="text" id="nf_regdate" value="' + todayISO() + '" placeholder="예: 2026-08-02"></div>' +
+        '<div class="af-field" style="flex:1;min-width:110px"><label>신급</label><select id="nf_grade">' + selOpts(GRADE_OPTS, '') + '</select></div>' +
+        '<div class="af-field" style="flex:1;min-width:140px"><label>직분</label><select id="nf_role">' + selOpts(ROLE_OPTS, '') + '</select></div>' +
+        '<div class="af-field" style="flex:1;min-width:160px"><label>직전교회</label><input type="text" id="nf_prevchurch"></div>' +
+        '<div class="af-field" style="flex:1;min-width:120px"><label>인도자</label><input type="text" id="nf_referrer"></div>' +
+        '<div class="af-field" style="flex:1;min-width:120px"><label>새가족 심방여부</label><select id="nf_visited">' + VISITED_OPTS.map(function (o) { return '<option>' + o + '</option>'; }).join('') + '</select></div>' +
+        '<div class="af-field full" style="flex:1 1 100%;min-width:220px"><label>특이사항</label><textarea id="nf_note" rows="2" style="width:100%;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"></textarea></div>' +
+        '</div></div>' +
+        '<div style="font-size:.85rem;color:var(--accent,#223350);font-weight:700;margin-bottom:8px">함께 오신 가족 (선택)</div>' +
+        '<div id="nf_famlist"></div>' +
+        '<button type="button" class="btn btn-line" id="nf_addrow" style="margin-bottom:14px">＋ 가족 추가</button>' +
+        '<div style="display:flex;gap:10px;align-items:center;border-top:1px solid #eef1f5;padding-top:14px">' +
+        '<button type="button" class="btn btn-solid" id="nf_submit">등록하기</button><span class="fin-msg" id="nf_msg"></span>' +
+        '</div></div>' +
+        '<div class="fin-card" style="flex:1;min-width:280px">' +
+        '<b>월별 신규 등록</b>' +
+        '<div style="margin-top:10px">' + statsChart(all) + '</div>' +
+        '<div style="margin-top:16px;border-top:1px solid #eef1f5;padding-top:10px"><b style="font-size:.88rem">최근 등록자</b><p style="color:#9aa5b1;font-size:.78rem;margin:4px 0 6px">이름을 클릭하면 신상을 볼 수 있어요.</p><div id="nf_recent">' + recentListHtml(all) + '</div></div>' +
+        '</div></div>';
+
+      Array.prototype.forEach.call(panel.querySelectorAll('.nf-recent-row'), function (row) {
+        row.onclick = function () {
+          var m = ALL.filter(function (x) { return String(x['매칭키']) === row.dataset.key; })[0];
+          if (m) showDetail(m);
+        };
+      });
+
+      var famList = panel.querySelector('#nf_famlist');
+      function addRow() { rowSeq++; var d = document.createElement('div'); d.innerHTML = famRowHtml(rowSeq); var el = d.firstChild; famList.appendChild(el); el.querySelector('.nf-f-remove').onclick = function () { el.remove(); }; }
+      panel.querySelector('#nf_addrow').onclick = addRow;
+
+      panel.querySelector('#nf_submit').onclick = function () {
+        var msg = panel.querySelector('#nf_msg');
+        var name = panel.querySelector('#nf_name').value.trim();
+        var birth = panel.querySelector('#nf_birth').value.replace(/[^0-9]/g, '');
+        var sex = panel.querySelector('#nf_sex').value;
+        var phone = panel.querySelector('#nf_phone').value.replace(/[^0-9]/g, '');
+        var address = panel.querySelector('#nf_address').value.trim();
+        var regDate = panel.querySelector('#nf_regdate').value.trim();
+        var lunar = panel.querySelector('#nf_birth_cal').value === '1';
+        var grade = panel.querySelector('#nf_grade').value;
+        var role = panel.querySelector('#nf_role').value;
+        var prevChurch = panel.querySelector('#nf_prevchurch').value.trim();
+        var referrer = panel.querySelector('#nf_referrer').value.trim();
+        var visited = panel.querySelector('#nf_visited').value;
+        var note = panel.querySelector('#nf_note').value.trim();
+        if (!name) { msg.style.color = '#c0392b'; msg.textContent = '등록자 이름은 필수입니다.'; return; }
+        if (birth && birth.length !== 8) { msg.style.color = '#c0392b'; msg.textContent = '등록자 생년월일은 8자리이거나 비워 두세요.'; return; }
+        var famRows = Array.prototype.map.call(famList.querySelectorAll('.nf-famrow'), function (r) {
+          return { name: r.querySelector('.nf-f-name').value.trim(), birth: r.querySelector('.nf-f-birth').value.replace(/[^0-9]/g, ''), lunar: r.querySelector('.nf-f-cal').value === '1', rel: r.querySelector('.nf-f-rel').value };
+        }).filter(function (f) { return f.name; });
+        for (var i = 0; i < famRows.length; i++) {
+          if (famRows[i].birth && famRows[i].birth.length !== 8) { msg.style.color = '#c0392b'; msg.textContent = '가족 생년월일은 8자리이거나 비워 두세요.'; return; }
+        }
+        var btn = panel.querySelector('#nf_submit'); btn.disabled = true;
+        msg.style.color = 'var(--ink-soft)'; msg.textContent = '등록 중…';
+
+        var headFields = {
+          성별: sex, 휴대폰: phone, 주소: address, 등록일: regDate || null, 음력생일: lunar,
+          신급: grade, 직책: role, 직전교회: prevChurch, 인도자: referrer, 심방여부: visited, 특이사항: note,
+          세대주: name, 관계: '세대주'
+        };
+        WPF.call('addGyojeok', { name: name, birth: birth, fields: headFields }).then(function (r) {
+          var headId = r.id, headName = r.name;
+          var chain = Promise.resolve();
+          famRows.forEach(function (f) {
+            chain = chain.then(function () {
+              return WPF.call('addGyojeok', { name: f.name, birth: f.birth, fields: { 음력생일: f.lunar, 세대주: headName, 관계: f.rel } }).then(function (fr) {
+                if (f.rel === '배우자') return WPF.call('updateGyojeok', { id: headId, fields: { 배우자: fr.name, 배우자매칭키: fr.key } });
               });
             });
-            return chain;
           });
+          return chain;
+        }).then(function () {
+          msg.style.color = 'green'; msg.textContent = '✓ 등록되었습니다' + (famRows.length ? ' (가족 ' + famRows.length + '명 포함)' : '') + '.';
+          btn.disabled = false;
+          renderNewFamily(panel);
+        }).catch(function (e) {
+          msg.style.color = '#c0392b'; msg.textContent = '오류: ' + e.message; btn.disabled = false;
         });
-      }).then(function () {
-        msg.style.color = 'green'; msg.textContent = '✓ 등록되었습니다' + (famRows.length ? ' (가족 ' + famRows.length + '명 포함)' : '') + '.';
-        btn.disabled = false;
-        resetForm();
-      }).catch(function (e) {
-        msg.style.color = '#c0392b'; msg.textContent = '오류: ' + e.message; btn.disabled = false;
-      });
-    };
+      };
+    }).catch(function (e) {
+      panel.innerHTML = msgCard('조회 실패', e.message);
+    });
   }
 
   /* ── 권한 관리: 정/준회원·교적연결 + 관리자/재정권한 ── */
@@ -262,7 +329,9 @@ console.log('[gyojeok.js] v20260701di');
     ['휴대폰', '휴대폰', 'tel'], ['신급', '신급', 'grade'], ['직책', '직책', 'role'],
     ['세례일', '세례일', 'date'], ['임직일', '임직일', 'date'],
     ['세대주', '세대주', 'text'], ['세대주와 관계', '관계', 'text'], ['배우자', '배우자', 'text'],
-    ['구역/부서', '그룹', 'text'], ['회원상태', '회원상태', 'status'], ['주소', '주소', 'text']
+    ['구역/부서', '그룹', 'text'], ['회원상태', '회원상태', 'status'], ['주소', '주소', 'text'],
+    ['등록일', '등록일', 'date'], ['직전교회', '직전교회', 'text'], ['인도자', '인도자', 'text'],
+    ['새가족 심방여부', '심방여부', 'visited'], ['특이사항', '특이사항', 'textarea']
   ];
   var GRADE_OPTS = ['원입', '학습', '세례', '입교', '유아세례', '안수'];
   var ROLE_OPTS = ['담임목사', '원로목사', '장로', '원로장로', '안수집사', '권사', '은퇴권사', '집사', '권찰', '성도'];
@@ -330,10 +399,16 @@ console.log('[gyojeok.js] v20260701di');
         '<div style="display:flex;gap:14px;align-items:center">' + avatar(cur, 84) + '<div><h3 style="margin:0;color:var(--accent,#223350)">' + esc(cur['이름']) + (cur['직책'] ? ' <span style="font-size:.8rem;color:#7b8794">' + esc(cur['직책']) + '</span>' : '') + '</h3><div style="color:#7b8794;font-size:.85rem;margin-top:3px">' + esc(cur['그룹'] || '') + (cur['세대주'] ? ' · ' + esc(cur['세대주']) + '의 가정' : '') + '</div></div></div>' +
         '<div style="display:flex;gap:6px"><button class="btn btn-solid" id="gd_edit" style="padding:4px 14px">수정</button><button class="btn btn-line" id="gd_delete" style="padding:4px 12px;color:#c0392b;border-color:#e6b0aa">삭제</button><button class="btn btn-line" id="gd_close" style="padding:4px 12px">닫기</button></div></div>' +
         '<div style="display:flex;gap:18px;flex-wrap:wrap"><div style="flex:1;min-width:240px">' +
-        row('생년월일', birthOf(cur) + (age ? ' (' + age + ')' : '')) + row('성별', cur['성별']) + row('휴대폰', fmtPhone(cur['휴대폰'])) + row('신급', cur['신급']) + row('세례일', cur['세례일']) +
+        row('생년월일', birthOf(cur) + (age ? ' (' + age + ')' : '') + (cur['음력생일'] ? ' (음력)' : '')) + row('성별', cur['성별']) + row('휴대폰', fmtPhone(cur['휴대폰'])) + row('신급', cur['신급']) + row('세례일', cur['세례일']) +
         '</div><div style="flex:1;min-width:240px">' +
         row('세대주', cur['세대주']) + row('세대주와 관계', cur['관계']) + row('배우자', cur['배우자']) + row('회원상태', cur['회원상태']) + row('임직일', cur['임직일']) +
-        '</div></div>' + (cur['주소'] ? row('주소', cur['주소']) : '') + (groupsOf(cur).length ? '<div style="margin-top:12px"><div style="color:#7b8794;font-size:.85rem;margin-bottom:5px">소속 그룹</div>' + groupsOf(cur).map(function (g) { return '<span class="fin-pill" style="background:#e8f0fb;color:#2b5797;margin:0 6px 6px 0;display:inline-block">' + esc(g) + '</span>'; }).join('') + '</div>' : '') +
+        '</div></div>' + (cur['주소'] ? row('주소', cur['주소']) : '') +
+        '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:4px"><div style="flex:1;min-width:240px">' +
+        row('등록일', cur['등록일']) + row('직전교회', cur['직전교회']) +
+        '</div><div style="flex:1;min-width:240px">' +
+        row('인도자', cur['인도자']) + row('심방여부', cur['심방여부']) +
+        '</div></div>' + (cur['특이사항'] ? '<div style="margin-top:6px;padding:10px 12px;background:#fbfaf6;border:1px solid #f0ece0;border-radius:8px"><div style="color:#7b8794;font-size:.8rem;margin-bottom:3px">특이사항</div><div style="font-size:.9rem;white-space:pre-wrap">' + esc(cur['특이사항']) + '</div></div>' : '') +
+        (groupsOf(cur).length ? '<div style="margin-top:12px"><div style="color:#7b8794;font-size:.85rem;margin-bottom:5px">소속 그룹</div>' + groupsOf(cur).map(function (g) { return '<span class="fin-pill" style="background:#e8f0fb;color:#2b5797;margin:0 6px 6px 0;display:inline-block">' + esc(g) + '</span>'; }).join('') + '</div>' : '') +
         '<div id="gd_edu" style="margin-top:12px"></div>' +
         '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--accent,#223350)">가족 관계</b><button class="btn btn-line" id="gd_family" style="padding:3px 12px;font-size:.8rem">👪 가족 구성/수정</button></div><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.86rem"><thead><tr><th>이름</th><th>관계</th><th>생년월일</th><th>직책</th></tr></thead><tbody>' + famRows + '</tbody></table></div></div>';
       box.querySelector('#gd_close').onclick = close;
@@ -373,8 +448,10 @@ console.log('[gyojeok.js] v20260701di');
         else if (type === 'grade') ctrl = '<select data-col="' + col + '">' + selOpts(GRADE_OPTS, v) + '</select>';
         else if (type === 'role') ctrl = '<select data-col="' + col + '">' + selOpts(ROLE_OPTS, v) + '</select>';
         else if (type === 'status') ctrl = '<select data-col="' + col + '">' + selOpts(STATUS_OPTS, v) + '</select>';
+        else if (type === 'visited') ctrl = '<select data-col="' + col + '">' + selOpts(VISITED_OPTS, v) + '</select>';
+        else if (type === 'textarea') ctrl = '<textarea data-col="' + col + '" rows="2" style="width:100%;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' + esc(v) + '</textarea>';
         else ctrl = '<input type="text" data-col="' + col + '" value="' + esc(v) + '"' + (type === 'tel' ? ' inputmode="numeric"' : '') + (type === 'birth' ? ' placeholder="예: 1981-08-19"' : '') + (type === 'date' ? ' placeholder="예: 2010-03-21"' : '') + '>';
-        return '<div class="af-field"><label>' + esc(label) + '</label>' + ctrl + '</div>';
+        return '<div class="af-field"' + (type === 'textarea' ? ' style="flex:1 1 100%"' : '') + '><label>' + esc(label) + '</label>' + ctrl + '</div>';
       }
       box.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin:0;color:var(--accent,#223350)">교적 수정 — ' + esc(cur['이름']) + '</h3><button class="btn btn-line" id="gd_cancel" style="padding:4px 12px">취소</button></div>' +
