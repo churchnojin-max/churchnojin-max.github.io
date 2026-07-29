@@ -184,7 +184,7 @@ if (sermonDeck) {
     // 새 형식: weeks 배열이 있으면 새 레이아웃 사용 (normMonth는 구형식 전용이라 여기서 먼저 검사)
     if (monthItem && Array.isArray(monthItem.weeks) && monthItem.weeks.length) {
       const c = monthItem;
-      const monthLabel = c.month ? c.month.slice(5) + "월" : "";
+      const monthLabel = c.month ? Number(c.month.slice(5)) + "월" : "";
       box.innerHTML = `
         <div class="committee-head">
           <span class="w-en light">SERVICE TEAM</span>
