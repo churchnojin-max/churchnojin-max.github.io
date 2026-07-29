@@ -164,6 +164,40 @@ if (sermonDeck) {
     const sorted = [...list].sort((a, b) => (a.month < b.month ? 1 : -1));
     return sorted.find((x) => x.month === curYM) || sorted.find((x) => x.month <= curYM) || sorted[0];
   }
+  // "M/D" 문자열을 그 달의 실제 날짜(Date)로 변환. 5주차가 있는 달도 데이터 그대로 반영됨(달력 계산이 아니라 실제 날짜 비교라서 자동 처리됨)
+  function parseWeekDate(monthKey, dateStr) {
+    const year = Number(String(monthKey || "").split("-")[0]);
+    const parts = String(dateStr || "").split("/");
+    if (!year || parts.length !== 2) return null;
+    const d = new Date(year, Number(parts[0]) - 1, Number(parts[1]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // weeks(주차별) 형식 데이터에서 "오늘 기준 다음(또는 오늘) 주일" 을 찾는다.
+  // → 이번 달 마지막 주일이 지나면 자동으로 다음 달 1주차로 넘어간다.
+  function pickCurrentWeek(list) {
+    const flat = [];
+    (list || []).forEach((m) => {
+      if (!Array.isArray(m.weeks)) return;
+      m.weeks.forEach((w, i) => {
+        const d = parseWeekDate(m.month, w.date);
+        if (d) flat.push({ month: m, weekIndex: i, date: d });
+      });
+    });
+    if (!flat.length) return null;
+    flat.sort((a, b) => a.date - b.date);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return flat.find((x) => x.date >= today) || flat[flat.length - 1];
+  }
+  // 새(weeks) 형식과 구(roles) 형식을 모두 지원하는 통합 선택 함수
+  function pickForDisplay(list) {
+    if (!list || !list.length) return null;
+    const hasWeeks = list.some((m) => Array.isArray(m.weeks) && m.weeks.length);
+    if (hasWeeks) {
+      const found = pickCurrentWeek(list);
+      return found ? { monthItem: found.month, highlightIndex: found.weekIndex } : { monthItem: pickCurrent(list), highlightIndex: null };
+    }
+    return { monthItem: pickCurrent(list), highlightIndex: null };
+  }
   // "1주차 최명철 · 2주차 김영희" 형태를 주차별로 분리(주차 표기가 없으면 그대로 한 줄)
   function parseWeekNames(str) {
     return String(str || "").split("·").map((s) => s.trim()).filter(Boolean).map((p) => {
@@ -177,7 +211,7 @@ if (sermonDeck) {
     const sundayDate = d.getDate() - d.getDay();
     return sundayDate < 1 ? 1 : Math.ceil(sundayDate / 7);
   }
-  function renderCommittee(monthItem) {
+  function renderCommittee(monthItem, highlightIndex) {
     const box = document.getElementById("committee");
     if (!box) return;
 
@@ -191,8 +225,8 @@ if (sermonDeck) {
           <h4>${monthLabel} 봉사위원</h4>
         </div>
         <div class="committee-weeks">
-          ${c.weeks.map((w) => `
-            <div class="committee-week">
+          ${c.weeks.map((w, i) => `
+            <div class="committee-week${i === highlightIndex ? " is-now" : ""}">
               <div class="week-label">${w.week}(${w.date})</div>
               <div class="week-roles">
                 ${w.roles.map((r) => `
@@ -236,12 +270,13 @@ if (sermonDeck) {
       window.SiteSettings.committees()
         .then((data) => {
           const months = data && data.months;
-          if (months && months.length) renderCommittee(pickCurrent(months));
-          else if (hardcoded) renderCommittee(pickCurrent(hardcoded));
+          if (months && months.length) { const p = pickForDisplay(months); renderCommittee(p.monthItem, p.highlightIndex); }
+          else if (hardcoded) { const p = pickForDisplay(hardcoded); renderCommittee(p.monthItem, p.highlightIndex); }
         })
-        .catch(() => { if (hardcoded) renderCommittee(pickCurrent(hardcoded)); });
+        .catch(() => { if (hardcoded) { const p = pickForDisplay(hardcoded); renderCommittee(p.monthItem, p.highlightIndex); } });
     } else if (hardcoded) {
-      renderCommittee(pickCurrent(hardcoded));
+      const p = pickForDisplay(hardcoded);
+      renderCommittee(p.monthItem, p.highlightIndex);
     }
   }
 

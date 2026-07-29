@@ -404,6 +404,12 @@ ul { list-style: none; }
   background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
   border-radius: 12px; padding: 24px 20px;
 }
+.committee-week.is-now {
+  background: rgba(255,255,255,.16); border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+.committee-week.is-now .week-label { color: var(--gold); }
+.committee-week.is-now .week-label::after { content: " · 이번 주"; font-size: .78rem; font-weight: 400; opacity: .85; }
 .week-label {
   font-size: 1.25rem; font-weight: 700; color: var(--gold);
   text-align: center; margin-bottom: 18px; letter-spacing: .02em;
