@@ -44,6 +44,7 @@
       { href: "affairs.html", label: "목회행정" },
       { href: "home-settings.html", label: "홈페이지 설정" },
     ] },
+    { href: "sitemap.html", label: "사이트맵" },
   ];
 
   const path = location.pathname.split("/").pop() || "index.html";
@@ -64,6 +65,8 @@
   const KAKAO_ON = !!(C.kakaoChannel && C.kakaoChannel.indexOf("http") === 0);
 
   // ===== 헤더 =====
+  // 익숙하지 않은 방문자를 위한 "처음화면" 텍스트 링크(교회소개 왼쪽)
+  const homeLink = `<div class="nav-item nav-home-link"><a href="index.html"${path === "index.html" ? ' class="active"' : ""}>처음화면</a></div>`;
   const navLinks = NAV.map((n) => {
     const active = path === n.href.split("#")[0] ? ' class="active"' : "";
     const admAttr = n.adminOnly ? ' id="navAdmin" style="display:none"' : (n.memberOnly ? ' id="navMember" style="display:none"' : "");
@@ -83,7 +86,7 @@
           <span class="logo-kr">${CH_NAME}</span>
         </a>
         <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
-        <nav class="nav-menu" id="navMenu">${navLinks}</nav>
+        <nav class="nav-menu" id="navMenu">${homeLink}${navLinks}</nav>
         <div class="auth-slot" id="authSlot"></div>
         <button class="nav-toggle" id="navToggle" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
       </div>
@@ -531,6 +534,45 @@
     const slot = document.getElementById("authSlot");
     if (slot) slot.innerHTML = '<span class="auth-pending" title="로그인 기능 준비 중">로그인</span>';
   }
+
+  // ===== 사이트맵(sitemap.html) — NAV 구조를 그대로 재사용해 항상 최신 상태 유지 =====
+  // 관리자 전용 메뉴(교회행정)와 사이트맵 링크 자신은 목록에서 제외
+  const sitemapBox = document.getElementById("sitemapGrid");
+  if (sitemapBox) {
+    sitemapBox.innerHTML = NAV.filter((n) => !n.adminOnly && n.sub).map((n) => `
+      <div class="sitemap-col">
+        <h3><a href="${n.href}">${n.label}</a></h3>
+        <ul>${n.sub.map((s) => `<li><a href="${s.href}">${s.label}</a></li>`).join("")}</ul>
+      </div>`).join("") + `
+      <div class="sitemap-col">
+        <h3><a href="index.html">처음화면</a></h3>
+        <ul>
+          <li><a href="dashboard.html">나의 대시보드</a> <span class="sitemap-note">(정회원 전용)</span></li>
+        </ul>
+      </div>
+      <div class="sitemap-col">
+        <h3>안내</h3>
+        <ul>
+          <li><a href="bylaws.html">정관</a></li>
+          <li><a href="terms.html">이용약관</a></li>
+          <li><a href="privacy.html">개인정보처리방침</a></li>
+          <li><a href="withdraw.html">회원탈퇴</a></li>
+        </ul>
+      </div>`;
+  }
+
+  // ===== 맨 위로 버튼 (전 페이지 공통) =====
+  const topBtn = document.createElement("button");
+  topBtn.type = "button";
+  topBtn.id = "backToTop";
+  topBtn.className = "back-to-top";
+  topBtn.setAttribute("aria-label", "맨 위로");
+  topBtn.innerHTML = "↑";
+  document.body.appendChild(topBtn);
+  topBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  window.addEventListener("scroll", () => {
+    topBtn.classList.toggle("show", window.scrollY > 480);
+  }, { passive: true });
 })();
 
 /* ============================================================
