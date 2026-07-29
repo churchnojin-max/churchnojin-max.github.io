@@ -32,6 +32,7 @@ function cardInner(b, i) {
 }
 
 function renderSide(b) {
+  if (!b) { sermonSide.innerHTML = ""; return; }
   sermonSide.innerHTML = `
     <div class="side-card">
       <span class="side-tag">수요기도회</span>
@@ -69,6 +70,12 @@ function layoutDeck() {
 }
 
 function buildDeck() {
+  if (!WEEKS.length) {
+    sermonDeck.innerHTML = `<p class="qt-loading">아직 등록된 설교가 없습니다.</p>`;
+    sermonDots.innerHTML = "";
+    sermonSide.innerHTML = "";
+    return;
+  }
   sermonDeck.innerHTML = WEEKS.map(
     (b, i) => `<article class="sermon-feature deck-card" data-i="${i}">${cardInner(b, i)}</article>`
   ).join("");
@@ -227,6 +234,67 @@ if (sermonDeck) {
       if (Array.isArray(s.org)) { const el = document.getElementById("servantOrg"); if (el) el.innerHTML = rowsHtml(s.org); }
     });
   }
+})();
+
+// ===== 1-3. 이달의 찬양 (홈 배너 미리보기 + 말씀으로 페이지 전체 재생) =====
+(function () {
+  const escH = (t) => String(t == null ? "" : t).replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
+  const heroBanner = document.getElementById("heroSongBanner");
+  const wordBox = document.getElementById("monthlySong");
+  if (!heroBanner && !wordBox) return;
+  if (!window.SiteSettings) return;
+
+  function ytId(url) {
+    const m = String(url || "").match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : "";
+  }
+  function ytEmbedHTML(url, loop) {
+    const id = ytId(url);
+    if (!id) return "";
+    const q = "rel=0&modestbranding=1" + (loop !== false ? `&loop=1&playlist=${id}` : "");
+    return `<div class="song-embed"><iframe src="https://www.youtube.com/embed/${id}?${q}" title="이달의 찬양"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+  }
+  function curYM() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
+  function pickSong(data) {
+    if (!data || !data.months) return null;
+    const ym = curYM();
+    if (data.months[ym]) return data.months[ym];
+    const keys = Object.keys(data.months).sort().reverse();
+    return keys.length ? data.months[keys[0]] : null;
+  }
+
+  window.SiteSettings.monthlySong().then((data) => {
+    const song = pickSong(data);
+
+    if (heroBanner) {
+      const titleEl = heroBanner.querySelector(".hsb-title");
+      if (titleEl) titleEl.textContent = (song && song.title) || "이번 달 찬양 들으러 가기";
+      heroBanner.hidden = false;
+    }
+
+    if (wordBox) {
+      if (!song || (!song.youtube && !(song.sheets && song.sheets.length))) {
+        wordBox.innerHTML = `<p class="qt-loading">아직 등록된 이달의 찬양이 없습니다.</p>`;
+        return;
+      }
+      const embed = ytEmbedHTML(song.youtube, song.loop);
+      const sheetsHtml = (song.sheets || []).map((s) => {
+        const isPdf = /\.pdf($|\?)/i.test(s.url || "");
+        return isPdf
+          ? `<iframe src="${escH(s.url)}" title="${escH(s.name || "악보")}" class="song-sheet-pdf"></iframe>`
+          : `<img src="${escH(s.url)}" alt="${escH(s.name || "악보")}" class="song-sheet-img" loading="lazy" />`;
+      }).join("");
+      wordBox.innerHTML = `
+        <div class="song-box">
+          ${song.title ? `<h3 class="song-title">${escH(song.title)}</h3>` : ""}
+          ${embed || `<p class="qt-loading">아직 유튜브 영상이 등록되지 않았습니다.</p>`}
+          ${sheetsHtml ? `<div class="song-sheets">${sheetsHtml}</div>` : ""}
+        </div>`;
+    }
+  }).catch(() => {
+    if (wordBox) wordBox.innerHTML = `<p class="qt-loading">이달의 찬양을 불러오지 못했습니다.</p>`;
+  });
 })();
 
 // ===== 공용 TTS(글 읽어주기) — 브라우저 내장 Web Speech(무료). 한국어 목소리 자동 선택 =====

@@ -12,6 +12,7 @@
     ] },
     { href: "word.html", label: "말씀으로", sub: [
       { href: "word.html#sermon", label: "이번 주 말씀" },
+      { href: "word.html#song", label: "이달의 찬양" },
       { href: "word.html#qt", label: "매일 말씀 묵상" },
       { href: "word.html#archive", label: "주보" },
       { href: "word.html#believe", label: "우리가 믿는 것" },
@@ -110,6 +111,7 @@
     return {
       homepage: () => fetchKey("homepage"),
       committees: () => fetchKey("committees"),
+      monthlySong: () => fetchKey("monthly_song"),
     };
   })();
 

@@ -107,8 +107,8 @@ ul { list-style: none; }
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M0 0h60v60H0z' fill='none'/%3E%3Ccircle cx='30' cy='30' r='1' fill='%23ffffff' opacity='0.03'/%3E%3C/svg%3E");
 }
 .hero-inner {
-  position: relative; z-index: 2; width: 100%; max-width: 1280px; margin: 0 auto;
-  padding: 60px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  position: relative; z-index: 2; width: 100%; max-width: 1320px; margin: 0 auto;
+  padding: 60px 32px; display: grid; grid-template-columns: 1fr 1.35fr; gap: 48px; align-items: center;
 }
 .hero-left { display: flex; flex-direction: column; }
 .hero-tagline {
@@ -142,8 +142,9 @@ ul { list-style: none; }
 .hero-card p {
   font-size: .95rem; color: rgba(255,255,255,.75); margin: 0; line-height: 1.5;
 }
+.hero-right { display: flex; flex-direction: column; gap: 16px; }
 .hero-photo {
-  display: block; position: relative; height: 600px; border-radius: 12px; overflow: hidden;
+  display: block; position: relative; height: 680px; border-radius: 12px; overflow: hidden;
   background: url("../images/hero-church.jpg") center / contain no-repeat;
   background-color: #0a0f1a;
   box-shadow: 0 20px 60px rgba(0,0,0,.4);
@@ -160,6 +161,38 @@ ul { list-style: none; }
 }
 .hero-photo:hover .hero-photo-hint { opacity: 1; transform: translateY(0); }
 @media (max-width: 960px) { .hero-photo-hint { opacity: 1; transform: translateY(0); font-size: .76rem; padding: 7px 13px; right: 12px; bottom: 12px; } }
+
+.hero-song-banner {
+  display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-radius: 12px;
+  background: linear-gradient(120deg, rgba(179,150,91,.16), rgba(255,255,255,.08));
+  border: 1px solid rgba(179,150,91,.4);
+  text-decoration: none; color: inherit; transition: all .3s ease;
+  animation: fadeUp 1s ease .45s both;
+}
+.hero-song-banner:hover { background: linear-gradient(120deg, rgba(179,150,91,.26), rgba(255,255,255,.12)); transform: translateY(-2px); }
+.hero-song-banner .hsb-icon { flex: 0 0 auto; font-size: 1.6rem; }
+.hero-song-banner .hsb-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.hero-song-banner .hsb-label { font-size: .78rem; letter-spacing: .16em; color: var(--gold); font-weight: 700; }
+.hero-song-banner .hsb-title {
+  font-size: 1.02rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hero-song-banner .hsb-arrow {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--gold); color: #1f1f1f; font-size: .82rem;
+}
+@media (max-width: 960px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  .hero-photo { height: 380px; }
+}
+
+/* ===== 이달의 찬양(말씀으로 페이지) ===== */
+.song-box { max-width: 760px; margin: 0 auto; }
+.song-title { font-family: "Noto Serif KR", serif; font-size: 1.3rem; text-align: center; margin-bottom: 18px; color: var(--accent); }
+.song-embed { position: relative; width: 100%; padding-top: 56.25%; border-radius: 14px; overflow: hidden; background: #000; box-shadow: 0 14px 40px rgba(0,0,0,.18); }
+.song-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.song-sheets { margin-top: 24px; display: flex; flex-direction: column; gap: 18px; }
+.song-sheet-img { width: 100%; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.song-sheet-pdf { width: 100%; height: 72vh; border: 1px solid var(--line); border-radius: 10px; }
 .hero-content { position: relative; z-index: 2; padding: 0 50px 0 50px; max-width: 540px; width: 100%; }
 .hero-since {
   font-family: "Cormorant Garamond", serif; letter-spacing: .5em;
