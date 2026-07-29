@@ -603,6 +603,7 @@ console.log('[dashboard.js] v20260705qtfallback');
           full.dataset.loaded = '1';
           full.innerHTML =
             '<div class="form-card qtc-card">' +
+            '<a class="qt-d-daily-link" href="https://sum.su.or.kr:8888/bible/today" target="_blank" rel="noopener">📖 매일성경에서 오늘의 묵상 보기 →</a>' +
             (q.qt_bible_text ? '<div class="qtc-bible">' + bibleVersesHTML(q.qt_bible_text) + '</div>' : '') +
             (q.content ? '<div class="qtc-head">📝 묵상</div><div class="qtc-body">' + toParaHTML(q.content) + '</div>' : '') +
             (q.prayer ? '<div class="qtc-head">🙏 기도</div><div class="qtc-body">' + toParaHTML(q.prayer) + '</div>' : '') +
