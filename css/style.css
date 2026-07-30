@@ -123,17 +123,18 @@ ul { list-style: none; }
   animation: fadeUp 1s ease .4s both;
 }
 .hero-card {
-  position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 20px 26px; border-radius: 14px; background: rgba(255,255,255,.1);
-  backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.2);
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 22px 26px; border-radius: 14px; background: rgba(10,14,28,.6);
+  backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.28);
   text-decoration: none; color: inherit; transition: all .3s ease;
   cursor: pointer; flex: 1 1 150px; min-width: 130px;
 }
-.hero-card:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); transform: translateY(-3px); }
+.hero-card:hover { background: rgba(10,14,28,.75); border-color: rgba(255,255,255,.45); transform: translateY(-3px); }
 .hero-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.card-icon { font-size: 1.6rem; }
+.card-icon { font-size: 2rem; }
 .hero-card h3 {
-  font-family: "Noto Sans KR", sans-serif; font-size: .98rem; font-weight: 600; margin: 0; line-height: 1.3;
+  font-family: "Noto Sans KR", sans-serif; font-size: 1.2rem; font-weight: 700; margin: 0; line-height: 1.3;
+  text-shadow: 0 2px 8px rgba(0,0,0,.5);
 }
 .hero-song-banner {
   display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-radius: 12px;
@@ -150,6 +151,7 @@ ul { list-style: none; }
 .hero-song-banner .hsb-title {
   font-size: 1rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.hero-song-banner .hsb-sub { font-size: .82rem; color: rgba(255,255,255,.7); }
 .hero-song-banner .hsb-arrow {
   flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   background: var(--gold); color: #1f1f1f; font-size: .78rem;
@@ -1979,6 +1981,11 @@ a.auth-name:hover { background: rgba(255,255,255,.18); border-color: rgba(255,25
 .app-hint { margin-top: 16px; text-align: center; color: var(--muted); font-size: .9rem; line-height: 1.6; }
 
 /* ===== 사이트맵 ===== */
+.sitemap-search {
+  display: block; width: 100%; max-width: 420px; margin: 0 auto 36px;
+  padding: 12px 18px; border: 1px solid var(--line); border-radius: 999px;
+  font: inherit; font-size: 1rem;
+}
 .sitemap-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 32px;
 }

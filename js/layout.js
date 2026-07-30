@@ -559,6 +559,27 @@
           <li><a href="withdraw.html">회원탈퇴</a></li>
         </ul>
       </div>`;
+    const searchInput = document.getElementById("sitemapSearch");
+    const emptyMsg = document.getElementById("sitemapEmpty");
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        const q = searchInput.value.trim().toLowerCase();
+        let anyVisible = false;
+        sitemapBox.querySelectorAll(".sitemap-col").forEach((col) => {
+          const colMatches = col.querySelector("h3").textContent.toLowerCase().includes(q);
+          let colHasVisibleItem = false;
+          col.querySelectorAll("li").forEach((li) => {
+            const match = !q || colMatches || li.textContent.toLowerCase().includes(q);
+            li.hidden = !match;
+            if (match) colHasVisibleItem = true;
+          });
+          const showCol = !q || colMatches || colHasVisibleItem;
+          col.hidden = !showCol;
+          if (showCol) anyVisible = true;
+        });
+        if (emptyMsg) emptyMsg.hidden = anyVisible;
+      });
+    }
   }
 
   // ===== 맨 위로 버튼 (전 페이지 공통) =====
