@@ -40,15 +40,9 @@
       <div class="block-head">
         <span class="eyebrow2">SERMON</span>
         <h2>이번 주 말씀</h2>
-        <p>이번 주와 지난 주 설교를 카드로 넘겨 보세요.</p>
+        <p>주보에 실린 설교 요약입니다.</p>
       </div>
-      <div class="sermon-nav">
-        <button class="sermon-btn" id="sermonNewer">← 이번 주 말씀</button>
-        <div class="sermon-dots" id="sermonDots"></div>
-        <button class="sermon-btn" id="sermonOlder">지난 주 말씀 →</button>
-      </div>
-      <div class="sermon-deck" id="sermonDeck"></div>
-      <div class="sermon-side" id="sermonSide"></div>
+      <div id="weekSermon"><p class="qt-loading">불러오는 중…</p></div>
     </div>
   </section>
 
@@ -120,18 +114,6 @@
     </div>
   </section>
 
-  <!-- ===== 목사님의 글 ===== -->
-  <section id="column" class="block">
-    <div class="container">
-      <div class="block-head">
-        <span class="eyebrow2">PASTOR'S COLUMN</span>
-        <h2>목사님의 글</h2>
-        <p>인문과 신앙이 만나는 묵상 칼럼. 카드를 누르면 전문을 읽을 수 있습니다.</p>
-      </div>
-      <div class="story-grid" id="columnGrid"></div>
-    </div>
-  </section>
-
   <!-- ===== 이동 유도 ===== -->
   <section class="block block-alt">
     <div class="container">
@@ -166,15 +148,6 @@
         <div class="qt-datebar" id="qtDateList"></div>
         <div class="qt-detail" id="qtDetail"></div>
       </div>
-    </div>
-  </div>
-
-  <!-- ===== 칼럼(목사님의 글) Modal ===== -->
-  <div class="modal" id="columnModal" hidden>
-    <div class="modal-backdrop" data-close></div>
-    <div class="modal-box modal-box-column" role="dialog" aria-modal="true" aria-label="칼럼">
-      <button class="modal-close" data-close aria-label="닫기">&times;</button>
-      <div class="column-body" id="columnBody"></div>
     </div>
   </div>
 

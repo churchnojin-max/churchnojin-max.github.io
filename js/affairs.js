@@ -165,7 +165,7 @@ console.log('[affairs.js] v20260712memo2');
       cols: [['doc_date', '일자'], ['title', '제목'], ['category', '분류'], ['manager', '담당'], ['file_url', '파일'], ['content', '내용']]
     }
   };
-  var TAB_ORDER = [['dashboard', '설교 대시보드'], ['sermon', '설교관리'], ['worship', '예배매니저'], ['song', '🎵 찬양관리'], ['illus', '예화 클립'], ['bulletin', '주보제작'], ['visit', '심방관리'], ['counsel', '상담관리'], ['edu', '교육관리'], ['doc', '자료실'], ['library', '나의 도서관'], ['bible', '📖 성경 보기'], ['settings', '설정']];
+  var TAB_ORDER = [['dashboard', '설교 대시보드'], ['sermon', '설교관리'], ['worship', '예배매니저'], ['song', '🎵 찬양관리'], ['illus', '예화 클립'], ['bulletin', '주보제작'], ['visit', '심방관리'], ['counsel', '상담관리'], ['edu', '교육관리'], ['doc', '자료실'], ['sermonfile', '📄 설교자료'], ['library', '나의 도서관'], ['bible', '📖 성경 보기'], ['settings', '설정']];
 
   // ── 성경 66권(설교 권별 커버리지) ──
   var BIBLE_OT = ['창세기', '출애굽기', '레위기', '민수기', '신명기', '여호수아', '사사기', '룻기', '사무엘상', '사무엘하', '열왕기상', '열왕기하', '역대상', '역대하', '에스라', '느헤미야', '에스더', '욥기', '시편', '잠언', '전도서', '아가', '이사야', '예레미야', '예레미야애가', '에스겔', '다니엘', '호세아', '요엘', '아모스', '오바댜', '요나', '미가', '나훔', '하박국', '스바냐', '학개', '스가랴', '말라기'];
@@ -223,6 +223,7 @@ console.log('[affairs.js] v20260712memo2');
     else if (tab === 'settings') renderSettings(p);
     else if (tab === 'edu') renderEdu(p);
     else if (tab === 'doc') renderArchive(p);
+    else if (tab === 'sermonfile') renderSermonFiles(p);
     else renderManager(p, TYPES[tab]);
   }
 
@@ -5625,6 +5626,8 @@ console.log('[affairs.js] v20260712memo2');
       '</div>' +
       '<div class="af-field" style="margin-bottom:12px"><label>📜 표지 말씀 헤드라인 <button type="button" id="bt_headline_ai" class="btn btn-line" style="padding:2px 10px;font-size:.74rem;background:#f3eefc;border-color:#c4a8ee;margin-left:4px">✨ 자동</button> <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">1면 표지에 크게 들어갈 대표 말씀</span></label>' +
       '<textarea id="bt_headline" placeholder="✨ 자동을 누르면 그 주 설교 본문에서 대표 말씀을 뽑아 채웁니다." style="min-height:64px;line-height:1.6;font-family:\'Noto Serif KR\',serif">' + esc(d.headline || '') + '</textarea></div>' +
+      '<div class="af-field" style="margin-bottom:12px"><label>📝 설교 요약 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">홈페이지 <b>말씀으로 ▸ 이번 주 말씀</b>에 표시됩니다 · 데이터 불러오기 시 설교 요약이 자동으로 채워집니다</span></label>' +
+      '<textarea id="bt_summary" placeholder="이번 주 설교 요약을 적어 주세요. 홈페이지 방문자가 보게 됩니다." style="min-height:96px;line-height:1.7">' + esc(d.summary || '') + '</textarea></div>' +
       '<label style="font-size:.82rem;color:#7b8794;display:block;margin-bottom:6px">예배 순서 <span style="font-weight:400">(순서명 · 내용/담당) — 데이터 불러오기 시 자동 채워집니다</span></label>' +
       '<div id="bt_order"></div></div>' +
       // 주중 예배
@@ -5761,6 +5764,7 @@ console.log('[affairs.js] v20260712memo2');
         column_title: ov.querySelector('#bt_col_title').value.trim(), column_body: ov.querySelector('#bt_col_body').value,
         notices: ov.querySelector('#bt_notices').value,
         headline: ov.querySelector('#bt_headline').value.trim(),
+        summary: ov.querySelector('#bt_summary').value.trim(),
         founded: FOUNDED_DATE
       };
       var tot = 0;
@@ -5957,6 +5961,9 @@ console.log('[affairs.js] v20260712memo2');
           if (sun.title) ov.querySelector('#bt_title').value = sun.title;
           if (sun.scripture) ov.querySelector('#bt_scripture').value = sun.scripture;
           if (sun.preacher) ov.querySelector('#bt_preacher').value = sun.preacher;
+          // 설교 요약 → 홈페이지 '이번 주 말씀'에 그대로 실린다(비어 있을 때만 덮어씀)
+          var sSum = (sun.summary || sun.content || '').trim();
+          if (sSum && !ov.querySelector('#bt_summary').value.trim()) ov.querySelector('#bt_summary').value = sSum;
           var wo = []; try { wo = JSON.parse(sun.worship_order || '[]') || []; } catch (e) { wo = []; }
           if (wo.length) { order = wo.map(function (it) { return { name: it.label || '', detail: it.detail || '' }; }); renderBOrder(); }
           n++;
@@ -6940,6 +6947,68 @@ console.log('[affairs.js] v20260712memo2');
     if (songSubView === 'assign') renderSongAssign(sp);
     else if (songSubView === 'monthly') renderMonthlySong(sp);
     else renderSongLibrary(sp);
+  }
+
+  /* ── 설교자료: 홈페이지 '자료실 ▸ 예배 자료실 ▸ 설교자료'(resources)에 바로 올리기 ── */
+  function renderSermonFiles(panel) {
+    var CAT = 'sermon-material';
+    function fSize(n) { if (!n && n !== 0) return ''; if (n < 1024) return n + ' B'; if (n < 1048576) return (n / 1024).toFixed(0) + ' KB'; return (n / 1048576).toFixed(1) + ' MB'; }
+    panel.innerHTML =
+      '<div class="fin-card">' +
+      '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px">' +
+      '<h3 style="margin:0;color:var(--accent,#223350)">📄 설교자료</h3>' +
+      '<span style="color:#9aa5b1;font-size:.82rem">여기 올린 파일은 <b>자료실 ▸ 예배 자료실 ▸ 설교자료</b>에 바로 표시됩니다 (교회소개 ▸ 예배안내 ▸ 수요기도회에서 연결)</span></div>' +
+      '<label class="btn btn-line" style="cursor:pointer;padding:8px 16px;font-size:.86rem">＋ 파일 올리기<input type="file" id="sf_file" multiple hidden></label>' +
+      '<span class="fin-msg" id="sf_msg" style="margin-left:10px"></span>' +
+      '</div>' +
+      '<div class="fin-card"><b>올린 자료</b><div id="sf_list" style="margin-top:10px"><p class="qt-loading">불러오는 중…</p></div></div>';
+
+    var msg = panel.querySelector('#sf_msg');
+    function load() {
+      api('GET', 'resources?select=id,title,size,created_at&category=eq.' + CAT + '&order=created_at.desc')
+        .then(function (rows) {
+          var box = panel.querySelector('#sf_list');
+          if (!rows || !rows.length) { box.innerHTML = '<p style="color:#9aa5b1;font-size:.88rem">아직 올린 설교자료가 없습니다.</p>'; return; }
+          box.innerHTML = '<div style="overflow:auto"><table class="fin-table"><thead><tr><th>파일</th><th>올린 날짜</th><th class="num">크기</th><th></th></tr></thead><tbody>' +
+            rows.map(function (r) {
+              return '<tr><td>' + esc(r.title || '') + '</td><td style="white-space:nowrap">' + esc(String(r.created_at || '').slice(0, 10)) + '</td>' +
+                '<td class="num">' + fSize(r.size) + '</td>' +
+                '<td><button class="btn btn-line sf-del" data-id="' + esc(r.id) + '" style="padding:3px 10px;font-size:.76rem;color:#c0392b">삭제</button></td></tr>';
+            }).join('') + '</tbody></table></div>';
+          Array.prototype.forEach.call(box.querySelectorAll('.sf-del'), function (b) {
+            b.onclick = function () {
+              if (!confirm('이 자료를 목록에서 삭제할까요?')) return;
+              api('DELETE', 'resources?id=eq.' + b.dataset.id, null, 'return=minimal').then(load).catch(function (e) { alert('삭제 실패: ' + e.message); });
+            };
+          });
+        })
+        .catch(function (e) {
+          panel.querySelector('#sf_list').innerHTML = /42P01|PGRST205|does not exist|schema cache|Could not find the table/i.test(e.message || '')
+            ? msgCard('테이블 준비 필요', 'Supabase → SQL Editor 에서 supabase/resources.sql 을 1회 실행해 주세요.')
+            : msgCard('조회 실패', e.message);
+        });
+    }
+    load();
+
+    panel.querySelector('#sf_file').onchange = function () {
+      var input = this;
+      var fs = Array.prototype.slice.call(input.files || []);
+      if (!fs.length) return;
+      if (!window.ChurchUpload || !ChurchUpload.isReady()) { msg.style.color = '#c0392b'; msg.textContent = '업로드 서버가 설정되지 않았습니다.'; return; }
+      msg.style.color = '#7b8794'; msg.textContent = '업로드 중…';
+      var chain = Promise.resolve();
+      fs.forEach(function (f) {
+        chain = chain.then(function () {
+          return ChurchUpload.upload(f, { folder: 'resources', compress: false }).then(function (r) {
+            return api('POST', 'resources', { category: CAT, title: f.name, path: r.url, size: f.size }, 'return=minimal');
+          });
+        });
+      });
+      chain.then(function () {
+        msg.style.color = 'green'; msg.textContent = '✓ ' + fs.length + '개 올렸습니다';
+        input.value = ''; load();
+      }).catch(function (e) { msg.style.color = '#c0392b'; msg.textContent = '업로드 실패: ' + ((e && e.message) || e); });
+    };
   }
 
   /* ── 이달의 찬양: 유튜브 링크 하나로 바로 재생 + 악보 함께 보기 (church_settings.monthly_song) ── */

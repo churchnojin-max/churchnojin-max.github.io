@@ -162,6 +162,31 @@ ul { list-style: none; }
   .hero-card { flex: 1 1 100px; padding: 16px 14px; }
 }
 
+/* ===== 이번 주 말씀(주보 설교 요약) ===== */
+.week-sermon {
+  max-width: 760px; margin: 0 auto; background: var(--paper);
+  border: 1px solid var(--line); border-radius: 16px; padding: 36px 40px;
+  box-shadow: 0 8px 30px rgba(34,51,80,.06);
+}
+.ws-date { font-family: "Cormorant Garamond", serif; letter-spacing: .08em; color: var(--gold); font-size: 1rem; }
+.ws-title { font-family: "Noto Serif KR", serif; font-size: 1.6rem; line-height: 1.45; color: var(--ink); margin: 10px 0 8px; word-break: keep-all; }
+.ws-ref { color: var(--accent); font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; }
+.ws-preacher { color: var(--ink-soft); font-size: .92rem; }
+.ws-quote {
+  font-family: "Noto Serif KR", serif; font-size: 1.05rem; line-height: 1.9; color: var(--accent);
+  border-left: 3px solid var(--gold); padding: 4px 0 4px 18px; margin: 22px 0; word-break: keep-all;
+}
+.ws-body { margin-top: 22px; }
+.ws-body p { font-size: 1.02rem; line-height: 1.95; color: var(--ink); word-break: keep-all; }
+.ws-body p + p { margin-top: 14px; }
+.ws-more {
+  display: inline-block; margin-top: 26px; padding: 9px 18px; border-radius: 999px;
+  background: var(--paper-alt); border: 1px solid var(--line); color: var(--accent);
+  font-size: .88rem; font-weight: 600; text-decoration: none;
+}
+.ws-more:hover { background: #fff; border-color: var(--accent-soft); }
+@media (max-width: 680px) { .week-sermon { padding: 26px 20px; } .ws-title { font-size: 1.35rem; } }
+
 /* ===== 이달의 찬양(말씀으로 페이지) ===== */
 .song-box { max-width: 760px; margin: 0 auto; }
 .song-title { font-family: "Noto Serif KR", serif; font-size: 1.3rem; text-align: center; margin-bottom: 18px; color: var(--accent); }
@@ -427,6 +452,13 @@ ul { list-style: none; }
 .worship-card ul li span { color: var(--ink-soft); }
 .worship-card ul li strong { color: var(--ink); font-weight: 700; }
 .worship-card ul li.w-note { display: block; color: var(--accent-soft); font-size: .82rem; padding-top: 12px; }
+.worship-card .w-link {
+  display: block; margin-top: 14px; padding: 9px 14px; border-radius: 999px;
+  background: var(--paper-alt); border: 1px solid var(--line); color: var(--accent);
+  font-size: .88rem; font-weight: 600; text-align: center; text-decoration: none;
+  transition: background .2s ease, border-color .2s ease;
+}
+.worship-card .w-link:hover { background: #fff; border-color: var(--accent-soft); }
 .worship-foot { text-align: center; margin-top: 40px; color: var(--muted); font-size: .9rem; }
 
 /* ===== Education ===== */

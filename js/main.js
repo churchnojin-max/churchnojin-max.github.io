@@ -300,6 +300,41 @@ if (sermonDeck) {
   }
 })();
 
+// ===== 1-2b. 이번 주 말씀 — 게시된 주보(bulletins_public)의 설교 요약을 그대로 표시 =====
+(function () {
+  const box = document.getElementById("weekSermon");
+  if (!box) return;
+  const escH = (t) => String(t == null ? "" : t).replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
+  const paras = (t) => String(t || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+    .map((p) => `<p>${escH(p).replace(/\n/g, "<br />")}</p>`).join("");
+
+  if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) {
+    box.innerHTML = `<p class="qt-loading">아직 등록된 설교가 없습니다.</p>`;
+    return;
+  }
+  const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=bdate,title,scripture,preacher,data&order=bdate.desc&limit=1";
+  fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((rows) => {
+      const b = rows && rows[0];
+      if (!b) { box.innerHTML = `<p class="qt-loading">아직 등록된 설교가 없습니다.</p>`; return; }
+      const d = b.data || {};
+      const dateLabel = String(b.bdate || "").replace(/-/g, ".");
+      const body = paras(d.summary);
+      box.innerHTML = `
+        <article class="week-sermon">
+          <span class="ws-date">${escH(dateLabel)} · 주일 낮 예배</span>
+          ${b.title ? `<h3 class="ws-title">${escH(b.title)}</h3>` : ""}
+          ${b.scripture ? `<p class="ws-ref">${escH(b.scripture)}</p>` : ""}
+          ${b.preacher ? `<p class="ws-preacher">설교 · ${escH(b.preacher)}</p>` : ""}
+          ${d.headline ? `<blockquote class="ws-quote">${escH(d.headline)}</blockquote>` : ""}
+          ${body ? `<div class="ws-body">${body}</div>` : `<p class="qt-loading">이번 주 설교 요약이 아직 등록되지 않았습니다.</p>`}
+          <a class="ws-more" href="word.html#archive">주보 전체 보기 →</a>
+        </article>`;
+    })
+    .catch(() => { box.innerHTML = `<p class="qt-loading">설교를 불러오지 못했습니다.</p>`; });
+})();
+
 // ===== 1-3. 이달의 찬양 (홈 배너 미리보기 + 말씀으로 페이지 전체 재생) =====
 (function () {
   const escH = (t) => String(t == null ? "" : t).replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));

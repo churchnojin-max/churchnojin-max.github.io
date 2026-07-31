@@ -8,6 +8,7 @@
       { href: "welcome.html#worship", label: "예배 안내" },
       { href: "welcome.html#directions", label: "교회 가는 길" },
       { href: "welcome.html#about", label: "우리 교회는 어떤 곳" },
+      { href: "welcome.html#history", label: "교회 연혁" },
       { href: "welcome.html#newfamily", label: "새가족 등록" },
     ] },
     { href: "word.html", label: "말씀으로", sub: [
@@ -16,18 +17,13 @@
       { href: "word.html#qt", label: "매일 말씀 묵상" },
       { href: "word.html#archive", label: "주보" },
       { href: "word.html#believe", label: "우리가 믿는 것" },
-      { href: "word.html#column", label: "목사님의 글" },
     ] },
     { href: "story.html", label: "우리 이야기", sub: [
       { href: "story.html#album", label: "우리들 소식" },
       { href: "story.html#notice", label: "공지사항" },
-      { href: "story.html#board", label: "게시판" },
       { href: "story.html#request", label: "기도 부탁" },
-      { href: "story.html#thisweek", label: "이번 주 기도 제목" },
-      { href: "story.html#howpray", label: "이렇게 기도합니다" },
       { href: "story.html#qna", label: "삶의 질문" },
       { href: "story.html#groups", label: "섬김 부서" },
-      { href: "story.html#history", label: "교회 연혁" },
       { href: "story.html#communities", label: "그리스도의 몸 된 지체들" },
     ] },
     { href: "world.html", label: "지역과 세상", sub: [
