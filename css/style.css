@@ -744,6 +744,7 @@ ul { list-style: none; }
 
 /* ===== Mission ===== */
 .mission-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.mission-grid-3 { grid-template-columns: repeat(3, 1fr); }
 .mission-card {
   border: 1px solid var(--line); border-radius: 12px; padding: 34px 28px;
   position: relative; overflow: hidden; transition: transform .3s ease, box-shadow .3s ease;
