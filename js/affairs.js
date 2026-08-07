@@ -5632,8 +5632,8 @@ console.log('[affairs.js] v20260712memo2');
       '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px">' +
       tI('설교 제목', 'bt_title', rec.title) + tI('본문', 'bt_scripture', rec.scripture, '예: 나훔 2:8-13') + tI('설교자', 'bt_preacher', rec.preacher || '손병민 담임목사') +
       '</div>' +
-      '<div class="af-field" style="margin-bottom:12px"><label>📜 표지 말씀 헤드라인 <button type="button" id="bt_headline_ai" class="btn btn-line" style="padding:2px 10px;font-size:.74rem;background:#f3eefc;border-color:#c4a8ee;margin-left:4px">✨ 자동</button> <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">1면 표지에 크게 들어갈 대표 말씀</span></label>' +
-      '<textarea id="bt_headline" placeholder="✨ 자동을 누르면 그 주 설교 본문에서 대표 말씀을 뽑아 채웁니다." style="min-height:64px;line-height:1.6;font-family:\'Noto Serif KR\',serif">' + esc(d.headline || '') + '</textarea></div>' +
+      '<div class="af-field" style="margin-bottom:12px"><label>📖 본문 말씀(개역개정) <span id="bt_headline_status" style="font-weight:400;font-size:.72rem;color:#9aa5b1;margin-left:4px">위 \'본문\' 입력 시 자동으로 채워집니다</span></label>' +
+      '<textarea id="bt_headline" placeholder="위 \'본문\'을 입력하면 개역개정 성경 본문이 자동으로 채워집니다." style="min-height:64px;line-height:1.6;font-family:\'Noto Serif KR\',serif">' + esc(d.headline || '') + '</textarea></div>' +
       '<div class="af-field" style="margin-bottom:12px"><label>📝 설교 요약 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">홈페이지 <b>말씀으로 ▸ 이번 주 말씀</b>에 표시됩니다 · 데이터 불러오기 시 설교 요약이 자동으로 채워집니다</span></label>' +
       '<textarea id="bt_summary" placeholder="이번 주 설교 요약을 적어 주세요. 홈페이지 방문자가 보게 됩니다." style="min-height:96px;line-height:1.7">' + esc(d.summary || '') + '</textarea></div>' +
       '<label style="font-size:.82rem;color:#7b8794;display:block;margin-bottom:6px">예배 순서 <span style="font-weight:400">(순서명 · 내용/담당) — 데이터 불러오기 시 자동 채워집니다</span></label>' +
@@ -5666,6 +5666,55 @@ console.log('[affairs.js] v20260712memo2');
     function close() { ov.remove(); document.body.style.overflow = ''; }
     ov.querySelector('#bt_close').onclick = close;
     function bmsg(t, c) { var e = ov.querySelector('#bt_msg'); e.style.color = c || '#7b8794'; e.textContent = t; }
+
+    // ── 📖 본문 말씀(개역개정) 자동 채우기 — '본문' 칸(bt_scripture)에 입력된 성경 구절을
+    //    data/bible-gyr.json(개역개정)에서 찾아 bt_headline에 그대로 채운다. 수동 버튼 없이 자동 동작.
+    function bookIdFromName(name) {
+      var s = (name || '').replace(/\s/g, '');
+      for (var i = 0; i < BBLK.length; i++) { if (BBLK[i][1] === s || BBLK[i][2] === s) return BBLK[i][0]; }
+      return null;
+    }
+    function parseBtScripRef(ref) {
+      var s = (ref || '').trim().replace(/\s+/g, ' ');
+      var m = s.match(/^([가-힣]+)\s*(\d+)\s*[:장]\s*(\d+)(?:\s*[-~]\s*(\d+))?/);
+      if (!m) return null;
+      var bookId = bookIdFromName(m[1]);
+      if (!bookId) return null;
+      return { bookId: bookId, ch: parseInt(m[2], 10), from: parseInt(m[3], 10), to: m[4] ? parseInt(m[4], 10) : parseInt(m[3], 10) };
+    }
+    function loadBibleGyr() {
+      if (window.BIBLE_GYR) return Promise.resolve(window.BIBLE_GYR);
+      return fetch('data/bible-gyr.json?v=20260729')
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+        .then(function (d2) { window.BIBLE_GYR = d2; return d2; });
+    }
+    function autoFillScriptureText() {
+      var scEl = ov.querySelector('#bt_scripture'), hEl = ov.querySelector('#bt_headline'), stEl = ov.querySelector('#bt_headline_status');
+      var ref = scEl ? scEl.value.trim() : '';
+      if (!ref) { if (stEl) stEl.textContent = "위 '본문' 입력 시 자동으로 채워집니다"; return; }
+      var p = parseBtScripRef(ref);
+      if (!p) { if (stEl) stEl.textContent = '본문 형식을 인식하지 못했습니다 (예: 나훔 2:8-13)'; return; }
+      var bk = BBLK[p.bookId - 1];
+      if (!bk) { if (stEl) stEl.textContent = '성경책을 찾을 수 없습니다'; return; }
+      if (stEl) stEl.textContent = '불러오는 중…';
+      loadBibleGyr().then(function (data) {
+        var chap = (data[bk[2]] || [])[p.ch - 1] || [];
+        var lines = [];
+        for (var vi = p.from; vi <= p.to; vi++) { var t = chap[vi - 1]; if (t) lines.push(vi + ' ' + t.trim()); }
+        if (lines.length) {
+          if (hEl) hEl.value = lines.join('\n');
+          if (stEl) stEl.textContent = '✓ 개역개정 ' + lines.length + '절 자동 입력됨';
+        } else if (stEl) stEl.textContent = '해당 구절을 찾을 수 없습니다';
+      }).catch(function () { if (stEl) stEl.textContent = '불러오기 실패 — 새로고침 후 다시 시도해 주세요'; });
+    }
+    (function () {
+      var scEl = ov.querySelector('#bt_scripture');
+      if (!scEl) return;
+      scEl.addEventListener('change', autoFillScriptureText);
+      scEl.addEventListener('blur', autoFillScriptureText);
+      if (scEl.value.trim()) autoFillScriptureText();
+    })();
+
     // 📎 완성된 주보 PDF 올리기/제거 — 여기서 올리면 항목을 채우지 않아도 그대로 게시 가능
     (function () {
       var slot = ov.querySelector('#bt_pdf_slot');
@@ -5701,8 +5750,8 @@ console.log('[affairs.js] v20260712memo2');
             if (ex.title && !get('bt_title').value.trim()) { get('bt_title').value = ex.title; filled.push('제목'); }
             if (ex.scripture && !get('bt_scripture').value.trim()) { get('bt_scripture').value = ex.scripture; filled.push('본문'); }
             if (ex.preacher && !get('bt_preacher').value.trim()) { get('bt_preacher').value = ex.preacher; filled.push('설교자'); }
-            if (ex.headline && !get('bt_headline').value.trim()) { get('bt_headline').value = ex.headline; filled.push('헤드라인'); }
             if (ex.summary && !get('bt_summary').value.trim()) { get('bt_summary').value = ex.summary; filled.push('요약'); }
+            if (get('bt_scripture').value.trim()) autoFillScriptureText();
             pdfMsg.style.color = 'green';
             pdfMsg.textContent = filled.length ? ('✓ 올렸습니다 · AI가 ' + filled.join('·') + ' 자동으로 채웠습니다(확인해 주세요)') : '✓ 올렸습니다';
           })
@@ -5766,6 +5815,7 @@ console.log('[affairs.js] v20260712memo2');
             if (ex.title && !get('bt_title').value.trim()) { get('bt_title').value = ex.title; filled.push('제목'); }
             if (ex.scripture && !get('bt_scripture').value.trim()) { get('bt_scripture').value = ex.scripture; filled.push('본문'); }
             if (ex.preacher && !get('bt_preacher').value.trim()) { get('bt_preacher').value = ex.preacher; filled.push('설교자'); }
+            if (get('bt_scripture').value.trim()) autoFillScriptureText();
             // 예배 순서: 아직 하나도 안 채워진(전부 detail 공란) 상태일 때만 통째로 반영
             if (hwOrder.length && order.every(function (o) { return !o.detail; })) {
               order.length = 0; hwOrder.forEach(function (o) { order.push(o); });
@@ -6021,34 +6071,6 @@ console.log('[affairs.js] v20260712memo2');
         .catch(function (e) { bodyEl.innerHTML = '<p style="color:#c0392b">호출 실패: ' + esc(e.message) + '</p><p style="font-size:.82rem;color:#9aa5b1;margin-top:10px">※ Supabase에 bulletin-ai Edge Function을 배포해 주세요.</p>'; });
     };
 
-    // ── 📜 표지 말씀 헤드라인 자동: 그 주 주일 설교(본문·성경 원문)로 대표 말씀 생성 ──
-    ov.querySelector('#bt_headline_ai').onclick = function () {
-      var s = sess(); if (!s || !s.token) { bmsg('로그인이 필요합니다.', '#c0392b'); return; }
-      var bd = ov.querySelector('#bt_bdate').value; if (!bd) { bmsg('주일 날짜를 먼저 선택하세요.', '#c0392b'); return; }
-      var btn = ov.querySelector('#bt_headline_ai'); btn.disabled = true; btn.textContent = '✨ 생성 중…';
-      function done(t) { btn.disabled = false; btn.textContent = '✨ 자동'; if (t) bmsg(t, '#c0392b'); }
-      // 그 주(주일~토) 주일 낮 예배 설교에서 본문·성경원문·요약 확보
-      api('GET', 'sermons?select=title,scripture,bible_text,content,service&sermon_date=gte.' + bd + '&sermon_date=lte.' + addDays(bd, 6) + '&order=sermon_date.asc').then(function (rows) {
-        rows = rows || [];
-        var sun = null; for (var i = 0; i < rows.length; i++) if (rows[i].service === '주일 낮 예배') { sun = rows[i]; break; }
-        var title = (sun && sun.title) || ov.querySelector('#bt_title').value || '';
-        var scripture = (sun && sun.scripture) || ov.querySelector('#bt_scripture').value || '';
-        var bible = (sun && sun.bible_text) || '';
-        var summary = (sun && sun.content) ? String(sun.content).slice(0, 1500) : '';
-        var content = '설교 제목: ' + title + '\n본문: ' + scripture + '\n\n[성경 본문 원문]\n' + (bible || '(없음)') + '\n\n[설교 요약]\n' + (summary || '(없음)');
-        return fetch(SB.replace(/\/$/, '') + '/functions/v1/bulletin-ai', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.token, 'apikey': AK },
-          body: JSON.stringify({ mode: 'headline', content: content })
-        });
-      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (o) {
-          if (!o.ok) { done(((o.j && o.j.error) || '생성 실패') + (o.j && o.j.detail ? ' (' + o.j.detail + ')' : '')); return; }
-          var txt = (o.j && o.j.result || '').trim();
-          if (txt) { ov.querySelector('#bt_headline').value = txt; bmsg('✓ 표지 말씀 헤드라인을 생성했습니다', 'green'); }
-          done();
-        })
-        .catch(function (e) { done('생성 실패: ' + e.message + ' (bulletin-ai 배포 필요)'); });
-    };
     ov.querySelector('#bt_publish').onclick = function () {
       if (!confirm('이 주보를 홈페이지에 게시할까요?\n(헌금 금액은 홈페이지에 노출되지 않습니다)')) return;
       save(function () { bmsg('✓ 게시되었습니다 — 홈페이지 주보란에 반영됩니다', 'green'); }, { published: true });
@@ -6096,6 +6118,7 @@ console.log('[affairs.js] v20260712memo2');
           if (sSum && !ov.querySelector('#bt_summary').value.trim()) ov.querySelector('#bt_summary').value = sSum;
           var wo = []; try { wo = JSON.parse(sun.worship_order || '[]') || []; } catch (e) { wo = []; }
           if (wo.length) { order = wo.map(function (it) { return { name: it.label || '', detail: it.detail || '' }; }); renderBOrder(); }
+          if (sun.scripture) autoFillScriptureText();
           n++;
         }
         if (wed) { if (wed.title) ov.querySelector('#bt_wed_title').value = wed.title; ov.querySelector('#bt_wed_line').value = [fmtD(wed.sermon_date), wed.scripture, wed.preacher].filter(Boolean).join(' · '); n++; }

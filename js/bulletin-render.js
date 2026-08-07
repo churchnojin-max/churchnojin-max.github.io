@@ -11,6 +11,12 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function ymd(v) { return String(v == null ? '' : v).slice(0, 10); }
   function dotDate(v) { return ymd(v).replace(/-/g, '. '); }
+  // 교회 이름은 js/church.js(window.CHURCH)에서 가져온다 — 여기 하드코딩하지 않아야
+  // 이름이 바뀌어도(또는 다른 교회에 재사용해도) 주보 곳곳에서 안 어긋난다.
+  var CH = window.CHURCH || {};
+  var CH_NAME = CH.name || '○○교회';
+  var CH_NAME_EN = (CH.nameEn || '').toUpperCase();
+  var CH_NAME_SPACED = CH_NAME.split('').join(' ');
 
   function css(layout) {
     // 인쇄용 3단은 가로(380×211 landscape), 그 외(홈페이지 읽기)는 세로
@@ -112,7 +118,7 @@
     }
     var comHtml = COMMITTEE_KEYS.map(function (k) { return (d.committee && d.committee[k]) ? '<div class="ofg"><b>' + esc(k) + '</b> ' + esc(d.committee[k]) + '</div>' : ''; }).join('');
     var notices = (d.notices || '').split('\n').filter(function (l) { return l.trim(); }).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('');
-    var sub = 'WOONPYEONG PRESBYTERIAN CHURCH · ' + esc(dotDate(rec.bdate)) + (d.no ? ' · 제' + esc(d.no) + '호' : '') + (d.week ? ' · ' + esc(d.week) : '');
+    var sub = esc(CH_NAME_EN) + ' · ' + esc(dotDate(rec.bdate)) + (d.no ? ' · 제' + esc(d.no) + '호' : '') + (d.week ? ' · ' + esc(d.week) : '');
 
     // 표지 말씀 헤드라인(있으면 머리글 아래 배너로)
     var headlineHtml = '';
@@ -121,7 +127,7 @@
       headlineHtml = '<div class="hl">' + esc(hl).replace(/\n/g, '<br>') + '</div>';
     }
     // ── 섹션 조각 ──
-    var hdBanner = '<div class="hd"><div class="eng">SUNDAY WORSHIP</div><div class="ch">운 평 장 로 교 회</div><div class="sub">' + sub + '</div></div>';
+    var hdBanner = '<div class="hd"><div class="eng">SUNDAY WORSHIP</div><div class="ch">' + esc(CH_NAME_SPACED) + '</div><div class="sub">' + sub + '</div></div>';
     var sermSec = '<section><h2>주일 낮 예배 <span class="en">ORDER OF WORSHIP</span></h2>' +
       '<div class="serm"><div class="lab">오 늘 의 설 교 · SERMON</div><div class="t">' + esc(rec.title || '') + '</div><div class="m">본문 ● ' + esc(rec.scripture || '') + ' ● ' + esc(rec.preacher || '') + '</div></div>' +
       '<table class="ord"><tbody>' + orderHtml + '</tbody></table></section>';
@@ -139,7 +145,7 @@
     var sinceTxt = fm ? ('SINCE ' + fm[1] + '. ' + Number(fm[2]) + '. ' + Number(fm[3])) : 'SINCE 1964. 3. 1';
     var coverBlock = '<div class="cover">' + (headlineHtml || '') +
       '<div class="since">' + sinceTxt + (d.no ? ' · 제' + esc(d.no) + '호' : '') + '</div>' +
-      '<div class="big">운 평 장 로 교 회</div>' +
+      '<div class="big">' + esc(CH_NAME_SPACED) + '</div>' +
       '<div class="ld">담임목사 손병민 · 원로목사 신동열</div>' +
       '<div class="ad">경기도 화성시 장안면 화곡로 159-8 · T. 070-4355-1598<br>' + esc(dotDate(rec.bdate)) + (d.week ? ' · ' + esc(d.week) : '') + ' · churchnojin-max.github.io</div></div>';
 
@@ -151,7 +157,7 @@
     }
     // 홈페이지 읽기(세로 1단)
     return '<div class="page">' + hdBanner + (headlineHtml || '') + sermSec + midSec + offerSec + comSec + colSec + newsSec + noteHtml +
-      '<div class="foot">노진교회 · 담임목사 손병민 · 경기도 화성시 장안면 화곡로 159-8 · churchnojin-max.github.io</div></div>';
+      '<div class="foot">' + esc(CH_NAME) + ' · 담임목사 손병민 · 경기도 화성시 장안면 화곡로 159-8 · churchnojin-max.github.io</div></div>';
   }
 
   function fullHTML(rec, opts) {
