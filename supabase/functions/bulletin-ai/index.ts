@@ -83,6 +83,24 @@ const PRAYER_PROMPT = `당신은 ○○교회 설교 매니저의 '마침 기도
 - 경어체(하옵소서/주옵소서 등)의 자연스러운 기도 문체로 씁니다.
 - 군더더기 설명·제목·머리말 없이 기도문 본문만 출력합니다.`;
 
+const EXTRACT_PROMPT = `당신은 ○○교회 주보 PDF에서 핵심 정보를 뽑아내는 도우미입니다.
+아래는 이미 만들어진 주보 PDF에서 추출한 원문 텍스트입니다(줄바꿈·정렬이 깨져 있을 수 있습니다).
+여기서 아래 항목을 찾아 반드시 JSON 하나만 출력하세요. 설명·인사말·코드블록 표시(\`\`\`) 없이 순수 JSON 객체 하나만 출력합니다.
+
+{
+  "bdate": "그 주보의 주일(예배) 날짜, YYYY-MM-DD 형식(예: 2026-08-02). 못 찾으면 빈 문자열",
+  "title": "주일 낮 예배 설교 제목. 못 찾으면 빈 문자열",
+  "scripture": "설교 본문(성경 장절). 예: 나훔 2:8-13. 못 찾으면 빈 문자열",
+  "preacher": "설교자 이름(직함 포함, 예: 손병민 담임목사). 못 찾으면 빈 문자열",
+  "headline": "1면 표지에 어울리는 대표 말씀 구절이 텍스트 안에 그대로 있으면 옮겨 적기. 없으면 빈 문자열",
+  "summary": "설교 요약이나 목회 칼럼처럼 보이는 문단이 있으면 그 내용을 3~5문장으로 정리. 없으면 빈 문자열"
+}
+
+[규칙]
+- 텍스트에 없는 내용은 절대 지어내지 마세요. 확실하지 않으면 해당 값은 빈 문자열("")로 둡니다.
+- 날짜는 반드시 YYYY-MM-DD 형식으로만 출력합니다(다른 형식이면 변환하세요).
+- JSON 문법을 반드시 지키세요(큰따옴표, 쉼표 등). 그 외 텍스트는 절대 출력하지 않습니다.`;
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin") ?? "";
   const cors = corsHeaders(origin);
@@ -109,7 +127,7 @@ Deno.serve(async (req) => {
 
     // 3) 입력(주보 직렬화 텍스트) + 모드
     const body = await req.json().catch(() => ({}));
-    const mode = body.mode === "headline" ? "headline" : (body.mode === "prayer" ? "prayer" : "review");
+    const mode = body.mode === "headline" ? "headline" : (body.mode === "prayer" ? "prayer" : (body.mode === "extract" ? "extract" : "review"));
     const content = (typeof body.content === "string" ? body.content : "").slice(0, 16000);
     if (!content.trim()) return new Response(JSON.stringify({ error: "내용이 비어 있습니다." }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
 
@@ -117,13 +135,15 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "AI 키가 설정되지 않았습니다.", detail: "no_api_key" }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    const sysPrompt = mode === "headline" ? HEADLINE_PROMPT : (mode === "prayer" ? PRAYER_PROMPT : SYSTEM_PROMPT);
+    const sysPrompt = mode === "headline" ? HEADLINE_PROMPT : (mode === "prayer" ? PRAYER_PROMPT : (mode === "extract" ? EXTRACT_PROMPT : SYSTEM_PROMPT));
     const userMsg = mode === "headline"
       ? ("아래는 이번 주 주일 설교 자료입니다. 1면 표지 말씀 헤드라인을 만들어 주세요.\n\n" + content)
       : mode === "prayer"
       ? ("아래 설교 자료를 바탕으로 공백 포함 300자 미만의 마침 기도문을 작성해 주세요.\n\n" + content)
+      : mode === "extract"
+      ? ("아래는 주보 PDF에서 추출한 텍스트입니다. 위 JSON 형식으로 정보를 뽑아 주세요.\n\n" + content)
       : ("다음은 이번 주 주보 초안입니다. 위 4가지를 점검해 주세요.\n\n" + content);
-    const maxTok = mode === "headline" ? 300 : (mode === "prayer" ? 512 : 2048);
+    const maxTok = mode === "headline" ? 300 : (mode === "prayer" ? 512 : (mode === "extract" ? 800 : 2048));
     let reply = "";
 
     if (PROVIDER === "gemini") {

@@ -5684,6 +5684,36 @@ console.log('[affairs.js] v20260712memo2');
           slot.innerHTML = uploadHTML; wireFileInput();
         };
       }
+      // 업로드된 PDF에서 텍스트를 뽑아 AI로 기본 정보(날짜·제목·본문·설교자 등)를 추정해
+      // 비어 있는 칸만 채운다(이미 입력된 내용은 덮어쓰지 않음)
+      function autoFillFromPdf(file) {
+        var s = sess(); if (!s || !s.token) return;
+        var get = function (id) { return ov.querySelector('#' + id); };
+        pdfMsg.style.color = '#7b8794'; pdfMsg.textContent = '✓ 올렸습니다 — AI가 내용을 읽는 중…';
+        file.arrayBuffer().then(extractPdfText).then(function (text) {
+          text = (text || '').trim();
+          if (!text) throw new Error('empty');
+          return fetch(SB.replace(/\/$/, '') + '/functions/v1/bulletin-ai', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.token, 'apikey': AK },
+            body: JSON.stringify({ mode: 'extract', content: text })
+          });
+        }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+          .then(function (o) {
+            if (!o.ok || !(o.j && o.j.result)) { pdfMsg.style.color = 'green'; pdfMsg.textContent = '✓ 올렸습니다 (내용 자동 인식은 실패 — 직접 입력해 주세요)'; return; }
+            var raw = String(o.j.result).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+            var ex; try { ex = JSON.parse(raw); } catch (e) { pdfMsg.style.color = 'green'; pdfMsg.textContent = '✓ 올렸습니다 (내용 자동 인식은 실패 — 직접 입력해 주세요)'; return; }
+            var filled = [];
+            if (ex.bdate && !get('bt_bdate').value) { get('bt_bdate').value = ex.bdate; get('bt_bdate').dispatchEvent(new Event('change')); filled.push('날짜'); }
+            if (ex.title && !get('bt_title').value.trim()) { get('bt_title').value = ex.title; filled.push('제목'); }
+            if (ex.scripture && !get('bt_scripture').value.trim()) { get('bt_scripture').value = ex.scripture; filled.push('본문'); }
+            if (ex.preacher && !get('bt_preacher').value.trim()) { get('bt_preacher').value = ex.preacher; filled.push('설교자'); }
+            if (ex.headline && !get('bt_headline').value.trim()) { get('bt_headline').value = ex.headline; filled.push('헤드라인'); }
+            if (ex.summary && !get('bt_summary').value.trim()) { get('bt_summary').value = ex.summary; filled.push('요약'); }
+            pdfMsg.style.color = 'green';
+            pdfMsg.textContent = filled.length ? ('✓ 올렸습니다 · AI가 ' + filled.join('·') + ' 자동으로 채웠습니다(확인해 주세요)') : '✓ 올렸습니다';
+          })
+          .catch(function () { pdfMsg.style.color = 'green'; pdfMsg.textContent = '✓ 올렸습니다 (PDF에서 글자를 읽지 못해 자동 인식은 건너뜀)'; });
+      }
       function wireFileInput() {
         var fileIn = slot.querySelector('#bt_pdf_file');
         if (!fileIn) return;
@@ -5694,8 +5724,8 @@ console.log('[affairs.js] v20260712memo2');
           ChurchUpload.upload(f, { folder: 'bulletins', compress: false }).then(function (r) {
             ov.querySelector('#bt_pdf_url').value = r.url;
             ov.querySelector('#bt_pdf_name').value = f.name;
-            pdfMsg.style.color = 'green'; pdfMsg.textContent = '✓ 올렸습니다 — 게시를 눌러야 반영됩니다';
             showUploaded(r.url, f.name);
+            autoFillFromPdf(f);
           }).catch(function (e) { pdfMsg.style.color = '#c0392b'; pdfMsg.textContent = '업로드 실패: ' + ((e && e.message) || e); });
         };
       }
