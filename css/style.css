@@ -205,6 +205,14 @@ ul { list-style: none; }
 .hb-news strong { color: var(--accent); margin-right: 5px; }
 .hb-ft { border-top: 1px solid var(--line); padding: 14px 24px; text-align: center; background: #fafbfd; }
 @media (max-width: 640px) { .hb-body { grid-template-columns: 1fr; } .hb-col:first-child { border-right: none; border-bottom: 1px solid var(--line); } }
+/* 홈 '이번 주 주보' 전체 내용을 한 화면에 바로 보여주는 섹션들(클릭 없이 스크롤만으로 다 보이도록) */
+.hb-sec { padding: 22px 26px; background: #fff; }
+.hb-sec + .hb-sec { border-top: 1px solid var(--line); }
+.hb-sermon-title { font-family: "Noto Serif KR", serif; font-size: 1.3rem; font-weight: 700; color: var(--ink); margin: 0 0 6px; line-height: 1.4; word-break: keep-all; }
+.hb-sermon-ref { color: var(--ink-soft); font-size: .92rem; margin: 0; }
+.hb-scripture { font-family: "Noto Serif KR", serif; font-size: .97rem; line-height: 1.95; color: var(--ink); border-left: 3px solid var(--gold); padding: 2px 0 2px 16px; margin: 0; white-space: pre-line; word-break: keep-all; }
+.hb-summary { font-size: .95rem; line-height: 1.9; color: var(--ink); word-break: keep-all; white-space: pre-line; }
+@media (max-width: 640px) { .hb-sec { padding: 18px 20px; } }
 
 /* ===== 이달의 찬양(말씀으로 페이지) ===== */
 .song-box { max-width: 760px; margin: 0 auto; }

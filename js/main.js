@@ -1277,20 +1277,43 @@ if (homeBulletin) {
         if (!b) { homeBulletin.innerHTML = `<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`; return; }
         const d = b.data || {};
         const dl = String(b.bdate || "").slice(0, 10).replace(/-/g, ". ");
+
+        const scriptureHtml = d.headline
+          ? `<div class="hb-sec"><p class="hb-col-title">오늘의 본문 말씀 <span style="font-weight:400;color:var(--ink-soft)">(개역개정)</span></p><p class="hb-scripture">${escB(d.headline)}</p></div>`
+          : "";
+        const summaryHtml = d.summary
+          ? `<div class="hb-sec"><p class="hb-col-title">설교 요약</p><p class="hb-summary">${escB(d.summary)}</p></div>`
+          : "";
+        const orderList = (d.order || []).filter((o) => o && (o.name || o.detail));
+        const orderHtml = orderList.length
+          ? `<div class="hb-sec"><p class="hb-col-title">예배 순서</p><ol class="hb-order">${orderList.map((o) => `<li><b>${escB(o.name || "")}</b>${o.detail ? " — " + escB(o.detail) : ""}</li>`).join("")}</ol></div>`
+          : "";
+        const offerKeys = Object.keys(d.offering || {}).filter((k) => d.offering[k]);
+        const offerHtml = offerKeys.length
+          ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><ul class="hb-extra">${offerKeys.map((k) => `<li><b>${escB(k)}</b> ${escB(d.offering[k])}</li>`).join("")}</ul><p style="font-size:.78rem;color:var(--ink-soft);margin:8px 0 0">* 감사한 마음으로 드린 예물의 명단만 안내하며, 헌금 금액 내역은 게시하지 않습니다.</p></div>`
+          : "";
+        const noticeLines = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean);
+        const noticeHtml = noticeLines.length
+          ? `<div class="hb-sec"><p class="hb-col-title">한 주의 소식</p><ul class="hb-news">${noticeLines.map((l) => `<li>${escB(l)}</li>`).join("")}</ul></div>`
+          : "";
+
         homeBulletin.innerHTML = `
           <div class="hb-card">
             <div class="hb-hd">
               <span class="hb-hd-week">${escB(d.week || "주보")} · 주일 낮 예배</span>
               <span class="hb-hd-date">${escB(dl)}</span>
             </div>
-            <div class="hb-body" style="grid-template-columns:1fr">
-              <div class="hb-col">
-                ${b.title ? `<p class="hb-col-title">${escB(b.title)}</p>` : ""}
-                ${b.scripture ? `<p style="color:var(--ink-soft);margin:4px 0 0">${escB(b.scripture)}${b.preacher ? " · " + escB(b.preacher) : ""}</p>` : ""}
-              </div>
+            <div class="hb-sec">
+              ${b.title ? `<p class="hb-sermon-title">${escB(b.title)}</p>` : ""}
+              ${b.scripture ? `<p class="hb-sermon-ref">${escB(b.scripture)}${b.preacher ? " · " + escB(b.preacher) : ""}</p>` : ""}
             </div>
+            ${scriptureHtml}
+            ${summaryHtml}
+            ${orderHtml}
+            ${offerHtml}
+            ${noticeHtml}
             <div class="hb-ft">
-              <button class="btn btn-line" id="homeBulletinBtn">${d.pdf_url ? "📄 주보 PDF 보기 →" : "주보 전체 보기 →"}</button>
+              ${d.pdf_url ? `<a class="btn btn-line" href="${escB(d.pdf_url)}" target="_blank" rel="noopener">📄 주보 PDF 원본 보기 →</a>` : `<button class="btn btn-line" id="homeBulletinBtn">🖨 인쇄용으로 보기 →</button>`}
             </div>
           </div>`;
         const hbBtn = document.getElementById("homeBulletinBtn");
