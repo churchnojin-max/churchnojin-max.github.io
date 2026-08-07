@@ -5624,7 +5624,7 @@ console.log('[affairs.js] v20260712memo2');
       '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">① 기본 정보</h4>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">' +
       '<div class="af-field"><label>주일 날짜</label><input type="date" id="bt_bdate" value="' + esc(bd0) + '"></div>' +
-      tI('호수(No.) <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">날짜 선택 시 자동</span>', 'bt_no', d.no || bulletinNo(bd0), '예: 62-27') +
+      tI('호수(No.) <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">직전 호수 +1로 자동</span>', 'bt_no', d.no || '', '예: 5033') +
       tI('주차 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">자동</span>', 'bt_week', d.week || bulletinWeekLabel(bd0), '예: 7월 첫째 주') +
       '</div></div>' +
       // 주일 낮 예배
@@ -5638,8 +5638,8 @@ console.log('[affairs.js] v20260712memo2');
       '<textarea id="bt_summary" placeholder="이번 주 설교 요약을 적어 주세요. 홈페이지 방문자가 보게 됩니다." style="min-height:96px;line-height:1.7">' + esc(d.summary || '') + '</textarea></div>' +
       '<label style="font-size:.82rem;color:#7b8794;display:block;margin-bottom:6px">예배 순서 <span style="font-weight:400">(순서명 · 내용/담당) — 데이터 불러오기 시 자동 채워집니다</span></label>' +
       '<div id="bt_order"></div></div>' +
-      // 주중 예배
-      '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">③ 주중 · 새벽 · QT</h4>' +
+      // 주중 예배 — 당분간 비활성화(숨김). 필요해지면 이 div의 hidden 속성만 지우면 됨.
+      '<div class="fin-card" hidden><h4 style="margin:0 0 10px;color:var(--accent)">③ 주중 · 새벽 · QT</h4>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
       '<div>' + tI('수요기도회 — 강해 시리즈', 'bt_wed_series', d.wed_series, '예: 레위기 강해(1)') + '</div>' +
       '<div>' + tI('수요기도회 — 제목', 'bt_wed_title', d.wed_title, '예: 레위기란 어떤 책인가?') + '</div>' +
@@ -5653,8 +5653,8 @@ console.log('[affairs.js] v20260712memo2');
       '<div class="fin-card"><h4 style="margin:0 0 4px;color:var(--accent)">④ 향기로운 예물 · 헌금</h4>' +
       '<p style="margin:0 0 10px;font-size:.8rem;color:#9aa5b1">항목을 자유롭게 추가할 수 있습니다(특별헌금·추수감사·맥추감사 등). <b>명단</b>은 홈페이지에도 공개되고, <b>금액</b>은 🔒 인쇄(PDF)에만 표시됩니다. — 데이터 불러오기 시 직전 주일 헌금이 항목별로 채워집니다.</p>' +
       '<div id="bt_offer"></div></div>' +
-      // 칼럼
-      '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent);display:flex;align-items:center;gap:8px;flex-wrap:wrap">⑦ 신앙과 책 (칼럼) <button type="button" class="btn btn-line" id="bt_col_pick" style="padding:4px 11px;font-size:.76rem;font-weight:600">🔍 예화 클립에서 가져오기</button></h4>' +
+      // 칼럼 — 당분간 비활성화(숨김). 필요해지면 이 div의 hidden 속성만 지우면 됨.
+      '<div class="fin-card" hidden><h4 style="margin:0 0 10px;color:var(--accent);display:flex;align-items:center;gap:8px;flex-wrap:wrap">⑦ 신앙과 책 (칼럼) <button type="button" class="btn btn-line" id="bt_col_pick" style="padding:4px 11px;font-size:.76rem;font-weight:600">🔍 예화 클립에서 가져오기</button></h4>' +
       tI('제목/출처', 'bt_col_title', d.column_title, '예: 김다위, 「하나님 마음에 맞는 사람」 (두란노)') +
       tA('본문', 'bt_col_body', d.column_body, '칼럼 내용…', 140) + '</div>' +
       // 광고
@@ -5832,19 +5832,27 @@ console.log('[affairs.js] v20260712memo2');
       else if (!cur.trim()) el.value = dt + ' · ';                  // 비었으면 날짜+구분자
       else el.value = dt + ' · ' + cur;                            // 본문/설교자만 있으면 앞에 날짜
     }
-    // 주일 날짜 선택 → 호수·주차·수요일 날짜 자동 갱신
+    // 주일 날짜 선택 → 주차·수요일 날짜 자동 갱신(호수는 날짜와 무관 — 직전 호수+1로 별도 계산)
     ov.querySelector('#bt_bdate').addEventListener('change', function () {
       var bd = this.value; if (!bd) return;
-      ov.querySelector('#bt_no').value = bulletinNo(bd);
       ov.querySelector('#bt_week').value = bulletinWeekLabel(bd);
       setWedDate(bd);
     });
     if (!rec.id && !(d && d.wed_dateline)) setWedDate(bd0); // 신규 작성 시 기본 채움
-    // 설립일(호수 주년 기준)이 아직 로드 전이면 로드 후 호수 보정(사용자가 비워둔 경우만)
-    loadGeneral().then(function () {
-      var bd = ov.querySelector('#bt_bdate').value;
-      if (bd && !(d && d.no)) ov.querySelector('#bt_no').value = bulletinNo(bd);
-    });
+    // 호수: 가장 최근 주보의 호수에서 숫자만 뽑아 +1(신규 작성이고 아직 비어 있을 때만)
+    function nextBulletinNo() {
+      return api('GET', 'bulletins?select=data&order=bdate.desc&limit=1').then(function (rows) {
+        var last = rows && rows[0] && rows[0].data && rows[0].data.no;
+        var m = String(last || '').match(/(\d+)/);
+        return m ? String(Number(m[1]) + 1) : '';
+      }).catch(function () { return ''; });
+    }
+    if (!rec.id && !(d && d.no)) {
+      nextBulletinNo().then(function (no) {
+        var el = ov.querySelector('#bt_no');
+        if (no && el && !el.value.trim()) el.value = no;
+      });
+    }
 
     // 예배 순서 편집
     var oBox = ov.querySelector('#bt_order');

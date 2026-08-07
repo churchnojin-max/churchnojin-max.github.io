@@ -112,7 +112,7 @@
     }
     var comHtml = COMMITTEE_KEYS.map(function (k) { return (d.committee && d.committee[k]) ? '<div class="ofg"><b>' + esc(k) + '</b> ' + esc(d.committee[k]) + '</div>' : ''; }).join('');
     var notices = (d.notices || '').split('\n').filter(function (l) { return l.trim(); }).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('');
-    var sub = 'WOONPYEONG PRESBYTERIAN CHURCH · ' + esc(dotDate(rec.bdate)) + (d.no ? ' · No. ' + esc(d.no) : '') + (d.week ? ' · ' + esc(d.week) : '');
+    var sub = 'WOONPYEONG PRESBYTERIAN CHURCH · ' + esc(dotDate(rec.bdate)) + (d.no ? ' · 제' + esc(d.no) + '호' : '') + (d.week ? ' · ' + esc(d.week) : '');
 
     // 표지 말씀 헤드라인(있으면 머리글 아래 배너로)
     var headlineHtml = '';
@@ -138,7 +138,7 @@
     var fm = String(d.founded || '1964-03-01').match(/(\d{4})-(\d{2})-(\d{2})/);
     var sinceTxt = fm ? ('SINCE ' + fm[1] + '. ' + Number(fm[2]) + '. ' + Number(fm[3])) : 'SINCE 1964. 3. 1';
     var coverBlock = '<div class="cover">' + (headlineHtml || '') +
-      '<div class="since">' + sinceTxt + (d.no ? ' · No. ' + esc(d.no) : '') + '</div>' +
+      '<div class="since">' + sinceTxt + (d.no ? ' · 제' + esc(d.no) + '호' : '') + '</div>' +
       '<div class="big">운 평 장 로 교 회</div>' +
       '<div class="ld">담임목사 손병민 · 원로목사 신동열</div>' +
       '<div class="ad">경기도 화성시 장안면 화곡로 159-8 · T. 070-4355-1598<br>' + esc(dotDate(rec.bdate)) + (d.week ? ' · ' + esc(d.week) : '') + ' · churchnojin-max.github.io</div></div>';
