@@ -5613,13 +5613,13 @@ console.log('[affairs.js] v20260712memo2');
       '</div></header>' +
       '<div style="max-width:1100px;margin:0 auto;padding:20px 18px 70px">' +
       // 완성된 주보 파일 그대로 올리기(선택) — 아래 항목을 일일이 입력하지 않고 파일만 올려 게시 가능
-      '<div class="fin-card" style="border-color:#9cc0f0;background:#f7faff"><h4 style="margin:0 0 6px;color:var(--accent)">📎 완성된 주보 파일 올리기 <span style="font-weight:400;font-size:.78rem;color:#9aa5b1">(선택 — 이미 다 만든 주보가 있으면 아래 항목을 채울 필요 없이 이것만 올려 게시하세요)</span></h4>' +
+      '<div class="fin-card" style="border-color:#9cc0f0;background:#f7faff"><h4 style="margin:0 0 6px;color:var(--accent)">📎 완성된 주보 파일 올리기 <span style="font-weight:400;font-size:.78rem;color:#9aa5b1">(선택 — PDF는 그대로 게시용 파일로, HWPX는 날짜·제목·본문·설교자를 자동으로 읽어 채우는 용도)</span></h4>' +
       '<div id="bt_pdf_slot">' + (d.pdf_url
         ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><a href="' + esc(d.pdf_url) + '" target="_blank" rel="noopener" class="btn btn-line" style="padding:6px 14px;font-size:.84rem">📄 ' + esc(d.pdf_name || '올린 파일') + ' 보기</a><button type="button" class="btn btn-line" id="bt_pdf_remove" style="padding:6px 14px;font-size:.84rem;color:#c0392b">제거</button></div>'
-        : '<label class="btn btn-line" style="cursor:pointer;padding:8px 16px;font-size:.86rem;display:inline-block">＋ 파일 선택(PDF)<input type="file" id="bt_pdf_file" accept="application/pdf,.pdf" hidden></label>') + '</div>' +
+        : '<label class="btn btn-line" style="cursor:pointer;padding:8px 16px;font-size:.86rem;display:inline-block">＋ 파일 선택(PDF 또는 HWPX)<input type="file" id="bt_pdf_file" accept="application/pdf,.pdf,.hwpx" hidden></label>') + '</div>' +
       '<span class="fin-msg" id="bt_pdf_msg" style="margin-left:10px"></span>' +
       '<input type="hidden" id="bt_pdf_url" value="' + esc(d.pdf_url || '') + '"><input type="hidden" id="bt_pdf_name" value="' + esc(d.pdf_name || '') + '">' +
-      '<p class="help" style="margin-top:8px">파일을 올리고 <b>주일 날짜</b>만 선택한 뒤 게시하면, 홈페이지·주보 보관함에서 이 파일이 그대로 열립니다.</p>' +
+      '<p class="help" style="margin-top:8px"><b>PDF</b>를 올리면 그 파일이 홈페이지·주보 보관함에서 그대로 열립니다. <b>HWPX</b>를 올리면 파일 안의 내용을 읽어 아래 빈 칸만 자동으로 채웁니다(파일 자체는 게시되지 않으니, 게시용 파일은 인쇄(PDF)로 만들어 따로 올려주세요).</p>' +
       '</div>' +
       // 기본
       '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">① 기본 정보</h4>' +
@@ -5676,7 +5676,7 @@ console.log('[affairs.js] v20260712memo2');
     (function () {
       var slot = ov.querySelector('#bt_pdf_slot');
       var pdfMsg = ov.querySelector('#bt_pdf_msg');
-      var uploadHTML = '<label class="btn btn-line" style="cursor:pointer;padding:8px 16px;font-size:.86rem;display:inline-block">＋ 파일 선택(PDF)<input type="file" id="bt_pdf_file" accept="application/pdf,.pdf" hidden></label>';
+      var uploadHTML = '<label class="btn btn-line" style="cursor:pointer;padding:8px 16px;font-size:.86rem;display:inline-block">＋ 파일 선택(PDF 또는 HWPX)<input type="file" id="bt_pdf_file" accept="application/pdf,.pdf,.hwpx" hidden></label>';
       function showUploaded(url, name) {
         slot.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><a href="' + esc(url) + '" target="_blank" rel="noopener" class="btn btn-line" style="padding:6px 14px;font-size:.84rem">📄 ' + esc(name || '올린 파일') + ' 보기</a><button type="button" class="btn btn-line" id="bt_pdf_remove" style="padding:6px 14px;font-size:.84rem;color:#c0392b">제거</button></div>';
         slot.querySelector('#bt_pdf_remove').onclick = function () {
@@ -5714,11 +5714,45 @@ console.log('[affairs.js] v20260712memo2');
           })
           .catch(function () { pdfMsg.style.color = 'green'; pdfMsg.textContent = '✓ 올렸습니다 (PDF에서 글자를 읽지 못해 자동 인식은 건너뜀)'; });
       }
+      // HWPX 안의 Preview/PrvText.txt(한글이 저장할 때 자동으로 만들어 두는 순수 텍스트)를 읽어
+      // 규칙 기반으로 날짜(파일명)·본문·설교자·제목을 뽑는다 — AI·네트워크 없이 바로 동작.
+      // 이 파일 자체는 게시되지 않는다(HWPX는 방문자 브라우저에서 열 수 없으므로).
+      function cleanField(s) { return String(s || '').replace(/\(.*?\)/g, '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim(); }
+      function autoFillFromHwpx(file) {
+        var get = function (id) { return ov.querySelector('#' + id); };
+        pdfMsg.style.color = '#7b8794'; pdfMsg.textContent = 'HWPX에서 내용을 읽는 중…';
+        if (!window.JSZip) { pdfMsg.style.color = '#c0392b'; pdfMsg.textContent = '압축 해제 모듈이 없어 자동 인식을 할 수 없습니다. 새로고침 후 다시 시도해 주세요.'; return; }
+        file.arrayBuffer().then(function (buf) { return window.JSZip.loadAsync(buf); })
+          .then(function (zip) {
+            var entry = zip.file('Preview/PrvText.txt');
+            if (!entry) throw new Error('no-preview');
+            return entry.async('string');
+          })
+          .then(function (text) {
+            var ex = {};
+            var mDate = file.name.match(/(\d{2,4})\s*년\s*0?(\d{1,2})\s*월\s*0?(\d{1,2})\s*일/);
+            if (mDate) { var y = mDate[1].length === 2 ? '20' + mDate[1] : mDate[1]; ex.bdate = y + '-' + ('0' + mDate[2]).slice(-2) + '-' + ('0' + mDate[3]).slice(-2); }
+            var mPreacher = text.match(/인도\s*및\s*설교\s*[:：]\s*([^\n<(]+)/); if (mPreacher) ex.preacher = cleanField(mPreacher[1]);
+            var mScripture = text.match(/성경봉독\s*>\s*<\s*([^<\n]+)/); if (mScripture) ex.scripture = cleanField(mScripture[1]);
+            var mTitle = text.match(/말씀선포\s*>\s*<\s*([^<\n]+)/); if (mTitle) ex.title = cleanField(mTitle[1]);
+            var filled = [];
+            if (ex.bdate && !get('bt_bdate').value) { get('bt_bdate').value = ex.bdate; get('bt_bdate').dispatchEvent(new Event('change')); filled.push('날짜'); }
+            if (ex.title && !get('bt_title').value.trim()) { get('bt_title').value = ex.title; filled.push('제목'); }
+            if (ex.scripture && !get('bt_scripture').value.trim()) { get('bt_scripture').value = ex.scripture; filled.push('본문'); }
+            if (ex.preacher && !get('bt_preacher').value.trim()) { get('bt_preacher').value = ex.preacher; filled.push('설교자'); }
+            pdfMsg.style.color = 'green';
+            pdfMsg.textContent = filled.length
+              ? ('✓ HWPX에서 ' + filled.join('·') + ' 자동으로 채웠습니다(확인해 주세요) · 이 파일 자체는 게시되지 않으니, 게시용 파일은 PDF로 올려주세요')
+              : 'HWPX에서 자동으로 인식된 항목이 없습니다. 직접 입력해 주세요.';
+          })
+          .catch(function () { pdfMsg.style.color = '#c0392b'; pdfMsg.textContent = 'HWPX에서 내용을 읽지 못했습니다. 직접 입력해 주세요.'; });
+      }
       function wireFileInput() {
         var fileIn = slot.querySelector('#bt_pdf_file');
         if (!fileIn) return;
         fileIn.onchange = function () {
           var f = fileIn.files && fileIn.files[0]; if (!f) return;
+          if (/\.hwpx$/i.test(f.name)) { autoFillFromHwpx(f); fileIn.value = ''; return; }
           if (!window.ChurchUpload || !ChurchUpload.isReady()) { pdfMsg.style.color = '#c0392b'; pdfMsg.textContent = '업로드 서버가 설정되지 않았습니다.'; return; }
           pdfMsg.style.color = '#7b8794'; pdfMsg.textContent = '올리는 중…';
           ChurchUpload.upload(f, { folder: 'bulletins', compress: false }).then(function (r) {
