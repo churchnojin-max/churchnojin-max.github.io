@@ -5500,7 +5500,6 @@ console.log('[affairs.js] v20260712memo2');
   var BULLETIN_PRESET = ['경배와찬양', '목회 기도', '송영', '성시교독', '신앙고백', '찬송', '기도', '성경봉독', '성가대찬양', '말씀강해', '헌금봉헌', '교회소식', '기도', '찬송', '축도'];
   var OFFER_KEYS = ['십일조', '감사헌금', '주일헌금', '건축헌금', '선교헌금', '유년부', '차량헌금', '일천번기도'];
   var AMOUNT_KEYS = ['십일조', '감사헌금', '주일헌금', '생일감사', '건축헌금', '선교헌금', '차량헌금', '일천번제', '합계'];
-  var COMMITTEE_KEYS = ['헌금위원', '안내위원', '주차·사찰', '다음 주 기도'];
   function addDays(d, n) { var t = new Date(d + 'T00:00:00'); t.setDate(t.getDate() + n); return t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate()); }
   function nextSunday() { var d = new Date(); var add = (7 - d.getDay()) % 7; d.setDate(d.getDate() + (add === 0 ? 7 : add)); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
   // 그 해 몇 번째 일요일(주차)
@@ -5598,7 +5597,7 @@ console.log('[affairs.js] v20260712memo2');
     var order = (d.order && d.order.length) ? d.order : BULLETIN_PRESET.map(function (n) { return { name: n, detail: '' }; });
     function tA(label, id, val, ph, h) { return '<div class="af-field" style="margin-bottom:10px"><label>' + label + '</label><textarea id="' + id + '" placeholder="' + esc(ph || '') + '" style="min-height:' + (h || 60) + 'px">' + esc(val || '') + '</textarea></div>'; }
     function tI(label, id, val, ph) { return '<div class="af-field"><label>' + label + '</label><input type="text" id="' + id + '" value="' + esc(val || '') + '" placeholder="' + esc(ph || '') + '"></div>'; }
-    var off = d.offering || {}, amt = d.offering_amounts || {}, com = d.committee || {};
+    var off = d.offering || {}, amt = d.offering_amounts || {};
     ov.innerHTML =
       '<header style="position:sticky;top:0;z-index:6;background:linear-gradient(180deg,#fff,#f7f9fc);border-bottom:1px solid #e1e6ef;box-shadow:0 2px 10px rgba(3,34,87,.06)">' +
       '<div style="max-width:1100px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
@@ -5654,11 +5653,6 @@ console.log('[affairs.js] v20260712memo2');
       '<div class="fin-card"><h4 style="margin:0 0 4px;color:var(--accent)">④ 향기로운 예물 · 헌금</h4>' +
       '<p style="margin:0 0 10px;font-size:.8rem;color:#9aa5b1">항목을 자유롭게 추가할 수 있습니다(특별헌금·추수감사·맥추감사 등). <b>명단</b>은 홈페이지에도 공개되고, <b>금액</b>은 🔒 인쇄(PDF)에만 표시됩니다. — 데이터 불러오기 시 직전 주일 헌금이 항목별로 채워집니다.</p>' +
       '<div id="bt_offer"></div></div>' +
-      // 봉사위원
-      '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">⑥ 봉사위원 · 다음 주 기도 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">이번 주 기도자는 예배 순서 \'기도\'에 자동</span></h4>' +
-      '<div class="fin-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      COMMITTEE_KEYS.map(function (k, i) { return tI(k, 'bt_com_' + i, com[k]); }).join('') +
-      '</div></div>' +
       // 칼럼
       '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent);display:flex;align-items:center;gap:8px;flex-wrap:wrap">⑦ 신앙과 책 (칼럼) <button type="button" class="btn btn-line" id="bt_col_pick" style="padding:4px 11px;font-size:.76rem;font-weight:600">🔍 예화 클립에서 가져오기</button></h4>' +
       tI('제목/출처', 'bt_col_title', d.column_title, '예: 김다위, 「하나님 마음에 맞는 사람」 (두란노)') +
@@ -5718,6 +5712,36 @@ console.log('[affairs.js] v20260712memo2');
       // 규칙 기반으로 날짜(파일명)·본문·설교자·제목을 뽑는다 — AI·네트워크 없이 바로 동작.
       // 이 파일 자체는 게시되지 않는다(HWPX는 방문자 브라우저에서 열 수 없으므로).
       function cleanField(s) { return String(s || '').replace(/\(.*?\)/g, '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim(); }
+      function cleanCell(s) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim(); }
+      // "<※><입 례 송><모든 열방 주 볼 때까지 >" 같은 줄들을 예배 순서(order) 배열로.
+      // "주일 낮 예배" 다음 줄부터 "예배 및 봉사위원" 줄 전까지만 대상.
+      function parseHwpxOrder(text) {
+        var lines = text.split(/\r?\n/), out = [], started = false;
+        for (var i = 0; i < lines.length; i++) {
+          var ln = lines[i];
+          if (/^<\s*주일 낮 예배\s*>/.test(ln)) { started = true; continue; }
+          if (!started) continue;
+          if (/인도\s*및\s*설교/.test(ln)) continue;
+          if (/예배\s*및\s*봉사위원/.test(ln)) break;
+          var m = ln.match(/^<[^<>]*>\s*<([^<>]+)>\s*<([^<>]+)>\s*$/);
+          if (m) out.push({ name: cleanCell(m[1]), detail: cleanCell(m[2]) });
+        }
+        return out;
+      }
+      // "<예물봉헌>...<십일조> 이름 이름 <감  사> 이름 이름...<기도의 청지기가 됩시다>" → {항목명: "이름 · 이름"}
+      // 헌금 액수는 들어있지 않음(명단만) — 그대로 '헌금자 명단(공개)' 칸에만 채워짐.
+      var HWPX_OFFER_ALIAS = { '십일조': '십일조', '감사': '감사헌금', '주일': '주일헌금', '선교': '선교헌금', '차량': '차량헌금', '일천번': '일천번기도', '건축': '건축헌금', '유년부': '유년부' };
+      function parseHwpxOffering(text) {
+        var m = text.match(/<예물봉헌>\s*([\s\S]+?)(?:<기도의 청지기가 됩시다>|$)/);
+        if (!m) return {};
+        var re = /<([^<>]+)>\s*([^<>]*)/g, mm, off = {};
+        while ((mm = re.exec(m[1]))) {
+          var cat = cleanCell(mm[1]).replace(/\s+/g, '');
+          var names = cleanCell(mm[2]).split(/\s+/).filter(Boolean).join(' · ');
+          if (cat && names) off[HWPX_OFFER_ALIAS[cat] || cat] = names;
+        }
+        return off;
+      }
       function autoFillFromHwpx(file) {
         var get = function (id) { return ov.querySelector('#' + id); };
         pdfMsg.style.color = '#7b8794'; pdfMsg.textContent = 'HWPX에서 내용을 읽는 중…';
@@ -5735,11 +5759,29 @@ console.log('[affairs.js] v20260712memo2');
             var mPreacher = text.match(/인도\s*및\s*설교\s*[:：]\s*([^\n<(]+)/); if (mPreacher) ex.preacher = cleanField(mPreacher[1]);
             var mScripture = text.match(/성경봉독\s*>\s*<\s*([^<\n]+)/); if (mScripture) ex.scripture = cleanField(mScripture[1]);
             var mTitle = text.match(/말씀선포\s*>\s*<\s*([^<\n]+)/); if (mTitle) ex.title = cleanField(mTitle[1]);
+            var hwOrder = parseHwpxOrder(text);
+            var hwOffer = parseHwpxOffering(text);
             var filled = [];
             if (ex.bdate && !get('bt_bdate').value) { get('bt_bdate').value = ex.bdate; get('bt_bdate').dispatchEvent(new Event('change')); filled.push('날짜'); }
             if (ex.title && !get('bt_title').value.trim()) { get('bt_title').value = ex.title; filled.push('제목'); }
             if (ex.scripture && !get('bt_scripture').value.trim()) { get('bt_scripture').value = ex.scripture; filled.push('본문'); }
             if (ex.preacher && !get('bt_preacher').value.trim()) { get('bt_preacher').value = ex.preacher; filled.push('설교자'); }
+            // 예배 순서: 아직 하나도 안 채워진(전부 detail 공란) 상태일 때만 통째로 반영
+            if (hwOrder.length && order.every(function (o) { return !o.detail; })) {
+              order.length = 0; hwOrder.forEach(function (o) { order.push(o); });
+              renderBOrder(); filled.push('예배 순서');
+            }
+            // 향기로운 예물(이름만) — 항목명이 이미 있으면 그 줄의 명단이 비어 있을 때만 채움, 없으면 새 줄 추가
+            if (Object.keys(hwOffer).length) {
+              var offerFilled = false;
+              Object.keys(hwOffer).forEach(function (cat) {
+                var row = null;
+                for (var i = 0; i < coffer.length; i++) { if (coffer[i].name === cat) { row = coffer[i]; break; } }
+                if (!row) { row = { name: cat, givers: '', amount: '' }; coffer.push(row); }
+                if (!row.givers) { row.givers = hwOffer[cat]; offerFilled = true; }
+              });
+              if (offerFilled) { renderOffer(); filled.push('향기로운 예물(명단)'); }
+            }
             pdfMsg.style.color = 'green';
             pdfMsg.textContent = filled.length
               ? ('✓ HWPX에서 ' + filled.join('·') + ' 자동으로 채웠습니다(확인해 주세요) · 이 파일 자체는 게시되지 않으니, 게시용 파일은 PDF로 올려주세요')
@@ -5866,7 +5908,7 @@ console.log('[affairs.js] v20260712memo2');
         order: order.filter(function (o) { return o.name || o.detail; }),
         wed_series: ov.querySelector('#bt_wed_series').value.trim(), wed_title: ov.querySelector('#bt_wed_title').value.trim(), wed_dateline: ov.querySelector('#bt_wed_line').value.trim(),
         dawn: ov.querySelector('#bt_dawn').value.trim(), qt: ov.querySelector('#bt_qt').value.trim(),
-        offering: {}, offering_amounts: {}, committee: {},
+        offering: {}, offering_amounts: {},
         column_title: ov.querySelector('#bt_col_title').value.trim(), column_body: ov.querySelector('#bt_col_body').value,
         notices: ov.querySelector('#bt_notices').value,
         headline: ov.querySelector('#bt_headline').value.trim(),
@@ -5882,7 +5924,6 @@ console.log('[affairs.js] v20260712memo2');
         var a = numAmt(r.amount); if (a) { data.offering_amounts[nm] = commaAmt(r.amount); tot += a; }
       });
       if (tot) data.offering_amounts['합계'] = tot.toLocaleString('en-US');
-      COMMITTEE_KEYS.forEach(function (k, i) { var el = ov.querySelector('#bt_com_' + i); if (el) data.committee[k] = el.value.trim(); });
       return {
         bdate: ov.querySelector('#bt_bdate').value || null,
         title: ov.querySelector('#bt_title').value.trim() || null,
@@ -6004,33 +6045,6 @@ console.log('[affairs.js] v20260712memo2');
       if (!confirm('이 주보를 홈페이지에 게시할까요?\n(헌금 금액은 홈페이지에 노출되지 않습니다)')) return;
       save(function () { bmsg('✓ 게시되었습니다 — 홈페이지 주보란에 반영됩니다', 'green'); }, { published: true });
     };
-    // 봉사위원 자동 채움(설정 → 연간 봉사위원). 마지막 주일이면 다음 달도 병기
-    function fillCommittee(bd) {
-      var cur = committeeFor(ymOf(bd)); if (!cur) return false;
-      function ci(name) { return COMMITTEE_KEYS.indexOf(name); }
-      function set(name, val) { var el = ov.querySelector('#bt_com_' + ci(name)); if (el && val) el.value = val; }
-      var nextTxt = '';
-      if (isLastSundayOfMonth(bd)) { var nx = committeeFor(nextMonthYM(bd)); if (nx) nextTxt = nx; }
-      function merge(a, b) { return b ? (a || '') + (a ? '  /  ' : '') + '(다음 달) ' + b : (a || ''); }
-      set('헌금위원', merge(cur.offering, nextTxt && nextTxt.offering));
-      set('안내위원', merge(cur.guide, nextTxt && nextTxt.guide));
-      set('주차·사찰', merge(cur.parking, nextTxt && nextTxt.parking));
-      // 기도자(2부 예배 기도): 이번 주 → 예배 순서 '기도' 항목 / 다음 주 → ⑥ '다음 주 기도'
-      function prayerOf(arr, n) { if (!arr) return null; for (var i = 0; i < arr.length; i++) { if ((arr[i].week || '').indexOf(n + '주') >= 0) return arr[i]; } return null; }
-      var nth = Math.floor((new Date(bd + 'T00:00:00').getDate() - 1) / 7) + 1;
-      var thisPr = prayerOf(cur.prayer, nth);
-      var nextPr;
-      if (isLastSundayOfMonth(bd)) { var nxc = committeeFor(nextMonthYM(bd)); nextPr = nxc ? prayerOf(nxc.prayer, 1) : null; }
-      else nextPr = prayerOf(cur.prayer, nth + 1);
-      // 이번 주 기도자 → 예배 순서에서 라벨이 '기도'인 첫 항목의 내용/담당
-      if (thisPr && thisPr.person) {
-        for (var oi = 0; oi < order.length; oi++) { if (order[oi].label === '기도') { order[oi].detail = thisPr.person; break; } }
-        renderBOrder();
-      }
-      // 다음 주 기도자 → ⑥ 봉사위원 '다음 주 기도'
-      set('다음 주 기도', nextPr ? nextPr.person : '');
-      return true;
-    }
     // 헌금 집계(Supabase offerings) → 동적 헌금 표(coffer)에 항목별 반영. 특별헌금 등은 자동 추가
     function fillOfferings(rows) {
       if (!rows) return false;
@@ -6080,7 +6094,6 @@ console.log('[affairs.js] v20260712memo2');
         if (dawn) { ov.querySelector('#bt_dawn').value = dawn.scripture || dawn.title || ''; n++; }
         if (qt) { ov.querySelector('#bt_qt').value = qt.scripture || qt.title || ''; n++; }
         if (n) parts.push('설교 ' + n + '건');
-        if (fillCommittee(bd)) parts.push('봉사위원');
         var offs = res[2];
         if (offs && offs.length) { fillOfferings(offs); parts.push('헌금 ' + offs.length + '건(직전 주일 ' + prevSun + ')'); }
         bmsg(parts.length ? ('✓ ' + parts.join(' · ') + ' 불러옴') + (offs && !offs.length ? ' · 직전 주일(' + prevSun + ') 헌금 없음' : '') : '해당 주/일에 불러올 데이터가 없습니다.', parts.length ? 'green' : '#c0392b');
