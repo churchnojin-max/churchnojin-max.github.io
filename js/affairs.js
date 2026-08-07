@@ -5786,10 +5786,28 @@ console.log('[affairs.js] v20260712memo2');
         var re = /<([^<>]+)>\s*([^<>]*)/g, mm, off = {};
         while ((mm = re.exec(m[1]))) {
           var cat = cleanCell(mm[1]).replace(/\s+/g, '');
-          var names = cleanCell(mm[2]).split(/\s+/).filter(Boolean).join(' · ');
+          var names = cleanCell(mm[2]).split(/\s+/).filter(Boolean).join(' ');
           if (cat && names) off[HWPX_OFFER_ALIAS[cat] || cat] = names;
         }
         return off;
+      }
+      // "말씀 요약"·"교회소식" 본문은 별도 글상자(텍스트 박스)에 있어 Preview/PrvText.txt(미리보기)엔
+      // 안 잡힌다 — Contents/section0.xml의 전체 텍스트(<hp:t> 태그 전부)에서 직접 찾아야 한다.
+      // 순서: "말씀 요약" 표제 → (그 사이가 말씀 요약 본문) → "교회소식" 표제 → (그 사이가 교회소식 본문) → "섬기는 분" 표제.
+      function htmlDec(s) { return String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#(\d+);/g, function (_, n) { return String.fromCharCode(+n); }); }
+      function parseHwpxSummaryNews(lines) {
+        var norm = function (s) { return s.replace(/\s+/g, ''); };
+        var iSum = -1, iNews = -1, iEnd = -1;
+        for (var i = 0; i < lines.length; i++) {
+          var t = norm(lines[i]);
+          if (iSum < 0 && t === '말씀요약') { iSum = i; continue; }
+          if (iSum >= 0 && iNews < 0 && t === '교회소식') { iNews = i; continue; }
+          if (iNews >= 0 && iEnd < 0 && t === '섬기는분') { iEnd = i; break; }
+        }
+        var out = {};
+        if (iSum >= 0 && iNews > iSum) out.summary = lines.slice(iSum + 1, iNews).join('\n').trim();
+        if (iNews >= 0) out.notices = lines.slice(iNews + 1, iEnd >= 0 ? iEnd : lines.length).join('\n').trim();
+        return out;
       }
       function autoFillFromHwpx(file) {
         var get = function (id) { return ov.querySelector('#' + id); };
@@ -5797,11 +5815,13 @@ console.log('[affairs.js] v20260712memo2');
         if (!window.JSZip) { pdfMsg.style.color = '#c0392b'; pdfMsg.textContent = '압축 해제 모듈이 없어 자동 인식을 할 수 없습니다. 새로고침 후 다시 시도해 주세요.'; return; }
         file.arrayBuffer().then(function (buf) { return window.JSZip.loadAsync(buf); })
           .then(function (zip) {
-            var entry = zip.file('Preview/PrvText.txt');
-            if (!entry) throw new Error('no-preview');
-            return entry.async('string');
+            var prv = zip.file('Preview/PrvText.txt');
+            if (!prv) throw new Error('no-preview');
+            var sec = zip.file('Contents/section0.xml');
+            return Promise.all([prv.async('string'), sec ? sec.async('string') : Promise.resolve('')]);
           })
-          .then(function (text) {
+          .then(function (res) {
+            var text = res[0], secXml = res[1];
             var ex = {};
             var mDate = file.name.match(/(\d{2,4})\s*년\s*0?(\d{1,2})\s*월\s*0?(\d{1,2})\s*일/);
             if (mDate) { var y = mDate[1].length === 2 ? '20' + mDate[1] : mDate[1]; ex.bdate = y + '-' + ('0' + mDate[2]).slice(-2) + '-' + ('0' + mDate[3]).slice(-2); }
@@ -5810,11 +5830,22 @@ console.log('[affairs.js] v20260712memo2');
             var mTitle = text.match(/말씀선포\s*>\s*<\s*([^<\n]+)/); if (mTitle) ex.title = cleanField(mTitle[1]);
             var hwOrder = parseHwpxOrder(text);
             var hwOffer = parseHwpxOffering(text);
+            // 말씀 요약·교회소식 본문 — 미리보기(PrvText.txt)엔 없어 원본 XML에서 직접 추출
+            if (secXml) {
+              var runs = (secXml.match(/<hp:t(?:\s[^>]*)?>[\s\S]*?<\/hp:t>/g) || [])
+                .map(function (t) { return htmlDec(t.replace(/<\/?hp:t(?:\s[^>]*)?>/g, '')); })
+                .filter(function (s) { return s.trim(); });
+              var ws = parseHwpxSummaryNews(runs);
+              if (ws.summary) ex.summary = ws.summary;
+              if (ws.notices) ex.notices = ws.notices;
+            }
             var filled = [];
             if (ex.bdate && !get('bt_bdate').value) { get('bt_bdate').value = ex.bdate; get('bt_bdate').dispatchEvent(new Event('change')); filled.push('날짜'); }
             if (ex.title && !get('bt_title').value.trim()) { get('bt_title').value = ex.title; filled.push('제목'); }
             if (ex.scripture && !get('bt_scripture').value.trim()) { get('bt_scripture').value = ex.scripture; filled.push('본문'); }
             if (ex.preacher && !get('bt_preacher').value.trim()) { get('bt_preacher').value = ex.preacher; filled.push('설교자'); }
+            if (ex.summary && !get('bt_summary').value.trim()) { get('bt_summary').value = ex.summary; filled.push('말씀 요약'); }
+            if (ex.notices && !get('bt_notices').value.trim()) { get('bt_notices').value = ex.notices; filled.push('교회소식'); }
             if (get('bt_scripture').value.trim()) autoFillScriptureText();
             // 예배 순서: 아직 하나도 안 채워진(전부 detail 공란) 상태일 때만 통째로 반영
             if (hwOrder.length && order.every(function (o) { return !o.detail; })) {
