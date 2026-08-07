@@ -12,7 +12,16 @@
 --
 -- 이 문장은 안전합니다: 이미 text 타입이면 그대로 통과되고,
 -- 혹시 uuid로 저장된 기존 값이 있어도 문자열로 그대로 변환됩니다.
+--
+-- 주의: offerings_select 정책이 member_key 컬럼을 참조하고 있어 타입을
+-- 바로 바꿀 수 없음(Postgres 제약) → 정책을 잠깐 지웠다가 타입 변경 후
+-- 원래 있던 정책 그대로 다시 만든다(supabase/offerings.sql 과 동일 내용).
 -- ============================================================
+
+drop policy if exists offerings_select on public.offerings;
 
 alter table public.offerings
   alter column member_key type text using member_key::text;
+
+create policy offerings_select on public.offerings for select
+  using ( public.is_finance() or member_key in (select public.my_member_keys()) );
