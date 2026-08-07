@@ -1128,9 +1128,12 @@ function closeModal() {
   document.body.style.overflow = "";
 }
 
-// Supabase 게시 주보 — 공용 렌더러(js/bulletin-render.js)로 새 탭 보기(헌금 금액 없음)
+// Supabase 게시 주보 — 완성된 PDF를 올려둔 경우 그 파일을 그대로 열고,
+// 아니면 공용 렌더러(js/bulletin-render.js)로 새 탭 보기(헌금 금액 없음)
 function openPublicBulletinView(b) {
   if (!b) return;
+  const pdfUrl = b.data && b.data.pdf_url;
+  if (pdfUrl) { window.open(pdfUrl, "_blank", "noopener"); return; }
   if (window.BulletinRender) { window.BulletinRender.open(b, { amounts: false }); return; }
   alert("주보 보기를 불러오지 못했습니다. 페이지를 새로고침해 주세요.");
 }
@@ -1260,39 +1263,41 @@ if (homeSermon && typeof BULLETINS !== "undefined" && BULLETINS.length) {
     <a class="btn btn-line" href="word.html">설교 더 보기 →</a>`;
 }
 
-// ===== 4b. 홈 '이번 주 주보' 미리보기 =====
+// ===== 4b. 홈 '이번 주 주보' 미리보기 — 게시된 주보(bulletins_public) 중 최신 1건 =====
 const homeBulletin = document.getElementById("homeBulletin");
-if (homeBulletin && typeof BULLETINS !== "undefined" && BULLETINS.length) {
-  const b = BULLETINS[0];
-  const orderItems = (b.order || []).map((o) => `<li>${o}</li>`).join("");
-  const newsItems = (b.news || []).slice(0, 3).map((n) => `<li><strong>${n.title}</strong>${n.detail}</li>`).join("");
-  homeBulletin.innerHTML = `
-    <div class="hb-card">
-      <div class="hb-hd">
-        <span class="hb-hd-week">${b.week} · 주일 낮 예배</span>
-        <span class="hb-hd-date">${b.dateLabel}</span>
-      </div>
-      <div class="hb-body">
-        <div class="hb-col">
-          <p class="hb-col-title">예배 순서</p>
-          <ol class="hb-order">${orderItems}</ol>
-        </div>
-        <div class="hb-col">
-          <p class="hb-col-title">이 주의 말씀 강해</p>
-          <ul class="hb-extra">
-            <li>${b.wed || ""}</li>
-            <li>${b.dawn || ""}</li>
-            <li>${b.qt || ""}</li>
-          </ul>
-          ${newsItems ? `<p class="hb-col-title">한 주의 소식</p><ul class="hb-news">${newsItems}</ul>` : ""}
-        </div>
-      </div>
-      <div class="hb-ft">
-        <button class="btn btn-line" id="homeBulletinBtn">주보 전체 보기 →</button>
-      </div>
-    </div>`;
-  const hbBtn = document.getElementById("homeBulletinBtn");
-  if (hbBtn) hbBtn.onclick = () => openBulletin(0);
+if (homeBulletin) {
+  if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) {
+    homeBulletin.innerHTML = `<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`;
+  } else {
+    const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=*&order=bdate.desc&limit=1";
+    fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + window.SUPABASE_ANON_KEY } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => {
+        const b = rows && rows[0];
+        if (!b) { homeBulletin.innerHTML = `<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`; return; }
+        const d = b.data || {};
+        const dl = String(b.bdate || "").slice(0, 10).replace(/-/g, ". ");
+        homeBulletin.innerHTML = `
+          <div class="hb-card">
+            <div class="hb-hd">
+              <span class="hb-hd-week">${escB(d.week || "주보")} · 주일 낮 예배</span>
+              <span class="hb-hd-date">${escB(dl)}</span>
+            </div>
+            <div class="hb-body" style="grid-template-columns:1fr">
+              <div class="hb-col">
+                ${b.title ? `<p class="hb-col-title">${escB(b.title)}</p>` : ""}
+                ${b.scripture ? `<p style="color:var(--ink-soft);margin:4px 0 0">${escB(b.scripture)}${b.preacher ? " · " + escB(b.preacher) : ""}</p>` : ""}
+              </div>
+            </div>
+            <div class="hb-ft">
+              <button class="btn btn-line" id="homeBulletinBtn">${d.pdf_url ? "📄 주보 PDF 보기 →" : "주보 전체 보기 →"}</button>
+            </div>
+          </div>`;
+        const hbBtn = document.getElementById("homeBulletinBtn");
+        if (hbBtn) hbBtn.onclick = () => openPublicBulletinView(b);
+      })
+      .catch(() => { homeBulletin.innerHTML = `<p class="qt-loading">주보를 불러오지 못했습니다.</p>`; });
+  }
 }
 
 // ===== 5. 새가족 등록 폼 (welcome) =====

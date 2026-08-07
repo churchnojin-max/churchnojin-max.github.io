@@ -5612,6 +5612,15 @@ console.log('[affairs.js] v20260712memo2');
       '<div id="bt_msg" class="fin-msg" style="flex-basis:100%;text-align:right;margin-top:-2px"></div>' +
       '</div></header>' +
       '<div style="max-width:1100px;margin:0 auto;padding:20px 18px 70px">' +
+      // 완성된 주보 파일 그대로 올리기(선택) — 아래 항목을 일일이 입력하지 않고 파일만 올려 게시 가능
+      '<div class="fin-card" style="border-color:#9cc0f0;background:#f7faff"><h4 style="margin:0 0 6px;color:var(--accent)">📎 완성된 주보 파일 올리기 <span style="font-weight:400;font-size:.78rem;color:#9aa5b1">(선택 — 이미 다 만든 주보가 있으면 아래 항목을 채울 필요 없이 이것만 올려 게시하세요)</span></h4>' +
+      '<div id="bt_pdf_slot">' + (d.pdf_url
+        ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><a href="' + esc(d.pdf_url) + '" target="_blank" rel="noopener" class="btn btn-line" style="padding:6px 14px;font-size:.84rem">📄 ' + esc(d.pdf_name || '올린 파일') + ' 보기</a><button type="button" class="btn btn-line" id="bt_pdf_remove" style="padding:6px 14px;font-size:.84rem;color:#c0392b">제거</button></div>'
+        : '<label class="btn btn-line" style="cursor:pointer;padding:8px 16px;font-size:.86rem;display:inline-block">＋ 파일 선택(PDF)<input type="file" id="bt_pdf_file" accept="application/pdf,.pdf" hidden></label>') + '</div>' +
+      '<span class="fin-msg" id="bt_pdf_msg" style="margin-left:10px"></span>' +
+      '<input type="hidden" id="bt_pdf_url" value="' + esc(d.pdf_url || '') + '"><input type="hidden" id="bt_pdf_name" value="' + esc(d.pdf_name || '') + '">' +
+      '<p class="help" style="margin-top:8px">파일을 올리고 <b>주일 날짜</b>만 선택한 뒤 게시하면, 홈페이지·주보 보관함에서 이 파일이 그대로 열립니다.</p>' +
+      '</div>' +
       // 기본
       '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">① 기본 정보</h4>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">' +
@@ -5663,6 +5672,39 @@ console.log('[affairs.js] v20260712memo2');
     function close() { ov.remove(); document.body.style.overflow = ''; }
     ov.querySelector('#bt_close').onclick = close;
     function bmsg(t, c) { var e = ov.querySelector('#bt_msg'); e.style.color = c || '#7b8794'; e.textContent = t; }
+    // 📎 완성된 주보 PDF 올리기/제거 — 여기서 올리면 항목을 채우지 않아도 그대로 게시 가능
+    (function () {
+      var slot = ov.querySelector('#bt_pdf_slot');
+      var pdfMsg = ov.querySelector('#bt_pdf_msg');
+      var uploadHTML = '<label class="btn btn-line" style="cursor:pointer;padding:8px 16px;font-size:.86rem;display:inline-block">＋ 파일 선택(PDF)<input type="file" id="bt_pdf_file" accept="application/pdf,.pdf" hidden></label>';
+      function showUploaded(url, name) {
+        slot.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><a href="' + esc(url) + '" target="_blank" rel="noopener" class="btn btn-line" style="padding:6px 14px;font-size:.84rem">📄 ' + esc(name || '올린 파일') + ' 보기</a><button type="button" class="btn btn-line" id="bt_pdf_remove" style="padding:6px 14px;font-size:.84rem;color:#c0392b">제거</button></div>';
+        slot.querySelector('#bt_pdf_remove').onclick = function () {
+          ov.querySelector('#bt_pdf_url').value = ''; ov.querySelector('#bt_pdf_name').value = ''; pdfMsg.textContent = '';
+          slot.innerHTML = uploadHTML; wireFileInput();
+        };
+      }
+      function wireFileInput() {
+        var fileIn = slot.querySelector('#bt_pdf_file');
+        if (!fileIn) return;
+        fileIn.onchange = function () {
+          var f = fileIn.files && fileIn.files[0]; if (!f) return;
+          if (!window.ChurchUpload || !ChurchUpload.isReady()) { pdfMsg.style.color = '#c0392b'; pdfMsg.textContent = '업로드 서버가 설정되지 않았습니다.'; return; }
+          pdfMsg.style.color = '#7b8794'; pdfMsg.textContent = '올리는 중…';
+          ChurchUpload.upload(f, { folder: 'bulletins', compress: false }).then(function (r) {
+            ov.querySelector('#bt_pdf_url').value = r.url;
+            ov.querySelector('#bt_pdf_name').value = f.name;
+            pdfMsg.style.color = 'green'; pdfMsg.textContent = '✓ 올렸습니다 — 게시를 눌러야 반영됩니다';
+            showUploaded(r.url, f.name);
+          }).catch(function (e) { pdfMsg.style.color = '#c0392b'; pdfMsg.textContent = '업로드 실패: ' + ((e && e.message) || e); });
+        };
+      }
+      if (d.pdf_url) slot.querySelector('#bt_pdf_remove').onclick = function () {
+        ov.querySelector('#bt_pdf_url').value = ''; ov.querySelector('#bt_pdf_name').value = ''; pdfMsg.textContent = '';
+        slot.innerHTML = uploadHTML; wireFileInput();
+      };
+      else wireFileInput();
+    })();
     // ⑦ 신앙과 책: 예화 클립에서 검색해 바로 삽입(제목/출처+본문)
     var colPick = ov.querySelector('#bt_col_pick');
     if (colPick) colPick.onclick = function () {
@@ -5765,6 +5807,8 @@ console.log('[affairs.js] v20260712memo2');
         notices: ov.querySelector('#bt_notices').value,
         headline: ov.querySelector('#bt_headline').value.trim(),
         summary: ov.querySelector('#bt_summary').value.trim(),
+        pdf_url: ov.querySelector('#bt_pdf_url').value.trim(),
+        pdf_name: ov.querySelector('#bt_pdf_name').value.trim(),
         founded: FOUNDED_DATE
       };
       var tot = 0;
