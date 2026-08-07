@@ -25,3 +25,26 @@ alter table public.offerings
 
 create policy offerings_select on public.offerings for select
   using ( public.is_finance() or member_key in (select public.my_member_keys()) );
+
+-- 컬럼 타입은 text로 바뀌었는데도 여전히 같은 오류가 난다면, member_key에
+-- gyojeok(id, uuid)를 가리키는 외래키(FK)가 남아있어서일 가능성이 높다.
+-- (FK가 남아있으면 참조 대상 컬럼이 uuid라 여전히 uuid 형식을 요구하게 됨)
+-- 이름을 몰라도 자동으로 찾아서 지운다.
+do $$
+declare r record;
+begin
+  for r in
+    select con.conname
+    from pg_constraint con
+    join pg_attribute att
+      on att.attrelid = con.conrelid and att.attnum = any(con.conkey)
+    where con.conrelid = 'public.offerings'::regclass
+      and con.contype = 'f'                 -- foreign key만
+      and att.attname = 'member_key'
+  loop
+    execute format('alter table public.offerings drop constraint %I', r.conname);
+    raise notice '삭제한 외래키 제약: %', r.conname;
+  end loop;
+end $$;
+
+NOTIFY pgrst, 'reload schema';
