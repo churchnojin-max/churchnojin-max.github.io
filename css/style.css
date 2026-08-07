@@ -196,8 +196,8 @@ ul { list-style: none; }
 .hb-col { padding: 22px 24px; }
 .hb-col:first-child { border-right: 1px solid var(--line); }
 .hb-col-title { font-size: .95rem; font-weight: 700; color: var(--accent); margin: 0 0 4px; }
-.hb-order { margin: 0; padding-left: 18px; font-size: .84rem; line-height: 1.9; color: var(--ink); }
-.hb-extra { margin: 0 0 14px; padding-left: 0; list-style: none; font-size: .83rem; line-height: 1.85; color: var(--ink-soft); }
+.hb-order { margin: 0; padding-left: 22px; font-size: 1.12rem; line-height: 2.15; color: var(--ink); word-break: keep-all; }
+.hb-extra { margin: 0 0 14px; padding-left: 0; list-style: none; font-size: .83rem; line-height: 1.85; color: var(--ink-soft); word-break: keep-all; }
 .hb-extra li::before { content: "▸ "; color: var(--accent); font-size: .8rem; }
 .hb-news { margin: 0; padding-left: 0; list-style: none; font-size: .82rem; line-height: 1.75; }
 .hb-news li { padding: 3px 0; border-bottom: 1px dashed #eef1f5; }

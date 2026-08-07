@@ -1290,7 +1290,7 @@ if (homeBulletin) {
           : "";
         const offerKeys = Object.keys(d.offering || {}).filter((k) => d.offering[k]);
         const offerHtml = offerKeys.length
-          ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><ul class="hb-extra">${offerKeys.map((k) => `<li><b>${escB(k)}</b> ${escB(d.offering[k])}</li>`).join("")}</ul><p style="font-size:.78rem;color:var(--ink-soft);margin:8px 0 0">* 감사한 마음으로 드린 예물의 명단만 안내하며, 헌금 금액 내역은 게시하지 않습니다.</p></div>`
+          ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><ul class="hb-extra">${offerKeys.map((k) => `<li><b>${escB(k)}</b> ${escB(d.offering[k])}</li>`).join("")}</ul></div>`
           : "";
         const noticeLines = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean);
         const noticeHtml = noticeLines.length

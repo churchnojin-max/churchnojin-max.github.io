@@ -6119,11 +6119,15 @@ console.log('[affairs.js] v20260712memo2');
         if (r.giver && r.giver.trim()) byCat[c].givers.push(r.giver.trim());
         byCat[c].sum += Number(r.amount) || 0;
       });
-      var ALIAS = { '일천번제': '일천번기도', '일천번기도': '일천번제' };
+      // '일천번' 계열은 헌금 명세 입력 방식에 따라 일천번제/일천번헌금/일천번기도 등으로
+      // 표기가 갈릴 수 있어(재정 화면·수기 입력 경로가 제각각) 전부 '일천번기도'로 통일해 매칭한다.
+      // 이 별칭이 없으면 금액이 이름과 다른 새 줄로 들어가 버려 화면엔 금액이 안 보이는 것처럼 보인다.
+      var CAT_ALIAS = { '일천번제': '일천번기도', '일천번헌금': '일천번기도', '일천번': '일천번기도' };
+      function normCat(c) { return CAT_ALIAS[c] || c; }
       Object.keys(byCat).forEach(function (cat) {
-        var b = byCat[cat], row = null;
-        for (var i = 0; i < coffer.length; i++) { if (coffer[i].name === cat || ALIAS[coffer[i].name] === cat) { row = coffer[i]; break; } }
-        if (!row) { row = { name: cat, givers: '', amount: '' }; coffer.push(row); }
+        var b = byCat[cat], row = null, key = normCat(cat);
+        for (var i = 0; i < coffer.length; i++) { if (normCat(coffer[i].name) === key) { row = coffer[i]; break; } }
+        if (!row) { row = { name: key, givers: '', amount: '' }; coffer.push(row); }
         row.givers = normGivers(b.givers.join(' '));
         row.amount = b.sum ? b.sum.toLocaleString('en-US') : '';
       });

@@ -117,7 +117,10 @@
       if (rows) amtHtml = '<table class="amt"><tbody>' + rows + '</tbody></table>';
     }
     var comHtml = COMMITTEE_KEYS.map(function (k) { return (d.committee && d.committee[k]) ? '<div class="ofg"><b>' + esc(k) + '</b> ' + esc(d.committee[k]) + '</div>' : ''; }).join('');
-    var notices = (d.notices || '').split('\n').filter(function (l) { return l.trim(); }).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('');
+    // 표기용 번호(01·02…)는 CSS(counter)가 자동으로 붙이므로, 원문에 이미 있는 "1. " 같은
+    // 수동 번호는 중복되지 않도록 지워서 보여준다(저장된 원문 자체는 그대로 둠).
+    var notices = (d.notices || '').split('\n').map(function (l) { return l.trim().replace(/^\d+[.\)]\s*/, ''); }).filter(Boolean)
+      .map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('');
     var sub = esc(CH_NAME_EN) + ' · ' + esc(dotDate(rec.bdate)) + (d.no ? ' · 제' + esc(d.no) + '호' : '') + (d.week ? ' · ' + esc(d.week) : '');
 
     // 표지 말씀 헤드라인(있으면 머리글 아래 배너로)
@@ -140,7 +143,6 @@
     var comSec = comHtml ? ('<section><h2>봉사위원 · 다음 주 기도 <span class="en">SERVANTS</span></h2><div class="two">' + comHtml + '</div></section>') : '';
     var colSec = (d.column_title || d.column_body) ? ('<section><h2>신앙과 책 <span class="en">FAITH &amp; BOOKS</span></h2><div class="col"><div class="ct">' + esc(d.column_title || '') + '</div>' + esc(d.column_body || '') + '</div></section>') : '';
     var newsSec = notices ? ('<section><h2>한 주의 소식 <span class="en">THIS WEEK</span></h2><ul class="news">' + notices + '</ul></section>') : '';
-    var noteHtml = !opts.amounts ? '<p class="note">* 감사한 마음으로 드린 예물의 명단만 안내하며, 헌금 금액 내역은 게시하지 않습니다.</p>' : '';
     var fm = String(d.founded || '1964-03-01').match(/(\d{4})-(\d{2})-(\d{2})/);
     var sinceTxt = fm ? ('SINCE ' + fm[1] + '. ' + Number(fm[2]) + '. ' + Number(fm[3])) : 'SINCE 1964. 3. 1';
     var coverBlock = '<div class="cover">' + (headlineHtml || '') +
@@ -151,12 +153,12 @@
 
     if (opts.layout === 'print3') {
       // 가로 3단 양면 — 앞면: 설교/예배순서·주중·헌금/봉사위원 / 뒷면: 칼럼·광고·표지
-      var front = '<div class="page front">' + sermSec + midSec + offerSec + comSec + noteHtml + '</div>';
+      var front = '<div class="page front">' + sermSec + midSec + offerSec + comSec + '</div>';
       var back = '<div class="page back">' + colSec + newsSec + coverBlock + '</div>';
       return front + back;
     }
     // 홈페이지 읽기(세로 1단)
-    return '<div class="page">' + hdBanner + (headlineHtml || '') + sermSec + midSec + offerSec + comSec + colSec + newsSec + noteHtml +
+    return '<div class="page">' + hdBanner + (headlineHtml || '') + sermSec + midSec + offerSec + comSec + colSec + newsSec +
       '<div class="foot">' + esc(CH_NAME) + ' · 담임목사 손병민 · 경기도 화성시 장안면 화곡로 159-8 · churchnojin-max.github.io</div></div>';
   }
 
