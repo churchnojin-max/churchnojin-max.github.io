@@ -5639,7 +5639,7 @@ console.log('[affairs.js] v20260712memo2');
       '<label style="font-size:.82rem;color:#7b8794;display:block;margin-bottom:6px">예배 순서 <span style="font-weight:400">(순서명 · 내용/담당) — 데이터 불러오기 시 자동 채워집니다</span></label>' +
       '<div id="bt_order"></div></div>' +
       // 주중 예배 — 당분간 비활성화(숨김). 필요해지면 이 div의 hidden 속성만 지우면 됨.
-      '<div class="fin-card" hidden><h4 style="margin:0 0 10px;color:var(--accent)">③ 주중 · 새벽 · QT</h4>' +
+      '<div class="fin-card" hidden><h4 style="margin:0 0 10px;color:var(--accent)">주중 · 새벽 · QT</h4>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
       '<div>' + tI('수요기도회 — 강해 시리즈', 'bt_wed_series', d.wed_series, '예: 레위기 강해(1)') + '</div>' +
       '<div>' + tI('수요기도회 — 제목', 'bt_wed_title', d.wed_title, '예: 레위기란 어떤 책인가?') + '</div>' +
@@ -5650,15 +5650,15 @@ console.log('[affairs.js] v20260712memo2');
       '<div>' + tI('매일 QT 본문', 'bt_qt', d.qt, '예: 나훔 3장, 시편107편~109편') + '</div>' +
       '</div></div>' +
       // 향기로운 예물 + 헌금 금액(통합 동적 표 — 특별헌금 등 자유 추가)
-      '<div class="fin-card"><h4 style="margin:0 0 4px;color:var(--accent)">④ 향기로운 예물 · 헌금</h4>' +
+      '<div class="fin-card"><h4 style="margin:0 0 4px;color:var(--accent)">③ 향기로운 예물 · 헌금</h4>' +
       '<p style="margin:0 0 10px;font-size:.8rem;color:#9aa5b1">항목을 자유롭게 추가할 수 있습니다(특별헌금·추수감사·맥추감사 등). <b>명단</b>은 홈페이지에도 공개되고, <b>금액</b>은 🔒 인쇄(PDF)에만 표시됩니다. — 데이터 불러오기 시 직전 주일 헌금이 항목별로 채워집니다.</p>' +
       '<div id="bt_offer"></div></div>' +
       // 칼럼 — 당분간 비활성화(숨김). 필요해지면 이 div의 hidden 속성만 지우면 됨.
-      '<div class="fin-card" hidden><h4 style="margin:0 0 10px;color:var(--accent);display:flex;align-items:center;gap:8px;flex-wrap:wrap">⑦ 신앙과 책 (칼럼) <button type="button" class="btn btn-line" id="bt_col_pick" style="padding:4px 11px;font-size:.76rem;font-weight:600">🔍 예화 클립에서 가져오기</button></h4>' +
+      '<div class="fin-card" hidden><h4 style="margin:0 0 10px;color:var(--accent);display:flex;align-items:center;gap:8px;flex-wrap:wrap">신앙과 책 (칼럼) <button type="button" class="btn btn-line" id="bt_col_pick" style="padding:4px 11px;font-size:.76rem;font-weight:600">🔍 예화 클립에서 가져오기</button></h4>' +
       tI('제목/출처', 'bt_col_title', d.column_title, '예: 김다위, 「하나님 마음에 맞는 사람」 (두란노)') +
       tA('본문', 'bt_col_body', d.column_body, '칼럼 내용…', 140) + '</div>' +
       // 광고
-      '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">⑧ 한 주의 소식 (광고)</h4>' +
+      '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">④ 한 주의 소식 (광고)</h4>' +
       tA('소식 (한 줄에 하나씩)', 'bt_notices', d.notices, '다음 주는 맥추감사주일로 지킵니다.\n학습세례 문답 및 성찬 예식이 있습니다.', 140) + '</div>' +
       '</div>';
     document.body.appendChild(ov);
@@ -5861,7 +5861,7 @@ console.log('[affairs.js] v20260712memo2');
       };
       else wireFileInput();
     })();
-    // ⑦ 신앙과 책: 예화 클립에서 검색해 바로 삽입(제목/출처+본문)
+    // 신앙과 책(숨김 상태): 예화 클립에서 검색해 바로 삽입(제목/출처+본문)
     var colPick = ov.querySelector('#bt_col_pick');
     if (colPick) colPick.onclick = function () {
       illustrationsModal({ pickLabel: '이 책으로 넣기', onPick: function (r) {
@@ -5933,6 +5933,9 @@ console.log('[affairs.js] v20260712memo2');
     })();
     function numAmt(v) { return Number(String(v == null ? '' : v).replace(/[^0-9.\-]/g, '')) || 0; }
     function commaAmt(v) { var n = numAmt(v); return n ? n.toLocaleString('en-US') : ''; }
+    // 향기로운 예물 명단 정리 — 사람과 사람 사이는 띄어쓰기만, 두 사람이 함께 낸 경우("최명철·김은희")만
+    // 가운뎃점을 유지한다. 가운뎃점 앞뒤에 공백이 있으면(=일반 구분자로 잘못 쓰인 경우) 공백 하나로 바꾼다.
+    function normGivers(s) { return String(s || '').replace(/\s*·\s*/g, function (m) { return m.length > 1 ? ' ' : '·'; }).replace(/\s+/g, ' ').trim(); }
     var ofBox = ov.querySelector('#bt_offer');
     function renderOffer() {
       var total = coffer.reduce(function (s, r) { return s + numAmt(r.amount); }, 0);
@@ -5978,7 +5981,7 @@ console.log('[affairs.js] v20260712memo2');
       var tot = 0;
       coffer.forEach(function (r) {
         var nm = (r.name || '').trim(); if (!nm) return;
-        if (r.givers && r.givers.trim()) data.offering[nm] = r.givers.trim();
+        if (r.givers && r.givers.trim()) data.offering[nm] = normGivers(r.givers);
         var a = numAmt(r.amount); if (a) { data.offering_amounts[nm] = commaAmt(r.amount); tot += a; }
       });
       if (tot) data.offering_amounts['합계'] = tot.toLocaleString('en-US');
@@ -6090,7 +6093,7 @@ console.log('[affairs.js] v20260712memo2');
         var b = byCat[cat], row = null;
         for (var i = 0; i < coffer.length; i++) { if (coffer[i].name === cat || ALIAS[coffer[i].name] === cat) { row = coffer[i]; break; } }
         if (!row) { row = { name: cat, givers: '', amount: '' }; coffer.push(row); }
-        row.givers = b.givers.join(' ');
+        row.givers = normGivers(b.givers.join(' '));
         row.amount = b.sum ? b.sum.toLocaleString('en-US') : '';
       });
       renderOffer();
@@ -6113,10 +6116,14 @@ console.log('[affairs.js] v20260712memo2');
           if (sun.title) ov.querySelector('#bt_title').value = sun.title;
           if (sun.scripture) ov.querySelector('#bt_scripture').value = sun.scripture;
           if (sun.preacher) ov.querySelector('#bt_preacher').value = sun.preacher;
-          // 설교 요약 → 홈페이지 '이번 주 말씀'에 그대로 실린다(비어 있을 때만 덮어씀)
-          var sSum = (sun.summary || sun.content || '').trim();
-          if (sSum && !ov.querySelector('#bt_summary').value.trim()) ov.querySelector('#bt_summary').value = sSum;
           var wo = []; try { wo = JSON.parse(sun.worship_order || '[]') || []; } catch (e) { wo = []; }
+          // 예배 순서(worship_order) 중 '말씀강해/말씀(설교)' 항목을 클릭해 작성해 둔 전문(body) → 말씀 요약,
+          // '교회소식/광고' 항목의 전문(body) → 한 주의 소식. (예배 준비 화면에서 이미 쓴 내용을 그대로 재사용)
+          function orderBody(re) { for (var i = 0; i < wo.length; i++) { if (re.test(wo[i].label || '') && wo[i].body && wo[i].body.trim()) return wo[i].body.trim(); } return ''; }
+          var sSum = (orderBody(/말씀/) || sun.summary || sun.content || '').trim();
+          if (sSum && !ov.querySelector('#bt_summary').value.trim()) ov.querySelector('#bt_summary').value = sSum;
+          var sNews = orderBody(/소식|광고/);
+          if (sNews && !ov.querySelector('#bt_notices').value.trim()) ov.querySelector('#bt_notices').value = sNews;
           if (wo.length) { order = wo.map(function (it) { return { name: it.label || '', detail: it.detail || '' }; }); renderBOrder(); }
           if (sun.scripture) autoFillScriptureText();
           n++;

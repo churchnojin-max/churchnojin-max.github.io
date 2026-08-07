@@ -56,7 +56,7 @@
       '.ord .bd{color:#3a3a3a}',
       // 2단
       '.two{display:grid;grid-template-columns:1fr 1fr;gap:1.2mm 8mm}',
-      '.ofg{font-size:9pt;padding:1.3mm 0;border-bottom:.5pt dotted #e7e1d1;line-height:1.5}',
+      '.ofg{font-size:9pt;padding:1.3mm 0;border-bottom:.5pt dotted #e7e1d1;line-height:1.5;word-break:keep-all}',
       '.ofg b{font-family:"Noto Sans KR",sans-serif;color:#7a5d27;font-weight:600;margin-right:5px;font-size:8.5pt}',
       // 금액
       '.amt{margin-top:4mm;border:1pt solid #e6dcbe;border-radius:2mm;overflow:hidden}',
