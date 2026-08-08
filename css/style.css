@@ -157,10 +157,10 @@ ul { list-style: none; }
 .hero-sermon-banner {
   display: flex; flex-direction: column; justify-content: center; gap: 14px;
   padding: 32px 34px; border-radius: 16px; text-decoration: none; color: var(--accent);
-  background: rgba(178,213,245,.94); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+  background: rgba(199,224,248,.94); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
   border: 1px solid rgba(255,255,255,.85); transition: all .3s ease;
 }
-.hero-sermon-banner:hover { transform: translateY(-2px); border-color: #fff; background: rgba(178,213,245,1); }
+.hero-sermon-banner:hover { transform: translateY(-2px); border-color: #fff; background: rgba(199,224,248,1); }
 .hero-sermon-banner .hsb-label {
   align-self: flex-start; font-size: .74rem; letter-spacing: .18em; font-weight: 700;
   color: #1f1f1f; background: var(--gold); padding: 5px 14px; border-radius: 999px;
@@ -961,8 +961,8 @@ ul { list-style: none; }
 .entry-card { display:block; background:#fff; border:1px solid var(--line); border-radius:16px; padding:32px 26px; transition: transform .3s, box-shadow .3s, border-color .3s, background .3s; }
 .entry-card:hover { transform: translateY(-6px); box-shadow:0 20px 44px rgba(0,0,0,.09); border-color:var(--accent-soft); }
 /* 메인 화면(index.html)의 진입점 박스만 밝은 하늘색으로 */
-.entry-grid-home .entry-card { background: rgba(178,213,245,.94); border-color: rgba(255,255,255,.7); }
-.entry-grid-home .entry-card:hover { background: rgba(178,213,245,1); }
+.entry-grid-home .entry-card { background: rgba(199,224,248,.94); border-color: rgba(255,255,255,.7); }
+.entry-grid-home .entry-card:hover { background: rgba(199,224,248,1); }
 .entry-grid-home .entry-num { color: var(--accent); }
 .entry-grid-home .entry-card p { color: var(--accent-soft); }
 .entry-num { font-family:"Cormorant Garamond",serif; font-size:1.1rem; color:var(--gold); }
