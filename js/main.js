@@ -1214,6 +1214,12 @@ if (homeBulletin) {
       .then((r) => (r.ok ? r.json() : []))
       .then((rows) => {
         const b = rows && rows[0];
+        const sermonBanner = document.getElementById("heroSermonBanner");
+        if (sermonBanner && b && b.title) {
+          const t = sermonBanner.querySelector(".hsb-title"), r = sermonBanner.querySelector(".hsb-ref");
+          if (t) t.textContent = b.title;
+          if (r) r.textContent = [b.scripture, b.preacher].filter(Boolean).join(" · ");
+        }
         if (!b) { homeBulletin.innerHTML = `<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`; return; }
         const d = b.data || {};
         const dl = String(b.bdate || "").slice(0, 10).replace(/-/g, ". ");
