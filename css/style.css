@@ -2102,3 +2102,26 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
 @media (max-width: 640px) {
   .back-to-top { right: 16px; bottom: 16px; width: 42px; height: 42px; font-size: 1.15rem; }
 }
+
+/* ===== 실시간 예배 — 스크롤과 무관하게 항상 떠 있는 버튼(홈 화면 전용) ===== */
+.live-float {
+  position: fixed; left: 24px; bottom: 24px; z-index: 400;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px; border-radius: 999px;
+  background: var(--accent); color: #fff; font-weight: 700; font-size: .92rem;
+  text-decoration: none; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  transition: transform .2s ease, background .2s ease, color .2s ease;
+}
+.live-float:hover { background: var(--gold); color: var(--accent); transform: translateY(-2px); }
+.live-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: #ff4b4b; flex: 0 0 auto;
+  animation: liveDotPulse 1.6s infinite;
+}
+@keyframes liveDotPulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,75,75,.6); }
+  70% { box-shadow: 0 0 0 9px rgba(255,75,75,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,75,75,0); }
+}
+@media (max-width: 640px) {
+  .live-float { left: 16px; bottom: 16px; padding: 10px 15px; font-size: .82rem; gap: 8px; }
+}
