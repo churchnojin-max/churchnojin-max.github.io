@@ -103,7 +103,7 @@ ul { list-style: none; }
   position: relative; min-height: 88vh; display: flex; align-items: center; justify-content: center;
   background:
     linear-gradient(180deg, rgba(8,10,20,.42) 0%, rgba(8,10,20,.2) 40%, rgba(8,10,20,.55) 100%),
-    url("../images/hero-bg-wilderness.jpg") center 38% / cover no-repeat;
+    url("../images/hero-bg-wilderness.jpg") center / 100% 100% no-repeat;
   color: #fff; overflow: hidden; padding: 80px 0 0;
 }
 .hero-overlay {
