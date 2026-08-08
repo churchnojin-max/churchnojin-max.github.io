@@ -4,35 +4,33 @@
    ============================================================ */
 (function () {
   const NAV = [
-    { href: "welcome.html", label: "교회소개", sub: [
+    { href: "welcome.html", label: "환영합니다", sub: [
       { href: "welcome.html#worship", label: "예배 안내" },
       { href: "welcome.html#directions", label: "교회 가는 길" },
+      { href: "welcome.html#newfamily", label: "새가족 등록" },
       { href: "welcome.html#about", label: "우리 교회는 어떤 곳" },
       { href: "welcome.html#history", label: "교회 연혁" },
-      { href: "welcome.html#newfamily", label: "새가족 등록" },
     ] },
-    { href: "word.html", label: "말씀으로", sub: [
+    { href: "word.html", label: "예배와 말씀", sub: [
       { href: "word.html#sermon", label: "이번 주 말씀" },
       { href: "word.html#song", label: "이달의 찬양" },
       { href: "word.html#qt", label: "매일 말씀 묵상" },
       { href: "word.html#archive", label: "주보" },
       { href: "word.html#believe", label: "우리가 믿는 것" },
+      { href: "library.html#worship", label: "예배 자료실" },
     ] },
-    { href: "story.html", label: "우리 이야기", sub: [
+    { href: "story.html", label: "공동체와 양육", sub: [
       { href: "story.html#album", label: "우리들 소식" },
       { href: "story.html#notice", label: "공지사항" },
       { href: "story.html#request", label: "기도 부탁" },
       { href: "story.html#qna", label: "삶의 질문" },
       { href: "story.html#groups", label: "섬김 부서" },
       { href: "story.html#communities", label: "그리스도의 몸 된 지체들" },
+      { href: "library.html#edu", label: "교육 자료실" },
     ] },
-    { href: "world.html", label: "지역과 세상", sub: [
+    { href: "world.html", label: "선교와 사역", sub: [
       { href: "world.html#local", label: "지역 연합사역" },
       { href: "world.html#mission", label: "선교" },
-    ] },
-    { href: "library.html", label: "자료실", sub: [
-      { href: "library.html#edu", label: "교육 자료실" },
-      { href: "library.html#worship", label: "예배 자료실" },
     ] },
     { href: "finance.html", label: "교회행정", adminOnly: true, sub: [
       { href: "finance.html", label: "재정관리" },
@@ -40,7 +38,8 @@
       { href: "affairs.html", label: "목회행정" },
       { href: "home-settings.html", label: "홈페이지 설정" },
     ] },
-    { href: "sitemap.html", label: "사이트맵" },
+    // 사이트맵: 상단 메뉴는 4개로 간소화하기 위해 빼고, 푸터에서만 보이게 함(footerOnly)
+    { href: "sitemap.html", label: "사이트맵", footerOnly: true },
   ];
 
   const path = location.pathname.split("/").pop() || "index.html";
@@ -61,9 +60,9 @@
   const KAKAO_ON = !!(C.kakaoChannel && C.kakaoChannel.indexOf("http") === 0);
 
   // ===== 헤더 =====
-  // 익숙하지 않은 방문자를 위한 "처음화면" 텍스트 링크(교회소개 왼쪽)
-  const homeLink = `<div class="nav-item nav-home-link"><a href="index.html"${path === "index.html" ? ' class="active"' : ""}>처음화면</a></div>`;
-  const navLinks = NAV.map((n) => {
+  // 로고를 누르면 처음화면(index.html)으로 가므로 별도의 "처음화면" 텍스트 링크는 두지 않음.
+  // footerOnly 항목(사이트맵)은 상단 메뉴를 4개로 간소하게 유지하기 위해 상단에서는 뺀다(푸터에는 남음).
+  const navLinks = NAV.filter((n) => !n.footerOnly).map((n) => {
     const active = path === n.href.split("#")[0] ? ' class="active"' : "";
     const admAttr = n.adminOnly ? ' id="navAdmin" style="display:none"' : (n.memberOnly ? ' id="navMember" style="display:none"' : "");
     if (!n.sub) return `<div class="nav-item"${admAttr}><a href="${n.href}"${active}>${n.label}</a></div>`;
@@ -82,7 +81,7 @@
           <span class="logo-kr">${CH_NAME}</span>
         </a>
         <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
-        <nav class="nav-menu" id="navMenu">${homeLink}${navLinks}</nav>
+        <nav class="nav-menu" id="navMenu">${navLinks}</nav>
         <div class="auth-slot" id="authSlot"></div>
         <button class="nav-toggle" id="navToggle" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
       </div>
