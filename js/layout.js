@@ -59,9 +59,11 @@
   const KAKAO_ON = !!(C.kakaoChannel && C.kakaoChannel.indexOf("http") === 0);
 
   // ===== 헤더 =====
-  // 로고를 누르면 처음화면(index.html)으로 가므로 별도의 "처음화면" 텍스트 링크는 두지 않음.
+  // 로고 클릭으로도 처음화면에 갈 수 있지만, 다른 창(외부 링크 등)에서 넘어왔을 때
+  // "메인화면으로"라는 글자 링크가 명확히 보이는 게 낫다는 요청으로 다시 추가함.
+  const homeLink = `<div class="nav-item nav-home-link"><a href="index.html"${path === "index.html" ? ' class="active"' : ""}>메인화면으로</a></div>`;
   // footerOnly 항목(사이트맵)은 상단 메뉴를 4개로 간소하게 유지하기 위해 상단에서는 뺀다(푸터에는 남음).
-  const navLinks = NAV.filter((n) => !n.footerOnly).map((n) => {
+  const navLinks = homeLink + NAV.filter((n) => !n.footerOnly).map((n) => {
     const active = path === n.href.split("#")[0] ? ' class="active"' : "";
     const admAttr = n.adminOnly ? ' id="navAdmin" style="display:none"' : (n.memberOnly ? ' id="navMember" style="display:none"' : "");
     if (!n.sub) return `<div class="nav-item"${admAttr}><a href="${n.href}"${active}>${n.label}</a></div>`;

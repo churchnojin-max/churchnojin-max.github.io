@@ -37,7 +37,8 @@ ul { list-style: none; }
   position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
   transition: background .4s ease, box-shadow .4s ease, padding .4s ease;
   padding: 22px 0;
-  background: linear-gradient(to bottom, rgba(10,14,28,.55) 0%, rgba(10,14,28,.28) 60%, rgba(10,14,28,0) 100%);
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 1px 0 var(--line);
 }
 .nav-inner {
   max-width: none; margin: 0; padding: 0 clamp(20px, 3.5vw, 72px);
@@ -48,29 +49,25 @@ ul { list-style: none; }
 .logo { display: flex; flex-direction: column; line-height: 1.15; }
 .logo-kr {
   font-family: "Noto Sans KR", sans-serif; font-weight: 700;
-  font-size: 1.25rem; color: #fff; letter-spacing: .04em;
-  transition: color .4s ease;
+  font-size: 1.25rem; color: var(--accent); letter-spacing: .04em;
 }
 .logo-en {
   font-family: "Cormorant Garamond", serif; font-size: .72rem;
-  letter-spacing: .28em; color: rgba(255,255,255,.7);
-  transition: color .4s ease;
+  letter-spacing: .28em; color: var(--muted);
 }
 .hdr-dash-btn {
   display: inline-flex; align-items: center; margin-left: 10px; white-space: nowrap;
-  font-size: .8rem; font-weight: 600; color: #fff;
-  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.34);
+  font-size: .8rem; font-weight: 600; color: var(--accent);
+  background: rgba(34,51,80,.07); border: 1px solid rgba(34,51,80,.22);
   padding: 6px 14px; border-radius: 999px;
-  transition: background .25s ease, color .3s ease, border-color .3s ease;
+  transition: background .25s ease;
 }
-.hdr-dash-btn:hover { background: rgba(255,255,255,.24); }
-#header.scrolled .hdr-dash-btn { color: var(--accent); background: rgba(34,51,80,.07); border-color: rgba(34,51,80,.22); }
-#header.scrolled .hdr-dash-btn:hover { background: rgba(34,51,80,.14); }
+.hdr-dash-btn:hover { background: rgba(34,51,80,.14); }
 @media (max-width: 480px) { .hdr-dash-btn { margin-left: 8px; padding: 5px 11px; font-size: .76rem; } }
 .nav-menu { display: flex; gap: 38px; flex-wrap: nowrap; }
 .nav-menu a {
   font-family: "Noto Sans KR", sans-serif;
-  font-size: 1.06rem; font-weight: 600; color: #fff;
+  font-size: 1.06rem; font-weight: 600; color: var(--ink);
   position: relative; transition: color .3s ease; white-space: nowrap;
 }
 .nav-menu a::after {
@@ -79,24 +76,17 @@ ul { list-style: none; }
 }
 .nav-menu a:hover::after { width: 100%; }
 
-/* scrolled state */
-#header.scrolled {
-  background: rgba(255,255,255,.97); padding: 14px 0;
-  box-shadow: 0 1px 0 var(--line);
-}
-#header.scrolled .logo-kr { color: var(--accent); }
-#header.scrolled .logo-en { color: var(--muted); }
-#header.scrolled .nav-menu a { color: var(--ink); }
+/* scrolled state — 살짝 더 낮은 높이(패딩)로 압축, 배경은 처음부터 흰색이라 색은 안 바뀜 */
+#header.scrolled { padding: 14px 0; }
 
 .nav-toggle { display: none; background: none; border: 0; cursor: pointer; width: 30px; height: 22px; position: relative; }
 .nav-toggle span {
   display: block; position: absolute; left: 0; width: 100%; height: 2px;
-  background: #fff; transition: .3s ease;
+  background: var(--ink); transition: .3s ease;
 }
 .nav-toggle span:nth-child(1){ top: 0; }
 .nav-toggle span:nth-child(2){ top: 10px; }
 .nav-toggle span:nth-child(3){ top: 20px; }
-#header.scrolled .nav-toggle span { background: var(--ink); }
 
 /* ===== Hero ===== */
 .hero {
@@ -921,9 +911,8 @@ ul { list-style: none; }
 .logo-mark { width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
 .logo-txt { display: flex; flex-direction: column; line-height: 1.15; }
 
-.nav-menu a.active { color: var(--gold); }
+.nav-menu a.active { color: var(--accent); }
 .nav-menu a.active::after { width: 100%; background: var(--gold); }
-#header.scrolled .nav-menu a.active { color: var(--accent); }
 
 .footer-nav { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center; }
 .footer-nav a { font-size: .88rem; color: rgba(255,255,255,.75); }
@@ -1374,20 +1363,14 @@ ul { list-style: none; }
 /* ============================================================
    인증(로그인) + 나눔터(게시판)
    ============================================================ */
-.notify-btn { font-family: inherit; font-size: 1.05rem; line-height: 1; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255,255,255,.5); background: transparent; color: #fff; cursor: pointer; transition: .2s; display: inline-flex; align-items: center; justify-content: center; margin-left: 14px; flex: none; }
-.notify-btn:hover { background: rgba(255,255,255,.16); }
-#header.scrolled .notify-btn { border-color: var(--accent-soft); }
-#header.scrolled .notify-btn:hover { background: var(--paper-alt); }
-.notify-btn.on { background: var(--accent); border-color: var(--accent); }
+.notify-btn { font-family: inherit; font-size: 1.05rem; line-height: 1; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--accent-soft); background: transparent; color: var(--ink); cursor: pointer; transition: .2s; display: inline-flex; align-items: center; justify-content: center; margin-left: 14px; flex: none; }
+.notify-btn:hover { background: var(--paper-alt); }
+.notify-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 .auth-slot { display: flex; align-items: center; gap: 10px; margin-left: 18px; }
-.auth-btn { font-family: inherit; font-size: .85rem; font-weight: 500; padding: 7px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.5); background: rgba(0,0,0,.18); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.4); cursor: pointer; transition: .2s; white-space: nowrap; }
-.auth-btn:hover { background: #fff; color: var(--accent); }
-#header.scrolled .auth-btn { border-color: var(--accent-soft); color: var(--accent); }
-#header.scrolled .auth-btn:hover { background: var(--accent); color: #fff; }
-.auth-name { font-size: .85rem; color: #fff; }
-#header.scrolled .auth-name { color: var(--ink); }
-.auth-pending { font-size: .85rem; color: rgba(255,255,255,.6); cursor: default; }
-#header.scrolled .auth-pending { color: var(--muted); }
+.auth-btn { font-family: inherit; font-size: .85rem; font-weight: 500; padding: 7px 16px; border-radius: 20px; border: 1px solid var(--accent-soft); background: transparent; color: var(--accent); cursor: pointer; transition: .2s; white-space: nowrap; }
+.auth-btn:hover { background: var(--accent); color: #fff; }
+.auth-name { font-size: .85rem; color: var(--ink); }
+.auth-pending { font-size: .85rem; color: var(--muted); cursor: default; }
 
 .modal-box-auth { max-width: 420px; padding: 40px 36px; text-align: center; }
 .auth-head { margin-bottom: 22px; }
@@ -1602,16 +1585,13 @@ a.resource-item:hover { border-color: var(--accent-soft); box-shadow: 0 4px 14px
 .auth-wrap { position: relative; display: inline-block; }
 a.auth-name {
   display: inline-block; cursor: pointer; text-decoration: none;
-  color: #fff !important; font-size: 1rem; font-weight: 700; letter-spacing: .02em;
+  color: var(--accent) !important; font-size: 1rem; font-weight: 700; letter-spacing: .02em;
   padding: 8px 14px; border-radius: 20px;
-  background: rgba(0,0,0,.18); /* 어두운 배경에서도 흰 글자가 또렷이 보이도록 */
-  border: 1px solid rgba(255,255,255,.18);
-  text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  background: var(--paper-alt);
+  border: 1px solid var(--line);
   transition: background .2s ease, color .2s ease, border-color .2s ease;
 }
-a.auth-name:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); color: var(--gold) !important; }
-#header.scrolled a.auth-name { color: var(--accent) !important; background: var(--paper-alt); border-color: var(--line); text-shadow: none; }
-#header.scrolled a.auth-name:hover { background: var(--accent); color: #fff !important; border-color: var(--accent); }
+a.auth-name:hover { background: var(--accent); border-color: var(--accent); color: #fff !important; }
 
 /* 호버 카드 (마우스를 갔다 대면 회원정보 표시) */
 .auth-card {
