@@ -153,14 +153,14 @@ ul { list-style: none; }
 .hero-bb-side { flex-direction: column; text-align: center; padding: 16px 14px; }
 .hero-bb-side .hsb-text { text-align: center; align-items: center; }
 .hero-bb-side .hsb-title { white-space: normal; }
-/* 가운데(2칸): 설교 시리즈 배너 — 밝은 블루그레이 반투명 유리 카드 */
+/* 가운데(2칸): 설교 시리즈 배너 — 밝은 하늘색으로 꽉 채운 카드 */
 .hero-sermon-banner {
   display: flex; flex-direction: column; justify-content: center; gap: 14px;
   padding: 32px 34px; border-radius: 16px; text-decoration: none; color: var(--accent);
-  background: rgba(228,236,246,.6); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
-  border: 1px solid rgba(255,255,255,.75); transition: all .3s ease;
+  background: rgba(178,213,245,.94); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+  border: 1px solid rgba(255,255,255,.85); transition: all .3s ease;
 }
-.hero-sermon-banner:hover { transform: translateY(-2px); border-color: #fff; background: rgba(228,236,246,.74); }
+.hero-sermon-banner:hover { transform: translateY(-2px); border-color: #fff; background: rgba(178,213,245,1); }
 .hero-sermon-banner .hsb-label {
   align-self: flex-start; font-size: .74rem; letter-spacing: .18em; font-weight: 700;
   color: #1f1f1f; background: var(--gold); padding: 5px 14px; border-radius: 999px;
