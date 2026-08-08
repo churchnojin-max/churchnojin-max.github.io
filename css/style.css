@@ -116,12 +116,12 @@ ul { list-style: none; }
 }
 .hero-card {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 22px 26px; border-radius: 14px; background: rgba(224,238,252,.88);
+  padding: 22px 26px; border-radius: 14px; background: rgba(224,238,252,.62);
   backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.7);
   text-decoration: none; color: var(--accent); transition: all .3s ease;
   cursor: pointer; flex: 1 1 150px; min-width: 130px;
 }
-.hero-card:hover { background: rgba(224,238,252,1); border-color: #fff; transform: translateY(-3px); }
+.hero-card:hover { background: rgba(224,238,252,.8); border-color: #fff; transform: translateY(-3px); }
 .hero-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .card-icon { font-size: 2rem; }
 .hero-card h3 {
@@ -134,11 +134,11 @@ ul { list-style: none; }
 }
 .hero-song-banner {
   display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-radius: 12px;
-  background: rgba(163,200,238,.9);
+  background: rgba(163,200,238,.65);
   border: 1px solid rgba(255,255,255,.6);
   text-decoration: none; color: var(--accent); transition: all .3s ease;
 }
-.hero-song-banner:hover { background: rgba(163,200,238,1); transform: translateY(-2px); }
+.hero-song-banner:hover { background: rgba(163,200,238,.82); transform: translateY(-2px); }
 .hero-song-banner .hsb-icon { flex: 0 0 auto; font-size: 1.5rem; }
 .hero-song-banner .hsb-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; text-align: left; }
 .hero-song-banner .hsb-label { font-size: .76rem; letter-spacing: .16em; color: var(--accent); font-weight: 700; }
@@ -157,10 +157,10 @@ ul { list-style: none; }
 .hero-sermon-banner {
   display: flex; flex-direction: column; justify-content: center; gap: 14px;
   padding: 32px 34px; border-radius: 16px; text-decoration: none; color: var(--accent);
-  background: rgba(199,224,248,.94); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+  background: rgba(199,224,248,.68); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
   border: 1px solid rgba(255,255,255,.85); transition: all .3s ease;
 }
-.hero-sermon-banner:hover { transform: translateY(-2px); border-color: #fff; background: rgba(199,224,248,1); }
+.hero-sermon-banner:hover { transform: translateY(-2px); border-color: #fff; background: rgba(199,224,248,.84); }
 .hero-sermon-banner .hsb-label {
   align-self: flex-start; font-size: .74rem; letter-spacing: .18em; font-weight: 700;
   color: #1f1f1f; background: var(--gold); padding: 5px 14px; border-radius: 999px;
