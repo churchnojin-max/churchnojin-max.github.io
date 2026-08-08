@@ -116,17 +116,17 @@ ul { list-style: none; }
 }
 .hero-card {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 22px 26px; border-radius: 14px; background: rgba(10,14,28,.6);
-  backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.28);
-  text-decoration: none; color: inherit; transition: all .3s ease;
+  padding: 22px 26px; border-radius: 14px; background: rgba(224,238,252,.88);
+  backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.7);
+  text-decoration: none; color: var(--accent); transition: all .3s ease;
   cursor: pointer; flex: 1 1 150px; min-width: 130px;
 }
-.hero-card:hover { background: rgba(10,14,28,.75); border-color: rgba(255,255,255,.45); transform: translateY(-3px); }
+.hero-card:hover { background: rgba(224,238,252,1); border-color: #fff; transform: translateY(-3px); }
 .hero-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .card-icon { font-size: 2rem; }
 .hero-card h3 {
   font-family: "Noto Sans KR", sans-serif; font-size: 1.2rem; font-weight: 700; margin: 0; line-height: 1.3;
-  text-shadow: 0 2px 8px rgba(0,0,0,.5);
+  color: var(--accent);
 }
 .hero-bottom-row {
   display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 14px; align-items: stretch;
@@ -134,18 +134,18 @@ ul { list-style: none; }
 }
 .hero-song-banner {
   display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-radius: 12px;
-  background: linear-gradient(120deg, rgba(179,150,91,.2), rgba(255,255,255,.1));
-  border: 1px solid rgba(179,150,91,.45);
-  text-decoration: none; color: inherit; transition: all .3s ease;
+  background: rgba(163,200,238,.9);
+  border: 1px solid rgba(255,255,255,.6);
+  text-decoration: none; color: var(--accent); transition: all .3s ease;
 }
-.hero-song-banner:hover { background: linear-gradient(120deg, rgba(179,150,91,.3), rgba(255,255,255,.14)); transform: translateY(-2px); }
+.hero-song-banner:hover { background: rgba(163,200,238,1); transform: translateY(-2px); }
 .hero-song-banner .hsb-icon { flex: 0 0 auto; font-size: 1.5rem; }
 .hero-song-banner .hsb-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; text-align: left; }
-.hero-song-banner .hsb-label { font-size: .76rem; letter-spacing: .16em; color: var(--gold); font-weight: 700; }
+.hero-song-banner .hsb-label { font-size: .76rem; letter-spacing: .16em; color: var(--accent); font-weight: 700; }
 .hero-song-banner .hsb-title {
-  font-size: 1rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 1rem; font-weight: 600; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.hero-song-banner .hsb-sub { font-size: .82rem; color: rgba(255,255,255,.7); }
+.hero-song-banner .hsb-sub { font-size: .82rem; color: var(--accent-soft); }
 .hero-song-banner .hsb-arrow {
   flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   background: var(--gold); color: #1f1f1f; font-size: .78rem;
