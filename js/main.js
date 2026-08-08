@@ -335,6 +335,50 @@ if (sermonDeck) {
     .catch(() => { box.innerHTML = `<p class="qt-loading">설교를 불러오지 못했습니다.</p>`; });
 })();
 
+// ===== 1-2c. 주일설교 팟캐스트 · 핵심 요약영상 — 게시된 주보(bulletins_public)에 적어 둔 유튜브 주소를 보여준다 =====
+//   주보제작 화면의 '⑤ 설교 팟캐스트 · 요약영상'에 주소를 넣으면 여기에 자동으로 나타나고,
+//   비어 있으면 해당 항목(section)은 통째로 숨겨진다.
+(function () {
+  const podBox = document.getElementById("sermonPodcast");
+  const vidBox = document.getElementById("sermonSummaryVideo");
+  if (!podBox && !vidBox) return;
+  if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) return;
+
+  const escH = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+  const ytId = (url) => {
+    const m = String(url || "").match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : "";
+  };
+
+  function fill(box, url, dateLabel, title, caption) {
+    const sec = box && box.closest("section");
+    const id = ytId(url);
+    if (!id) return;                                  // 주소가 없거나 유튜브 주소가 아니면 그대로 숨김
+    box.innerHTML = `
+      <div class="sermon-media">
+        <div class="song-embed"><iframe src="https://www.youtube.com/embed/${id}?rel=0" title="${escH(caption)}"
+          loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+        <p class="sermon-media-meta">${escH(dateLabel)} · 주일 낮 예배${title ? " · " + escH(title) : ""}</p>
+        <a class="sermon-media-link" href="${escH(url)}" target="_blank" rel="noopener">유튜브에서 보기 →</a>
+      </div>`;
+    if (sec) sec.hidden = false;
+  }
+
+  const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=bdate,title,data&order=bdate.desc&limit=1";
+  fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((rows) => {
+      const b = rows && rows[0];
+      if (!b) return;
+      const d = b.data || {};
+      const dateLabel = String(b.bdate || "").replace(/-/g, ".");
+      fill(podBox, d.podcast_yt, dateLabel, b.title, "주일설교 팟캐스트");
+      fill(vidBox, d.summary_yt, dateLabel, b.title, "주일 설교 핵심 요약영상");
+    })
+    .catch(() => { });
+})();
+
 // ===== 1-3. 이달의 찬양 (홈 배너 미리보기 + 말씀으로 페이지 전체 재생) =====
 (function () {
   const escH = (t) => String(t == null ? "" : t).replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));

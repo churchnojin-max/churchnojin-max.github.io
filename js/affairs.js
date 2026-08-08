@@ -5660,6 +5660,12 @@ console.log('[affairs.js] v20260712memo2');
       // 광고
       '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">④ 한 주의 소식 (광고)</h4>' +
       tA('소식 (한 줄에 하나씩)', 'bt_notices', d.notices, '다음 주는 맥추감사주일로 지킵니다.\n학습세례 문답 및 성찬 예식이 있습니다.', 140) + '</div>' +
+      // 팟캐스트 · 요약영상 (유튜브 주소)
+      '<div class="fin-card"><h4 style="margin:0 0 4px;color:var(--accent)">⑤ 설교 팟캐스트 · 요약영상</h4>' +
+      '<p style="margin:0 0 10px;font-size:.8rem;color:#9aa5b1">유튜브에 올린 뒤 주소를 붙여넣으면 홈페이지 <b>말씀으로</b> 페이지에 재생 화면이 나타납니다. 비워 두면 그 항목은 홈페이지에 아예 표시되지 않습니다.</p>' +
+      tI('🎧 주일설교 팟캐스트 — 유튜브 주소', 'bt_podcast_yt', d.podcast_yt, '예: https://youtu.be/XXXXXXXXXXX') +
+      '<div style="height:10px"></div>' +
+      tI('🎬 주일 설교 핵심 요약영상 — 유튜브 주소', 'bt_summary_yt', d.summary_yt, '예: https://youtu.be/XXXXXXXXXXX') + '</div>' +
       '</div>';
     document.body.appendChild(ov);
     document.body.style.overflow = 'hidden';
@@ -6007,6 +6013,8 @@ console.log('[affairs.js] v20260712memo2');
         summary: ov.querySelector('#bt_summary').value.trim(),
         pdf_url: ov.querySelector('#bt_pdf_url').value.trim(),
         pdf_name: ov.querySelector('#bt_pdf_name').value.trim(),
+        podcast_yt: ov.querySelector('#bt_podcast_yt').value.trim(),
+        summary_yt: ov.querySelector('#bt_summary_yt').value.trim(),
         founded: FOUNDED_DATE
       };
       var tot = 0;
