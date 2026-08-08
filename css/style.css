@@ -100,7 +100,7 @@ ul { list-style: none; }
 
 /* ===== Hero ===== */
 .hero {
-  position: relative; min-height: 88vh; display: flex; align-items: center; justify-content: center;
+  position: relative; min-height: 65vh; display: flex; align-items: center; justify-content: center;
   background:
     linear-gradient(180deg, rgba(8,10,20,.42) 0%, rgba(8,10,20,.2) 40%, rgba(8,10,20,.55) 100%),
     url("../images/hero-bg-wilderness.jpg") center / 100% 100% no-repeat;
@@ -159,7 +159,7 @@ ul { list-style: none; }
   background: var(--gold); color: #1f1f1f; font-size: .78rem;
 }
 @media (max-width: 640px) {
-  .hero { min-height: 72vh; }
+  .hero { min-height: 58vh; }
   .hero-cards-row { gap: 10px; }
   .hero-card { flex: 1 1 100px; padding: 16px 14px; }
 }
