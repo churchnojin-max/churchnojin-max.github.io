@@ -22,7 +22,6 @@
     { href: "story.html", label: "공동체와 양육", sub: [
       { href: "story.html#album", label: "우리들 소식" },
       { href: "story.html#notice", label: "공지사항" },
-      { href: "story.html#request", label: "기도 부탁" },
       { href: "story.html#qna", label: "삶의 질문" },
       { href: "story.html#groups", label: "섬김 부서" },
       { href: "story.html#communities", label: "그리스도의 몸 된 지체들" },
@@ -69,21 +68,28 @@
     const subs = n.sub.map((s) => `<a href="${s.href}">${s.label}</a>`).join("");
     return `<div class="nav-item has-sub"${admAttr}>
         <a href="${n.href}"${active}>${n.label}<span class="nav-caret" aria-hidden="true">⌄</span></a>
-        <div class="nav-dropdown"><div class="nav-dropdown-inner">${subs}</div></div>
+        <div class="nav-dropdown"><div class="nav-dropdown-inner">
+          <div class="nav-dropdown-head">${n.label}</div>
+          <div class="nav-dropdown-links">${subs}</div>
+        </div></div>
       </div>`;
   }).join("");
 
   const headerHTML = `
     <header id="header">
       <div class="nav-inner">
-        <a href="index.html" class="logo">
-          <img src="images/icon-192.png?v=20260625e" alt="" class="logo-mark" />
-          <span class="logo-kr">${CH_NAME}</span>
-        </a>
-        <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
+        <div class="nav-left">
+          <a href="index.html" class="logo">
+            <img src="images/icon-192.png?v=20260625e" alt="" class="logo-mark" />
+            <span class="logo-kr">${CH_NAME}</span>
+          </a>
+          <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
+        </div>
         <nav class="nav-menu" id="navMenu">${navLinks}</nav>
-        <div class="auth-slot" id="authSlot"></div>
-        <button class="nav-toggle" id="navToggle" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+        <div class="nav-right">
+          <div class="auth-slot" id="authSlot"></div>
+          <button class="nav-toggle" id="navToggle" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+        </div>
       </div>
     </header>`;
   document.body.insertAdjacentHTML("afterbegin", headerHTML);
