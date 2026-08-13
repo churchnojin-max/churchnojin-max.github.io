@@ -32,7 +32,7 @@ console.log('[gyojeok.js] v20260701di');
     render();
   }
   function render() {
-    root.innerHTML = '<div class="fin-tabs"><button data-t="access">권한 관리</button><button data-t="members">교적 명단</button><button data-t="newfamily">새가족 등록</button><button data-t="family">가계도</button><button data-t="import">엑셀 가져오기</button></div><div id="gjPanel"></div>';
+    root.innerHTML = '<div class="fin-tabs"><button data-t="access">권한 관리</button><button data-t="members">교적 명단</button><button data-t="newfamily">새가족 등록</button><button data-t="family">가계도</button><button data-t="import">엑셀 가져오기</button><button data-t="numbering">교인번호 부여</button></div><div id="gjPanel"></div>';
     Array.prototype.forEach.call(root.querySelectorAll('.fin-tabs button'), function (b) {
       if (b.dataset.t === tab) b.classList.add('active');
       b.onclick = function () { tab = b.dataset.t; render(); };
@@ -42,6 +42,7 @@ console.log('[gyojeok.js] v20260701di');
     else if (tab === 'family') renderFamily(p);
     else if (tab === 'newfamily') renderNewFamily(p);
     else if (tab === 'import') renderImport(p);
+    else if (tab === 'numbering') renderNumbering(p);
     else renderMembers(p);
   }
 
@@ -997,6 +998,110 @@ console.log('[gyojeok.js] v20260701di');
         step(0);
       };
     }
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     교인번호 부여 — 1001부터 순차 번호(교적번호/gyojeok_id)를 이름으로 매칭해 일괄 반영
+     · 원로목사·원로사모(1001·1002) 먼저, 이후 생년월일 오름차순, 출석 중인 자녀는
+       해당 부모 번호 바로 다음에 배치. 생년월일이 없는 분은 배우자 생년월일·소속
+       단체(엘림회=70대 이상/제직회=근무세대)로 추정해 배치, 그래도 없으면 가나다순.
+     · "누가 몇 번인가"보다 "빠짐없이 번호가 붙는가"를 우선한 1회성 정리용 목록.
+     ══════════════════════════════════════════════════════════════ */
+  var GJ_NUMBERING_LIST = [
+    [1001, '신동열'], [1002, '최장자'], [1003, '김정분'], [1004, '김종윤'], [1005, '마인숙'],
+    [1006, '박성애'], [1007, '서용석'], [1008, '오정옥'], [1009, '임희순'], [1010, '한희동'],
+    [1011, '이영자'], [1012, '조옥자'], [1013, '김현문'], [1014, '김교선'], [1015, '윤동준'],
+    [1016, '유금순'], [1017, '장정숙'], [1018, '이경순'], [1019, '주길만'], [1020, '박명옥'],
+    [1021, '김평애'], [1022, '구본수'], [1023, '진대순'], [1024, '문명수'], [1025, '최명철'],
+    [1026, '오성자'], [1027, '정명남'], [1028, '장현숙'], [1029, '박금숙'], [1030, '김현대'],
+    [1031, '이수현'], [1032, '김명희'], [1033, '김범석'], [1034, '최지연'], [1035, '김은희'],
+    [1036, '고은성'], [1037, '김종학'], [1038, '임혜은'], [1039, '양유정'], [1040, '양유은'],
+    [1041, '양재영'], [1042, '신성찬'], [1043, '신재하'], [1044, '신성호'], [1045, '신서원'],
+    [1046, '문선경'], [1047, '이준'], [1048, '이라온'], [1049, '차민영'], [1050, '강진숙'],
+    [1051, '윤만배'], [1052, '전정식'], [1053, '황귀순'], [1054, '윤현빈']
+  ];
+
+  function renderNumbering(panel) {
+    panel.innerHTML =
+      '<div class="fin-card">' +
+      '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">🔢 교인번호(1001~) 일괄 부여</h3>' +
+      '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-soft,#7b8794)">' +
+      '원로목사·원로사모를 1001·1002로 놓고 생년월일 순으로 이어 붙인, <b>이름으로 미리 정해둔 번호 목록(' + GJ_NUMBERING_LIST.length + '명)</b>을 ' +
+      '교적의 <b>교적번호</b> 칸에 반영합니다. 반영 전에 이름이 매칭되는지 먼저 보여드립니다.</p>' +
+      '<button class="btn btn-line" id="gn_load">명단 불러와 확인하기</button>' +
+      '<span class="fin-msg" id="gn_msg" style="margin-left:10px"></span>' +
+      '</div><div id="gn_result"></div>';
+
+    var msgEl = panel.querySelector('#gn_msg'), resEl = panel.querySelector('#gn_result');
+    function msg(t, c) { msgEl.style.color = c || '#7b8794'; msgEl.textContent = t; }
+    function esc2(s) { return esc(String(s == null ? '' : s)); }
+
+    panel.querySelector('#gn_load').onclick = function () {
+      msg('불러오는 중…'); resEl.innerHTML = '';
+      WPF.call('listGyojeok').then(function (lr) {
+        var existing = (lr.members || []).filter(function (m) { return m['이름']; });
+        var byName = {};
+        existing.forEach(function (m) { (byName[String(m['이름']).trim()] = byName[String(m['이름']).trim()] || []).push(m); });
+
+        var ok = [], amb = [], miss = [];
+        GJ_NUMBERING_LIST.forEach(function (pair) {
+          var num = pair[0], name = pair[1];
+          var hit = byName[name] || [];
+          if (hit.length === 1) ok.push({ num: num, name: name, cur: hit[0] });
+          else if (hit.length > 1) amb.push({ num: num, name: name, cands: hit });
+          else miss.push({ num: num, name: name });
+        });
+        var changed = ok.filter(function (o) { return String(o.cur['교적번호'] || '') !== String(o.num); });
+        var same = ok.filter(function (o) { return String(o.cur['교적번호'] || '') === String(o.num); });
+
+        msg('✓ 확인 완료', 'green');
+        resEl.innerHTML =
+          '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">확인해 주세요</h4>' +
+          '<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:.92rem;margin-bottom:12px">' +
+          '<span>✏️ 새로 부여 <b>' + changed.length + '명</b></span>' +
+          '<span>＝ 이미 같음 <b>' + same.length + '명</b></span>' +
+          (amb.length ? '<span style="color:#c0392b">⚠ 동명이인 <b>' + amb.length + '명</b>(건너뜀)</span>' : '') +
+          (miss.length ? '<span style="color:#c0392b">⚠ 교적에서 못 찾음 <b>' + miss.length + '명</b></span>' : '') +
+          '</div>' +
+          (amb.length ? '<p style="color:#c0392b;font-size:.86rem">같은 이름이 교적에 여러 명 있어 자동으로 정할 수 없습니다: <b>' +
+            amb.map(function (a) { return esc2(a.name) + '(' + a.num + ')'; }).join(', ') + '</b> — 교적 명단에서 직접 교적번호를 입력해 주세요.</p>' : '') +
+          (miss.length ? '<p style="color:#c0392b;font-size:.86rem">교적에서 이름을 찾지 못했습니다(아직 등록 전일 수 있음): <b>' +
+            miss.map(function (a) { return esc2(a.name) + '(' + a.num + ')'; }).join(', ') + '</b></p>' : '') +
+          (changed.length ?
+            '<details style="margin-top:10px" open><summary style="cursor:pointer;font-weight:600">✏️ 새로 부여될 ' + changed.length + '명 보기</summary>' +
+            '<div style="overflow-x:auto;margin-top:8px"><table class="fin-table" style="font-size:.85rem"><thead><tr><th>교인번호</th><th>이름</th><th>지금 교적번호</th></tr></thead><tbody>' +
+            changed.map(function (o) { return '<tr><td><b>' + o.num + '</b></td><td>' + esc2(o.name) + '</td><td style="color:#9aa5b1">' + (esc2(o.cur['교적번호']) || '<i>없음</i>') + '</td></tr>'; }).join('') +
+            '</tbody></table></div></details>' : '') +
+          '<div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+          '<button class="btn btn-solid" id="gn_apply" style="padding:10px 20px;font-weight:700"' + (changed.length ? '' : ' disabled') + '>위 내용으로 반영하기</button>' +
+          '<span class="fin-msg" id="gn_apply_msg"></span></div>' +
+          '</div>';
+
+        var applyMsg = resEl.querySelector('#gn_apply_msg');
+        var applyBtn = resEl.querySelector('#gn_apply');
+        if (applyBtn) applyBtn.onclick = function () {
+          if (!changed.length) return;
+          if (!confirm(changed.length + '명에게 교인번호를 새로 부여합니다.\n계속할까요?')) return;
+          applyBtn.disabled = true;
+          var done = 0, fail = [];
+          function step(i) {
+            if (i >= changed.length) {
+              applyBtn.disabled = false;
+              applyMsg.style.color = fail.length ? '#c0392b' : 'green';
+              applyMsg.textContent = '✓ ' + done + '명 반영' + (fail.length ? ' · 실패 ' + fail.length + '명: ' + fail.join(', ') : '');
+              return;
+            }
+            applyMsg.style.color = '#7b8794';
+            applyMsg.textContent = '반영 중… ' + (i + 1) + '/' + changed.length;
+            var o = changed[i];
+            WPF.call('updateGyojeok', { id: o.cur['교적ID'], fields: { 교적번호: o.num } })
+              .then(function () { done++; }).catch(function (e) { fail.push(o.name); console.warn('[교인번호 부여]', o.name, e); })
+              .then(function () { step(i + 1); });
+          }
+          step(0);
+        };
+      }).catch(function (e) { msg('실패: ' + e.message, '#c0392b'); });
+    };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
