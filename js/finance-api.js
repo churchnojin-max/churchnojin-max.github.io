@@ -81,12 +81,17 @@ window.WPF = (function () {
       '주소': r.address, '회원상태': r.status, '사진': r.photo, '세례일': r.baptism_date,
       '임직일': r.ordination_date, '소속그룹': r.belong_groups, '부모세대': r.origin_head,
       '등록일': r.reg_date, '음력생일': !!r.birth_lunar, '직전교회': r.prev_church,
-      '인도자': r.referrer, '심방여부': r.visited, '특이사항': r.note, '생성일': r.created_at
+      '인도자': r.referrer, '심방여부': r.visited, '특이사항': r.note, '생성일': r.created_at,
+      '집전화': r.home_phone, '직장주소': r.work_address, '직장전화': r.work_phone,
+      '구역직분': r.district_role, '기관직책': r.org_role, '세례여부': !!r.baptized,
+      '세례일메모': r.baptism_note, '세례받은교회': r.baptism_church, '집례자': r.baptism_by,
+      '가족사항': r.family_note
     };
   }
-  var GJ_MAP = { '이름': 'name', '생년월일': 'birth', '매칭키': 'member_key', '세대주': 'head', '관계': 'relation', '배우자': 'spouse', '배우자매칭키': 'spouse_key', '그룹': 'groups', '직책': 'role', '신급': 'grade', '성별': 'sex', '휴대폰': 'phone', '주소': 'address', '회원상태': 'status', '사진': 'photo', '세례일': 'baptism_date', '임직일': 'ordination_date', '소속그룹': 'belong_groups', '부모세대': 'origin_head', '등록일': 'reg_date', '음력생일': 'birth_lunar', '직전교회': 'prev_church', '인도자': 'referrer', '심방여부': 'visited', '특이사항': 'note' };
+  var GJ_MAP = { '이름': 'name', '생년월일': 'birth', '매칭키': 'member_key', '세대주': 'head', '관계': 'relation', '배우자': 'spouse', '배우자매칭키': 'spouse_key', '그룹': 'groups', '직책': 'role', '신급': 'grade', '성별': 'sex', '휴대폰': 'phone', '주소': 'address', '회원상태': 'status', '사진': 'photo', '세례일': 'baptism_date', '임직일': 'ordination_date', '소속그룹': 'belong_groups', '부모세대': 'origin_head', '등록일': 'reg_date', '음력생일': 'birth_lunar', '직전교회': 'prev_church', '인도자': 'referrer', '심방여부': 'visited', '특이사항': 'note',
+    '집전화': 'home_phone', '직장주소': 'work_address', '직장전화': 'work_phone', '구역직분': 'district_role', '기관직책': 'org_role', '세례여부': 'baptized', '세례일메모': 'baptism_note', '세례받은교회': 'baptism_church', '집례자': 'baptism_by', '가족사항': 'family_note', '교적번호': 'gyojeok_id' };
   var GJ_DATECOLS = { birth: 1, baptism_date: 1, ordination_date: 1, reg_date: 1 };
-  var GJ_BOOLCOLS = { birth_lunar: 1 };
+  var GJ_BOOLCOLS = { birth_lunar: 1, baptized: 1 };
   function memOut(r) { return { name: r.name, key: r.member_key, birth: r.birth, group: r.groups, role: r.role, spouse: r.spouse, spouseKey: r.spouse_key, head: r.head, rel: r.relation, address: r.address || '' }; }
   function recOut(r) { return { id: r.id, no: r.receipt_no, fy: r.fy, key: r.member_key, name: r.donor_name, birth: r.donor_birth, rrn: r.donor_rrn, addr: r.donor_addr, includedKeys: r.included_keys || [], detail: r.detail, spouse: r.spouse, period: r.period_label, amount: r.amount, cnt: r.cnt, method: r.method, status: r.status, issuedBy: r.issued_by, issuedAt: r.issued_at, cancelledAt: r.cancelled_at }; }
   function accOut(r) { return { '구분': r.atype, '분류': (r.atype === '수입' ? '헌금' : (r.category || '')), '계정명': r.name, '계정코드': r.code, '상위': r.category }; }
