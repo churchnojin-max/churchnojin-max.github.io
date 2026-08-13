@@ -30,7 +30,7 @@ console.log('[gyojeok.js] v20260701di');
     render();
   }
   function render() {
-    root.innerHTML = '<div class="fin-tabs"><button data-t="access">권한 관리</button><button data-t="members">교적 명단</button><button data-t="newfamily">새가족 등록</button><button data-t="family">가계도</button></div><div id="gjPanel"></div>';
+    root.innerHTML = '<div class="fin-tabs"><button data-t="access">권한 관리</button><button data-t="members">교적 명단</button><button data-t="newfamily">새가족 등록</button><button data-t="family">가계도</button><button data-t="import">엑셀 가져오기</button></div><div id="gjPanel"></div>';
     Array.prototype.forEach.call(root.querySelectorAll('.fin-tabs button'), function (b) {
       if (b.dataset.t === tab) b.classList.add('active');
       b.onclick = function () { tab = b.dataset.t; render(); };
@@ -39,6 +39,7 @@ console.log('[gyojeok.js] v20260701di');
     if (tab === 'access') renderAccess(p);
     else if (tab === 'family') renderFamily(p);
     else if (tab === 'newfamily') renderNewFamily(p);
+    else if (tab === 'import') renderImport(p);
     else renderMembers(p);
   }
 
@@ -775,6 +776,215 @@ console.log('[gyojeok.js] v20260701di');
       });
     }
     load();
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     엑셀 가져오기 — '노진교회 교인 신상 통합 명부'(.xlsx) → 교적
+     · 반영 전에 반드시 미리보기(신규/변경/경고)를 보여주고 확인받는다.
+     · 사람 연결은 '이름'으로 한다. (통합 명부의 가족관계 시트에 있는
+       '교인번호'는 교인기본정보의 '번호'와 체계가 달라 쓰면 안 된다 —
+       2026-08 실제 파일에서 46건 전부 어긋나 있는 것을 확인함)
+     ══════════════════════════════════════════════════════════════ */
+  var GJ_IMPORT_ORG = ['제직회', '여호수아', '에스더', '루디아', '엘림회'];
+
+  // "61년11월28일(음)" · "55.11.16(음)" · "1985.04.12(양)" · "83년 2월 11일(양)" 등을 모두 처리
+  function parseBirth(raw) {
+    var s = String(raw == null ? '' : raw).trim();
+    if (!s || s === '(공란)') return null;
+    var lunar = /음/.test(s);
+    var both = /양음/.test(s);              // "44년3월16일(양음)" — 양력·음력 표기가 섞임
+    var d = s.replace(/\([^)]*\)/g, ' ');   // 괄호(양/음/메모) 제거
+    var m = d.match(/(\d{2,4})\s*년?\s*[.\-]?\s*(\d{1,2})\s*월?\s*[.\-]?\s*(\d{1,2})\s*일?/);
+    if (!m) return { bad: '형식을 알 수 없음' };
+    var y = parseInt(m[1], 10), mo = parseInt(m[2], 10), dy = parseInt(m[3], 10);
+    if (m[1].length <= 2) y = (y <= (new Date().getFullYear() % 100)) ? 2000 + y : 1900 + y;
+    if (mo < 1 || mo > 12 || dy < 1 || dy > 31) return { bad: '월/일이 범위를 벗어남' };
+    // 실제로 존재하는 날짜인지 확인 (예: 1961-02-29 는 없는 날 — 실제 파일에 있었음)
+    var dt = new Date(y, mo - 1, dy);
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== dy) return { bad: '달력에 없는 날짜' };
+    return { ymd: y + '-' + pad2(mo) + '-' + pad2(dy), lunar: lunar, warn: both ? '양력·음력 표기가 함께 있음(양력으로 처리)' : '' };
+  }
+
+  // 엑셀 한 줄 → 교적 필드(한글 키. finance-api.js 의 GJ_MAP 이 Supabase 컬럼으로 바꿔줌)
+  function rowToMember(row, col) {
+    function v(name) { var i = col[name]; var x = (i == null) ? '' : row[i]; return String(x == null ? '' : x).trim(); }
+    var name = v('이름'); if (!name) return null;
+    var warns = [];
+    var b = parseBirth(v('생년월일'));
+    if (b && b.bad) { warns.push('생년월일 ' + b.bad + ' (' + v('생년월일') + ') → 비워둠'); b = null; }
+    if (b && b.warn) warns.push(b.warn);
+    if (!b) warns.push('생년월일 없음 — 헌금·계정 연결(매칭키)이 이름만으로 만들어집니다');
+
+    var orgs = GJ_IMPORT_ORG.filter(function (g) { return /^O$/i.test(v(g)); });
+    var notes = [];
+    ['비고', '가족사항', '기관직책', '직장주소', '직장전화번호', '전화번호'].forEach(function (k) {
+      var t = v(k); if (t) notes.push(k + ': ' + t.replace(/\s*\n\s*/g, ' / '));
+    });
+    // 세례일시가 "1982년"·"유아세례"처럼 연도/메모뿐이라 날짜 칸에 못 넣음 → 특이사항으로 보존
+    var bap = v('세례일시');
+    if (bap) notes.push('세례: ' + bap + (v('세례 여부') ? '' : ' (세례여부 미표기)'));
+    else if (v('세례 여부')) notes.push('세례: 받음(일자 미상)');
+
+    var fields = {
+      '이름': name,
+      '성별': v('남여'),
+      '직책': v('교회직분'),
+      '그룹': v('구역'),
+      '휴대폰': fmtPhone(v('핸드폰')),
+      '주소': v('주소'),
+      '소속그룹': orgs.join(', '),
+      '특이사항': notes.join('\n')
+    };
+    if (b) { fields['생년월일'] = b.ymd; fields['음력생일'] = b.lunar; }
+    // 구역직분은 '구역장/인도자'처럼 직분인 경우만 반영(값이 '2구역'처럼 구역명인 행이 섞여 있음)
+    var gr = v('구역직분');
+    if (gr && !/구역$/.test(gr)) fields['신급'] = gr;
+
+    var spouse = '';
+    var famTxt = v('가족사항');
+    var sm = famTxt.match(/배우자\s*[:：]\s*([^,\n\/]+)/);
+    if (sm) spouse = sm[1].trim();
+
+    return { name: name, fields: fields, spouse: spouse, warns: warns };
+  }
+
+  function renderImport(panel) {
+    panel.innerHTML =
+      '<div class="fin-card">' +
+      '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">📥 엑셀로 교적 업데이트</h3>' +
+      '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-soft,#7b8794)">' +
+      '<b>교인 신상 통합 명부(.xlsx)</b>를 올리면 <b>교인기본정보</b> 시트를 읽어 교적에 반영합니다. ' +
+      '올리자마자 저장되지 않고, <b>무엇이 새로 생기고 무엇이 바뀌는지 먼저 보여드린 뒤</b> 확인을 받습니다.</p>' +
+      '<label class="btn btn-line" style="cursor:pointer;display:inline-block">＋ 엑셀 파일 선택' +
+      '<input type="file" id="gi_file" accept=".xlsx" hidden></label>' +
+      '<span class="fin-msg" id="gi_msg" style="margin-left:10px"></span>' +
+      '</div><div id="gi_result"></div>';
+
+    var msgEl = panel.querySelector('#gi_msg'), resEl = panel.querySelector('#gi_result');
+    function msg(t, c) { msgEl.style.color = c || '#7b8794'; msgEl.textContent = t; }
+
+    panel.querySelector('#gi_file').onchange = function (e) {
+      var f = e.target.files && e.target.files[0]; if (!f) return;
+      if (!window.XlsxLite || !window.JSZip) { msg('엑셀 리더를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.', '#c0392b'); return; }
+      msg('읽는 중…'); resEl.innerHTML = '';
+      var parsed = null;
+      window.XlsxLite.readSheet(f)
+        .then(function (wb) {
+          var idx = wb.sheetNames.indexOf('교인기본정보');
+          if (idx < 0) throw new Error("'교인기본정보' 시트를 찾지 못했습니다. (시트: " + wb.sheetNames.join(', ') + ')');
+          return wb.getSheetGrid(idx);
+        })
+        .then(function (grid) {
+          var hdr = grid[1] || [];                       // 1행=제목, 2행=열이름, 3행부터 데이터
+          var col = {};
+          hdr.forEach(function (h, i) { var k = String(h == null ? '' : h).trim(); if (k) col[k] = i; });
+          if (col['이름'] == null) throw new Error("2행에서 '이름' 열을 찾지 못했습니다.");
+          parsed = [];
+          for (var r = 2; r < grid.length; r++) {
+            var mem = rowToMember(grid[r] || [], col);
+            if (mem) parsed.push(mem);
+          }
+          if (!parsed.length) throw new Error('읽어들인 사람이 없습니다.');
+          return WPF.call('listGyojeok');
+        })
+        .then(function (lr) {
+          var existing = (lr.members || []).filter(function (m) { return m['이름']; });
+          var byName = {};
+          existing.forEach(function (m) { (byName[String(m['이름']).trim()] = byName[String(m['이름']).trim()] || []).push(m); });
+          showPreview(parsed, byName, existing);
+          msg('✓ ' + parsed.length + '명을 읽었습니다 — 아래에서 확인 후 반영하세요', 'green');
+        })
+        .catch(function (err) { msg('실패: ' + err.message, '#c0392b'); });
+      e.target.value = '';
+    };
+
+    function showPreview(parsed, byName, existing) {
+      var news = [], upds = [], sames = [], amb = [];
+      parsed.forEach(function (p) {
+        var hit = byName[p.name] || [];
+        if (hit.length > 1) { amb.push(p); return; }         // 동명이인 — 사람이 골라야 함
+        if (!hit.length) { news.push(p); return; }
+        var cur = hit[0], changes = [];
+        Object.keys(p.fields).forEach(function (k) {
+          var nv = p.fields[k]; if (nv === '' || nv == null) return;   // 빈 값으로 기존 값을 지우지 않음
+          var ov = cur[k];
+          if (k === '음력생일') { if (!!ov !== !!nv) changes.push({ k: k, from: ov ? '음력' : '양력', to: nv ? '음력' : '양력' }); return; }
+          var o = String(ov == null ? '' : ov).trim(), n = String(nv).trim();
+          if (k === '생년월일') o = o.slice(0, 10);
+          if (o !== n) changes.push({ k: k, from: o, to: n });
+        });
+        p.cur = cur;
+        if (changes.length) { p.changes = changes; upds.push(p); } else sames.push(p);
+      });
+
+      var warnRows = parsed.filter(function (p) { return p.warns.length; });
+      function esc2(s) { return esc(String(s == null ? '' : s)); }
+
+      resEl.innerHTML =
+        '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">확인해 주세요</h4>' +
+        '<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:.92rem;margin-bottom:12px">' +
+        '<span>🆕 새로 등록 <b>' + news.length + '명</b></span>' +
+        '<span>✏️ 정보 변경 <b>' + upds.length + '명</b></span>' +
+        '<span>＝ 그대로 <b>' + sames.length + '명</b></span>' +
+        (amb.length ? '<span style="color:#c0392b">⚠ 동명이인 <b>' + amb.length + '명</b>(건너뜀)</span>' : '') +
+        (warnRows.length ? '<span style="color:#b8860b">⚠ 확인 필요 <b>' + warnRows.length + '건</b></span>' : '') +
+        '</div>' +
+        (amb.length ? '<p style="color:#c0392b;font-size:.86rem">교적에 같은 이름이 여러 명 있어 어느 분인지 자동으로 정할 수 없습니다: <b>' +
+          amb.map(function (p) { return esc2(p.name); }).join(', ') + '</b> — 이 분들은 반영에서 제외되니 직접 수정해 주세요.</p>' : '') +
+        (warnRows.length ?
+          '<details style="margin-top:6px"><summary style="cursor:pointer;font-weight:600;color:#b8860b">⚠ 확인이 필요한 항목 ' + warnRows.length + '건 보기</summary>' +
+          '<ul style="margin:8px 0 0 18px;font-size:.86rem;line-height:1.7">' +
+          warnRows.map(function (p) { return '<li><b>' + esc2(p.name) + '</b> — ' + p.warns.map(esc2).join(' · ') + '</li>'; }).join('') +
+          '</ul></details>' : '') +
+        (upds.length ?
+          '<details style="margin-top:10px" open><summary style="cursor:pointer;font-weight:600">✏️ 바뀌는 내용 ' + upds.length + '명 보기</summary>' +
+          '<div style="overflow-x:auto;margin-top:8px"><table class="fin-table" style="font-size:.85rem"><thead><tr><th>이름</th><th>항목</th><th>지금</th><th>→ 바뀔 값</th></tr></thead><tbody>' +
+          upds.map(function (p) {
+            return p.changes.map(function (c, i) {
+              return '<tr>' + (i === 0 ? '<td rowspan="' + p.changes.length + '"><b>' + esc2(p.name) + '</b></td>' : '') +
+                '<td>' + esc2(c.k) + '</td><td style="color:#9aa5b1">' + (esc2(c.from) || '<i>없음</i>') + '</td><td><b>' + esc2(c.to) + '</b></td></tr>';
+            }).join('');
+          }).join('') + '</tbody></table></div></details>' : '') +
+        (news.length ?
+          '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">🆕 새로 등록될 ' + news.length + '명 보기</summary>' +
+          '<p style="margin:8px 0 0;font-size:.86rem;line-height:1.8">' + news.map(function (p) { return esc2(p.name); }).join(' · ') + '</p></details>' : '') +
+        '<div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+        '<button class="btn btn-solid" id="gi_apply" style="padding:10px 20px;font-weight:700">위 내용으로 반영하기</button>' +
+        '<span class="fin-msg" id="gi_apply_msg"></span></div>' +
+        '<p style="margin:10px 0 0;font-size:.8rem;color:#9aa5b1">※ 엑셀에서 <b>비어 있는 칸은 반영하지 않습니다</b>(기존 값을 지우지 않음). 이름이 같은 사람을 같은 분으로 봅니다.</p>' +
+        '</div>';
+
+      var applyMsg = resEl.querySelector('#gi_apply_msg');
+      resEl.querySelector('#gi_apply').onclick = function () {
+        var btn = this;
+        if (!news.length && !upds.length) { applyMsg.style.color = '#7b8794'; applyMsg.textContent = '반영할 변경이 없습니다.'; return; }
+        if (!confirm('새로 등록 ' + news.length + '명, 정보 변경 ' + upds.length + '명을 교적에 반영합니다.\n계속할까요?')) return;
+        btn.disabled = true;
+        var todo = [], done = 0, fail = [];
+        news.forEach(function (p) { todo.push({ kind: 'add', p: p }); });
+        upds.forEach(function (p) { todo.push({ kind: 'upd', p: p }); });
+        function step(i) {
+          if (i >= todo.length) {
+            btn.disabled = false;
+            applyMsg.style.color = fail.length ? '#c0392b' : 'green';
+            applyMsg.textContent = '✓ ' + done + '건 반영' + (fail.length ? ' · 실패 ' + fail.length + '건: ' + fail.slice(0, 3).join(', ') : '');
+            if (!fail.length) setTimeout(function () { tab = 'members'; render(); }, 1200);
+            return;
+          }
+          applyMsg.style.color = '#7b8794';
+          applyMsg.textContent = '반영 중… ' + (i + 1) + '/' + todo.length;
+          var t = todo[i], pr;
+          if (t.kind === 'add') {
+            pr = WPF.call('addGyojeok', { name: t.p.name, birth: (t.p.fields['생년월일'] || '').replace(/-/g, ''), fields: t.p.fields });
+          } else {
+            pr = WPF.call('updateGyojeok', { id: t.p.cur['교적ID'], fields: t.p.fields });
+          }
+          pr.then(function () { done++; }).catch(function (e) { fail.push(t.p.name); console.warn('[교적 가져오기]', t.p.name, e); })
+            .then(function () { step(i + 1); });
+        }
+        step(0);
+      };
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
