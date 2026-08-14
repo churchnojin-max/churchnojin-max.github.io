@@ -32,7 +32,7 @@ console.log('[gyojeok.js] v20260701di');
     render();
   }
   function render() {
-    root.innerHTML = '<div class="fin-tabs"><button data-t="access">권한 관리</button><button data-t="members">교적 명단</button><button data-t="newfamily">새가족 등록</button><button data-t="family">가계도</button><button data-t="import">엑셀 가져오기</button><button data-t="numbering">교인번호 부여</button><button data-t="print">명단 인쇄</button></div><div id="gjPanel"></div>';
+    root.innerHTML = '<div class="fin-tabs"><button data-t="access">권한 관리</button><button data-t="members">교적 명단</button><button data-t="newfamily">새가족 등록</button><button data-t="family">가계도</button><button data-t="import">엑셀 가져오기</button><button data-t="numbering">교인번호 부여</button><button data-t="print">명단 인쇄</button><button data-t="audit">세대 점검</button></div><div id="gjPanel"></div>';
     Array.prototype.forEach.call(root.querySelectorAll('.fin-tabs button'), function (b) {
       if (b.dataset.t === tab) b.classList.add('active');
       b.onclick = function () { tab = b.dataset.t; render(); };
@@ -44,6 +44,7 @@ console.log('[gyojeok.js] v20260701di');
     else if (tab === 'import') renderImport(p);
     else if (tab === 'numbering') renderNumbering(p);
     else if (tab === 'print') renderPrint(p);
+    else if (tab === 'audit') renderAudit(p);
     else renderMembers(p);
   }
 
@@ -1333,6 +1334,126 @@ console.log('[gyojeok.js] v20260701di');
       };
     }).catch(function (e) { panel.innerHTML = msgCard('조회 실패', e.message); });
   }
+
+  /* ══════════════════════════════════════════════════════════════
+     세대 점검 — 세대주·관계·배우자 연결이 서로 어긋난 기록을 찾아낸다.
+     세대주를 한 명만 바꾸던 옛 버그(2026-08 수정) 때문에 생긴 모순이 남아 있을 수 있어
+     한 번에 훑어보고 고칠 수 있게 한다.
+     ══════════════════════════════════════════════════════════════ */
+  function headNameOf(m) { return String(m['세대주'] || '').trim() || String(m['이름']).trim(); }
+
+  function auditGyojeok(list) {
+    var byName = {};
+    list.forEach(function (m) { var n = String(m['이름']).trim(); (byName[n] = byName[n] || []).push(m); });
+    function one(n) { var a = byName[n]; return (a && a.length === 1) ? a[0] : null; }
+
+    var issues = [];
+    list.forEach(function (m) {
+      var me = String(m['이름']).trim(), hd = headNameOf(m), rel = String(m['관계'] || '').trim(), sp = String(m['배우자'] || '').trim();
+
+      if (hd !== me && !byName[hd]) {
+        issues.push({ kind: 'nohead', m: m, text: '세대주 「' + hd + '」 가 교적에 없습니다', fix: null });
+      } else if (rel === '세대주' && hd !== me) {
+        // 본인이 세대주라고 적어놓고 세대주 칸은 남을 가리킴 → 세대 재편성이 필요
+        issues.push({ kind: 'headconflict', m: m, text: '관계가 「세대주」인데 세대주 칸은 「' + hd + '」 를 가리킵니다', fix: 'makehead' });
+      } else if (hd !== me) {
+        var h = one(hd);
+        if (h && headNameOf(h) !== hd) {
+          issues.push({ kind: 'chain', m: m, text: '세대주 「' + hd + '」 도 다시 「' + headNameOf(h) + '」 를 세대주로 가리킵니다(연결 끊김)', fix: 'follow' });
+        }
+      }
+
+      if (sp) {
+        var s = one(sp);
+        if (!s) issues.push({ kind: 'nospouse', m: m, text: '배우자 「' + sp + '」 가 교적에 없습니다', fix: null });
+        else if (String(s['배우자'] || '').trim() !== me) {
+          issues.push({ kind: 'onesided', m: m, other: s, text: '배우자 「' + sp + '」 쪽에는 연결이 없습니다(한쪽만 걸림)', fix: 'spouse' });
+        }
+      }
+    });
+    return issues;
+  }
+
+  function renderAudit(panel) {
+    loading(panel);
+    WPF.call('listGyojeok').then(function (r) {
+      var list = (r.members || []).filter(function (m) { return m['이름']; });
+      var issues = auditGyojeok(list);
+      var nHead = issues.filter(function (i) { return i.fix === 'makehead' || i.fix === 'follow'; }).length;
+      var nSp = issues.filter(function (i) { return i.fix === 'spouse'; }).length;
+      var nMan = issues.filter(function (i) { return !i.fix; }).length;
+
+      panel.innerHTML =
+        '<div class="fin-card">' +
+        '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">🩺 세대 점검</h3>' +
+        '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-soft,#7b8794)">세대주·관계·배우자 연결이 서로 어긋난 기록을 찾습니다. (검사 대상 ' + list.length + '명)</p>' +
+        (!issues.length
+          ? '<p style="color:#1e874b;font-weight:700;font-size:1.02rem">✓ 어긋난 기록이 없습니다.</p>'
+          : '<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:.92rem;margin-bottom:12px">' +
+          '<span>⚠ 모두 <b>' + issues.length + '</b>건</span>' +
+          (nHead ? '<span>🏠 세대주 문제 <b>' + nHead + '</b></span>' : '') +
+          (nSp ? '<span>💑 배우자 한쪽만 <b>' + nSp + '</b></span>' : '') +
+          (nMan ? '<span style="color:#c0392b">✋ 직접 확인 <b>' + nMan + '</b></span>' : '') +
+          '</div>' +
+          '<div style="overflow-x:auto"><table class="fin-table" style="font-size:.86rem"><thead><tr><th style="width:34px"></th><th style="width:80px">이름</th><th>어긋난 내용</th><th style="width:150px">고치면 이렇게 됩니다</th></tr></thead><tbody>' +
+          issues.map(function (i, n) {
+            var plan = i.fix === 'makehead' ? '「' + i.m['이름'] + '」 를 세대주로, 세대 전원을 다시 물림'
+              : i.fix === 'follow' ? '세대주를 「' + headNameOf(byNameOne(list, headNameOf(i.m)) || i.m) + '」 로 정정'
+                : i.fix === 'spouse' ? '「' + i.m['배우자'] + '」 쪽에도 배우자 연결' : '<span style="color:#c0392b">자동 수정 불가</span>';
+            return '<tr><td>' + (i.fix ? '<input type="checkbox" class="ad-ck" data-n="' + n + '" checked>' : '') + '</td>' +
+              '<td><b>' + esc(i.m['이름']) + '</b></td><td>' + esc(i.text) + '</td><td style="color:#5a6b82">' + plan + '</td></tr>';
+          }).join('') + '</tbody></table></div>' +
+          '<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+          '<button class="btn btn-solid" id="ad_fix" style="padding:10px 20px;font-weight:700">선택한 항목 고치기</button>' +
+          '<span class="fin-msg" id="ad_msg"></span></div>' +
+          '<p style="margin:10px 0 0;font-size:.8rem;color:#9aa5b1">※ 「자동 수정 불가」는 교적에 없는 사람을 가리키는 경우라, 그 사람을 등록하거나 이름을 고쳐야 합니다.</p>'
+        ) + '</div>';
+
+      if (!issues.length) return;
+      var msgEl = panel.querySelector('#ad_msg');
+      panel.querySelector('#ad_fix').onclick = function () {
+        var btn = this;
+        var picks = Array.prototype.filter.call(panel.querySelectorAll('.ad-ck'), function (c) { return c.checked; })
+          .map(function (c) { return issues[Number(c.dataset.n)]; });
+        if (!picks.length) { msgEl.style.color = '#7b8794'; msgEl.textContent = '고칠 항목을 선택하세요.'; return; }
+        if (!confirm(picks.length + '건을 고칩니다.\n계속할까요?')) return;
+        btn.disabled = true;
+        var calls = [], done = 0, fail = [];
+        picks.forEach(function (i) {
+          if (i.fix === 'spouse') {
+            calls.push({ name: i.m['이름'], p: function () { return WPF.call('updateGyojeok', { id: i.other['교적ID'], fields: { 배우자: i.m['이름'], 배우자매칭키: i.m['매칭키'] } }); } });
+          } else if (i.fix === 'follow') {
+            var h = byNameOne(list, headNameOf(i.m));
+            var newHead = h ? headNameOf(h) : headNameOf(i.m);
+            calls.push({ name: i.m['이름'], p: function () { return WPF.call('updateGyojeok', { id: i.m['교적ID'], fields: { 세대주: newHead } }); } });
+          } else if (i.fix === 'makehead') {
+            var oldHead = headNameOf(i.m), newName = String(i.m['이름']).trim();
+            var members = list.filter(function (x) { return headNameOf(x) === oldHead; });
+            if (!members.some(function (x) { return x['교적ID'] === i.m['교적ID']; })) members = members.concat([i.m]);
+            members.forEach(function (mm) {
+              var f = { 세대주: newName };
+              if (mm['교적ID'] === i.m['교적ID']) f['관계'] = '본인';
+              else if (String(mm['이름']).trim() === oldHead || String(mm['관계'] || '').trim() === '세대주') f['관계'] = '본인';
+              calls.push({ name: mm['이름'], p: function () { return WPF.call('updateGyojeok', { id: mm['교적ID'], fields: f }); } });
+            });
+          }
+        });
+        function step(k) {
+          if (k >= calls.length) {
+            msgEl.style.color = fail.length ? '#c0392b' : 'green';
+            msgEl.textContent = '✓ ' + done + '건 반영' + (fail.length ? ' · 실패 ' + fail.length + '건: ' + fail.slice(0, 3).join(', ') : '') + ' — 다시 검사합니다…';
+            setTimeout(function () { renderAudit(panel); }, 900);
+            return;
+          }
+          msgEl.style.color = '#7b8794'; msgEl.textContent = '고치는 중… ' + (k + 1) + '/' + calls.length;
+          calls[k].p().then(function () { done++; }).catch(function (e) { fail.push(calls[k].name); console.warn('[세대 점검]', calls[k].name, e); })
+            .then(function () { step(k + 1); });
+        }
+        step(0);
+      };
+    }).catch(function (e) { panel.innerHTML = msgCard('조회 실패', e.message); });
+  }
+  function byNameOne(list, n) { var a = list.filter(function (x) { return String(x['이름']).trim() === n; }); return a.length === 1 ? a[0] : null; }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
