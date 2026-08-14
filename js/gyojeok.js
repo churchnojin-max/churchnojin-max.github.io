@@ -32,7 +32,7 @@ console.log('[gyojeok.js] v20260701di');
     render();
   }
   function render() {
-    root.innerHTML = '<div class="fin-tabs"><button data-t="access">권한 관리</button><button data-t="members">교적 명단</button><button data-t="newfamily">새가족 등록</button><button data-t="family">가계도</button><button data-t="import">엑셀 가져오기</button><button data-t="numbering">교인번호 부여</button></div><div id="gjPanel"></div>';
+    root.innerHTML = '<div class="fin-tabs"><button data-t="access">권한 관리</button><button data-t="members">교적 명단</button><button data-t="newfamily">새가족 등록</button><button data-t="family">가계도</button><button data-t="import">엑셀 가져오기</button><button data-t="numbering">교인번호 부여</button><button data-t="print">명단 인쇄</button></div><div id="gjPanel"></div>';
     Array.prototype.forEach.call(root.querySelectorAll('.fin-tabs button'), function (b) {
       if (b.dataset.t === tab) b.classList.add('active');
       b.onclick = function () { tab = b.dataset.t; render(); };
@@ -43,6 +43,7 @@ console.log('[gyojeok.js] v20260701di');
     else if (tab === 'newfamily') renderNewFamily(p);
     else if (tab === 'import') renderImport(p);
     else if (tab === 'numbering') renderNumbering(p);
+    else if (tab === 'print') renderPrint(p);
     else renderMembers(p);
   }
 
@@ -1102,6 +1103,213 @@ console.log('[gyojeok.js] v20260701di');
         };
       }).catch(function (e) { msg('실패: ' + e.message, '#c0392b'); });
     };
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     명단 인쇄 — 교적을 종이(또는 PDF)로 뽑는다.
+     · 서식 4가지: 전체명단 / 세대별명단 / 연락처만 / 개인신상카드
+     · 새 창에 인쇄 전용 문서를 만들어 window.print() 를 부른다.
+       (화면 CSS의 영향을 받지 않도록 문서를 통째로 새로 쓴다)
+     ══════════════════════════════════════════════════════════════ */
+  var GJ_PRINT_FORMS = [
+    ['all', '전체 명단', '교인번호·이름·생년월일·성별·직책·구역·연락처·주소를 한 표로 (가로)'],
+    ['family', '세대별 명단', '세대주별로 묶어서 가족 단위로 (세로)'],
+    ['contact', '연락처만', '이름·구역·휴대폰만 크게 — 나눠 드리기 좋음 (세로·2단)'],
+    ['card', '개인 신상카드', '한 사람당 카드 한 장, 모든 항목 (세로)']
+  ];
+
+  function gjPrintDoc(title, bodyHTML, sub, landscape) {
+    var w = window.open('', '_blank', 'width=1000,height=840');
+    if (!w) { alert('팝업이 차단되었습니다. 브라우저에서 팝업을 허용한 뒤 다시 시도해 주세요.'); return; }
+    var d = new Date();
+    var dt = d.getFullYear() + '.' + pad2(d.getMonth() + 1) + '.' + pad2(d.getDate());
+    var css = [
+      '@page{size:A4 ' + (landscape ? 'landscape' : 'portrait') + ';margin:12mm 10mm}',
+      '*{box-sizing:border-box}',
+      'body{font-family:"Noto Sans KR","Malgun Gothic","맑은 고딕",sans-serif;color:#1a1a1a;margin:0;padding:0;font-size:10.5px;line-height:1.35}',
+      '.head{text-align:center;margin-bottom:12px;border-bottom:2px solid #1f3a5f;padding-bottom:8px}',
+      '.head h1{font-family:"Noto Serif KR",serif;font-size:20px;margin:0;letter-spacing:.1em;color:#16263d}',
+      '.head .sub{color:#555;font-size:11px;margin-top:5px}',
+      '.head .meta{color:#9aa5b1;font-size:9.5px;margin-top:3px}',
+      'table{width:100%;border-collapse:collapse;font-size:10px}',
+      'th{background:#1f3a5f;color:#fff;font-weight:600;padding:5px 6px;text-align:left;border:1px solid #1f3a5f}',
+      'td{padding:4px 6px;border:1px solid #d4dae3;vertical-align:top}',
+      'tbody tr:nth-child(even){background:#f6f8fb}',
+      'thead{display:table-header-group}',             // 페이지 넘어가도 머리글 반복
+      'tr{page-break-inside:avoid}',
+      '.famblk{page-break-inside:avoid;margin-bottom:10px;border:1px solid #c9d3e0;border-radius:4px;overflow:hidden}',
+      '.famblk .fh{background:#eef2f7;padding:5px 9px;font-weight:700;color:#1f3a5f;border-bottom:1px solid #c9d3e0;font-size:11px}',
+      '.famblk table{font-size:9.8px}',
+      '.famblk th{background:#5b6f8c;border-color:#5b6f8c;padding:3px 6px}',
+      '.cols{column-count:2;column-gap:14mm}',
+      '.cline{break-inside:avoid;display:flex;justify-content:space-between;gap:8px;padding:4px 2px;border-bottom:1px dotted #c3ccd8;font-size:11px}',
+      '.cline .nm{font-weight:700}',
+      '.cline .gp{color:#7b8794;font-size:9.5px}',
+      '.card{page-break-inside:avoid;border:1px solid #b9c2cf;border-radius:5px;padding:9px 12px;margin-bottom:9px}',
+      '.card h3{margin:0 0 6px;font-size:13px;color:#1f3a5f;border-bottom:1px solid #dde3ec;padding-bottom:4px}',
+      '.card h3 .no{color:#9aa5b1;font-weight:400;font-size:10px;margin-left:6px}',
+      '.card .kv{display:flex;flex-wrap:wrap}',
+      '.card .kv div{width:50%;padding:2px 0;font-size:10px}',
+      '.card .kv b{display:inline-block;width:66px;color:#7b8794;font-weight:500}',
+      '.card .wide{width:100%!important}',
+      '.foot{margin-top:10px;text-align:right;color:#9aa5b1;font-size:9px}',
+      '@media print{.noprint{display:none}}'
+    ].join('\n');
+    w.document.write(
+      '<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + css + '</style></head><body>' +
+      '<div class="noprint" style="text-align:right;margin-bottom:8px"><button onclick="window.print()" style="padding:8px 18px;font:inherit;font-weight:700;cursor:pointer;background:#1f3a5f;color:#fff;border:0;border-radius:6px">🖨 인쇄 / PDF 저장</button></div>' +
+      '<div class="head"><h1>' + esc(title) + '</h1>' +
+      (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
+      '<div class="meta">출력일: ' + dt + '</div></div>' +
+      bodyHTML +
+      '<div class="foot">노진교회 교적 · ' + dt + '</div>' +
+      '</body></html>'
+    );
+    w.document.close();
+    setTimeout(function () { try { w.focus(); w.print(); } catch (e) { } }, 400);
+  }
+
+  function renderPrint(panel) {
+    loading(panel);
+    WPF.call('listGyojeok').then(function (r) {
+      var ms = (r.members || []).filter(function (m) { return m['이름']; });
+
+      // 구역 목록(빈 값 제외)
+      var groups = [], seen = {};
+      ms.forEach(function (m) { var g = String(m['그룹'] || '').trim(); if (g && !seen[g]) { seen[g] = 1; groups.push(g); } });
+      groups.sort(function (a, b) { return a.localeCompare(b, 'ko'); });
+
+      panel.innerHTML =
+        '<div class="fin-card">' +
+        '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">🖨 교적 명단 인쇄</h3>' +
+        '<p style="margin:0 0 14px;font-size:.88rem;color:var(--ink-soft,#7b8794)">서식과 범위를 고르고 <b>[인쇄 미리보기 열기]</b>를 누르면 새 창이 뜹니다. 그 창에서 인쇄하거나 <b>PDF로 저장</b>할 수 있습니다. (총 ' + ms.length + '명)</p>' +
+        '<div class="form-field" style="margin-bottom:12px"><label style="font-weight:700">서식</label>' +
+        GJ_PRINT_FORMS.map(function (f, i) {
+          return '<label style="display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;margin-top:6px;cursor:pointer">' +
+            '<input type="radio" name="gp_form" value="' + f[0] + '"' + (i === 0 ? ' checked' : '') + ' style="width:auto;margin:3px 0 0">' +
+            '<span><b>' + f[1] + '</b><br><span style="font-size:.83rem;color:#7b8794">' + f[2] + '</span></span></label>';
+        }).join('') +
+        '</div>' +
+        '<div class="fin-grid" style="align-items:end">' +
+        '<div class="form-field"><label>구역</label><select id="gp_group"><option value="">전체</option>' +
+        groups.map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('') + '</select></div>' +
+        '<div class="form-field"><label>정렬</label><select id="gp_sort"><option value="no">교인번호 순</option><option value="name">이름 가나다순</option><option value="group">구역 순</option><option value="birth">나이 많은 순</option></select></div>' +
+        '<div class="form-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:22px"><input type="checkbox" id="gp_addr" checked style="width:auto;margin:0"> 주소 포함</label></div>' +
+        '</div>' +
+        '<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+        '<button class="btn btn-solid" id="gp_go" style="padding:10px 20px;font-weight:700">🖨 인쇄 미리보기 열기</button>' +
+        '<button class="btn btn-line" id="gp_csv">⬇ 엑셀(CSV)로 내려받기</button>' +
+        '<span class="fin-msg" id="gp_msg"></span></div>' +
+        '<p style="margin:10px 0 0;font-size:.8rem;color:#9aa5b1">※ 개인정보가 담긴 문서입니다. 출력물 보관·폐기에 주의해 주세요.</p>' +
+        '</div>';
+
+      var msgEl = panel.querySelector('#gp_msg');
+      function msg(t, c) { msgEl.style.color = c || '#7b8794'; msgEl.textContent = t; }
+
+      function pick() {
+        var form = (panel.querySelector('input[name="gp_form"]:checked') || {}).value || 'all';
+        var grp = panel.querySelector('#gp_group').value;
+        var sort = panel.querySelector('#gp_sort').value;
+        var withAddr = panel.querySelector('#gp_addr').checked;
+        var list = grp ? ms.filter(function (m) { return String(m['그룹'] || '').trim() === grp; }) : ms.slice();
+        list.sort(function (a, b) {
+          if (sort === 'name') return String(a['이름']).localeCompare(String(b['이름']), 'ko');
+          if (sort === 'group') { var ga = String(a['그룹'] || 'ㅎ'), gb = String(b['그룹'] || 'ㅎ'); if (ga !== gb) return ga.localeCompare(gb, 'ko'); return String(a['이름']).localeCompare(String(b['이름']), 'ko'); }
+          if (sort === 'birth') { var ba = birthOf(a) || '9999', bb = birthOf(b) || '9999'; if (ba !== bb) return ba < bb ? -1 : 1; return String(a['이름']).localeCompare(String(b['이름']), 'ko'); }
+          var na = Number(a['교적번호']) || 99999, nb = Number(b['교적번호']) || 99999;   // 번호 없는 사람은 뒤로
+          if (na !== nb) return na - nb;
+          return String(a['이름']).localeCompare(String(b['이름']), 'ko');
+        });
+        return { form: form, grp: grp, list: list, withAddr: withAddr };
+      }
+
+      function ageOf(m) { var b = birthOf(m); var y = Number(String(b).slice(0, 4)); return y ? (new Date().getFullYear() - y + 1) : ''; }
+      function td(v) { return '<td>' + esc(v == null ? '' : v) + '</td>'; }
+
+      function buildAll(list, withAddr) {
+        return '<table><thead><tr><th style="width:42px">번호</th><th style="width:62px">이름</th><th style="width:88px">생년월일</th><th style="width:30px">성별</th><th style="width:34px">나이</th><th style="width:62px">직책</th><th style="width:50px">구역</th><th style="width:88px">휴대폰</th><th style="width:80px">집전화</th>' + (withAddr ? '<th>주소</th>' : '') + '</tr></thead><tbody>' +
+          list.map(function (m) {
+            return '<tr>' + td(m['교적번호'] || '') + td(m['이름']) + td(birthDisplay(m)) + td(m['성별']) + td(ageOf(m)) + td(m['직책']) + td(m['그룹']) + td(fmtPhone(m['휴대폰'])) + td(fmtPhone(m['집전화'])) + (withAddr ? td(m['주소']) : '') + '</tr>';
+          }).join('') + '</tbody></table>';
+      }
+
+      function buildFamily(list, withAddr) {
+        var heads = [], byHead = {};
+        list.forEach(function (m) { var h = m['세대주'] || m['이름']; if (!byHead[h]) { byHead[h] = []; heads.push(h); } byHead[h].push(m); });
+        return heads.map(function (h) {
+          var fam = byHead[h].slice().sort(function (a, b) { return (a['이름'] === h ? -1 : 0) - (b['이름'] === h ? -1 : 0); });
+          var headM = fam.filter(function (x) { return x['이름'] === h; })[0] || fam[0];
+          var addr = withAddr && headM && headM['주소'] ? ' · ' + headM['주소'] : '';
+          return '<div class="famblk"><div class="fh">' + esc(h) + ' 세대 <span style="font-weight:400;color:#7b8794;font-size:9.5px">(' + fam.length + '명' + esc(addr) + ')</span></div>' +
+            '<table><thead><tr><th style="width:42px">번호</th><th style="width:62px">이름</th><th style="width:52px">관계</th><th style="width:88px">생년월일</th><th style="width:30px">성별</th><th style="width:34px">나이</th><th style="width:62px">직책</th><th style="width:50px">구역</th><th style="width:88px">휴대폰</th></tr></thead><tbody>' +
+            fam.map(function (m) { return '<tr>' + td(m['교적번호'] || '') + td(m['이름']) + td(m['이름'] === h ? '세대주' : (m['관계'] || '')) + td(birthDisplay(m)) + td(m['성별']) + td(ageOf(m)) + td(m['직책']) + td(m['그룹']) + td(fmtPhone(m['휴대폰'])) + '</tr>'; }).join('') +
+            '</tbody></table></div>';
+        }).join('');
+      }
+
+      function buildContact(list) {
+        return '<div class="cols">' + list.map(function (m) {
+          return '<div class="cline"><span class="nm">' + esc(m['이름']) + (m['직책'] ? ' <span class="gp">' + esc(m['직책']) + '</span>' : '') + '</span>' +
+            '<span>' + esc(fmtPhone(m['휴대폰']) || '—') + (m['그룹'] ? ' <span class="gp">' + esc(m['그룹']) + '</span>' : '') + '</span></div>';
+        }).join('') + '</div>';
+      }
+
+      function buildCards(list, withAddr) {
+        function kv(label, val, wide) { return val ? '<div' + (wide ? ' class="wide"' : '') + '><b>' + esc(label) + '</b>' + esc(val) + '</div>' : ''; }
+        return list.map(function (m) {
+          var a = ageOf(m);
+          return '<div class="card"><h3>' + esc(m['이름']) + (m['교적번호'] ? '<span class="no">교인번호 ' + esc(m['교적번호']) + '</span>' : '') + '</h3><div class="kv">' +
+            kv('생년월일', birthDisplay(m) + (a ? ' (' + a + '세)' : '')) +
+            kv('성별', m['성별']) + kv('직책', m['직책']) + kv('구역', m['그룹']) +
+            kv('구역직분', m['구역직분']) + kv('기관직책', m['기관직책']) +
+            kv('소속그룹', m['소속그룹']) + kv('신급', m['신급']) +
+            kv('휴대폰', fmtPhone(m['휴대폰'])) + kv('집전화', fmtPhone(m['집전화'])) +
+            kv('세대주', m['세대주']) + kv('관계', m['관계']) + kv('배우자', m['배우자']) +
+            kv('세례여부', m['세례여부'] ? ('받음' + (m['세례일메모'] ? ' (' + m['세례일메모'] + ')' : '')) : '') +
+            kv('세례교회', m['세례받은교회']) + kv('집례자', m['집례자']) +
+            (withAddr ? kv('주소', m['주소'], true) : '') +
+            kv('직장주소', m['직장주소'], true) + kv('직장전화', fmtPhone(m['직장전화'])) +
+            kv('가족사항', m['가족사항'], true) + kv('특이사항', m['특이사항'], true) +
+            '</div></div>';
+        }).join('');
+      }
+
+      panel.querySelector('#gp_go').onclick = function () {
+        var s = pick();
+        if (!s.list.length) { msg('출력할 사람이 없습니다.', '#c0392b'); return; }
+        var fname = (GJ_PRINT_FORMS.filter(function (f) { return f[0] === s.form; })[0] || [])[1] || '교적 명단';
+        var title = '노진교회 교적 ' + fname;
+        var sub = (s.grp ? s.grp + ' · ' : '') + '총 ' + s.list.length + '명';
+        var body, landscape = false;
+        if (s.form === 'family') body = buildFamily(s.list, s.withAddr);
+        else if (s.form === 'contact') body = buildContact(s.list);
+        else if (s.form === 'card') body = buildCards(s.list, s.withAddr);
+        else { body = buildAll(s.list, s.withAddr); landscape = true; }
+        gjPrintDoc(title, body, sub, landscape);
+        msg('✓ 새 창을 열었습니다 — 창이 안 보이면 팝업 차단을 확인해 주세요', 'green');
+      };
+
+      panel.querySelector('#gp_csv').onclick = function () {
+        var s = pick();
+        if (!s.list.length) { msg('내려받을 사람이 없습니다.', '#c0392b'); return; }
+        var head = ['교인번호', '이름', '생년월일', '성별', '나이', '직책', '구역', '구역직분', '기관직책', '소속그룹', '휴대폰', '집전화', '세대주', '관계', '배우자', '세례여부', '세례교회', '주소', '가족사항', '특이사항'];
+        var rows = [head].concat(s.list.map(function (m) {
+          return [m['교적번호'] || '', m['이름'] || '', birthDisplay(m), m['성별'] || '', ageOf(m), m['직책'] || '', m['그룹'] || '',
+          m['구역직분'] || '', m['기관직책'] || '', m['소속그룹'] || '', fmtPhone(m['휴대폰']), fmtPhone(m['집전화']),
+          m['세대주'] || '', m['관계'] || '', m['배우자'] || '', m['세례여부'] ? '받음' : '', m['세례받은교회'] || '',
+          m['주소'] || '', m['가족사항'] || '', m['특이사항'] || ''];
+        }));
+        function cell(v) { v = String(v == null ? '' : v).replace(/\r?\n/g, ' '); return /[",]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+        var csv = '﻿' + rows.map(function (r) { return r.map(cell).join(','); }).join('\r\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = '노진교회_교적명단' + (s.grp ? '_' + s.grp : '') + '.csv';
+        document.body.appendChild(a); a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+        msg('✓ ' + s.list.length + '명 내려받았습니다', 'green');
+      };
+    }).catch(function (e) { panel.innerHTML = msgCard('조회 실패', e.message); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
