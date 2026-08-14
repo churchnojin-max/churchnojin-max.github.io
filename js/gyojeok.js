@@ -553,7 +553,23 @@ console.log('[gyojeok.js] v20260701di');
       var msgEl;
       function setMsg(t, ok) { if (msgEl) { msgEl.style.color = ok ? 'green' : '#c0392b'; msgEl.textContent = t; } }
       function rerun(id) { setMsg('처리 중…', true); return WPF.call('listGyojeok').then(function (r) { ALL = (r.members || []).filter(function (m) { return m['이름']; }); var nc = ALL.filter(function (x) { return String(x['교적ID']) === String(id); })[0] || cur; familyMode(nc); }).catch(function (e) { setMsg('오류: ' + e.message, false); }); }
+      // 세대주를 이 사람으로 바꾼다 — 세대 구성원 '전원'을 새 세대주에게 다시 물린다.
+      // 한 명만 바꾸면 나머지가 옛 세대주를 계속 가리켜 세대가 둘로 쪼개진다(세대주가 둘이 되는 원인).
+      // 옛 세대주는 관계를 '본인'으로 — 자기 기록을 남의 호칭으로 적지 않기 위해.
+      function makeHeadCalls(newHeadRow) {
+        var newName = newHeadRow['이름'];
+        var members = ALL.filter(function (x) { return (x['세대주'] || x['이름']) === head; });
+        if (!members.some(function (x) { return x['교적ID'] === newHeadRow['교적ID']; })) members = members.concat([newHeadRow]);
+        return members.map(function (m) {
+          var f = { 세대주: newName };
+          if (m['교적ID'] === newHeadRow['교적ID']) f['관계'] = '본인';
+          else if (m['이름'] === head || m['관계'] === '세대주') f['관계'] = '본인';   // 옛 세대주
+          return WPF.call('updateGyojeok', { id: m['교적ID'], fields: f });
+        });
+      }
       function doLink(memberRow, rel) {
+        // '세대주'로 지정하는 건 관계 표기가 아니라 세대 재편성이다
+        if (rel === '세대주') return Promise.all(makeHeadCalls(memberRow));
         var fields = { 세대주: head, 관계: rel };
         var calls = [];
         if (rel === '배우자') {
@@ -587,7 +603,7 @@ console.log('[gyojeok.js] v20260701di');
       msgEl = box.querySelector('#fm_msg');
       box.querySelector('#fm_back').onclick = function () { renderMembers(document.getElementById('gjPanel')); viewMode(cur); };
       var setHead = box.querySelector('#fm_sethead');
-      if (setHead) setHead.onclick = function () { WPF.call('updateGyojeok', { id: cur['교적ID'], fields: { 세대주: cur['이름'], 관계: '세대주' } }).then(function () { rerun(cur['교적ID']); }).catch(function (e) { setMsg('오류: ' + e.message, false); }); };
+      if (setHead) setHead.onclick = function () { setMsg('세대 재편성 중…', true); Promise.all(makeHeadCalls(cur)).then(function () { rerun(cur['교적ID']); }).catch(function (e) { setMsg('오류: ' + e.message, false); }); };
       Array.prototype.forEach.call(box.querySelectorAll('.fm-relsave'), function (b) {
         b.onclick = function () { var sel = document.getElementById('fm_rel_' + b.dataset.id); var rel = sel ? sel.value : ''; var m = ALL.filter(function (x) { return String(x['교적ID']) === String(b.dataset.id); })[0]; if (!m) return; doLink(m, rel).then(function () { rerun(cur['교적ID']); }).catch(function (e) { setMsg('오류: ' + e.message, false); }); };
       });
@@ -682,7 +698,7 @@ console.log('[gyojeok.js] v20260701di');
       if (member['이름'] === activeHead) { flash('세대주 본인입니다.', false); return; }
       pickRel(member, activeHead, member['배우자'] === activeHead ? '배우자' : '자녀').then(function (rel) { if (!rel) return; assignLocal(member, activeHead, rel); selKey = null; draw(); flash('추가됨 — 저장하기로 반영하세요'); });
     }
-    function startFamily(member) { set(member['교적ID'], { 세대주: member['이름'], 관계: '세대주' }); activeHead = member['이름']; selKey = null; draw(); flash('「' + member['이름'] + '」 세대주로 시작 — 가족을 드래그해 추가하세요'); }
+    function startFamily(member) { set(member['교적ID'], { 세대주: member['이름'], 관계: '본인' }); activeHead = member['이름']; selKey = null; draw(); flash('「' + member['이름'] + '」 세대주로 시작 — 가족을 드래그해 추가하세요'); }
     function removeMember(member) { set(member['교적ID'], { 세대주: member['이름'], 관계: '', 배우자: '', 배우자매칭키: '' }); draw(); flash('가족에서 제외 — 저장하기로 반영하세요'); }
     function save() {
       var ch = changes();
