@@ -92,6 +92,13 @@ window.WPF = (function () {
     '집전화': 'home_phone', '직장주소': 'work_address', '직장전화': 'work_phone', '구역직분': 'district_role', '기관직책': 'org_role', '세례여부': 'baptized', '세례일메모': 'baptism_note', '세례받은교회': 'baptism_church', '집례자': 'baptism_by', '가족사항': 'family_note', '교적번호': 'gyojeok_id' };
   var GJ_DATECOLS = { birth: 1, baptism_date: 1, ordination_date: 1, reg_date: 1 };
   var GJ_BOOLCOLS = { birth_lunar: 1, baptized: 1 };
+  var GJ_NUMCOLS = { gyojeok_id: 1 };   // 정수 컬럼 — 빈 칸은 '' 가 아니라 null 로 보내야 저장된다
+  function gjVal(col, val) {
+    if (GJ_DATECOLS[col] && (val === '' || val == null)) return null;
+    if (GJ_BOOLCOLS[col]) return !!val;
+    if (GJ_NUMCOLS[col]) { if (val === '' || val == null) return null; var n = Number(val); return isNaN(n) ? null : n; }
+    return val;
+  }
   function memOut(r) { return { name: r.name, key: r.member_key, birth: r.birth, group: r.groups, role: r.role, spouse: r.spouse, spouseKey: r.spouse_key, head: r.head, rel: r.relation, address: r.address || '' }; }
   function recOut(r) { return { id: r.id, no: r.receipt_no, fy: r.fy, key: r.member_key, name: r.donor_name, birth: r.donor_birth, rrn: r.donor_rrn, addr: r.donor_addr, includedKeys: r.included_keys || [], detail: r.detail, spouse: r.spouse, period: r.period_label, amount: r.amount, cnt: r.cnt, method: r.method, status: r.status, issuedBy: r.issued_by, issuedAt: r.issued_at, cancelledAt: r.cancelled_at }; }
   function accOut(r) { return { '구분': r.atype, '분류': (r.atype === '수입' ? '헌금' : (r.category || '')), '계정명': r.name, '계정코드': r.code, '상위': r.category }; }
@@ -160,24 +167,30 @@ window.WPF = (function () {
         var xf = params.fields || {};
         Object.keys(xf).forEach(function (k) {
           var col = GJ_MAP[k]; if (!col) return;
-          var val = xf[k];
-          if (GJ_DATECOLS[col] && (val === '' || val == null)) val = null;
-          if (GJ_BOOLCOLS[col]) val = !!val;
-          ins[col] = val;
+          ins[col] = gjVal(col, xf[k]);
         });
-        return rest('POST', 'gyojeok', ins, 'return=representation').then(function (rows) {
+        if (ins.gyojeok_id == null) delete ins.gyojeok_id;   // 빈 값이면 자동 발부에 맡긴다
+        // 교인번호 자동 발부: 직접 지정하지 않았으면 현재 최대번호+1 (아무도 없으면 1001부터)
+        var pre = (ins.gyojeok_id != null && ins.gyojeok_id !== '')
+          ? Promise.resolve(null)
+          : rest('GET', 'gyojeok?select=gyojeok_id&order=gyojeok_id.desc.nullslast&limit=1')
+            .then(function (rows) {
+              var top = rows && rows[0] && rows[0].gyojeok_id;
+              ins.gyojeok_id = (Number(top) || 1000) + 1;
+            })
+            .catch(function () { /* 번호 조회 실패해도 등록 자체는 진행 */ });
+        return pre.then(function () {
+          return rest('POST', 'gyojeok', ins, 'return=representation');
+        }).then(function (rows) {
           var row = (rows && rows[0]) || {};
-          return { ok: true, key: nm + '|' + bd, name: nm, id: row.id };
+          return { ok: true, key: nm + '|' + bd, name: nm, id: row.id, gyojeokId: row.gyojeok_id };
         });
       }
       case 'updateGyojeok': {
         var f = params.fields || {}, patch = {};
         Object.keys(f).forEach(function (k) {
           var col = GJ_MAP[k]; if (!col) return;
-          var val = f[k];
-          if (GJ_DATECOLS[col] && (val === '' || val == null)) val = null;
-          if (GJ_BOOLCOLS[col]) val = !!val;
-          patch[col] = val;
+          patch[col] = gjVal(col, f[k]);
         });
         if (f['이름'] && f['생년월일']) patch.member_key = f['이름'] + '|' + String(f['생년월일']).replace(/[^0-9]/g, '').slice(0, 8);
         return rest('PATCH', 'gyojeok?id=eq.' + encodeURIComponent(params.id), patch, 'return=minimal').then(function () { return { ok: true }; });
