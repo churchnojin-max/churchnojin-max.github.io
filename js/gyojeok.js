@@ -348,7 +348,7 @@ console.log('[gyojeok.js] v20260701di');
     ['휴대폰', '휴대폰', 'tel'], ['신급', '신급', 'grade'], ['직책', '직책', 'role'],
     ['세례일', '세례일', 'date'], ['임직일', '임직일', 'date'],
     ['교인번호', '교적번호', 'text'],
-    ['세대주', '세대주', 'text'], ['세대주와 관계', '관계', 'rel'], ['배우자', '배우자', 'text'],
+    ['세대주', '세대주', 'person'], ['세대주와 관계', '관계', 'rel'], ['배우자', '배우자', 'person'],
     ['구역/부서', '그룹', 'text'], ['회원상태', '회원상태', 'status'], ['주소', '주소', 'text'],
     ['등록일', '등록일', 'date'], ['직전교회', '직전교회', 'text'], ['인도자', '인도자', 'text'],
     ['새가족 심방여부', '심방여부', 'visited'], ['특이사항', '특이사항', 'textarea']
@@ -474,6 +474,7 @@ console.log('[gyojeok.js] v20260701di');
         else if (type === 'visited') ctrl = '<select data-col="' + col + '">' + selOpts(VISITED_OPTS, v) + '</select>';
         else if (type === 'rel') ctrl = '<select data-col="' + col + '">' + selOpts(REL_OPTS, v) + '</select>';
         else if (type === 'textarea') ctrl = '<textarea data-col="' + col + '" rows="2" style="width:100%;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' + esc(v) + '</textarea>';
+        else if (type === 'person') ctrl = '<input type="text" data-col="' + col + '" value="' + esc(v) + '" list="gd_names" autocomplete="off" placeholder="교적에 있는 이름">';
         else ctrl = '<input type="text" data-col="' + col + '" value="' + esc(v) + '"' + (type === 'tel' ? ' inputmode="numeric"' : '') + (type === 'birth' ? ' placeholder="예: 1981-08-19"' : '') + (type === 'date' ? ' placeholder="예: 2010-03-21"' : '') + '>';
         return '<div class="af-field"' + (type === 'textarea' ? ' style="flex:1 1 100%"' : '') + '><label>' + esc(label) + '</label>' + ctrl + '</div>';
       }
@@ -483,6 +484,7 @@ console.log('[gyojeok.js] v20260701di');
         '<div style="text-align:center"><div id="gd_drop" style="border:2px dashed #cdd7e3;border-radius:14px;padding:10px;cursor:pointer;transition:.15s"><div id="gd_photo">' + avatar(cur, 96) + '</div><div style="font-size:.7rem;color:#9aa5b1;margin-top:6px;line-height:1.4">사진을 여기로<br>드래그하세요</div></div><div style="margin-top:8px"><input type="file" id="gd_file" accept="image/*" style="display:none"><button type="button" class="btn btn-line" id="gd_upbtn" style="padding:4px 10px;font-size:.8rem">📷 사진 선택</button></div><input type="hidden" data-col="사진" id="gd_photourl" value="' + esc(photoUrl(cur)) + '"><div id="gd_upmsg" style="font-size:.76rem;color:#7b8794;margin-top:4px"></div></div>' +
         '<div class="fin-grid" style="flex:1;min-width:260px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">' +
         EDIT_FIELDS.map(function (f) { return inp(f[0], f[1], f[2]); }).join('') +
+        '<datalist id="gd_names">' + ALL.map(function (x) { return '<option value="' + esc(x['이름']) + '">'; }).join('') + '</datalist>' +
         '</div></div>' +
         '<div style="margin-bottom:12px;border-top:1px solid #eef1f5;padding-top:12px;display:flex;gap:18px;flex-wrap:wrap;align-items:center">' +
         '<label class="sw"><input type="checkbox" id="gd_ishead"' + (fIsHead ? ' checked' : '') + '> ⌂ 세대주(본인이 세대주)</label>' +
@@ -513,7 +515,15 @@ console.log('[gyojeok.js] v20260701di');
       // 세대주/분가 체크박스
       var ishead = box.querySelector('#gd_ishead'), branch = box.querySelector('#gd_branch'), originWrap = box.querySelector('#gd_origin_wrap'), originInp = box.querySelector('#gd_origin');
       var headInp = box.querySelector('[data-col="세대주"]'), relInp = box.querySelector('[data-col="관계"]'), nameInp = box.querySelector('[data-col="이름"]');
-      function syncHead() { if (ishead.checked) { if (headInp) { headInp.value = (nameInp && nameInp.value.trim()) || cur['이름']; headInp.disabled = true; } if (relInp && (!relInp.value.trim() || relInp.value.trim() === '세대주')) relInp.value = '세대주'; } else if (headInp) { headInp.disabled = false; } }
+      // 세대주 칸은 잠그지 않는다 — 잠그면 세대주를 배우자로 바꿀 방법이 없어진다(김교선 사례).
+      // 대신 체크가 켜져 있을 때만 본인 이름으로 맞춰주고, 다른 이름을 적으면 체크를 자동으로 푼다.
+      function syncHead() { if (ishead.checked) { if (headInp) headInp.value = (nameInp && nameInp.value.trim()) || cur['이름']; if (relInp && (!relInp.value.trim() || relInp.value.trim() === '세대주')) relInp.value = '세대주'; } }
+      if (headInp) headInp.addEventListener('input', function () {
+        var me = (nameInp && nameInp.value.trim()) || cur['이름'];
+        var v = headInp.value.trim();
+        if (v && v !== me) { ishead.checked = false; if (relInp && relInp.value.trim() === '세대주') relInp.value = '본인'; }
+        else if (v === me) ishead.checked = true;
+      });
       ishead.onchange = syncHead;
       branch.onchange = function () { originWrap.style.display = branch.checked ? '' : 'none'; if (branch.checked) { ishead.checked = true; syncHead(); } else { originInp.value = ''; } };
       syncHead();
@@ -1361,6 +1371,9 @@ console.log('[gyojeok.js] v20260701di');
         if (h && headNameOf(h) !== hd) {
           issues.push({ kind: 'chain', m: m, text: '세대주 「' + hd + '」 도 다시 「' + headNameOf(h) + '」 를 세대주로 가리킵니다(연결 끊김)', fix: 'follow' });
         }
+      } else if (rel && rel !== '본인' && rel !== '세대주') {
+        // 본인이 세대주인데 관계는 남에게 딸린 호칭(배우자·자녀 등) — 김교선 사례
+        issues.push({ kind: 'headrel', m: m, text: '세대주인데 관계가 「' + rel + '」 로 되어 있습니다', fix: 'selfrel' });
       }
 
       if (sp) {
@@ -1399,7 +1412,8 @@ console.log('[gyojeok.js] v20260701di');
           issues.map(function (i, n) {
             var plan = i.fix === 'makehead' ? '「' + i.m['이름'] + '」 를 세대주로, 세대 전원을 다시 물림'
               : i.fix === 'follow' ? '세대주를 「' + headNameOf(byNameOne(list, headNameOf(i.m)) || i.m) + '」 로 정정'
-                : i.fix === 'spouse' ? '「' + i.m['배우자'] + '」 쪽에도 배우자 연결' : '<span style="color:#c0392b">자동 수정 불가</span>';
+                : i.fix === 'spouse' ? '「' + i.m['배우자'] + '」 쪽에도 배우자 연결'
+                  : i.fix === 'selfrel' ? '관계를 「본인」 으로 정정' : '<span style="color:#c0392b">자동 수정 불가</span>';
             return '<tr><td>' + (i.fix ? '<input type="checkbox" class="ad-ck" data-n="' + n + '" checked>' : '') + '</td>' +
               '<td><b>' + esc(i.m['이름']) + '</b></td><td>' + esc(i.text) + '</td><td style="color:#5a6b82">' + plan + '</td></tr>';
           }).join('') + '</tbody></table></div>' +
@@ -1420,7 +1434,9 @@ console.log('[gyojeok.js] v20260701di');
         btn.disabled = true;
         var calls = [], done = 0, fail = [];
         picks.forEach(function (i) {
-          if (i.fix === 'spouse') {
+          if (i.fix === 'selfrel') {
+            calls.push({ name: i.m['이름'], p: function () { return WPF.call('updateGyojeok', { id: i.m['교적ID'], fields: { 관계: '본인' } }); } });
+          } else if (i.fix === 'spouse') {
             calls.push({ name: i.m['이름'], p: function () { return WPF.call('updateGyojeok', { id: i.other['교적ID'], fields: { 배우자: i.m['이름'], 배우자매칭키: i.m['매칭키'] } }); } });
           } else if (i.fix === 'follow') {
             var h = byNameOne(list, headNameOf(i.m));
