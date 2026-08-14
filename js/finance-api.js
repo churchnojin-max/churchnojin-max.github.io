@@ -93,6 +93,7 @@ window.WPF = (function () {
   var GJ_DATECOLS = { birth: 1, baptism_date: 1, ordination_date: 1, reg_date: 1 };
   var GJ_BOOLCOLS = { birth_lunar: 1, baptized: 1 };
   var GJ_NUMCOLS = { gyojeok_id: 1 };   // 정수 컬럼 — 빈 칸은 '' 가 아니라 null 로 보내야 저장된다
+  var GJ_MINISTER_BASE = 7000;          // 7000번대 = 담임목사·교역자 가정 전용(성도 번호와 분리)
   function gjVal(col, val) {
     if (GJ_DATECOLS[col] && (val === '' || val == null)) return null;
     if (GJ_BOOLCOLS[col]) return !!val;
@@ -170,10 +171,11 @@ window.WPF = (function () {
           ins[col] = gjVal(col, xf[k]);
         });
         if (ins.gyojeok_id == null) delete ins.gyojeok_id;   // 빈 값이면 자동 발부에 맡긴다
-        // 교인번호 자동 발부: 직접 지정하지 않았으면 현재 최대번호+1 (아무도 없으면 1001부터)
+        // 교인번호 자동 발부 — 성도 번호대(1001~6999) 안에서만 최대번호+1.
+        // 7000번대는 담임목사·교역자 가정 전용이라 자동 발부가 넘어가면 안 된다.
         var pre = (ins.gyojeok_id != null && ins.gyojeok_id !== '')
           ? Promise.resolve(null)
-          : rest('GET', 'gyojeok?select=gyojeok_id&order=gyojeok_id.desc.nullslast&limit=1')
+          : rest('GET', 'gyojeok?select=gyojeok_id&gyojeok_id=lt.' + GJ_MINISTER_BASE + '&order=gyojeok_id.desc.nullslast&limit=1')
             .then(function (rows) {
               var top = rows && rows[0] && rows[0].gyojeok_id;
               ins.gyojeok_id = (Number(top) || 1000) + 1;

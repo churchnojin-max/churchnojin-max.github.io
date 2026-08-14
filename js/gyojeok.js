@@ -1055,12 +1055,19 @@ console.log('[gyojeok.js] v20260701di');
     [1051, '윤만배'], [1052, '전정식'], [1053, '황귀순'], [1054, '윤현빈']
   ];
 
+  // 7000번대 = 담임목사·교역자 가정 전용. 성도 번호(1001~)와 따로 굴린다.
+  // (원로목사 신동열 가정은 은퇴하신 분이라 성도 번호 1001·1002 를 그대로 둔다)
+  var GJ_NUMBERING_LIST_MIN = [
+    [7001, '손병민'], [7002, '채애리'], [7003, '손필립']
+  ];
+
   function renderNumbering(panel) {
     panel.innerHTML =
       '<div class="fin-card">' +
       '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">🔢 교인번호(1001~) 일괄 부여</h3>' +
       '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-soft,#7b8794)">' +
-      '원로목사·원로사모를 1001·1002로 놓고 생년월일 순으로 이어 붙인, <b>이름으로 미리 정해둔 번호 목록(' + GJ_NUMBERING_LIST.length + '명)</b>을 ' +
+      '성도는 <b>1001번대</b>(원로목사·원로사모를 1001·1002로 놓고 생년월일 순), 담임목사·교역자 가정은 <b>7000번대</b>로 ' +
+      '미리 정해둔 번호 목록(성도 ' + GJ_NUMBERING_LIST.length + '명 · 교역자 ' + GJ_NUMBERING_LIST_MIN.length + '명)을 ' +
       '교적의 <b>교적번호</b> 칸에 반영합니다. 반영 전에 이름이 매칭되는지 먼저 보여드립니다.</p>' +
       '<button class="btn btn-line" id="gn_load">명단 불러와 확인하기</button>' +
       '<span class="fin-msg" id="gn_msg" style="margin-left:10px"></span>' +
@@ -1078,7 +1085,7 @@ console.log('[gyojeok.js] v20260701di');
         existing.forEach(function (m) { (byName[String(m['이름']).trim()] = byName[String(m['이름']).trim()] || []).push(m); });
 
         var ok = [], amb = [], miss = [];
-        GJ_NUMBERING_LIST.forEach(function (pair) {
+        GJ_NUMBERING_LIST.concat(GJ_NUMBERING_LIST_MIN).forEach(function (pair) {
           var num = pair[0], name = pair[1];
           var hit = byName[name] || [];
           if (hit.length === 1) ok.push({ num: num, name: name, cur: hit[0] });
@@ -1379,8 +1386,15 @@ console.log('[gyojeok.js] v20260701di');
       if (sp) {
         var s = one(sp);
         if (!s) issues.push({ kind: 'nospouse', m: m, text: '배우자 「' + sp + '」 가 교적에 없습니다', fix: null });
-        else if (String(s['배우자'] || '').trim() !== me) {
-          issues.push({ kind: 'onesided', m: m, other: s, text: '배우자 「' + sp + '」 쪽에는 연결이 없습니다(한쪽만 걸림)', fix: 'spouse' });
+        else {
+          var back = String(s['배우자'] || '').trim();
+          if (back && back !== me) {
+            // 상대는 이미 다른 사람을 배우자로 두고 있다 — 한쪽이 잘못 적힌 것이라 사람이 판단해야 한다.
+            // 자동으로 덮어쓰면 멀쩡한 반대쪽 연결을 지운다.
+            issues.push({ kind: 'spouseconflict', m: m, other: s, text: '배우자를 「' + sp + '」 로 두었지만, 「' + sp + '」 의 배우자는 「' + back + '」 입니다', fix: null });
+          } else if (!back) {
+            issues.push({ kind: 'onesided', m: m, other: s, text: '배우자 「' + sp + '」 쪽에는 연결이 없습니다(한쪽만 걸림)', fix: 'spouse' });
+          }
         }
       }
     });
