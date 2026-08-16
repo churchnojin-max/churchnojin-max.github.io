@@ -8398,147 +8398,180 @@ console.log('[affairs.js] v20260712memo2');
   })();
 
   /* ══════════════════════════════════════════════════════════════
-     설교문 낭독 — 원고를 붙여넣으면 음성으로 읽어 준다.
-     · QT 낭독과 같은 Edge Function(tts)을 그대로 쓴다. 같은 글은 저장본을
-       돌려주므로 두 번째부터는 즉시 재생되고 추가 비용도 없다.
-     · 함수는 12,000자를 넘으면 뒷부분을 '조용히 잘라내므로', 원고가 길면
-       여기서 미리 문단 경계로 나눠 여러 편으로 만들고 이어서 재생한다.
+     설교문 낭독 — 원고를 붙여넣으면 읽어 준다(원고 확인용).
+     · 브라우저에 내장된 음성(Web Speech API)만 쓴다. 서버·API 키·하루 생성량
+       제한이 전혀 없고, 누르면 바로 읽는다. 음성 파일을 만들지 않는다.
+     · 크롬은 한 번에 긴 문장을 주면 15초쯤 뒤 멋대로 끊기므로 문장 단위로
+       잘라 차례로 읽히고, 읽는 중인 문장을 화면에 표시한다.
      ══════════════════════════════════════════════════════════════ */
-  var TTS_PART_MAX = 11000;              // 서버 상한(12,000)보다 넉넉히 낮게
-  var TTS_VOICES = [
-    ['Kore', '차분한 여성 (기본)'],
-    ['Aoede', '부드러운 여성'],
-    ['Leda', '밝은 여성']
-  ];
-
-  // 문단 경계로 자른다. 한 문단이 통째로 상한을 넘으면 문장 경계로 다시 자른다.
-  function ttsSplit(text, max) {
-    var paras = String(text || '').replace(/\r\n/g, '\n').split(/\n{2,}/);
-    var out = [], buf = '';
-    function push() { var t = buf.trim(); if (t) out.push(t); buf = ''; }
-    paras.forEach(function (p) {
-      if (buf && (buf.length + 2 + p.length) > max) push();
-      if (p.length > max) {
-        var sents = p.match(/[^.!?。…\n]+[.!?。…]?/g) || [p];
-        sents.forEach(function (s) { if (buf && (buf.length + 1 + s.length) > max) push(); buf = buf ? buf + ' ' + s : s; });
-      } else {
-        buf = buf ? buf + '\n\n' + p : p;
-      }
-    });
-    push();
-    return out.length ? out : [String(text || '')];
-  }
-
-  function ttsFetch(text, voice) {
-    var sb = String(window.SUPABASE_URL || '').replace(/\/$/, ''), ak = window.SUPABASE_ANON_KEY;
-    if (!sb || !ak) return Promise.reject(new Error('Supabase 설정이 없습니다.'));
-    var tok = (window.WPF && WPF.token && WPF.token()) || ak;
-    return fetch(sb + '/functions/v1/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: ak, Authorization: 'Bearer ' + tok },
-      body: JSON.stringify({ text: text, voice: voice })
-    }).then(function (r) {
-      if (!r.ok) return r.text().then(function (t) {
-        var msg = t;
-        try { var j = JSON.parse(t); msg = j.detail || j.error || j.message || t; } catch (e) { }
-        var err = new Error(msg || ('HTTP ' + r.status));
-        err.status = r.status;
-        if (r.status === 404 || /NOT_FOUND|function was not found/i.test(String(t))) err.notDeployed = true;
-        throw err;
+  function srSplit(text) {
+    var out = [], MAX = 180;
+    String(text || '').replace(/\r\n/g, '\n').split(/\n+/).forEach(function (line) {
+      var t = line.trim(); if (!t) return;
+      // 문장 끝(. ! ? … 。)에서 자르되, 너무 길면 쉼표에서 한 번 더 자른다
+      (t.match(/[^.!?…。]+[.!?…。]*/g) || [t]).forEach(function (s) {
+        s = s.trim(); if (!s) return;
+        if (s.length <= MAX) { out.push(s); return; }
+        var buf = '';
+        s.split(/(?<=,)\s*/).forEach(function (piece) {
+          if (buf && (buf.length + piece.length) > MAX) { out.push(buf.trim()); buf = ''; }
+          buf += piece;
+          while (buf.length > MAX) { out.push(buf.slice(0, MAX)); buf = buf.slice(MAX); }
+        });
+        if (buf.trim()) out.push(buf.trim());
       });
-      return r.blob();
     });
+    return out;
   }
 
   function renderSermonRead(panel) {
+    var synth = window.speechSynthesis;
+    if (!synth) { panel.innerHTML = msgCard('사용할 수 없음', '이 브라우저는 음성 읽기를 지원하지 않습니다. 크롬이나 엣지에서 열어 주세요.'); return; }
+
+    var LS_RATE = 'sr_rate', LS_VOICE = 'sr_voice';
+    var savedRate = Number(localStorage.getItem(LS_RATE)) || 1;
+
     panel.innerHTML =
       '<div class="fin-card">' +
       '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">🔊 설교문 낭독</h3>' +
       '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-soft,#7b8794)">' +
-      '설교 원고를 붙여넣고 <b>[낭독 만들기]</b>를 누르면 음성으로 읽어 줍니다. ' +
-      '한 번 만든 음성은 저장되므로 <b>같은 원고는 다음부터 곧바로 재생</b>됩니다.</p>' +
+      '원고를 붙여넣고 <b>[읽기 시작]</b>을 누르면 바로 읽어 줍니다. ' +
+      '컴퓨터에 있는 음성을 쓰므로 <b>사용 횟수 제한이 없고 인터넷 없이도</b> 됩니다.</p>' +
       '<textarea id="sr_text" placeholder="설교 원고를 여기에 붙여넣으세요." ' +
-      'style="width:100%;min-height:280px;padding:12px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;line-height:1.7;resize:vertical"></textarea>' +
-      '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:10px">' +
-      '<div class="form-field" style="margin:0"><label style="font-size:.82rem">목소리</label>' +
-      '<select id="sr_voice">' + TTS_VOICES.map(function (v) { return '<option value="' + v[0] + '">' + esc(v[1]) + '</option>'; }).join('') + '</select></div>' +
-      '<span id="sr_count" style="font-size:.85rem;color:#7b8794">0자</span>' +
+      'style="width:100%;min-height:220px;padding:12px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;line-height:1.7;resize:vertical"></textarea>' +
+      '<div style="display:flex;gap:16px;align-items:end;flex-wrap:wrap;margin-top:10px">' +
+      '<div class="form-field" style="margin:0;min-width:190px"><label style="font-size:.82rem">목소리</label><select id="sr_voice"></select></div>' +
+      '<div class="form-field" style="margin:0"><label style="font-size:.82rem">속도 <b id="sr_ratev">' + savedRate.toFixed(1) + '배</b></label>' +
+      '<input type="range" id="sr_rate" min="0.6" max="2" step="0.1" value="' + savedRate + '" style="width:170px"></div>' +
+      '<span id="sr_count" style="font-size:.85rem;color:#7b8794"></span>' +
       '</div>' +
-      '<div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
-      '<button class="btn btn-solid" id="sr_go" style="padding:10px 20px;font-weight:700">▶ 낭독 만들기</button>' +
-      '<button class="btn btn-line" id="sr_clear">지우기</button>' +
+      '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<button class="btn btn-solid" id="sr_play" style="padding:10px 20px;font-weight:700">▶ 읽기 시작</button>' +
+      '<button class="btn btn-line" id="sr_pause" disabled>⏸ 잠깐 멈춤</button>' +
+      '<button class="btn btn-line" id="sr_stop" disabled>■ 정지</button>' +
       '<span class="fin-msg" id="sr_msg"></span></div>' +
-      '<p style="margin:10px 0 0;font-size:.8rem;color:#9aa5b1">※ 처음 만들 때는 원고 길이에 따라 시간이 걸립니다(대략 1,000자에 10초 안팎). 만드는 동안 이 화면을 켜 두세요.</p>' +
-      '</div><div id="sr_out"></div>';
+      '</div>' +
+      '<div class="fin-card" id="sr_prevwrap" hidden>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">' +
+      '<h4 style="margin:0;color:var(--accent)">읽는 위치</h4>' +
+      '<span style="font-size:.8rem;color:#9aa5b1">문장을 누르면 거기서부터 다시 읽습니다</span></div>' +
+      '<div id="sr_prev" style="max-height:340px;overflow:auto;line-height:2;font-size:.95rem"></div>' +
+      '</div>';
 
     var textEl = panel.querySelector('#sr_text'), msgEl = panel.querySelector('#sr_msg'),
-      cntEl = panel.querySelector('#sr_count'), outEl = panel.querySelector('#sr_out');
-    function msg(t, c) { msgEl.style.color = c || '#7b8794'; msgEl.textContent = t; }
+      cntEl = panel.querySelector('#sr_count'), voiceSel = panel.querySelector('#sr_voice'),
+      rateEl = panel.querySelector('#sr_rate'), rateVEl = panel.querySelector('#sr_ratev'),
+      playBtn = panel.querySelector('#sr_play'), pauseBtn = panel.querySelector('#sr_pause'),
+      stopBtn = panel.querySelector('#sr_stop'), prevWrap = panel.querySelector('#sr_prevwrap'),
+      prevEl = panel.querySelector('#sr_prev');
+    function msg(t, c) { msgEl.style.color = c || '#7b8794'; msgEl.textContent = t || ''; }
+
+    // ── 목소리 목록: getVoices()는 처음엔 비어 있고 나중에 채워진다 ──
+    var voices = [];
+    function fillVoices() {
+      var all = synth.getVoices() || [];
+      var ko = all.filter(function (v) { return /^ko/i.test(v.lang); });
+      voices = ko.length ? ko : all;
+      if (!voices.length) return;
+      var saved = localStorage.getItem(LS_VOICE);
+      voiceSel.innerHTML = voices.map(function (v, i) {
+        return '<option value="' + i + '"' + (v.name === saved ? ' selected' : '') + '>' + esc(v.name) + (/^ko/i.test(v.lang) ? '' : ' (' + esc(v.lang) + ')') + '</option>';
+      }).join('');
+      if (!ko.length) msg('한국어 음성이 설치돼 있지 않아 다른 언어 음성으로 읽습니다. (윈도우 설정 ▸ 시간 및 언어 ▸ 음성에서 한국어 음성을 추가할 수 있습니다)', '#b8860b');
+    }
+    fillVoices();
+    if (typeof synth.onvoiceschanged !== 'undefined') synth.onvoiceschanged = fillVoices;
+
+    rateEl.addEventListener('input', function () {
+      rateVEl.textContent = Number(rateEl.value).toFixed(1) + '배';
+      localStorage.setItem(LS_RATE, rateEl.value);
+    });
+    voiceSel.addEventListener('change', function () {
+      var v = voices[Number(voiceSel.value)]; if (v) localStorage.setItem(LS_VOICE, v.name);
+    });
+
+    // ── 재생 상태 ──
+    var sents = [], idx = 0, playing = false, gen = 0, keepAlive = null;
     function refreshCount() {
       var n = textEl.value.trim().length;
-      var parts = n ? ttsSplit(textEl.value.trim(), TTS_PART_MAX).length : 0;
-      cntEl.textContent = n.toLocaleString() + '자' + (parts > 1 ? ' · ' + parts + '편으로 나눠 만듭니다' : '');
+      cntEl.textContent = n ? n.toLocaleString() + '자 · ' + srSplit(textEl.value).length + '문장' : '';
     }
-    textEl.addEventListener('input', refreshCount);
-    panel.querySelector('#sr_clear').onclick = function () { textEl.value = ''; refreshCount(); outEl.innerHTML = ''; msg(''); };
+    textEl.addEventListener('input', function () { if (!playing) { refreshCount(); prevWrap.hidden = true; } });
 
-    panel.querySelector('#sr_go').onclick = function () {
-      var btn = this, raw = textEl.value.trim();
+    function drawPreview() {
+      prevEl.innerHTML = sents.map(function (s, i) {
+        return '<span class="sr-s" data-i="' + i + '" style="cursor:pointer;padding:1px 3px;border-radius:4px">' + esc(s) + '</span> ';
+      }).join('');
+      Array.prototype.forEach.call(prevEl.querySelectorAll('.sr-s'), function (el) {
+        el.onclick = function () { idx = Number(el.dataset.i); if (playing) { synth.cancel(); speakNext(++gen); } else start(idx); };
+      });
+    }
+    function markCurrent() {
+      Array.prototype.forEach.call(prevEl.querySelectorAll('.sr-s'), function (el, i) {
+        var on = i === idx;
+        el.style.background = on ? '#fff2c2' : '';
+        el.style.fontWeight = on ? '700' : '';
+        if (on && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+      });
+      msg('읽는 중… ' + (idx + 1) + '/' + sents.length + '문장');
+    }
+
+    function speakNext(myGen) {
+      if (myGen !== gen) return;
+      if (idx >= sents.length) { finish(); return; }
+      markCurrent();
+      var u = new SpeechSynthesisUtterance(sents[idx]);
+      var v = voices[Number(voiceSel.value)];
+      if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'ko-KR'; }
+      u.rate = Number(rateEl.value) || 1;
+      u.onend = function () { if (myGen !== gen) return; idx++; speakNext(myGen); };
+      u.onerror = function () { if (myGen !== gen) return; idx++; speakNext(myGen); };   // 한 문장 실패해도 계속
+      synth.speak(u);
+    }
+    function start(from) {
+      var raw = textEl.value.trim();
       if (!raw) { msg('설교 원고를 붙여넣어 주세요.', '#c0392b'); return; }
-      var voice = panel.querySelector('#sr_voice').value;
-      var parts = ttsSplit(raw, TTS_PART_MAX);
-      btn.disabled = true; outEl.innerHTML = '';
-      var blobs = [], failed = null;
+      sents = srSplit(raw);
+      if (!sents.length) { msg('읽을 내용이 없습니다.', '#c0392b'); return; }
+      idx = Math.min(Math.max(0, from || 0), sents.length - 1);
+      drawPreview(); prevWrap.hidden = false;
+      synth.cancel(); gen++;
+      playing = true; setBtns();
+      // 크롬이 장시간 재생 중 스스로 멈추는 것을 막는다
+      clearInterval(keepAlive);
+      keepAlive = setInterval(function () { if (playing && !synth.paused) { synth.pause(); synth.resume(); } }, 10000);
+      speakNext(gen);
+    }
+    function finish() {
+      playing = false; clearInterval(keepAlive); setBtns();
+      Array.prototype.forEach.call(prevEl.querySelectorAll('.sr-s'), function (el) { el.style.background = ''; el.style.fontWeight = ''; });
+      msg('✓ 다 읽었습니다', 'green');
+    }
+    function stop() {
+      gen++; playing = false; clearInterval(keepAlive);
+      synth.cancel(); idx = 0; setBtns();
+      Array.prototype.forEach.call(prevEl.querySelectorAll('.sr-s'), function (el) { el.style.background = ''; el.style.fontWeight = ''; });
+      msg('');
+    }
+    function setBtns() {
+      playBtn.textContent = playing ? '▶ 다시 처음부터' : '▶ 읽기 시작';
+      pauseBtn.disabled = !playing;
+      stopBtn.disabled = !playing;
+      pauseBtn.textContent = (playing && synth.paused) ? '▶ 이어서' : '⏸ 잠깐 멈춤';
+    }
 
-      function step(i) {
-        if (failed || i >= parts.length) { finish(); return; }
-        msg('만드는 중… ' + (i + 1) + '/' + parts.length + '편 (' + parts[i].length.toLocaleString() + '자)', '#7b8794');
-        ttsFetch(parts[i], voice)
-          .then(function (b) { blobs.push(b); step(i + 1); })
-          .catch(function (e) { failed = e; finish(); });
-      }
-      function finish() {
-        btn.disabled = false;
-        if (failed) {
-          var m = String(failed.message || failed);
-          var friendly = failed.notDeployed
-            ? '음성 생성 기능(tts)이 아직 Supabase에 설치되지 않았습니다. 관리자가 Edge Function 배포와 GEMINI_API_KEY 설정을 해야 사용할 수 있습니다.'
-            : /GEMINI_API_KEY/i.test(m)
-              ? '음성 생성용 API 키(GEMINI_API_KEY)가 설정되어 있지 않습니다. Supabase 시크릿에 추가해 주세요.'
-              : /quota|429|할당량/i.test(m)
-                ? '오늘 사용할 수 있는 음성 생성량을 다 썼습니다. 내일 다시 시도해 주세요.'
-                : '음성을 만들지 못했습니다: ' + m;
-          msg(friendly, '#c0392b');
-          if (!blobs.length) return;
-          msg(friendly + ' (만들어진 ' + blobs.length + '편은 아래에서 들을 수 있습니다)', '#c0392b');
-        } else {
-          msg('✓ ' + blobs.length + '편 완성 — 아래에서 재생하세요', 'green');
-        }
-        showPlayer(blobs);
-      }
-
-      function showPlayer(list) {
-        if (!list.length) return;
-        outEl.innerHTML = '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">🎧 낭독 듣기</h4>' +
-          list.map(function (b, i) {
-            var url = URL.createObjectURL(b);
-            return '<div style="padding:9px 0;border-bottom:1px solid #f0f3f7">' +
-              '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">' +
-              '<b style="font-size:.9rem">' + (list.length > 1 ? (i + 1) + '편' : '전체') + '</b>' +
-              '<a class="btn btn-line" href="' + url + '" download="설교낭독' + (list.length > 1 ? '-' + (i + 1) + '편' : '') + '.wav" style="padding:3px 12px;font-size:.8rem">⬇ 내려받기</a>' +
-              '</div><audio controls preload="none" src="' + url + '" style="width:100%"></audio></div>';
-          }).join('') +
-          (list.length > 1 ? '<p style="margin:10px 0 0;font-size:.82rem;color:#7b8794">한 편이 끝나면 다음 편이 이어서 재생됩니다.</p>' : '') +
-          '</div>';
-        // 여러 편이면 자동으로 이어 재생
-        var audios = outEl.querySelectorAll('audio');
-        Array.prototype.forEach.call(audios, function (a, i) {
-          a.addEventListener('ended', function () { var nx = audios[i + 1]; if (nx) { nx.play().catch(function () { }); } });
-        });
-      }
-      step(0);
+    playBtn.onclick = function () { start(0); };
+    pauseBtn.onclick = function () {
+      if (!playing) return;
+      if (synth.paused) { synth.resume(); } else { synth.pause(); }
+      setBtns();
     };
+    stopBtn.onclick = stop;
+    // 다른 탭으로 이동하거나 화면을 떠나면 읽기를 멈춘다(백그라운드에서 계속 말하는 것 방지)
+    window.addEventListener('beforeunload', function () { try { synth.cancel(); } catch (e) { } });
+
     refreshCount();
+    setBtns();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
