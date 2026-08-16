@@ -496,13 +496,20 @@ var WPCTts = (function () {
     setHi(i);
   }
   // ── 기본 음성(브라우저, AI 실패 시 대체) ──
+  // 한국어 음성 중 '가장 자연스러운' 것을 고른다.
+  // 품질 차이가 크다: 신경망(엣지의 SunHi·InJoon Online Natural) > Google 한국의 > 윈도우 기본(Heami).
+  // 예전 코드는 heami 를 좋은 음성과 같은 점수로 둬서 로봇 목소리가 뽑히곤 했다.
   function koVoice() {
     if (!synth) return null;
     var vs = synth.getVoices() || [];
-    return vs.filter(function (v) { return /^ko/i.test(v.lang || ""); }).sort(function (a, b) {
-      var s = function (v) { return /google|natural|neural|premium|yuna|siwoo|heami/i.test(v.name || "") ? 1 : 0; };
-      return s(b) - s(a);
-    })[0] || null;
+    function score(v) {
+      var n = v.name || "";
+      if (/natural|neural|online|premium/i.test(n)) return 3;
+      if (/google/i.test(n)) return 2;
+      return 1;
+    }
+    return vs.filter(function (v) { return /^ko/i.test(v.lang || ""); })
+      .sort(function (a, b) { return score(b) - score(a); })[0] || null;
   }
   function chunk(text) {
     var s = String(text).replace(/\s+/g, " ").trim();
@@ -532,20 +539,9 @@ var WPCTts = (function () {
   // 낭독 텍스트의 짧은 지문(내용이 바뀌면 값도 바뀜) — 저장 파일명에 넣어 옛 음성 재사용을 막는다
   function textSig(s) { var h = 2166136261 >>> 0; s = String(s || ""); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
   function ttsBase() { var sb = (window.SUPABASE_URL || "").replace(/\/$/, ""); return sb + "/storage/v1/object/public/tts-cache/"; }
-  // ── AI 음성(Gemini TTS via Edge Function) ──
-  function aiFetch(text, date, sig) {
-    var ak = window.SUPABASE_ANON_KEY, sb = (window.SUPABASE_URL || "").replace(/\/$/, "");
-    if (!ak || !sb) return Promise.reject(new Error("no-config"));
-    var tok = (window.WPF && WPF.token && WPF.token()) || ak;
-    var payload = { text: text };
-    if (date) { payload.date = date; if (sig) payload.sig = sig; }
-    return fetch(sb + "/functions/v1/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: ak, Authorization: "Bearer " + tok },
-      body: JSON.stringify(payload)
-    }).then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t || ("HTTP " + r.status)); }); return r.blob(); });
-  }
-  // ── 재생바(진행 표시 + 탐색) ── AI 음성(오디오)만 해당. 기본 음성은 탐색 불가라 숨김.
+  // (Gemini TTS 생성 호출은 제거됨 — 하루 생성량 한도로 자주 막혀 기기 음성으로 대체.
+  //  미리 만들어 둔 음원이 tts-cache 에 있으면 위 ①에서 그대로 재생한다.)
+  // ── 재생바(진행 표시 + 탐색) ── 저장된 음원(오디오)만 해당. 기기 음성은 탐색 불가라 숨김.
   var barWrap = null, seekEl = null, timeEl = null, userSeeking = false;
   function fmtT(s) { s = Math.max(0, Math.floor(s || 0)); var m = Math.floor(s / 60), ss = s % 60; return m + ":" + (ss < 10 ? "0" : "") + ss; }
   function ensureBar() {
@@ -632,12 +628,13 @@ var WPCTts = (function () {
       a.src = cands[i];
       try { a.load(); } catch (e) { nextOne(); }
     })(0);
-    function doGenerate() {                               // ② 저장본 없음 → Gemini 생성(서버가 저장) → 다음부터 ①에서 재생
+    // ② 저장본이 없으면 기기에 있는 음성으로 바로 읽는다.
+    //    예전에는 여기서 Gemini로 음성을 만들었지만 하루 생성량 한도가 있어
+    //    "다 썼다"며 막히는 일이 잦았고, 만드는 데 1~2분씩 기다려야 했다.
+    //    기기 음성은 한도가 없고 즉시 시작한다(미리 만들어 둔 음원이 있으면 ①에서 그걸 쓴다).
+    function doGenerate() {
       if (!active || myGen !== gen) return;
-      if (btnEl) btnEl.textContent = "⏳ 만드는 중… 1~2분, 새로고침 말고 기다려 주세요";
-      aiFetch(text, date, sig)
-        .then(function (b) { if (active && myGen === gen) playAudio(URL.createObjectURL(b), myGen); })
-        .catch(function () { if (active && myGen === gen) browserStart(text, myGen); });   // ③ 실패 시 기본 음성
+      browserStart(text, myGen);
     }
   }
   function stop() { gen++; active = false; stopAudio(); if (synth) { try { synth.cancel(); } catch (e) {} } clearHi(); hideBar(); if (btnEl) btnEl.textContent = btnLabel; }
