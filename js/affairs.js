@@ -8440,7 +8440,9 @@ console.log('[affairs.js] v20260712memo2');
       '<textarea id="sr_text" placeholder="설교 원고를 여기에 붙여넣으세요." ' +
       'style="width:100%;min-height:220px;padding:12px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;line-height:1.7;resize:vertical"></textarea>' +
       '<div style="display:flex;gap:16px;align-items:end;flex-wrap:wrap;margin-top:10px">' +
-      '<div class="form-field" style="margin:0;min-width:190px"><label style="font-size:.82rem">목소리</label><select id="sr_voice"></select></div>' +
+      '<div class="form-field" style="margin:0;min-width:230px"><label style="font-size:.82rem">목소리</label>' +
+      '<div style="display:flex;gap:6px"><select id="sr_voice" style="flex:1"></select>' +
+      '<button type="button" class="btn btn-line" id="sr_try" style="padding:0 12px;white-space:nowrap" title="이 목소리로 한 문장 들어보기">🔈 미리듣기</button></div></div>' +
       '<div class="form-field" style="margin:0"><label style="font-size:.82rem">속도 <b id="sr_ratev">' + savedRate.toFixed(1) + '배</b></label>' +
       '<input type="range" id="sr_rate" min="0.6" max="2" step="0.1" value="' + savedRate + '" style="width:170px"></div>' +
       '<span id="sr_count" style="font-size:.85rem;color:#7b8794"></span>' +
@@ -8467,17 +8469,38 @@ console.log('[affairs.js] v20260712memo2');
     function msg(t, c) { msgEl.style.color = c || '#7b8794'; msgEl.textContent = t || ''; }
 
     // ── 목소리 목록: getVoices()는 처음엔 비어 있고 나중에 채워진다 ──
+    // 같은 '브라우저 음성'이라도 품질 차이가 크다. 신경망(Natural/Online) 음성이
+    // 사람 목소리에 훨씬 가까우므로 위로 올리고 '고품질'로 표시해 기본값으로 잡는다.
+    //  · 엣지: Microsoft SunHi/InJoon Online (Natural) — 가장 자연스러움
+    //  · 크롬: Google 한국의 — 중간
+    //  · 윈도우 기본(Heami 등): 로봇 같은 옛 음성
+    function voiceRank(v) {
+      var n = v.name || '';
+      if (/natural|online/i.test(n)) return 3;
+      if (/google/i.test(n)) return 2;
+      return 1;
+    }
+    function voiceLabel(v) {
+      var r = voiceRank(v);
+      return esc(v.name) + (r === 3 ? '  ★ 고품질' : r === 2 ? '  ○ 보통' : '') + (/^ko/i.test(v.lang) ? '' : ' (' + esc(v.lang) + ')');
+    }
     var voices = [];
     function fillVoices() {
       var all = synth.getVoices() || [];
       var ko = all.filter(function (v) { return /^ko/i.test(v.lang); });
-      voices = ko.length ? ko : all;
+      voices = (ko.length ? ko : all).slice().sort(function (a, b) { return voiceRank(b) - voiceRank(a); });
       if (!voices.length) return;
       var saved = localStorage.getItem(LS_VOICE);
+      var savedIdx = -1;
+      voices.forEach(function (v, i) { if (v.name === saved) savedIdx = i; });
+      if (savedIdx < 0) savedIdx = 0;                    // 저장값이 없으면 가장 좋은 음성으로
       voiceSel.innerHTML = voices.map(function (v, i) {
-        return '<option value="' + i + '"' + (v.name === saved ? ' selected' : '') + '>' + esc(v.name) + (/^ko/i.test(v.lang) ? '' : ' (' + esc(v.lang) + ')') + '</option>';
+        return '<option value="' + i + '"' + (i === savedIdx ? ' selected' : '') + '>' + voiceLabel(v) + '</option>';
       }).join('');
-      if (!ko.length) msg('한국어 음성이 설치돼 있지 않아 다른 언어 음성으로 읽습니다. (윈도우 설정 ▸ 시간 및 언어 ▸ 음성에서 한국어 음성을 추가할 수 있습니다)', '#b8860b');
+      if (!ko.length) { msg('한국어 음성이 설치돼 있지 않아 다른 언어 음성으로 읽습니다. (윈도우 설정 ▸ 시간 및 언어 ▸ 음성에서 한국어 음성 추가)', '#b8860b'); return; }
+      if (voiceRank(voices[0]) < 3) {
+        msg('더 자연스러운 음성을 쓰려면 이 화면을 엣지(Edge) 브라우저로 열어 보세요 — 무료 고품질 음성(SunHi·InJoon)이 목록에 나타납니다.', '#b8860b');
+      }
     }
     fillVoices();
     if (typeof synth.onvoiceschanged !== 'undefined') synth.onvoiceschanged = fillVoices;
@@ -8489,6 +8512,15 @@ console.log('[affairs.js] v20260712memo2');
     voiceSel.addEventListener('change', function () {
       var v = voices[Number(voiceSel.value)]; if (v) localStorage.setItem(LS_VOICE, v.name);
     });
+    // 미리듣기 — 목소리를 바꿔가며 바로 비교해 볼 수 있게
+    panel.querySelector('#sr_try').onclick = function () {
+      synth.cancel();
+      var u = new SpeechSynthesisUtterance('주님의 은혜와 평강이 여러분과 함께하시기를 축원합니다.');
+      var v = voices[Number(voiceSel.value)];
+      if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'ko-KR'; }
+      u.rate = Number(rateEl.value) || 1;
+      synth.speak(u);
+    };
 
     // ── 재생 상태 ──
     var sents = [], idx = 0, playing = false, gen = 0, keepAlive = null;
