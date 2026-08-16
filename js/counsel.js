@@ -8,7 +8,7 @@
   if (!form) return; // 질문창이 있는 페이지에서만
   if (!window.SUPABASE_URL) return;
 
-  const ENDPOINT = window.SUPABASE_URL.replace(/\/$/, "") + "/functions/v1/counsel-";
+  const ENDPOINT = window.SUPABASE_URL.replace(/\/$/, "") + "/functions/v1/counsel";
   const input = document.getElementById("askInput");
   const sendBtn = document.getElementById("askSend");
   const thread = document.getElementById("askThread");

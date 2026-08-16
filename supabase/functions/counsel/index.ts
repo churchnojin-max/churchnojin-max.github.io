@@ -18,8 +18,8 @@ const MODEL = Deno.env.get("COUNSEL_MODEL") ??
 
 // 허용 출처(우리 사이트만)
 const ALLOW_ORIGINS = [
-  "https://example.com",
-  "https://www.example.com",
+  "https://churchnojin-max.github.io",
+  "https://www.churchnojin-max.github.io",
   "http://localhost:8099",
   "http://127.0.0.1:8099",
 ];
