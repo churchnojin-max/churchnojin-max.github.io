@@ -8440,8 +8440,11 @@ console.log('[affairs.js] v20260712memo2');
     }).then(function (r) {
       if (!r.ok) return r.text().then(function (t) {
         var msg = t;
-        try { var j = JSON.parse(t); msg = j.detail || j.error || t; } catch (e) { }
-        throw new Error(msg || ('HTTP ' + r.status));
+        try { var j = JSON.parse(t); msg = j.detail || j.error || j.message || t; } catch (e) { }
+        var err = new Error(msg || ('HTTP ' + r.status));
+        err.status = r.status;
+        if (r.status === 404 || /NOT_FOUND|function was not found/i.test(String(t))) err.notDeployed = true;
+        throw err;
       });
       return r.blob();
     });
@@ -8498,9 +8501,13 @@ console.log('[affairs.js] v20260712memo2');
         btn.disabled = false;
         if (failed) {
           var m = String(failed.message || failed);
-          var friendly = /quota|429|할당량/i.test(m)
-            ? '오늘 사용할 수 있는 음성 생성량을 다 썼습니다. 내일 다시 시도해 주세요.'
-            : '음성을 만들지 못했습니다: ' + m;
+          var friendly = failed.notDeployed
+            ? '음성 생성 기능(tts)이 아직 Supabase에 설치되지 않았습니다. 관리자가 Edge Function 배포와 GEMINI_API_KEY 설정을 해야 사용할 수 있습니다.'
+            : /GEMINI_API_KEY/i.test(m)
+              ? '음성 생성용 API 키(GEMINI_API_KEY)가 설정되어 있지 않습니다. Supabase 시크릿에 추가해 주세요.'
+              : /quota|429|할당량/i.test(m)
+                ? '오늘 사용할 수 있는 음성 생성량을 다 썼습니다. 내일 다시 시도해 주세요.'
+                : '음성을 만들지 못했습니다: ' + m;
           msg(friendly, '#c0392b');
           if (!blobs.length) return;
           msg(friendly + ' (만들어진 ' + blobs.length + '편은 아래에서 들을 수 있습니다)', '#c0392b');
