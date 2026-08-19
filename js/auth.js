@@ -35,6 +35,9 @@
   let mode = "login"; // 'login' | 'signup' | 'reset'(새 비밀번호 설정)
 
   function openModal() { modal.hidden = false; document.body.style.overflow = "hidden"; }
+  // layout.js 가 먼저 그린 헤더 버튼은 auth.js 로드 전에도 눌릴 수 있다.
+  // 그때 '가입하기'를 눌렀으면 __authPendingMode 에 남겨 두고, 여기서 이어받는다.
+  window.__authSetMode = function (m) { setMode(m); };
   function closeModal() { modal.hidden = true; document.body.style.overflow = ""; if (msg) msg.hidden = true; }
 
   function setMode(m) {
@@ -117,8 +120,10 @@
       // 직분이 지정돼 있으면 이름 옆에 붙여 표시(레이아웃의 헬퍼 재사용)
       if (window.__enhanceHeaderRole) window.__enhanceHeaderRole(user.id, name);
     } else {
-      slot.innerHTML = `<button class="auth-btn" id="loginBtn">로그인</button>`;
+      // 로그인 + 가입하기를 나란히 — 처음 오신 분이 '로그인'만 보고 막히지 않도록
+      slot.innerHTML = `<span class="auth-wrap-out"><button class="auth-btn" id="loginBtn">로그인</button><button class="auth-btn auth-btn-join" id="joinBtn">가입하기</button></span>`;
       document.getElementById("loginBtn").addEventListener("click", () => { setMode("login"); openModal(); });
+      document.getElementById("joinBtn").addEventListener("click", () => { setMode("signup"); openModal(); });
     }
   }
 
@@ -135,6 +140,8 @@
     modal.addEventListener("click", (e) => { if (e.target.hasAttribute("data-close")) closeModal(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) closeModal(); });
     toggleBtn.addEventListener("click", () => setMode(mode === "signup" ? "login" : "signup"));
+    // auth.js 로드 전에 '가입하기'를 눌러 모달이 열려 있으면 회원가입 화면으로 맞춰 준다
+    if (window.__authPendingMode) { setMode(window.__authPendingMode); window.__authPendingMode = null; }
 
     // 비밀번호 찾기: 입력한 이메일로 재설정 메일 발송
     if (forgotBtn) {

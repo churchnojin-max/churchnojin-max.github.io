@@ -509,7 +509,7 @@
           // 2) SDK signOut은 잠금으로 멈출 수 있으니 기다리지 않고 백그라운드로만 시도
           if (window.__sb) { try { window.__sb.auth.signOut().catch(() => {}); } catch (e) {} }
           // 3) 헤더 즉시 갱신 + 안내 후 홈으로 이동
-          try { slot0.innerHTML = '<button class="auth-btn">로그인</button>'; } catch (e) {}
+          try { slot0.innerHTML = '<span class="auth-wrap-out"><button class="auth-btn">로그인</button><button class="auth-btn auth-btn-join">가입하기</button></span>'; } catch (e) {}
           try { sessionStorage.setItem("flashMsg", "로그아웃되었습니다."); } catch (e) {}
           showFlash("로그아웃되었습니다.");
           setTimeout(() => { location.href = "index.html"; }, 700);
@@ -517,18 +517,24 @@
         // 직분이 지정돼 있으면 이름 옆에 붙여 표시
         enhanceHeaderWithRole(cachedUser.id, name);
       } else {
-        slot0.innerHTML = '<button class="auth-btn" id="loginBtnInit">로그인</button>';
-        document.getElementById("loginBtnInit").addEventListener("click", () => {
+        // 로그인 + 가입하기 나란히. auth.js 가 아직 안 떴어도 눌리게 해 두고,
+        // 어느 모드로 열지는 __authPendingMode 로 넘겨 auth.js 가 이어받는다.
+        slot0.innerHTML = '<span class="auth-wrap-out"><button class="auth-btn" id="loginBtnInit">로그인</button><button class="auth-btn auth-btn-join" id="joinBtnInit">가입하기</button></span>';
+        const openAuth = (wantMode) => {
+          if (window.__authSetMode) window.__authSetMode(wantMode);
+          else window.__authPendingMode = wantMode;
           const m = document.getElementById("authModal");
           if (m) { m.hidden = false; document.body.style.overflow = "hidden"; }
-        });
+        };
+        document.getElementById("loginBtnInit").addEventListener("click", () => openAuth("login"));
+        document.getElementById("joinBtnInit").addEventListener("click", () => openAuth("signup"));
       }
     }
     const sdk = document.createElement("script");
     sdk.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     sdk.onload = function () {
       const auth = document.createElement("script");
-      auth.src = "js/auth.js?v=20260723up1";
+      auth.src = "js/auth.js?v=20260816join";
       document.body.appendChild(auth);
     };
     // SDK 로드 실패 시에도 버튼은 유지(클릭 시 모달은 위 핸들러가 처리)

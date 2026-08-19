@@ -1396,6 +1396,11 @@ ul { list-style: none; }
 .auth-slot { display: flex; align-items: center; gap: 10px; margin-left: 18px; }
 .auth-btn { font-family: inherit; font-size: .85rem; font-weight: 500; padding: 7px 16px; border-radius: 20px; border: 1px solid var(--accent-soft); background: transparent; color: var(--accent); cursor: pointer; transition: .2s; white-space: nowrap; }
 .auth-btn:hover { background: var(--accent); color: #fff; }
+/* 로그인·가입하기를 한 덩어리로 묶는 껍데기(모바일에선 세로로 쌓임 — 아래 미디어쿼리) */
+.auth-wrap-out { display: inline-flex; align-items: center; gap: 8px; }
+/* 가입하기 — 처음 오신 분에게 가장 눈에 띄어야 하므로 채운 버튼으로 (로그인은 테두리만) */
+.auth-btn.auth-btn-join { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.auth-btn.auth-btn-join:hover { background: var(--accent-deep, #16263d); border-color: var(--accent-deep, #16263d); }
 .auth-name { font-size: .85rem; color: var(--ink); }
 .auth-pending { font-size: .85rem; color: var(--muted); cursor: default; }
 
@@ -1568,6 +1573,11 @@ a.resource-item:hover { border-color: var(--accent-soft); box-shadow: 0 4px 14px
     width: 100%; padding: 13px; border-radius: 24px; font-size: 1rem;
     color: #fff !important; background: var(--accent); border: 1px solid var(--accent);
   }
+  /* 모바일에선 둘 다 채워져 구분이 안 되므로, 로그인은 테두리만 남기고 가입하기를 강조 */
+  .auth-slot .auth-btn:not(.auth-btn-join) {
+    color: var(--accent) !important; background: var(--paper-alt); border-color: var(--line);
+  }
+  .auth-slot .auth-wrap-out { width: 100%; display: flex; flex-direction: column; gap: 8px; }
   .modal-box-auth { padding: 34px 24px; }
 }
 
