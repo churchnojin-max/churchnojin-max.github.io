@@ -2198,6 +2198,20 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
    ============================================================ */
 .confess { max-width: 760px; margin: 0 auto 56px; }
 
+/* 글 서두의 담임목사 사진 칸 — images/pastor.jpg 를 바꾸면 교체된다.
+   고백문 위에 얼굴을 먼저 두어 "누가 하는 고백인지" 보이게 했다. */
+.confess .confess-portrait { margin: 0 0 30px; text-align: center; }
+.confess .confess-portrait img {
+  width: 172px; height: auto; aspect-ratio: 3 / 4; object-fit: cover;
+  border-radius: 14px; background: var(--paper-alt);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .16); display: inline-block;
+}
+.confess .confess-portrait figcaption {
+  margin-top: 12px; font-family: "Noto Serif KR", serif;
+  font-size: .95rem; color: var(--muted); letter-spacing: .02em;
+}
+.confess .confess-portrait figcaption strong { color: var(--accent); font-weight: 700; }
+
 /* 첫 제목 · 끝 후렴 (같은 모양으로 글 전체를 감싼다) */
 .confess .confess-refrain {
   font-family: "Noto Serif KR", serif; font-weight: 700;
@@ -2249,6 +2263,8 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
 
 @media (max-width: 760px) {
   .confess { margin-bottom: 40px; }
+  .confess .confess-portrait img { width: 142px; }
+  .confess .confess-portrait { margin-bottom: 24px; }
   .confess .confess-refrain { padding: 20px 12px; margin-bottom: 26px; }
   .confess p { font-size: 1.05rem; line-height: 1.95; }
   .confess h3 { margin: 34px 0 12px; padding-left: 12px; }
