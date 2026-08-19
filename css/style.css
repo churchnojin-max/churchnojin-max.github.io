@@ -2188,3 +2188,70 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
   .hdr-dash-btn { display: none !important; }
   .logo-kr { font-size: 1.02rem; }
 }
+
+/* ============================================================
+   교회 소개 — 신앙고백 글 (welcome.html #about)
+   어르신 성도가 많은 교회라 가독성을 최우선으로 잡았다:
+   본문 1.09rem · 줄간격 2.05 · 한 줄 길이 720px 이하.
+   글 자체가 "은혜가 먼저"라는 한 문장을 되풀이하는 구조라,
+   맨 위 제목과 맨 아래 후렴을 같은 모양으로 감싸 수미상관이 보이게 했다.
+   ============================================================ */
+.confess { max-width: 760px; margin: 0 auto 56px; }
+
+/* 첫 제목 · 끝 후렴 (같은 모양으로 글 전체를 감싼다) */
+.confess .confess-refrain {
+  font-family: "Noto Serif KR", serif; font-weight: 700;
+  font-size: clamp(1.45rem, 3.6vw, 2.05rem); line-height: 1.65;
+  color: var(--accent); text-align: center; word-break: keep-all;
+  padding: 26px 18px; margin: 0 0 34px;
+  border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold);
+}
+.confess .confess-refrain.is-close { margin: 40px 0 0; }
+
+/* 들어가는 한 문장 */
+.confess .confess-lead {
+  font-family: "Noto Serif KR", serif; font-size: clamp(1.1rem, 2.4vw, 1.28rem);
+  line-height: 1.9; color: var(--accent); text-align: center;
+  word-break: keep-all; margin: 0 0 40px;
+}
+
+/* 각 단락의 머리 문장 — 굵게만 두지 않고 소제목으로 세운다 */
+.confess h3 {
+  font-family: "Noto Serif KR", serif; font-weight: 700;
+  font-size: clamp(1.06rem, 2.2vw, 1.2rem); line-height: 1.7;
+  color: var(--accent); word-break: keep-all;
+  margin: 42px 0 14px; padding-left: 15px;
+  border-left: 3px solid var(--gold);
+}
+.confess h3:first-of-type { margin-top: 0; }
+
+.confess p {
+  font-size: 1.09rem; line-height: 2.05; color: var(--ink-soft);
+  word-break: keep-all; margin: 0 0 18px; letter-spacing: -.005em;
+}
+
+/* 성경 인용 */
+.confess .verse {
+  display: block; font-family: "Noto Serif KR", serif;
+  font-size: 1.04rem; line-height: 1.95; color: var(--accent);
+  background: var(--paper-alt); border-left: 3px solid var(--gold);
+  border-radius: 0 8px 8px 0; padding: 15px 20px; margin: 22px 0;
+  word-break: keep-all;
+}
+.confess .verse cite { display: block; font-style: normal; font-size: .88rem; color: var(--muted); margin-top: 7px; }
+
+/* 마지막 초대 문단 */
+.confess-invite {
+  background: var(--paper-alt); border-radius: 14px;
+  padding: 26px 26px 24px; margin-top: 40px;
+}
+.confess .confess-invite p { margin-bottom: 0; }
+
+@media (max-width: 760px) {
+  .confess { margin-bottom: 40px; }
+  .confess .confess-refrain { padding: 20px 12px; margin-bottom: 26px; }
+  .confess p { font-size: 1.05rem; line-height: 1.95; }
+  .confess h3 { margin: 34px 0 12px; padding-left: 12px; }
+  .confess .verse { padding: 13px 15px; }
+  .confess-invite { padding: 20px 18px; }
+}
