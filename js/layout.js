@@ -9,7 +9,6 @@
       { href: "welcome.html#directions", label: "교회 가는 길" },
       { href: "welcome.html#newfamily", label: "새가족 등록" },
       { href: "welcome.html#about", label: "우리 교회는 어떤 곳" },
-      { href: "welcome.html#history", label: "교회 연혁" },
       { href: "word.html#archive", label: "주보" },
     ] },
     { href: "word.html", label: "예배와 말씀", sub: [

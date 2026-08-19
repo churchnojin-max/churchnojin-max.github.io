@@ -1204,7 +1204,7 @@ if (modal) {
         '<li><span class="ios-step-no">2</span><div>메뉴를 내려 <b>‘홈 화면에 추가’</b> 를 누릅니다.</div></li>' +
         '<li><span class="ios-step-no">3</span><div>오른쪽 위 <b>‘추가’</b> 를 누르면 홈 화면에 ○○교회 앱이 생깁니다.</div></li>';
       const note = isIOSNonSafari
-        ? '<p class="ios-note">※ 지금 브라우저(크롬 등)에서는 설치가 제한될 수 있어요. <b>Safari</b>로 <b>example.com</b>을 연 뒤 위 방법으로 진행해 주세요.</p>'
+        ? '<p class="ios-note">※ 지금 브라우저(크롬 등)에서는 설치가 제한될 수 있어요. <b>Safari</b>로 <b>churchnojin-max.github.io</b>을 연 뒤 위 방법으로 진행해 주세요.</p>'
         : '<p class="ios-note">※ 아이폰·아이패드는 이렇게 ‘홈 화면에 추가’ 방식으로만 앱을 설치할 수 있어요(애플 정책).</p>';
       m = document.createElement("div");
       m.id = "iosGuideModal";
