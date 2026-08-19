@@ -259,6 +259,9 @@ window.WPF = (function () {
       }
       case 'myPerms':
         return rpc('my_perms').then(function (p) { return { ok: true, perms: p || {} }; });
+      case 'gyojeokSignups':
+        // 교적 명단의 '홈페이지 가입' 칸에 쓸 최소 정보(매칭키·이메일·회원상태)
+        return rpc('gyojeok_signups').then(function (arr) { return { ok: true, signups: arr || [] }; });
       case 'getSettings':
         return rest('GET', 'app_settings?select=key,value&limit=2000').then(function (rows) {
           var s = {}; (rows || []).forEach(function (r) { s[r.key] = r.value; }); return { ok: true, settings: s };

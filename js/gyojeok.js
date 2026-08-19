@@ -341,23 +341,46 @@ console.log('[gyojeok.js] v20260701di');
     q.addEventListener('input', draw); draw(); setTimeout(function () { q.focus(); }, 50);
   }
 
+  // 홈페이지 가입 칸 — 계정이 교적과 연결돼 있으면 ✓, 아니면 '—'.
+  // 정회원/준회원까지 구분해 보여 줘야 "가입은 했는데 승인 전"인 분을 골라낼 수 있다.
+  function signupCell(s) {
+    if (!s) return '<span style="color:#c9d0d9" title="아직 홈페이지에 가입하지 않았거나 교적과 연결되지 않았습니다">—</span>';
+    var full = s.status === '정회원';
+    return '<span title="' + esc(s.email || '') + (full ? '' : ' (승인 전)') + '" style="color:' + (full ? '#1e874b' : '#b8860b') + ';font-weight:700">' +
+      (full ? '✓' : '△') + '</span>';
+  }
+
   /* ── 교적 명단 ── */
   var ALL = [];
   var membersPanel = null;
   function renderMembers(panel) {
     membersPanel = panel;
     loading(panel);
-    WPF.call('listGyojeok').then(function (r) {
+    // 가입 현황은 곁들이는 정보라, 실패해도 명단은 그대로 보이게 한다
+    Promise.all([
+      WPF.call('listGyojeok'),
+      WPF.call('gyojeokSignups').catch(function () { return { signups: [] }; })
+    ]).then(function (res) {
+      var r = res[0];
+      // 매칭키(이름|YYYYMMDD)로 연결. 옛 자료엔 매칭키가 없을 수 있어 이름도 보조로 받아둔다.
+      var signByKey = {}, signByName = {};
+      (res[1].signups || []).forEach(function (s) {
+        if (s.memberKey) signByKey[String(s.memberKey)] = s;
+        if (s.memberName) signByName[String(s.memberName).trim()] = s;
+      });
+      function signupOf(m) {
+        return signByKey[String(m['매칭키'] || '')] || signByName[String(m['이름'] || '').trim()] || null;
+      }
       var ms = (r.members || []).filter(function (m) { return m['이름']; });
       ms.sort(function (a, b) { var ha = a['세대주'] || a['이름'], hb = b['세대주'] || b['이름']; if (ha !== hb) return ha.localeCompare(hb, 'ko'); return (a['이름'] === ha ? -1 : 1) - (b['이름'] === hb ? -1 : 1); });
       ALL = ms;
       var couples = ms.filter(function (m) { return m['배우자']; }).length / 2;
-      panel.innerHTML = '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;flex-wrap:wrap"><b>교적 명단 (' + ms.length + '명)</b><input type="text" id="gj_search" placeholder="🔍 이름 검색" style="padding:7px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;flex:1;min-width:140px;max-width:260px"><span style="color:var(--ink-soft);font-size:.85rem">부부 ' + Math.round(couples) + '쌍</span></div><p style="color:var(--ink-soft);font-size:.83rem;margin-bottom:8px">이름을 클릭하면 개인 신상을 볼 수 있습니다.</p><form id="gj_add" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#f7faff;border:1px solid #e3e7ee;border-radius:10px;padding:10px 12px;margin-bottom:12px"><input type="text" id="gj_add_name" placeholder="이름" autocomplete="off" style="padding:8px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;width:120px"><input type="text" id="gj_add_birth" inputmode="numeric" placeholder="생년월일 8자리(예: 19800101, 선택)" autocomplete="off" style="padding:8px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;width:250px"><button type="submit" class="btn btn-solid" style="padding:8px 18px;white-space:nowrap">➕ 교적 추가</button><span id="gj_add_msg" style="font-size:.85rem"></span></form><div style="overflow:auto;max-height:640px"><table class="fin-table"><thead><tr><th>교인번호</th><th>이름</th><th>생년월일</th><th>세대주</th><th>관계</th><th>배우자</th><th>그룹</th><th>직책</th><th>휴대폰</th></tr></thead><tbody id="gj_tbody"></tbody></table></div></div>';
+      panel.innerHTML = '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;flex-wrap:wrap"><b>교적 명단 (' + ms.length + '명)</b><input type="text" id="gj_search" placeholder="🔍 이름 검색" style="padding:7px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;flex:1;min-width:140px;max-width:260px"><span style="color:var(--ink-soft);font-size:.85rem">부부 ' + Math.round(couples) + '쌍 · 홈페이지 가입 <b style="color:#1e874b">' + ms.filter(function (m) { return signupOf(m); }).length + '명</b></span></div><p style="color:var(--ink-soft);font-size:.83rem;margin-bottom:8px">이름을 클릭하면 개인 신상을 볼 수 있습니다. 맨 오른쪽 <b style="color:#1e874b">✓</b>는 홈페이지 가입·연결 완료, <b style="color:#b8860b">△</b>는 가입했지만 승인 전, <span style="color:#c9d0d9">—</span>는 아직 가입 안 하신 분입니다.</p><form id="gj_add" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#f7faff;border:1px solid #e3e7ee;border-radius:10px;padding:10px 12px;margin-bottom:12px"><input type="text" id="gj_add_name" placeholder="이름" autocomplete="off" style="padding:8px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;width:120px"><input type="text" id="gj_add_birth" inputmode="numeric" placeholder="생년월일 8자리(예: 19800101, 선택)" autocomplete="off" style="padding:8px 11px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;width:250px"><button type="submit" class="btn btn-solid" style="padding:8px 18px;white-space:nowrap">➕ 교적 추가</button><span id="gj_add_msg" style="font-size:.85rem"></span></form><div style="overflow:auto;max-height:640px"><table class="fin-table"><thead><tr><th>교인번호</th><th>이름</th><th>생년월일</th><th>세대주</th><th>관계</th><th>배우자</th><th>그룹</th><th>직책</th><th>휴대폰</th><th style="text-align:center;white-space:nowrap">홈페이지<br><span style="font-weight:400;font-size:.72rem">가입</span></th></tr></thead><tbody id="gj_tbody"></tbody></table></div></div>';
       var tbody = panel.querySelector('#gj_tbody');
       function draw(q) {
         q = (q || '').trim();
         var rows = q ? ms.filter(function (m) { return String(m['이름']).indexOf(q) >= 0; }) : ms;
-        tbody.innerHTML = rows.map(function (m) { var isHead = (m['세대주'] || m['이름']) === m['이름']; return '<tr' + (isHead ? ' style="background:#f7faff"' : '') + '><td style="color:#7b8794;font-variant-numeric:tabular-nums">' + esc(m['교적번호'] || '') + '</td><td><a href="#" class="gj-name" data-key="' + esc(m['매칭키']) + '" style="color:var(--accent,#223350);font-weight:700;text-decoration:none;border-bottom:1px dashed #9ab">' + esc(m['이름']) + '</a></td><td>' + esc(birthDisplay(m)) + '</td><td>' + esc(m['세대주'] || '') + '</td><td>' + esc(m['관계'] || '') + '</td><td>' + (m['배우자'] ? '💑 ' + esc(m['배우자']) : '') + '</td><td>' + esc(m['그룹']) + '</td><td>' + esc(m['직책']) + '</td><td>' + esc(fmtPhone(m['휴대폰'])) + '</td></tr>'; }).join('');
+        tbody.innerHTML = rows.map(function (m) { var isHead = (m['세대주'] || m['이름']) === m['이름']; return '<tr' + (isHead ? ' style="background:#f7faff"' : '') + '><td style="color:#7b8794;font-variant-numeric:tabular-nums">' + esc(m['교적번호'] || '') + '</td><td><a href="#" class="gj-name" data-key="' + esc(m['매칭키']) + '" style="color:var(--accent,#223350);font-weight:700;text-decoration:none;border-bottom:1px dashed #9ab">' + esc(m['이름']) + '</a></td><td>' + esc(birthDisplay(m)) + '</td><td>' + esc(m['세대주'] || '') + '</td><td>' + esc(m['관계'] || '') + '</td><td>' + (m['배우자'] ? '💑 ' + esc(m['배우자']) : '') + '</td><td>' + esc(m['그룹']) + '</td><td>' + esc(m['직책']) + '</td><td>' + esc(fmtPhone(m['휴대폰'])) + '</td><td style="text-align:center;white-space:nowrap">' + signupCell(signupOf(m)) + '</td></tr>'; }).join('');
         Array.prototype.forEach.call(tbody.querySelectorAll('.gj-name'), function (a) { a.onclick = function (e) { e.preventDefault(); var m = ms.filter(function (x) { return String(x['매칭키']) === a.dataset.key; })[0]; if (m) showDetail(m); }; });
       }
       draw('');
