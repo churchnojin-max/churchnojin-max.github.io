@@ -240,12 +240,25 @@ window.WPF = (function () {
         return rest('PATCH', 'budget?code=eq.' + encodeURIComponent(params.code), { budget: num(params.amount) }, 'return=minimal').then(function () { return { ok: true }; });
       case 'listAccess':
         return rpc('list_access').then(function (arr) { return { ok: true, users: arr || [] }; });
-      case 'setAccess':
+      case 'setAccess': {
+        // 넘기지 않은 항목은 null → DB 에서 기존 값을 유지한다(체크박스 하나만 바꿔도 되도록)
+        var b = function (v) { return (typeof v === 'boolean') ? v : null; };
         return rpc('set_access', {
           p_uid: params.targetUid,
-          p_is_admin: (typeof params.isAdmin === 'boolean') ? params.isAdmin : null,
-          p_can_finance: (typeof params.canFinance === 'boolean') ? params.canFinance : null
+          p_is_admin: b(params.isAdmin),
+          p_can_finance: b(params.canFinance),
+          p_can_gyojeok: b(params.canGyojeok),
+          p_can_homepage: b(params.canHomepage),
+          p_can_worship: b(params.canWorship),
+          p_can_affairs: b(params.canAffairs),
+          p_can_board: b(params.canBoard)
+        }).then(function (r) {
+          if (r && r.ok === false) throw new Error(r.error || '저장하지 못했습니다.');
+          return r;
         });
+      }
+      case 'myPerms':
+        return rpc('my_perms').then(function (p) { return { ok: true, perms: p || {} }; });
       case 'getSettings':
         return rest('GET', 'app_settings?select=key,value&limit=2000').then(function (rows) {
           var s = {}; (rows || []).forEach(function (r) { s[r.key] = r.value; }); return { ok: true, settings: s };

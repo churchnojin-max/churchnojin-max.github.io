@@ -186,11 +186,18 @@
           showMsg("비밀번호가 변경되었습니다. 이제 로그인됩니다.", true);
           setTimeout(() => { closeModal(); location.reload(); }, 1200);
         } else if (mode === "signup") {
-          const { error } = await sb.auth.signUp({
+          const { data, error } = await sb.auth.signUp({
             email, password, options: { data: { name: name || email.split("@")[0] } },
           });
           if (error) throw error;
-          showMsg("가입 확인 메일을 보냈습니다. 메일의 링크를 눌러 인증해 주세요.", true);
+          // Supabase 의 '이메일 확인' 설정이 꺼져 있으면 세션이 바로 나오고 메일도 안 간다.
+          // 예전에는 무조건 "확인 메일을 보냈습니다"라고 띄워서 안내와 실제가 어긋났다.
+          if (data && data.session) {
+            showMsg("가입이 완료되었습니다. 교회 정보는 담당자 승인 후에 보실 수 있습니다.", true);
+            setTimeout(() => { closeModal(); location.reload(); }, 1600);
+          } else {
+            showMsg("가입 확인 메일을 보냈습니다. 메일의 링크를 눌러 인증해 주세요.", true);
+          }
         } else {
           const { error } = await sb.auth.signInWithPassword({ email, password });
           if (error) throw error;

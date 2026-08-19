@@ -223,35 +223,74 @@ console.log('[gyojeok.js] v20260701di');
   }
 
   /* ── 권한 관리: 정/준회원·교적연결 + 관리자/재정권한 ── */
+  // 영역별 권한 — [응답키, 표시이름, 설명]
+  // 관리자(admins)는 이 모두를 무조건 통과한다. 특정 일만 맡길 때 관리자 대신 여기를 쓴다.
+  var GJ_PERMS = [
+    ['canFinance', '재정', '헌금·지출 입력, 거래장부, 결산'],
+    ['canGyojeok', '교적', '교인 명단·가계도·교인번호'],
+    ['canHomepage', '홈페이지', '로고·배너·소개글·사진 설정'],
+    ['canWorship', '예배', '이달의 찬양·예배자료실·주보'],
+    ['canAffairs', '목회행정', '심방·상담·설교관리'],
+    ['canBoard', '게시판', '공지·앨범·나눔터 관리']
+  ];
+
   function renderAccess(panel) {
     loading(panel);
     Promise.all([WPF.call('listAccess'), WPF.call('listGyojeok')]).then(function (res) {
       var users = (res[0].users || []).sort(function (a, b) { return (b.isAdmin - a.isAdmin) || (b.canFinance - a.canFinance) || String(a.name).localeCompare(String(b.name), 'ko'); });
       var gj = (res[1].members || []).filter(function (m) { return m['이름']; });
-      panel.innerHTML = '<div class="fin-card"><p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:12px">홈페이지에 가입한 회원입니다. <b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동). <b>관리자</b>는 교적관리·전체 기능, <b>재정권한</b>은 재정관리에 접근합니다.</p>' +
-        '<div style="overflow:auto"><table class="fin-table"><thead><tr><th>이름</th><th>이메일</th><th>회원</th><th style="text-align:center">관리자</th><th style="text-align:center">재정권한</th></tr></thead><tbody>' +
+      panel.innerHTML = '<div class="fin-card">' +
+        '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:6px">홈페이지에 가입한 회원입니다. <b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동).</p>' +
+        '<p style="color:#b8860b;font-size:.85rem;margin-bottom:12px;line-height:1.6">⚠ <b>관리자</b>는 <u>모든 영역</u>에 접근하는 최고 권한입니다. 특정 일만 맡기실 때는 관리자를 주지 마시고 <b>아래 영역 권한만</b> 체크해 주세요.</p>' +
+        '<div style="overflow:auto"><table class="fin-table" style="font-size:.86rem"><thead><tr>' +
+        '<th>이름</th><th>이메일</th><th>회원</th>' +
+        '<th style="text-align:center;background:#7a3b3b">관리자<br><span style="font-weight:400;font-size:.72rem">(전권)</span></th>' +
+        GJ_PERMS.map(function (p) { return '<th style="text-align:center" title="' + esc(p[2]) + '">' + esc(p[1]) + '</th>'; }).join('') +
+        '</tr></thead><tbody>' +
         users.map(function (u) {
           return '<tr data-uid="' + esc(u.uid) + '"><td><b>' + esc(u.name || '(이름없음)') + '</b></td><td style="color:var(--ink-soft)">' + esc(u.email) + '</td>' +
             '<td><span class="st-pill" style="margin-right:8px;display:inline-block;min-width:48px">' + stPill(u.status) + '</span><select class="ck-status" style="padding:5px 8px;border:1px solid #cdd7e3;border-radius:7px;font:inherit;background:#fff">' +
               '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
               '<option value="정회원"' + (u.status === '정회원' ? ' selected' : '') + '>정회원</option></select></td>' +
-            '<td style="text-align:center"><input type="checkbox" class="ck-admin" ' + (u.isAdmin ? 'checked' : '') + '></td>' +
-            '<td style="text-align:center"><input type="checkbox" class="ck-fin" ' + (u.canFinance ? 'checked' : '') + '></td></tr>';
-        }).join('') + '</tbody></table></div><p class="help" id="gj_msg" style="margin-top:10px"></p></div>';
+            '<td style="text-align:center;background:#fdf6f6"><input type="checkbox" class="ck-admin" ' + (u.isAdmin ? 'checked' : '') + '></td>' +
+            GJ_PERMS.map(function (p) {
+              // 관리자는 어차피 전부 통과하므로, 관리자일 때는 체크된 것처럼 흐리게 보여 준다
+              return '<td style="text-align:center"><input type="checkbox" class="ck-perm" data-k="' + p[0] + '"' +
+                (u[p[0]] ? ' checked' : '') + (u.isAdmin ? ' disabled title="관리자는 모든 영역이 열려 있습니다"' : '') + '></td>';
+            }).join('') +
+            '</tr>';
+        }).join('') + '</tbody></table></div>' +
+        '<p class="help" style="margin-top:10px;line-height:1.8">' +
+        GJ_PERMS.map(function (p) { return '<b>' + esc(p[1]) + '</b> ' + esc(p[2]); }).join(' &nbsp;·&nbsp; ') + '</p>' +
+        '<p class="help" id="gj_msg" style="margin-top:6px"></p></div>';
       var msg = panel.querySelector('#gj_msg');
       function flash(ok, txt) { msg.style.color = ok ? 'green' : '#c0392b'; msg.textContent = txt; }
       Array.prototype.forEach.call(panel.querySelectorAll('tr[data-uid]'), function (tr) {
         var uid = tr.getAttribute('data-uid');
         var u = users.filter(function (x) { return x.uid === uid; })[0] || {};
-        var ckA = tr.querySelector('.ck-admin'), ckF = tr.querySelector('.ck-fin'), sel = tr.querySelector('.ck-status');
+        var ckA = tr.querySelector('.ck-admin'), sel = tr.querySelector('.ck-status');
         var prevStatus = u.status === '정회원' ? '정회원' : '준회원';
         function saveAccess(field, val, revert) {
           var body = { targetUid: uid }; body[field] = val;
           msg.style.color = 'var(--ink-soft)'; msg.textContent = '저장 중…';
           WPF.call('setAccess', body).then(function () { flash(true, '✓ 저장됨'); }).catch(function (e) { flash(false, '오류: ' + e.message); if (revert) revert(); });
         }
-        ckA.addEventListener('change', function () { saveAccess('isAdmin', ckA.checked, function () { ckA.checked = !ckA.checked; }); });
-        ckF.addEventListener('change', function () { saveAccess('canFinance', ckF.checked, function () { ckF.checked = !ckF.checked; }); });
+        ckA.addEventListener('change', function () {
+          if (ckA.checked && !confirm('「' + (u.name || u.email) + '」님을 관리자로 지정하면 재정·교적을 포함한 모든 영역을 볼 수 있게 됩니다.\n특정 일만 맡기실 거라면 취소하고 영역 권한만 체크해 주세요.\n\n관리자로 지정할까요?')) {
+            ckA.checked = false; return;
+          }
+          saveAccess('isAdmin', ckA.checked, function () { ckA.checked = !ckA.checked; });
+          // 관리자면 영역 체크박스는 의미가 없으므로 잠그고, 해제하면 다시 풀어 준다
+          Array.prototype.forEach.call(tr.querySelectorAll('.ck-perm'), function (c) {
+            c.disabled = ckA.checked;
+            c.title = ckA.checked ? '관리자는 모든 영역이 열려 있습니다' : '';
+          });
+        });
+        Array.prototype.forEach.call(tr.querySelectorAll('.ck-perm'), function (ck) {
+          ck.addEventListener('change', function () {
+            saveAccess(ck.dataset.k, ck.checked, function () { ck.checked = !ck.checked; });
+          });
+        });
         function setMember(status, key, name) {
           msg.style.color = 'var(--ink-soft)'; msg.textContent = '저장 중…';
           WPF.call('adminSetMember', { uid: uid, status: status, memberKey: key, memberName: name }).then(function () {

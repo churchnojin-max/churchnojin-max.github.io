@@ -111,6 +111,8 @@ console.log('[dashboard.js] v20260705qtfallback');
       '<div class="form-card" style="margin-bottom:22px;padding:16px 18px;">' +
       '<h2 id="dashWelcome" style="margin:0;font-size:1.15rem;color:var(--accent,#223350);">' + esc(me.memberName || '') + '님, 환영합니다 🙏</h2>' +
       '</div>' +
+      // 관리자에게만 보이는 승인 대기 — 가입만 하고 아직 정회원이 아닌 분들
+      '<div id="pendingApproval" style="margin-bottom:22px;"></div>' +
       '<h2 style="' + grp + 'margin-top:6px;">🕊 나의 신앙생활</h2>' +
       '<div id="dashQt" style="margin-bottom:22px;"></div>' +
       '<div id="bibleRead" style="margin-bottom:22px;"></div>' +
@@ -121,6 +123,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       '<div id="myDocs" style="margin-bottom:22px;"></div>' +
       '<div id="familyTree" style="margin-bottom:22px;"></div>' +
       '<p style="text-align:center;margin-top:14px;"><a class="btn btn-line" href="index.html#qt">이번 주 말씀·주보는 홈에서 보기 →</a></p>';
+    loadPendingApproval();
     loadWelcomeName(me);
     loadTodayQt(me);
     loadBibleReading(me);
@@ -129,6 +132,47 @@ console.log('[dashboard.js] v20260705qtfallback');
     loadOfferings(me);
     loadMyDocs(me);
     loadFamily(me);
+  }
+
+  /* ================= 정회원 승인 대기 (관리자에게만 보임) =================
+     가입은 누구나 되지만 교회 정보는 정회원 승인 뒤에 열린다.
+     승인 대기자가 대시보드에 안 보이면 관리자가 가입 사실 자체를 모르고 지나치게 되므로
+     첫 화면 맨 위에 띄운다. 목록은 list_access(관리자 전용 RPC)로 가져온다.
+     ====================================================================== */
+  function loadPendingApproval() {
+    var box = document.getElementById('pendingApproval');
+    if (!box || !window.WPF) return;
+    WPF.call('listAccess').then(function (r) {
+      var all = r.users || [];
+      var pending = all.filter(function (u) { return u.status !== '정회원'; });
+      if (!pending.length) { box.innerHTML = ''; return; }
+      // 최근 가입자가 위로
+      pending.sort(function (a, b) { return String(b.joinedAt || '').localeCompare(String(a.joinedAt || '')); });
+      function fmtJoin(s) {
+        if (!s) return '';
+        var d = new Date(s); if (isNaN(d)) return '';
+        return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 가입';
+      }
+      box.innerHTML =
+        '<div class="form-card" style="padding:16px 18px;border:1px solid #e6c98a;background:#fffdf6">' +
+        '<h3 style="margin:0 0 4px;font-size:1rem;color:#8a6d1f">🔔 정회원 승인 대기 <b>' + pending.length + '명</b></h3>' +
+        '<p style="margin:0 0 12px;font-size:.84rem;color:#8a7a52">가입은 했지만 아직 승인 전이라 교회 정보를 볼 수 없는 분들입니다. 어느 성도님인지 확인한 뒤 승인해 주세요.</p>' +
+        '<div style="display:flex;flex-direction:column;gap:8px">' +
+        pending.map(function (u) {
+          return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:#fff;border:1px solid #efe3c4;border-radius:9px">' +
+            '<b style="min-width:80px">' + esc(u.name || '(이름없음)') + '</b>' +
+            '<span style="color:#7b8794;font-size:.85rem;flex:1;min-width:150px">' + esc(u.email) + '</span>' +
+            '<span style="color:#9aa5b1;font-size:.78rem">' + esc(fmtJoin(u.joinedAt)) + '</span>' +
+            '</div>';
+        }).join('') +
+        '</div>' +
+        '<p style="margin:12px 0 0"><a class="btn btn-solid" href="gyojeok.html" style="padding:9px 18px">교적관리에서 승인하기 →</a></p>' +
+        '<p style="margin:8px 0 0;font-size:.78rem;color:#9aa5b1">※ 승인은 교적관리 ▸ 권한 관리에서 <b>정회원</b>으로 바꾸고 교적의 본인을 골라 연결하면 됩니다.</p>' +
+        '</div>';
+    }).catch(function () {
+      // 관리자가 아니면 list_access 가 빈 배열/오류 → 아무것도 안 보여 준다
+      box.innerHTML = '';
+    });
   }
 
   /* ================= 나의 성경읽기 (구속사 365 · 우리말성경) ================= */
