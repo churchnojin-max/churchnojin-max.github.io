@@ -40,9 +40,9 @@ window.FORMSUBMIT_EMAIL = "";
 
 /* --- 나의 도서관(구글 드라이브 책 목록 Apps Script 웹앱) ---
    apps-script/library-api.gs 를 배포한 뒤 받은 웹앱 주소(/exec). */
-window.LIBRARY_API_URL = "";
+window.LIBRARY_API_URL = "https://script.google.com/macros/s/AKfycbxpFQUl7I3gu_Gk9pKECGWAN8vOExPFlEpBR67MAYcFsDjXvqo98fuYBESPqj7KytrX/exec";
 /* 책 폴더 ID(드라이브 폴더 주소 .../folders/XXXX 의 XXXX). */
-window.LIBRARY_FOLDER_ID = "";
+window.LIBRARY_FOLDER_ID = "1AvTRhMLV1ZSIBTSEEa-SbXKhE8U1V67V";
 
 /* --- 영상 제작 스튜디오 (선택) ---
    설교 영상 자동 제작 기능. 교회 PC 작업 프로그램과 Cloudflare 설정이 필요해
