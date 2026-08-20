@@ -2222,6 +2222,18 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
 }
 .confess .confess-refrain.is-close { margin: 40px 0 0; }
 
+/* 끝 후렴 아래 온 교우 단체사진 */
+.confess .confess-family { margin: 36px 0 0; text-align: center; }
+.confess .confess-family img {
+  width: 100%; height: auto; aspect-ratio: 1600 / 975; object-fit: cover;
+  border-radius: 14px; background: var(--paper-alt);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .16); display: block;
+}
+.confess .confess-family figcaption {
+  margin-top: 12px; font-family: "Noto Serif KR", serif;
+  font-size: .95rem; color: var(--muted); letter-spacing: .02em;
+}
+
 /* 들어가는 한 문장 */
 .confess .confess-lead {
   font-family: "Noto Serif KR", serif; font-size: clamp(1.1rem, 2.4vw, 1.28rem);
@@ -2265,6 +2277,8 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
   .confess { margin-bottom: 40px; }
   .confess .confess-portrait img { width: 142px; }
   .confess .confess-portrait { margin-bottom: 24px; }
+  .confess .confess-family { margin-top: 28px; }
+  .confess .confess-family img { border-radius: 10px; }
   .confess .confess-refrain { padding: 20px 12px; margin-bottom: 26px; }
   .confess p { font-size: 1.05rem; line-height: 1.95; }
   .confess h3 { margin: 34px 0 12px; padding-left: 12px; }
