@@ -12,7 +12,7 @@
  *   ※ FOLDER_ID 는 이미 '나의 도서관' 폴더로 채워두었습니다(사이트도 이 폴더를 넘깁니다).
  ****************************************************************/
 
-var FOLDER_ID = '1AvTRhMLV1ZSIBTSEEa-SbXKhE8U1V67V';   // 나의 도서관 폴더 ID
+var FOLDER_ID = '1ZhcNP93jnTE9EDCKCQ8HD9Cf8VJTU3OL';   // 책PDF 폴더 ID (노진교회)
 var BOOK_EXT = /\.(pdf|epub|hwp|hwpx|docx?|txt)$/i;
 var FOLDER_MIME = 'application/vnd.google-apps.folder';
 
