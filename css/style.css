@@ -985,6 +985,15 @@ ul { list-style: none; }
 .entry-card p { color:var(--ink-soft); font-size:.9rem; font-weight:300; }
 .entry-card .entry-go { display:inline-block; margin-top:16px; font-size:.85rem; font-weight:500; color:var(--accent); }
 
+/* 5칸 한 줄 고정 (환영합니다 — 한눈에 둘러보기) */
+.entry-grid-5 { grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.entry-grid-5 .entry-card { padding: 26px 18px; }
+.entry-grid-5 .entry-card h3 { font-size: 1.06rem; margin: 8px 0 8px; word-break: keep-all; }
+.entry-grid-5 .entry-card p { font-size: .85rem; line-height: 1.65; word-break: keep-all; }
+.entry-grid-5 .entry-card .entry-go { margin-top: 14px; font-size: .82rem; white-space: nowrap; }
+@media (max-width: 1000px) { .entry-grid-5 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 620px)  { .entry-grid-5 { grid-template-columns: repeat(2, 1fr); } }
+
 .home-sermon { max-width:720px; margin:0 auto; background:var(--accent); color:#fff; border-radius:18px; padding:46px 44px; text-align:center; }
 .home-sermon .hs-date { font-size:.85rem; color:var(--gold); letter-spacing:.06em; }
 .home-sermon .hs-title { font-family:"Noto Serif KR",serif; font-size:clamp(1.6rem,3.6vw,2.2rem); margin:12px 0 8px; }
@@ -1622,6 +1631,7 @@ a.resource-item:hover { border-color: var(--accent-soft); box-shadow: 0 4px 14px
 .auth-wrap { position: relative; display: inline-block; }
 a.auth-name {
   display: inline-block; cursor: pointer; text-decoration: none;
+  white-space: nowrap;
   color: var(--accent) !important; font-size: 1rem; font-weight: 700; letter-spacing: .02em;
   padding: 8px 14px; border-radius: 20px;
   background: var(--paper-alt);
