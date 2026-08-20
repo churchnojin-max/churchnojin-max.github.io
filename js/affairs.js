@@ -142,7 +142,7 @@ console.log('[affairs.js] v20260712memo2');
       table: 'sermons', name: '설교', dateCol: 'sermon_date',
       fields: [
         { k: 'sermon_date', label: '일자', type: 'date' },
-        { k: 'service', label: '예배', type: 'select', opts: ['주일 낮 예배', '주일 밤 예배', '수요기도회', '금요기도회', '새벽기도', '매일 QT', '특별집회', '기타'] },
+        { k: 'service', label: '예배', type: 'select', opts: ['주일 낮 예배', '주일 오후예배', '수요기도회', '금요기도회', '새벽기도', '매일 QT', '특별집회', '기타'] },
         { k: 'title', label: '제목', type: 'text' },
         { k: 'scripture', label: '본문(성경)', type: 'text', ph: '예: 요한복음 3:16' },
         { k: 'preacher', label: '설교자', type: 'text', ph: '예: 손병민 담임목사' },
@@ -704,7 +704,7 @@ console.log('[affairs.js] v20260712memo2');
     drawList('');
   }
   function selectedGyodok() { try { return JSON.parse(localStorage.getItem('wpc_sel_gyodok') || 'null'); } catch (e) { return null; } }
-  var SVC_OPTS = ['주일 낮 예배', '주일 밤 예배', '수요기도회', '금요기도회', '새벽기도', '매일 QT', '특별집회', '기타'];
+  var SVC_OPTS = ['주일 낮 예배', '주일 오후예배', '수요기도회', '금요기도회', '새벽기도', '매일 QT', '특별집회', '기타'];
 
   // 고정 전례문(설교 큐시트 자동 펼침용)
   var APOSTLES_CREED = ['전능하사 천지를 만드신 하나님 아버지를 내가 믿사오며,', '그 외아들 우리 주 예수 그리스도를 믿사오니,', '이는 성령으로 잉태하사 동정녀 마리아에게 나시고,', '본디오 빌라도에게 고난을 받으사, 십자가에 못 박혀 죽으시고, 장사한 지 사흘 만에 죽은 자 가운데서 다시 살아나시며,', '하늘에 오르사, 전능하신 하나님 우편에 앉아 계시다가,', '저리로서 산 자와 죽은 자를 심판하러 오시리라.', '성령을 믿사오며, 거룩한 공회와, 성도가 서로 교통하는 것과,', '죄를 사하여 주시는 것과, 몸이 다시 사는 것과, 영원히 사는 것을 믿사옵나이다. 아멘.'];
@@ -1166,7 +1166,7 @@ console.log('[affairs.js] v20260712memo2');
     }
 
     function bookSermonsModal(book, list) {
-      var SVC_C = { '주일 낮 예배': '#2563eb', '주일 밤 예배': '#4f46e5', '수요기도회': '#1e874b', '금요기도회': '#7c3aed', '새벽기도': '#0d9488', '매일 QT': '#d97706', '특별집회': '#c0392b', '기타': '#64748b' };
+      var SVC_C = { '주일 낮 예배': '#2563eb', '주일 오후예배': '#4f46e5', '주일 밤 예배': '#4f46e5', '수요기도회': '#1e874b', '금요기도회': '#7c3aed', '새벽기도': '#0d9488', '매일 QT': '#d97706', '특별집회': '#c0392b', '기타': '#64748b' };
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9700;display:flex;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto';
       var items = (list || []).map(function (r, i) {
@@ -2303,7 +2303,7 @@ console.log('[affairs.js] v20260712memo2');
     var worshipMode = !!(opts && opts.worship);
     var _now = new Date();   // 목록 기본 필터: 오늘 기준 연·월
     var WTPL = {}, smView = 'list', smRows = [], calYM = null, smTableState = { svc: '전체', ser: '전체', year: String(_now.getFullYear()), month: pad2(_now.getMonth() + 1), week: '전체', sort: 'desc', perPage: 20, page: 1 };
-    var SERVICE_COLORS = { '주일 낮 예배': '#2563eb', '주일 밤 예배': '#4f46e5', '수요기도회': '#1e874b', '금요기도회': '#7c3aed', '새벽기도': '#0d9488', '매일 QT': '#d97706', '특별집회': '#c0392b', '기타': '#64748b' };
+    var SERVICE_COLORS = { '주일 낮 예배': '#2563eb', '주일 오후예배': '#4f46e5', '주일 밤 예배': '#4f46e5', '수요기도회': '#1e874b', '금요기도회': '#7c3aed', '새벽기도': '#0d9488', '매일 QT': '#d97706', '특별집회': '#c0392b', '기타': '#64748b' };
     function svcColor(s) { return SERVICE_COLORS[s] || '#64748b'; }
     function orderCount(r) { try { var a = JSON.parse(r.worship_order || '[]'); return Array.isArray(a) ? a.length : 0; } catch (e) { return 0; } }
     function hasOrder(r) { return orderCount(r) > 0; }
@@ -5281,7 +5281,7 @@ console.log('[affairs.js] v20260712memo2');
     var pages = [];
     pages.push('<div class="pg pg-fixed pg-cover"><h1>' + esc(r.title || '(제목 없음)') + '</h1>' + (r.scripture ? '<div class="scr">' + esc(r.scripture) + '</div>' : '') + (meta ? '<div class="meta">' + meta + '</div>' : '') + '</div>');
     // 예배 순서 페이지는 정식 예배(주일·수요기도회·금요·특별집회)에만. 새벽기도·매일 QT 등은 성경 본문 페이지로.
-    var ORDER_SERVICES = { '주일 낮 예배': 1, '주일 밤 예배': 1, '수요기도회': 1, '수요예배': 1, '금요기도회': 1, '특별집회': 1 };
+    var ORDER_SERVICES = { '주일 낮 예배': 1, '주일 오후예배': 1, '주일 밤 예배': 1, '수요기도회': 1, '수요예배': 1, '금요기도회': 1, '특별집회': 1 };
     if (!qtMode && wOrder.length && ORDER_SERVICES[r.service]) {
       var visOrder = wOrder.filter(function (it) { return !it.noexport; });   // '출력제외' 항목 건너뜀
       var total = visOrder.length;
