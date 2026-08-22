@@ -790,8 +790,23 @@ console.log('[finance.js] v20260701di');
 
     var parsed = [];
     var mode = 'offer', parsedExp = [];   // 'offer'(헌금) | 'exp'(지출)
+    // "십일조헌금"/"십일조" 처럼 "헌금·기도·제" 같은 흔한 접미어를 떼고 핵심 단어만 비교하기 위한 정규화
+    function coreName(s) {
+      var n = normName(s);
+      var SUF = ['헌금', '기도', '제', '금'];
+      var changed = true;
+      while (changed) {
+        changed = false;
+        for (var i = 0; i < SUF.length; i++) {
+          var suf = SUF[i];
+          if (n.length > suf.length && n.slice(-suf.length) === suf) { n = n.slice(0, -suf.length); changed = true; }
+        }
+      }
+      return n;
+    }
     function parse() {
-      var accSet = {}; offeringAccounts().forEach(function (a) { accSet[normName(a)] = a; });
+      var accSet = {}, coreSet = {};
+      offeringAccounts().forEach(function (a) { accSet[normName(a)] = a; if (!coreSet[coreName(a)]) coreSet[coreName(a)] = a; });
       var text = panel.querySelector('#b_text').value || '';
       var dm = text.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
       if (dm) { var dEl = panel.querySelector('#b_date'); if (dEl) dEl.value = dm[1] + '-' + ('0' + dm[2]).slice(-2) + '-' + ('0' + dm[3]).slice(-2); }
@@ -831,7 +846,11 @@ console.log('[finance.js] v20260701di');
         if (hits.length === 1) { it.key = hits[0].key; it.match = 'ok'; it.matchName = hits[0].name; }
         else if (hits.length === 0) { it.key = ''; it.match = 'none'; }
         else { it.key = ''; it.match = 'dup'; }
-        it.accountKnown = !!accSet[normName(it.cat)];
+        var exact = accSet[normName(it.cat)];
+        var core = coreSet[coreName(it.cat)];
+        if (exact) { it.accountKnown = true; }
+        else if (core) { it.cat = core; it.accountKnown = true; } // "십일조헌금" → 계정과목 마스터의 "십일조"처럼 핵심 단어로 매칭해 그 이름으로 정정
+        else { it.accountKnown = false; }
       });
       parsed = items;
       return items;
