@@ -15,7 +15,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const PROVIDER = GEMINI_API_KEY ? "gemini" : "anthropic";
 const MODEL = Deno.env.get("COUNSEL_MODEL") ??
-  (PROVIDER === "gemini" ? "gemini-2.0-flash" : "claude-haiku-4-5-20251001");
+  (PROVIDER === "gemini" ? "gemini-3.5-flash-lite" : "claude-haiku-4-5-20251001");
 
 const ALLOW_ORIGINS = [
   "https://churchnojin-max.github.io",
@@ -101,6 +101,26 @@ const EXTRACT_PROMPT = `당신은 ○○교회 주보 PDF에서 핵심 정보를
 - 날짜는 반드시 YYYY-MM-DD 형식으로만 출력합니다(다른 형식이면 변환하세요).
 - JSON 문법을 반드시 지키세요(큰따옴표, 쉼표 등). 그 외 텍스트는 절대 출력하지 않습니다.`;
 
+/** 구글이 모델 이름을 바꿔도 스스로 살아 있는 모델을 찾아 쓴다 */
+async function discoverGeminiModel(): Promise<string> {
+  try {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+      headers: { "x-goog-api-key": GEMINI_API_KEY },
+    });
+    if (!r.ok) return "";
+    const d = await r.json();
+    const usable = (d?.models ?? [])
+      .filter((m: any) => (m?.supportedGenerationMethods ?? []).includes("generateContent"))
+      .map((m: any) => String(m?.name ?? "").replace(/^models\//, ""))
+      .filter((n: string) => n.startsWith("gemini-") && !/embedding|aqa|vision|image|tts|live/i.test(n));
+    // 가볍고 빠른 flash 계열을 먼저 쓴다
+    const flash = usable.filter((n: string) => n.includes("flash"));
+    return (flash[0] ?? usable[0] ?? "");
+  } catch (_) {
+    return "";
+  }
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin") ?? "";
   const cors = corsHeaders(origin);
@@ -152,7 +172,7 @@ Deno.serve(async (req) => {
         contents: [{ role: "user", parts: [{ text: userMsg }] }],
         generationConfig: { maxOutputTokens: maxTok, temperature: 0.5 },
       });
-      const models = [...new Set([MODEL, "gemini-2.0-flash", "gemini-2.5-flash-lite"])];
+      const models = [...new Set([MODEL, "gemini-3.5-flash-lite", "gemini-3.5-flash"])];
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       let lastErr = "";
       outer:
@@ -169,6 +189,22 @@ Deno.serve(async (req) => {
           lastErr = `${aiRes.status} ${(await aiRes.text()).slice(0, 200)}`;
           if (aiRes.status === 503 || aiRes.status === 429) { await sleep(800); continue; }
           break;
+        }
+      }
+      if (!reply) {                       // 이름이 모두 막혔다 — 쓸 수 있는 모델을 물어보고 한 번 더
+        const found = await discoverGeminiModel();
+        if (found && !models.includes(found)) {
+          const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${found}:generateContent`, {
+            method: "POST", headers: { "x-goog-api-key": GEMINI_API_KEY, "content-type": "application/json" }, body: reqBody,
+          });
+          if (aiRes.ok) {
+            const data = await aiRes.json();
+            reply = (data?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text || "").join("").trim();
+          } else {
+            lastErr = `${aiRes.status} ${(await aiRes.text()).slice(0, 200)} (자동탐색: ${found})`;
+          }
+        } else if (!found) {
+          lastErr += " / 사용 가능한 모델을 찾지 못했습니다";
         }
       }
       if (!reply) return new Response(JSON.stringify({ error: "지금 잠시 응답이 어렵습니다. 잠시 후 다시 시도해 주세요.", detail: `[gemini/${MODEL}] ${lastErr}` }), { status: 502, headers: { ...cors, "Content-Type": "application/json" } });
