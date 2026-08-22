@@ -792,19 +792,38 @@ console.log('[finance.js] v20260701di');
     var mode = 'offer', parsedExp = [];   // 'offer'(헌금) | 'exp'(지출)
     function parse() {
       var accSet = {}; offeringAccounts().forEach(function (a) { accSet[normName(a)] = a; });
-      var lines = (panel.querySelector('#b_text').value || '').split(/\r?\n/);
+      var text = panel.querySelector('#b_text').value || '';
+      var dm = text.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+      if (dm) { var dEl = panel.querySelector('#b_date'); if (dEl) dEl.value = dm[1] + '-' + ('0' + dm[2]).slice(-2) + '-' + ('0' + dm[3]).slice(-2); }
+      var lines = text.split(/\r?\n/);
       var cat = '', items = [];
       lines.forEach(function (raw) {
+        var t = raw.trim();
+        if (!t) return;
+        // "[항목명] N명 / 금액원" 형식의 항목 구분 줄(헌금 명세 리포트 붙여넣기)
+        var bracket = t.match(/^\[(.+?)\]/);
+        if (bracket) { cat = bracket[1].trim(); return; }
+        if (/^■/.test(t)) return; // "■ 총합계 : ..." 줄
+        if (/^\(/.test(t) && /\+/.test(t)) return; // "(십일조 1200000 + 주일 180000 + ...)" 합계 내역 줄
         var cells = raw.split(/[\t ]+/).map(function (c) { return c.trim(); }).filter(function (c) { return c !== ''; });
         if (!cells.length) return;
         var joined = cells.join(' ');
         if (/^헌금자\s*리스트/.test(joined) || /^기간/.test(joined) || /누\s*계/.test(joined) || /합\s*계/.test(joined)) return;
-        if (cells.length === 1 && !isAmount(cells[0])) { cat = cells[0]; return; } // 항목 구분 줄
-        for (var i = 0; i < cells.length; i += 2) {
+        if (cells.length === 1 && !isAmount(cells[0]) && !/^.+\([\d,]+\)$/.test(cells[0])) { cat = cells[0]; return; } // 항목 구분 줄(단, "이름(금액)" 인라인 한 건짜리 줄은 제외)
+        for (var i = 0; i < cells.length;) {
+          var c = cells[i];
+          var inline = c.match(/^(.+)\(([\d,]+)\)$/); // "이름(금액)" 인라인 형식
+          if (inline && isAmount(inline[2])) {
+            var nm = inline[1].trim();
+            items.push({ cat: cat, payer: nm, base: nm, amount: parseNum(inline[2]) });
+            i += 1;
+            continue;
+          }
           var name = cells[i], amt = cells[i + 1];
-          if (!name || isAmount(name)) continue;
-          if (!amt || !isAmount(amt)) continue;
+          if (!name || isAmount(name)) { i++; continue; }
+          if (!amt || !isAmount(amt)) { i++; continue; }
           items.push({ cat: cat, payer: name, base: name.replace(/\(.*\)$/, '').trim(), amount: parseNum(amt) });
+          i += 2;
         }
       });
       items.forEach(function (it) {
