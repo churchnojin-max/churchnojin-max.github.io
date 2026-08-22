@@ -438,7 +438,7 @@ console.log('[gyojeok.js] v20260701di');
   function sbToken() {
     try {
       var ref = new URL(window.SUPABASE_URL).hostname.split('.')[0];
-      var raw = localStorage.getItem('sb-' + ref + '-auth-token');
+      var raw = sessionStorage.getItem('sb-' + ref + '-auth-token');
       if (!raw) return null;
       var s = JSON.parse(raw); s = s.currentSession || s;
       return s && s.access_token;

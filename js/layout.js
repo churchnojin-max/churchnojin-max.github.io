@@ -372,13 +372,14 @@
 
   // ===== 회원/로그인(Supabase) — 키 설정 시에만 로드 =====
   if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-    // localStorage의 Supabase 세션을 즉시 읽어 헤더에 반영(페이지 이동 시에도 깜빡임 없음)
+    // sessionStorage의 Supabase 세션을 즉시 읽어 헤더에 반영(페이지 이동 시에도 깜빡임 없음)
+    // auth.js가 세션을 sessionStorage에 저장하므로(창을 닫으면 자동 로그아웃) 여기서도 동일하게 읽는다.
     const slot0 = document.getElementById("authSlot");
     let cachedUser = null;
     let cachedToken = null;
     try {
       const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
-      const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+      const raw = sessionStorage.getItem(`sb-${ref}-auth-token`);
       if (raw) {
         const sess = JSON.parse(raw);
         const s = (sess && sess.currentSession) ? sess.currentSession : sess;
@@ -396,7 +397,7 @@
         let token = cachedToken;
         try {
           const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
-          const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+          const raw = sessionStorage.getItem(`sb-${ref}-auth-token`);
           if (raw) { const s0 = JSON.parse(raw); const s = s0 && s0.currentSession ? s0.currentSession : s0; token = (s && s.access_token) || token; }
         } catch (e) {}
         const headers = { apikey: window.SUPABASE_ANON_KEY };
@@ -494,15 +495,15 @@
           const lb = ev.currentTarget;
           lb.disabled = true;
           lb.textContent = "로그아웃 중…";
-          // 1) 로그인 토큰을 즉시 삭제(우리 UI의 기준값) — 관련 sb-* 키 모두 정리
+          // 1) 로그인 토큰을 즉시 삭제(우리 UI의 기준값) — 관련 sb-* 키 모두 정리(sessionStorage)
           try {
             const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
-            localStorage.removeItem(`sb-${ref}-auth-token`);
+            sessionStorage.removeItem(`sb-${ref}-auth-token`);
           } catch (e) {}
           try {
-            for (let i = localStorage.length - 1; i >= 0; i--) {
-              const k = localStorage.key(i);
-              if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1) localStorage.removeItem(k);
+            for (let i = sessionStorage.length - 1; i >= 0; i--) {
+              const k = sessionStorage.key(i);
+              if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1) sessionStorage.removeItem(k);
             }
           } catch (e) {}
           // 2) SDK signOut은 잠금으로 멈출 수 있으니 기다리지 않고 백그라운드로만 시도

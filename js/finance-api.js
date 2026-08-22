@@ -11,7 +11,7 @@ window.WPF = (function () {
   function ref() { try { return SB().match(/https:\/\/([^.]+)\./)[1]; } catch (e) { return ''; } }
   function token() {
     try {
-      var raw = localStorage.getItem('sb-' + ref() + '-auth-token');
+      var raw = sessionStorage.getItem('sb-' + ref() + '-auth-token');
       if (!raw) return null;
       var s = JSON.parse(raw);
       return (s && (s.access_token || (s.currentSession && s.currentSession.access_token))) || null;
@@ -136,12 +136,25 @@ window.WPF = (function () {
           rest('GET', 'budget?select=code,name,atype&order=code&limit=5000'),
           rest('GET', 'services?select=*&order=sort&limit=500')
         ]).then(function (res) {
-          // 계정과목(드롭다운)은 budget 테이블 단일 소스에서 파생: 0000(항) 제외, 목만.
+          // 계정과목(드롭다운)은 budget 테이블 단일 소스에서 파생: 0000(항)은 원래 제외하고 목만 쓴다.
+          // 다만 "차량헌금(항)"처럼 하위 목을 하나도 안 만든 항은 그 자체를 계정으로 못 쓰게 되어
+          // 버려지는 항목이 생기므로(목이 있는 "절기헌금"만 정상 동작), 하위 목이 하나도 없는 항은
+          // 자기 자신을 계정으로 그대로 사용한다.
           var bud = res[1] || [], nameByCode = {};
           bud.forEach(function (b) { nameByCode[b.code] = b.name; });
-          var accounts = bud.filter(function (b) { return String(b.code || '').slice(-4) !== '0000'; }).map(function (b) {
-            var parent = String(b.code || '').slice(0, 3) + '0000';
-            return { '구분': b.atype, '분류': (b.atype === '수입' ? '헌금' : (nameByCode[parent] || '')), '계정명': b.name, '계정코드': b.code, '상위': nameByCode[parent] || '' };
+          var hasChild = {};
+          bud.forEach(function (b) {
+            var code = String(b.code || '');
+            if (code.slice(-4) !== '0000') hasChild[code.slice(0, 3) + '0000'] = true;
+          });
+          var accounts = bud.filter(function (b) {
+            var code = String(b.code || '');
+            return code.slice(-4) !== '0000' || !hasChild[code];
+          }).map(function (b) {
+            var code = String(b.code || '');
+            var isGroupLeaf = code.slice(-4) === '0000'; // 목이 없어 자기 자신을 계정으로 쓰는 항
+            var parent = code.slice(0, 3) + '0000';
+            return { '구분': b.atype, '분류': (b.atype === '수입' ? '헌금' : (isGroupLeaf ? '' : (nameByCode[parent] || ''))), '계정명': b.name, '계정코드': b.code, '상위': isGroupLeaf ? '' : (nameByCode[parent] || '') };
           });
           return {
             ok: true,

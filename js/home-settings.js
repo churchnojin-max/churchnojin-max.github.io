@@ -40,7 +40,7 @@
   function session() {
     try {
       var ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
-      var raw = localStorage.getItem("sb-" + ref + "-auth-token");
+      var raw = sessionStorage.getItem("sb-" + ref + "-auth-token");
       if (!raw) return null;
       var s0 = JSON.parse(raw);
       return s0 && s0.currentSession ? s0.currentSession : s0;

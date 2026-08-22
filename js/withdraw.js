@@ -15,7 +15,7 @@
   function localSession() {
     try {
       const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
-      const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+      const raw = sessionStorage.getItem(`sb-${ref}-auth-token`);
       if (!raw) return null;
       const s = JSON.parse(raw);
       return s && s.currentSession ? s.currentSession : s;
@@ -23,9 +23,9 @@
   }
   function clearTokens() {
     try {
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1) localStorage.removeItem(k);
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const k = sessionStorage.key(i);
+        if (k && k.indexOf("sb-") === 0 && k.indexOf("-auth-token") !== -1) sessionStorage.removeItem(k);
       }
     } catch (e) {}
   }

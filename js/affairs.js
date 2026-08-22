@@ -45,7 +45,7 @@ console.log('[affairs.js] v20260712memo2');
   function sess() {
     try {
       var ref = (SB || '').match(/https:\/\/([^.]+)\./)[1];
-      var raw = localStorage.getItem('sb-' + ref + '-auth-token');
+      var raw = sessionStorage.getItem('sb-' + ref + '-auth-token');
       if (!raw) return null;
       var s = JSON.parse(raw); s = (s && s.currentSession) ? s.currentSession : s;
       return { uid: s && s.user && s.user.id, token: s && s.access_token };
@@ -59,7 +59,7 @@ console.log('[affairs.js] v20260712memo2');
       try {
         var ref = (SB || '').match(/https:\/\/([^.]+)\./)[1];
         var key = 'sb-' + ref + '-auth-token';
-        var raw = localStorage.getItem(key); if (!raw) return Promise.reject(new Error('no session'));
+        var raw = sessionStorage.getItem(key); if (!raw) return Promise.reject(new Error('no session'));
         var stored = JSON.parse(raw); var cur = stored.currentSession || stored;
         var rt = cur && cur.refresh_token; if (!rt) return Promise.reject(new Error('no refresh token'));
         return fetch(SB + '/auth/v1/token?grant_type=refresh_token', {
@@ -70,7 +70,7 @@ console.log('[affairs.js] v20260712memo2');
           t.access_token = data.access_token; t.refresh_token = data.refresh_token || rt;
           if (data.expires_at) t.expires_at = data.expires_at; if (data.expires_in) t.expires_in = data.expires_in;
           if (data.user) t.user = data.user;
-          localStorage.setItem(key, JSON.stringify(stored));
+          sessionStorage.setItem(key, JSON.stringify(stored));
           return data.access_token;
         });
       } catch (e) { return Promise.reject(e); }

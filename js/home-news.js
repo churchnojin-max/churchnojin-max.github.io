@@ -21,7 +21,7 @@
   function localSession() {
     try {
       const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
-      const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+      const raw = sessionStorage.getItem(`sb-${ref}-auth-token`);
       if (!raw) return null;
       const s = JSON.parse(raw);
       return s && s.currentSession ? s.currentSession : s;

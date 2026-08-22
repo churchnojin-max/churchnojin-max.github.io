@@ -6,7 +6,11 @@
    ============================================================ */
 (function () {
   if (!window.supabase || !window.SUPABASE_URL) return;
-  const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  // 브라우저 창을 완전히 닫으면 로그인이 풀리도록 세션을 localStorage가 아닌
+  // sessionStorage에 저장한다(sessionStorage는 탭/창을 닫으면 자동으로 사라짐).
+  const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+    auth: { storage: window.sessionStorage },
+  });
   window.__sb = sb;
 
   const slot = document.getElementById("authSlot");

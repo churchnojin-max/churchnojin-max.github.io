@@ -19,7 +19,7 @@ window.ChurchUpload = (function () {
   function token() {
     try {
       const ref = (window.SUPABASE_URL || "").split("//")[1].split(".")[0];
-      const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+      const raw = sessionStorage.getItem(`sb-${ref}-auth-token`);
       if (!raw) return "";
       const obj = JSON.parse(raw);
       return obj.access_token || (obj.currentSession && obj.currentSession.access_token) || "";
