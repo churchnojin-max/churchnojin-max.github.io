@@ -10,7 +10,7 @@ console.log('[district.js] v20260822');
   var root = document.getElementById('dtRoot');
   if (!root) return;
 
-  var DISTRICTS = ['1교구', '2교구', '3교구', '4교구', '5교구'];
+  var DISTRICTS = ['1구역', '2구역', '3구역', '4구역', '5구역'];
   var SB = String(window.SUPABASE_URL || '').replace(/\/$/, '');
   var AK = window.SUPABASE_ANON_KEY || '';
 
@@ -115,7 +115,7 @@ console.log('[district.js] v20260822');
       '<div class="dr-sec">언제 · 누가</div>' +
       '<div class="dr-grid">' +
       '<div class="dr-f"><label>모임일자</label><input type="date" id="f_date" value="' + esc(r.met_on || todayISO()) + '"></div>' +
-      '<div class="dr-f"><label>교구</label><select id="f_dist"><option value="">선택</option>' + DISTRICTS.map(opt).join('') + '</select></div>' +
+      '<div class="dr-f"><label>구역</label><select id="f_dist"><option value="">선택</option>' + DISTRICTS.map(opt).join('') + '</select></div>' +
       '<div class="dr-f"><label>보고자</label><input type="text" id="f_rep" value="' + esc(r.reporter || '') + '" placeholder="이름"></div>' +
       '<div class="dr-f"><label>예배장소</label><input type="text" id="f_place" value="' + esc(r.place || '') + '" placeholder="예: 김○○ 집사 댁"></div>' +
       '</div>' +
@@ -166,7 +166,7 @@ console.log('[district.js] v20260822');
         suggestion: p.querySelector('#f_sug').value.trim()
       };
       if (!body.met_on) { msg.style.color = '#c0392b'; msg.textContent = '모임일자를 넣어 주세요.'; return; }
-      if (!body.district) { msg.style.color = '#c0392b'; msg.textContent = '교구를 골라 주세요.'; return; }
+      if (!body.district) { msg.style.color = '#c0392b'; msg.textContent = '구역을 골라 주세요.'; return; }
 
       this.disabled = true;
       msg.style.color = '#7b8794'; msg.textContent = '저장하는 중…';
@@ -192,7 +192,7 @@ console.log('[district.js] v20260822');
       rows = rows || [];
       if (!rows.length) { p.innerHTML = msgCard('아직 보고가 없습니다', '‘사역보고 작성’에서 첫 보고를 올려 보세요.'); return; }
       p.innerHTML = '<div class="fin-card"><table class="fin-table"><thead><tr>' +
-        '<th>모임일자</th><th>교구</th><th>보고자</th><th>예배장소</th>' +
+        '<th>모임일자</th><th>구역</th><th>보고자</th><th>예배장소</th>' +
         '<th class="num">출석</th><th class="num">헌금</th><th></th>' +
         '</tr></thead><tbody>' +
         rows.map(function (r) {
@@ -286,9 +286,9 @@ console.log('[district.js] v20260822');
           '<select id="s_m" style="padding:7px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' +
           months.map(function (m) { return '<option' + (m === cur ? ' selected' : '') + '>' + m + '</option>'; }).join('') +
           '</select>' +
-          (missing.length ? '<span class="dr-pill dr-none">보고 없는 교구 ' + missing.length + '곳</span>' : '<span class="dr-pill">모든 교구 보고 완료</span>') +
+          (missing.length ? '<span class="dr-pill dr-none">보고 없는 구역 ' + missing.length + '곳</span>' : '<span class="dr-pill">모든 구역 보고 완료</span>') +
           '</div>' +
-          '<table class="fin-table"><thead><tr><th>교구</th><th class="num">모임</th><th class="num">평균 출석</th><th class="num">연인원</th><th class="num">헌금</th></tr></thead>' +
+          '<table class="fin-table"><thead><tr><th>구역</th><th class="num">모임</th><th class="num">평균 출석</th><th class="num">연인원</th><th class="num">헌금</th></tr></thead>' +
           '<tbody>' + body + '</tbody>' +
           '<tfoot><tr><td>합계</td><td class="num">' + tn + '회</td><td class="num">' + (tn ? (ta / tn).toFixed(1) : 0) + '명</td>' +
           '<td class="num">' + ta + '명</td><td class="num">' + won(to) + '원</td></tr></tfoot></table>' +
