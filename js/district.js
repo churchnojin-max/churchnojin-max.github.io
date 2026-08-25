@@ -45,8 +45,48 @@ console.log('[district.js] v20260822');
     try { return JSON.parse(atob(String(s.access_token).split('.')[1])).sub || ''; } catch (e) { return ''; }
   }
 
+  // ── 토큰 갱신 ────────────────────────────────────────────
+  // access_token 은 한 시간이면 만료된다. 만료된 채로 부르면 'JWT expired' 가
+  // 돌아오므로, refresh_token 으로 한 번 갱신한 뒤 다시 부른다.
+  var _refreshing = null;
+  function refreshToken() {
+    if (_refreshing) return _refreshing;
+    _refreshing = (function () {
+      var key = 'sb-' + ref() + '-auth-token';
+      var store = null, raw = null;
+      try {
+        raw = localStorage.getItem(key);
+        if (raw) store = localStorage;
+        else { raw = sessionStorage.getItem(key); if (raw) store = sessionStorage; }
+      } catch (e) { }
+      if (!raw) return Promise.reject(new Error('no session'));
+      var stored, cur, rt;
+      try {
+        stored = JSON.parse(raw);
+        cur = stored.currentSession || stored;
+        rt = cur && cur.refresh_token;
+      } catch (e) { return Promise.reject(new Error('bad session')); }
+      if (!rt) return Promise.reject(new Error('no refresh token'));
+      return fetch(SB + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST', headers: { apikey: AK, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || !d.access_token) throw new Error('refresh failed');
+        cur.access_token = d.access_token;
+        cur.refresh_token = d.refresh_token || rt;
+        if (d.expires_at) cur.expires_at = d.expires_at;
+        if (d.expires_in) cur.expires_in = d.expires_in;
+        if (d.user) cur.user = d.user;
+        store.setItem(key, JSON.stringify(stored));
+        return d.access_token;
+      });
+    })();
+    _refreshing.then(function () { _refreshing = null; }, function () { _refreshing = null; });
+    return _refreshing;
+  }
+
   // ── Supabase 호출 ────────────────────────────────────────
-  function api(method, path, body, prefer) {
+  function api(method, path, body, prefer, _retried) {
     var s = session();
     var h = { apikey: AK, 'Content-Type': 'application/json' };
     if (s) h.Authorization = 'Bearer ' + s.access_token;
@@ -55,9 +95,18 @@ console.log('[district.js] v20260822');
       method: method, headers: h, body: body ? JSON.stringify(body) : undefined
     }).then(function (r) {
       if (r.status === 204) return null;
-      return r.json().then(function (j) {
-        if (!r.ok) throw new Error((j && (j.message || j.error)) || ('오류 ' + r.status));
-        return j;
+      return r.text().then(function (t) {
+        if (!r.ok) {
+          if (!_retried && (r.status === 401 || /JWT expired|PGRST303|invalid (JWT|token)/i.test(t || ''))) {
+            return refreshToken().then(
+              function () { return api(method, path, body, prefer, true); },
+              function () { throw new Error('로그인이 만료되었습니다. 다시 로그인해 주세요.'); }
+            );
+          }
+          var j = null; try { j = JSON.parse(t); } catch (e) { }
+          throw new Error((j && (j.message || j.error)) || t || ('오류 ' + r.status));
+        }
+        return t ? JSON.parse(t) : null;
       });
     });
   }
@@ -87,7 +136,13 @@ console.log('[district.js] v20260822');
       }
       render();
     }).catch(function (e) {
-      root.innerHTML = msgCard('불러오지 못했습니다', (e && e.message) || '잠시 후 다시 시도해 주세요.');
+      var m = (e && e.message) || '';
+      if (/만료|JWT expired|401/i.test(m)) {
+        root.innerHTML = msgCard('로그인이 만료되었습니다',
+          '오른쪽 위에서 로그아웃한 뒤 다시 로그인해 주세요. 로그인 상태는 한동안 쓰지 않으면 자동으로 풀립니다.');
+        return;
+      }
+      root.innerHTML = msgCard('불러오지 못했습니다', m || '잠시 후 다시 시도해 주세요.');
     });
   }
 
