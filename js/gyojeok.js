@@ -231,7 +231,9 @@ console.log('[gyojeok.js] v20260701di');
     ['canHomepage', '홈페이지', '로고·배너·소개글·사진 설정'],
     ['canWorship', '예배', '이달의 찬양·예배자료실·주보'],
     ['canAffairs', '목회행정', '심방·상담·설교관리'],
-    ['canBoard', '게시판', '공지·앨범·나눔터 관리']
+    ['canBoard', '게시판', '공지·앨범·나눔터 관리'],
+    ['canDistrict', '교구사역', '구역장 사역보고 작성 · 자기 보고 열람 · 말씀 나눔지 받기'],
+    ['canDistrictAll', '교구사역<br>전체', '전 구역 보고 열람 · 말씀 나눔지 올리기(교구장)']
   ];
 
   function renderAccess(panel) {
@@ -245,7 +247,7 @@ console.log('[gyojeok.js] v20260701di');
         '<div style="overflow:auto"><table class="fin-table" style="font-size:.86rem"><thead><tr>' +
         '<th>이름</th><th>이메일</th><th>회원</th>' +
         '<th style="text-align:center;background:#7a3b3b">관리자<br><span style="font-weight:400;font-size:.72rem">(전권)</span></th>' +
-        GJ_PERMS.map(function (p) { return '<th style="text-align:center" title="' + esc(p[2]) + '">' + esc(p[1]) + '</th>'; }).join('') +
+        GJ_PERMS.map(function (p) { return '<th style="text-align:center" title="' + esc(p[2]) + '">' + p[1] + '</th>'; }).join('') +
         '</tr></thead><tbody>' +
         users.map(function (u) {
           return '<tr data-uid="' + esc(u.uid) + '"><td><b>' + esc(u.name || '(이름없음)') + '</b></td><td style="color:var(--ink-soft)">' + esc(u.email) + '</td>' +

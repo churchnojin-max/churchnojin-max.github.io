@@ -264,7 +264,9 @@ window.WPF = (function () {
           p_can_homepage: b(params.canHomepage),
           p_can_worship: b(params.canWorship),
           p_can_affairs: b(params.canAffairs),
-          p_can_board: b(params.canBoard)
+          p_can_board: b(params.canBoard),
+          p_can_district: b(params.canDistrict),
+          p_can_district_all: b(params.canDistrictAll)
         }).then(function (r) {
           if (r && r.ok === false) throw new Error(r.error || '저장하지 못했습니다.');
           return r;
