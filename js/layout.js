@@ -29,6 +29,7 @@
     { href: "world.html", label: "선교와 사역", sub: [
       { href: "world.html#local", label: "지역 연합사역" },
       { href: "world.html#mission", label: "선교" },
+      { href: "district.html", label: "교구사역" },
     ] },
     { href: "finance.html", label: "교회행정", adminOnly: true, sub: [
       { href: "finance.html", label: "재정관리" },
