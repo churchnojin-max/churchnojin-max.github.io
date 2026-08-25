@@ -73,14 +73,14 @@ console.log('[district.js] v20260822');
       root.innerHTML = msgCard('로그인이 필요합니다', '교구사역은 구역장·인도자·교구장만 이용할 수 있습니다. 로그인 후 다시 열어 주세요.');
       return;
     }
-    var uid = uidOf(s);
+    // 권한은 DB 의 판정 함수에게 직접 묻는다.
+    // admins·member_links 표는 RLS 로 막혀 있어 본인 것도 읽히지 않는다.
     Promise.all([
-      api('GET', 'member_links?select=can_district,can_district_all&user_id=eq.' + uid).catch(function () { return []; }),
-      api('GET', 'admins?select=uid&uid=eq.' + uid).catch(function () { return []; })
+      api('POST', 'rpc/can_district', {}),
+      api('POST', 'rpc/can_district_all', {})
     ]).then(function (r) {
-      var m = (r[0] && r[0][0]) || {}, isAdmin = !!(r[1] && r[1].length);
-      perms.all = isAdmin || !!m.can_district_all;
-      perms.district = perms.all || !!m.can_district;
+      perms.district = r[0] === true;
+      perms.all = r[1] === true;
       if (!perms.district) {
         root.innerHTML = msgCard('권한이 없습니다', '교구사역은 구역장·인도자·교구장에게 열려 있습니다. 필요하시면 교회 사무실로 말씀해 주세요.');
         return;
