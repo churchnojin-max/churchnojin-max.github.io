@@ -30,10 +30,12 @@ console.log('[district.js] v20260822');
 
   // ── 로그인 세션 ──────────────────────────────────────────
   function ref() { try { return new URL(SB).hostname.split('.')[0]; } catch (e) { return ''; } }
+  // 홈페이지 전체가 sessionStorage 를 쓴다(layout.js·affairs.js 와 동일).
+  // localStorage 에 옛 로그인이 남아 있을 수 있어 그쪽은 보지 않는다.
   function session() {
     var key = 'sb-' + ref() + '-auth-token';
     var raw = null;
-    try { raw = localStorage.getItem(key) || sessionStorage.getItem(key); } catch (e) { }
+    try { raw = sessionStorage.getItem(key); } catch (e) { }
     if (!raw) return null;
     try {
       var o = JSON.parse(raw), s = (o && o.currentSession) ? o.currentSession : o;
@@ -54,11 +56,7 @@ console.log('[district.js] v20260822');
     _refreshing = (function () {
       var key = 'sb-' + ref() + '-auth-token';
       var store = null, raw = null;
-      try {
-        raw = localStorage.getItem(key);
-        if (raw) store = localStorage;
-        else { raw = sessionStorage.getItem(key); if (raw) store = sessionStorage; }
-      } catch (e) { }
+      try { raw = sessionStorage.getItem(key); if (raw) store = sessionStorage; } catch (e) { }
       if (!raw) return Promise.reject(new Error('no session'));
       var stored, cur, rt;
       try {
