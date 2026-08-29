@@ -188,13 +188,36 @@ if (sermonDeck) {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return flat.find((x) => x.date >= today) || flat[flat.length - 1];
   }
+  // 다가오는 주일들을 달을 넘겨가며 모은다.
+  // 기준: 오늘 이후의 첫 주일부터 '그 다음 달 말'까지.
+  // 예) 8월 마지막 주 토요일이면 → 8월 5주차 + 9월 전체
+  function pickUpcomingWeeks(list) {
+    const flat = [];
+    (list || []).forEach((m) => {
+      if (!Array.isArray(m.weeks)) return;
+      m.weeks.forEach((w) => {
+        const d = parseWeekDate(m.month, w.date);
+        if (d) flat.push({ month: m.month, week: w, date: d });
+      });
+    });
+    if (!flat.length) return [];
+    flat.sort((a, b) => a.date - b.date);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const upcoming = flat.filter((x) => x.date >= today);
+    if (!upcoming.length) return flat.slice(-1);            // 자료가 다 지났으면 마지막 한 주만
+    const first = upcoming[0].date;
+    const limit = new Date(first.getFullYear(), first.getMonth() + 2, 0);   // 다음 달 마지막 날
+    return upcoming.filter((x) => x.date <= limit);
+  }
+
   // 새(weeks) 형식과 구(roles) 형식을 모두 지원하는 통합 선택 함수
   function pickForDisplay(list) {
     if (!list || !list.length) return null;
     const hasWeeks = list.some((m) => Array.isArray(m.weeks) && m.weeks.length);
     if (hasWeeks) {
-      const found = pickCurrentWeek(list);
-      return found ? { monthItem: found.month, highlightIndex: found.weekIndex } : { monthItem: pickCurrent(list), highlightIndex: null };
+      const upcoming = pickUpcomingWeeks(list);
+      if (upcoming.length) return { monthItem: upcoming, highlightIndex: 0 };
+      return { monthItem: pickCurrent(list), highlightIndex: null };
     }
     return { monthItem: pickCurrent(list), highlightIndex: null };
   }
@@ -215,21 +238,26 @@ if (sermonDeck) {
     const box = document.getElementById("committee");
     if (!box) return;
 
-    // 새 형식: weeks 배열이 있으면 새 레이아웃 사용 (normMonth는 구형식 전용이라 여기서 먼저 검사)
-    if (monthItem && Array.isArray(monthItem.weeks) && monthItem.weeks.length) {
-      const c = monthItem;
-      const monthLabel = c.month ? Number(c.month.slice(5)) + "월" : "";
+    // 새 형식: 다가오는 주일들(달을 넘겨가며)을 차례로 보여준다
+    if (Array.isArray(monthItem) && monthItem.length) {
+      const items = monthItem;
+      const mLabel = (ym) => (ym ? Number(String(ym).slice(5)) + "월" : "");
+      const months = [];
+      items.forEach((x) => { if (months.indexOf(x.month) < 0) months.push(x.month); });
+      const range = months.length > 1
+        ? mLabel(months[0]) + " " + items[0].week.week + " ~ " + mLabel(months[months.length - 1])
+        : mLabel(months[0]);
       box.innerHTML = `
         <div class="committee-head">
           <span class="w-en light">SERVICE TEAM</span>
-          <h4>${monthLabel} 봉사위원</h4>
+          <h4>${range} 봉사위원</h4>
         </div>
         <div class="committee-weeks">
-          ${c.weeks.map((w, i) => `
-            <div class="committee-week${i === highlightIndex ? " is-now" : ""}">
-              <div class="week-label">${w.week}(${w.date})</div>
+          ${items.map((x, i) => `
+            <div class="committee-week${i === 0 ? " is-now" : ""}">
+              <div class="week-label">${mLabel(x.month)} ${x.week.week}(${x.week.date})</div>
               <div class="week-roles">
-                ${w.roles.map((r) => `
+                ${(x.week.roles || []).map((r) => `
                   <div class="week-role">
                     <div class="role-title">${escH(r.role)}</div>
                     <div class="role-name">${escH(r.name || "")}</div>
