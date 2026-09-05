@@ -757,6 +757,14 @@ console.log('[finance.js] v20260701di');
 
   /* ── 엑셀 자동입력 (헌금자 리스트/재정보고서 드래그&드롭 → 자동분류 → 미리보기 → 저장) ── */
   function renderBulk(panel) {
+    // 헌금자 칸에 두 사람 이상이 적혔을 때 교적을 찾을 기준이 되는 '맨 앞 이름'.
+    //   "홍길동 김영희" · "홍길동·김영희" · "홍길동, 김영희" · "홍길동 외 1명" → "홍길동"
+    //   "홍길동 집사" 처럼 직분이 붙은 경우도 "홍길동" 으로 찾는다.
+    function firstName(s) {
+      var n = String(s == null ? '' : s).replace(/\(.*\)$/, '').trim();
+      n = n.split(/[·・,、/／&＆]|\s+외\s*|\s+/)[0] || '';
+      return n.trim();
+    }
     function normName(s) { return String(s == null ? '' : s).replace(/\s+/g, ''); }
     function isAmount(s) { return /^[\d,]+$/.test(String(s).trim()) && parseNum(s) > 0; }
     function offeringAccounts() {
@@ -830,15 +838,20 @@ console.log('[finance.js] v20260701di');
           var inline = c.match(/^(.+)\(([\d,]+)\)$/); // "이름(금액)" 인라인 형식
           if (inline && isAmount(inline[2])) {
             var nm = inline[1].trim();
-            items.push({ cat: cat, payer: nm, base: nm, amount: parseNum(inline[2]) });
+            items.push({ cat: cat, payer: nm, base: firstName(nm), amount: parseNum(inline[2]) });
             i += 1;
             continue;
           }
-          var name = cells[i], amt = cells[i + 1];
-          if (!name || isAmount(name)) { i++; continue; }
-          if (!amt || !isAmount(amt)) { i++; continue; }
-          items.push({ cat: cat, payer: name, base: name.replace(/\(.*\)$/, '').trim(), amount: parseNum(amt) });
-          i += 2;
+          if (isAmount(cells[i])) { i++; continue; }
+          // 금액이 나올 때까지 이어지는 낱말을 한 사람의 이름으로 본다.
+          // "홍길동 김영희 50000" 처럼 두 사람이 적힌 경우, 예전에는 뒤 이름만
+          // 남고 앞 이름이 버려졌다. 이제 전체를 헌금자로 적고 맨 앞 이름으로 교적을 찾는다.
+          var parts = [];
+          while (i < cells.length && !isAmount(cells[i])) { parts.push(cells[i]); i++; }
+          if (i >= cells.length || !isAmount(cells[i])) break;   // 금액이 없으면 그 줄은 버린다
+          var payer = parts.join(' ');
+          items.push({ cat: cat, payer: payer, base: firstName(payer), amount: parseNum(cells[i]) });
+          i += 1;
         }
       });
       items.forEach(function (it) {
@@ -1139,17 +1152,54 @@ console.log('[finance.js] v20260701di');
       order.sort();
       var ti = 0, te = 0;
       var monthTbl = order.map(function (m) { ti += months[m].inc; te += months[m].exp; return '<tr><td>' + esc(m) + '</td><td class="num">' + won(months[m].inc) + '</td><td class="num">' + won(months[m].exp) + '</td><td class="num"><b>' + won(months[m].inc - months[m].exp) + '</b></td></tr>'; }).join('');
-      var budIn = 0, budExp = 0;
-      M.budget.forEach(function (b) { var code = String(b['계정코드'] || ''); var amt = Number(b['예산']) || 0; if (code.slice(-4) === '0000') return; if (/^1/.test(code)) budIn += amt; else if (/^2/.test(code)) budExp += amt; });
+
+      // 계정별 수입·지출 집계 (회계연도 누계)
+      var accIn = {}, accEx = {};
+      vouchersFY().forEach(function (v) { var amt = Number(v['금액']) || 0, a = v['계정'] || '?'; if (String(v['구분']) === '수입') { if (!accIn[a]) accIn[a] = { c: 0, s: 0 }; accIn[a].c++; accIn[a].s += amt; } else { if (!accEx[a]) accEx[a] = { c: 0, s: 0 }; accEx[a].c++; accEx[a].s += amt; } });
+      function tbl(map, tot) { var rows = Object.keys(map).map(function (k) { return { a: k, c: map[k].c, s: map[k].s }; }).sort(function (a, b) { return b.s - a.s; }); if (!rows.length) return '<p class="help">내역 없음</p>'; return '<table class="fin-table"><thead><tr><th>계정</th><th class="num">건수</th><th class="num">금액</th><th class="num">비율</th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td>' + esc(r.a) + '</td><td class="num">' + r.c + '</td><td class="num"><b>' + won(r.s) + '</b></td><td class="num">' + (tot ? (r.s / tot * 100).toFixed(1) + '%' : '-') + '</td></tr>'; }).join('') + '</tbody><tfoot><tr style="font-weight:700;background:#f5f8fc"><td>합계</td><td class="num">' + rows.reduce(function (s, r) { return s + r.c; }, 0) + '</td><td class="num">' + won(tot) + '</td><td class="num">100%</td></tr></tfoot></table>'; }
+
+      // 계정(항/목)별 예산 대비 실적
+      function isGrp(c) { return String(c || '').slice(-4) === '0000'; }
+      function parOf(c) { return String(c || '').slice(0, 3) + '0000'; }
+      function budgetTable(gubun, accMap) {
+        var all = M.budget.filter(function (b) { return String(b['구분']) === gubun; });
+        var groups = all.filter(function (b) { return isGrp(b['계정코드']); }).sort(function (a, b) { return String(a['계정코드']).localeCompare(String(b['계정코드'])); });
+        var byParent = {}; all.filter(function (b) { return !isGrp(b['계정코드']); }).forEach(function (b) { var p = parOf(b['계정코드']); (byParent[p] = byParent[p] || []).push(b); });
+        var seen = {}, body = '', gTotBud = 0, gTotAct = 0;
+        groups.forEach(function (gr) {
+          var kids = (byParent[gr['계정코드']] || []).sort(function (a, b) { return String(a['계정코드']).localeCompare(String(b['계정코드'])); });
+          var subBud = 0, subAct = 0, kidRows = '';
+          kids.forEach(function (k) {
+            var nm = k['계정이름']; seen[nm] = 1;
+            var bud = Number(k['예산']) || 0; var act = (accMap[nm] && accMap[nm].s) || 0;
+            subBud += bud; subAct += act;
+            if (!bud && !act) return;
+            kidRows += '<tr><td style="padding-left:20px;color:#48576b">' + esc(nm) + '</td><td class="num">' + won(bud) + '</td><td class="num">' + won(act) + '</td><td class="num">' + (bud ? (act / bud * 100).toFixed(1) + '%' : '-') + '</td></tr>';
+          });
+          // 하위 목이 하나도 없는 항은 항 이름 자체가 계정으로 쓰인다 (전표 '계정'이 항 이름과 일치)
+          if (!kids.length) { var gnm = gr['계정이름']; seen[gnm] = 1; subBud = Number(gr['예산']) || 0; subAct = (accMap[gnm] && accMap[gnm].s) || 0; }
+          gTotBud += subBud; gTotAct += subAct;
+          if (!subBud && !subAct) return;
+          body += '<tr style="font-weight:700;background:#f5f8fc"><td>' + esc(gr['계정이름']) + '</td><td class="num">' + won(subBud) + '</td><td class="num">' + won(subAct) + '</td><td class="num">' + (subBud ? (subAct / subBud * 100).toFixed(1) + '%' : '-') + '</td></tr>' + kidRows;
+        });
+        var otherAct = 0; Object.keys(accMap).forEach(function (nm) { if (!seen[nm]) otherAct += accMap[nm].s; });
+        if (otherAct) { gTotAct += otherAct; body += '<tr><td style="padding-left:20px;color:#9aa5b1">기타(미등록 계정)</td><td class="num">-</td><td class="num">' + won(otherAct) + '</td><td class="num">-</td></tr>'; }
+        if (!body) body = '<tr><td colspan="4" style="color:#9aa5b1;padding:14px;text-align:center">내역 없음</td></tr>';
+        return '<table class="fin-table"><thead><tr><th>' + gubun + ' 계정</th><th class="num">연간 예산</th><th class="num">실적 누계</th><th class="num">집행률</th></tr></thead>' +
+          '<tbody><tr style="font-weight:700;color:' + (gubun === '수입' ? '#1e874b' : '#c0392b') + '"><td>' + gubun + ' 합계</td><td class="num">' + won(gTotBud) + '</td><td class="num">' + won(gTotAct) + '</td><td class="num">' + (gTotBud ? (gTotAct / gTotBud * 100).toFixed(1) + '%' : '-') + '</td></tr>' + body + '</tbody></table>';
+      }
+
       var carry = carryover();
       withPrint(panel, '결산보고서',
         '<div class="fin-card" style="display:flex;gap:22px;flex-wrap:wrap;align-items:center"><div>전기 이월금 <b>' + won(carry) + '</b></div><div>당기 수입 <b style="color:#1e874b">' + won(ti) + '</b></div><div>당기 지출 <b style="color:#c0392b">' + won(te) + '</b></div><div style="margin-left:auto;font-size:1.05rem">기말 잔액 <b style="color:var(--accent,#223350)">' + won(carry + ti - te) + '</b></div></div>' +
         '<div class="fin-card"><b>월별 수입·지출 현황</b><div style="overflow:auto;margin-top:8px"><table class="fin-table"><thead><tr><th>월</th><th class="num">수입</th><th class="num">지출</th><th class="num">차액</th></tr></thead><tbody>' + monthTbl +
         '</tbody><tfoot><tr style="font-weight:700;background:#f5f8fc"><td>합계</td><td class="num">' + won(ti) + '</td><td class="num">' + won(te) + '</td><td class="num">' + won(ti - te) + '</td></tr></tfoot></table></div></div>' +
-        (M.budget.length ? '<div class="fin-card"><b>예산 대비 실적</b><div style="overflow:auto;margin-top:8px"><table class="fin-table"><thead><tr><th>구분</th><th class="num">연간 예산</th><th class="num">실적 누계</th><th class="num">집행률</th></tr></thead><tbody>' +
-          '<tr><td>수입</td><td class="num">' + won(budIn) + '</td><td class="num">' + won(ti) + '</td><td class="num">' + (budIn ? (ti / budIn * 100).toFixed(1) + '%' : '-') + '</td></tr>' +
-          '<tr><td>지출</td><td class="num">' + won(budExp) + '</td><td class="num">' + won(te) + '</td><td class="num">' + (budExp ? (te / budExp * 100).toFixed(1) + '%' : '-') + '</td></tr>' +
-          '</tbody></table></div><p class="help">예산=연간 기준, 실적=입력된 ' + order.length + '개월 누계.</p></div>' : ''));
+        '<div class="fin-card"><b>수입 계정별 상세내역</b><div style="overflow:auto;margin-top:8px">' + tbl(accIn, ti) + '</div></div>' +
+        '<div class="fin-card"><b>지출 계정별 상세내역</b><div style="overflow:auto;margin-top:8px">' + tbl(accEx, te) + '</div></div>' +
+        (M.budget.length ? '<div class="fin-card"><b>예산 대비 실적(계정별)</b>' +
+          '<div style="overflow:auto;margin-top:8px">' + budgetTable('수입', accIn) + '</div>' +
+          '<div style="overflow:auto;margin-top:16px">' + budgetTable('지출', accEx) + '</div>' +
+          '<p class="help">예산=연간 기준, 실적=입력된 ' + order.length + '개월 누계.</p></div>' : ''));
     }).catch(function (e) { panel.innerHTML = msgCard('조회 실패', e.message); });
   }
 
@@ -1596,7 +1646,7 @@ console.log('[finance.js] v20260701di');
         });
         downloadCSV('예산_' + M.fy + '_' + today() + '.csv', [['예산서 · ' + M.fy + '년도'], [], ['구분', '계정코드', '계정이름', '항/목', '금년예산', '전년예산', '전년결산']].concat(rows));
       };
-      if (editing) { var hint = document.createElement('p'); hint.className = 'help'; hint.style.marginBottom = '12px'; hint.textContent = '편집 모드: 항(분류)·목(계정)을 추가·이름수정·삭제할 수 있습니다. 금년예산 칸은 언제든 클릭해 바로 저장됩니다.'; panel.appendChild(hint); }
+      if (editing) { var hint = document.createElement('p'); hint.className = 'help'; hint.style.marginBottom = '12px'; hint.textContent = '편집 모드: 항(분류)·목(계정)을 추가·이름수정·삭제할 수 있습니다. 금년예산 칸은 언제든 클릭해 바로 저장됩니다. ※ 하위 목(하위 계정)을 하나도 만들지 않은 항은 그 항목 자체가 계정으로 사용됩니다 — 전표 입력 시 이 항 이름으로 바로 기록하세요.'; panel.appendChild(hint); }
 
       ['수입', '지출'].forEach(function (g) {
         var prefix = g === '수입' ? '1' : '2';
