@@ -468,6 +468,25 @@ console.log('[gyojeok.js] v20260701di');
     } catch (e) { return null; }
   }
   function todayStr() { var d = new Date(); function p(n) { return ('0' + n).slice(-2); } return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  function sbUserId() {
+    try {
+      var ref = new URL(window.SUPABASE_URL).hostname.split('.')[0];
+      var s = JSON.parse(sessionStorage.getItem('sb-' + ref + '-auth-token')); s = s.currentSession || s;
+      return s && s.user && s.user.id;
+    } catch (e) { return null; }
+  }
+  // 전권 관리자(admins 테이블) 여부. 교적 권한만 받은 사람과 구분해야 하는 기능(증명서 발급)에 쓴다.
+  var FULL_ADMIN = null;
+  function isFullAdmin() {
+    if (FULL_ADMIN) return FULL_ADMIN;
+    var uid = sbUserId(), tok = sbToken();
+    if (!uid || !tok || !window.SUPABASE_URL) return Promise.resolve(false);
+    FULL_ADMIN = fetch(window.SUPABASE_URL + '/rest/v1/admins?uid=eq.' + encodeURIComponent(uid) + '&select=uid', {
+      headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + tok }
+    }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) { return Array.isArray(rows) && rows.length > 0; })
+      .catch(function () { FULL_ADMIN = null; return false; });
+    return FULL_ADMIN;
+  }
   var EDU_CACHE = null;
   function loadOngoingEdu() {
     if (EDU_CACHE) return Promise.resolve(EDU_CACHE);
@@ -522,8 +541,10 @@ console.log('[gyojeok.js] v20260701di');
         '</div></div>' + (cur['특이사항'] ? '<div style="margin-top:6px;padding:10px 12px;background:#fbfaf6;border:1px solid #f0ece0;border-radius:8px"><div style="color:#7b8794;font-size:.8rem;margin-bottom:3px">특이사항</div><div style="font-size:.9rem;white-space:pre-wrap">' + esc(cur['특이사항']) + '</div></div>' : '') +
         (groupsOf(cur).length ? '<div style="margin-top:12px"><div style="color:#7b8794;font-size:.85rem;margin-bottom:5px">소속 그룹</div>' + groupsOf(cur).map(function (g) { return '<span class="fin-pill" style="background:#e8f0fb;color:#2b5797;margin:0 6px 6px 0;display:inline-block">' + esc(g) + '</span>'; }).join('') + '</div>' : '') +
         '<div id="gd_edu" style="margin-top:12px"></div>' +
-        '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--accent,#223350)">가족 관계</b><button class="btn btn-line" id="gd_family" style="padding:3px 12px;font-size:.8rem">👪 가족 구성/수정</button></div><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.86rem"><thead><tr><th>이름</th><th>관계</th><th>생년월일</th><th>직책</th></tr></thead><tbody>' + famRows + '</tbody></table></div></div>';
+        '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--accent,#223350)">가족 관계</b><span style="display:flex;gap:6px"><button class="btn btn-line" id="gd_cert" hidden style="padding:3px 12px;font-size:.8rem">📄 교인증명서 만들기</button><button class="btn btn-line" id="gd_family" style="padding:3px 12px;font-size:.8rem">👪 가족 구성/수정</button></span></div><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.86rem"><thead><tr><th>이름</th><th>관계</th><th>생년월일</th><th>직책</th></tr></thead><tbody>' + famRows + '</tbody></table></div></div>';
       box.querySelector('#gd_close').onclick = close;
+      // 증명서는 교회 이름과 담임목사 이름으로 나가는 공식 문서라 전권 관리자에게만 연다
+      isFullAdmin().then(function (ok) { var b = box.querySelector('#gd_cert'); if (ok && b) { b.hidden = false; b.onclick = function () { certMode(cur); }; } });
       box.querySelector('#gd_edit').onclick = function () { editMode(cur); };
       box.querySelector('#gd_delete').onclick = function () {
         var head = cur['세대주'] || cur['이름'];
@@ -728,6 +749,61 @@ console.log('[gyojeok.js] v20260701di');
             return doLink(newM, rel);
           });
         }).then(function () { rerun(cur['교적ID']); }).catch(function (e) { setMsg('오류: ' + e.message, false); });
+      };
+    }
+
+    // ── 교인증명서 만들기: 교적 값을 미리 채워 두고 관리자가 확인·수정한 뒤 인쇄창을 연다 ──
+    function certMode(cur) {
+      var head = cur['세대주'] || cur['이름'];
+      var fam = ALL.filter(function (x) { return (x['세대주'] || x['이름']) === head; });
+      var headRow = fam.filter(function (x) { return x['이름'] === head; })[0] || null;
+      var isHead = cur['이름'] === head;
+      var isSpouse = !isHead && (cur['관계'] === '배우자' || (cur['배우자'] && cur['배우자'] === head));
+      var kids = fam.filter(function (x) { return CERT_CHILD_RELS.indexOf(String(x['관계'] || '').trim()) >= 0; })
+        .sort(function (a, b) { return birthOf(a).localeCompare(birthOf(b)); });
+      var year = new Date().getFullYear();
+      function fld(label, id, val, ph) { return '<div class="af-field"><label>' + esc(label) + '</label><input type="text" id="' + id + '" value="' + esc(val) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></div>'; }
+
+      box.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#223350)">📄 교인증명서 만들기</h3><button class="btn btn-line" id="ct_back" style="padding:4px 12px">← 돌아가기</button></div>' +
+        '<p style="color:#7b8794;font-size:.85rem;margin:0 0 12px">교적에 있는 값을 미리 채워 두었습니다. 확인·수정한 뒤 <b>인쇄 미리보기</b>를 누르면 새 창이 뜨고, 거기서 인쇄하거나 PDF로 저장할 수 있습니다. 빈 칸은 빈 채로 나오니 손으로 적으셔도 됩니다.</p>' +
+        '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">' +
+        fld('증서 번호', 'ct_no', year + '-', '예: ' + year + '-3') +
+        fld('성명', 'ct_name', cur['이름']) +
+        fld('생년월일', 'ct_birth', certDate(birthOf(cur)) + (cur['음력생일'] ? ' (음)' : '')) +
+        fld('등록일', 'ct_reg', certDate(cur['등록일']), '예: 2020년 3월 1일') +
+        '<div class="af-field" style="grid-column:1/-1"><label>주소</label><input type="text" id="ct_addr" value="' + esc(cur['주소'] || (headRow && headRow['주소']) || '') + '"></div>' +
+        '</div>' +
+        '<div style="margin-top:12px;border-top:1px solid #eef1f5;padding-top:12px"><div style="font-size:.85rem;color:var(--accent,#223350);font-weight:700;margin-bottom:8px">가족 사항 <span style="font-weight:400;color:#9aa5b1;font-size:.78rem">· 증명서의 ‘가족관계’ 줄에 들어갑니다. 넣지 않으려면 비우세요.</span></div>' +
+        '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">' +
+        fld('가족 대표(세대주)', 'ct_head', head) +
+        fld('본인과의 관계', 'ct_headrel', isHead ? '본인' : (cur['관계'] || ''), '예: 배우자, 장남') +
+        '</div>' +
+        '<div style="margin-top:10px"><label style="display:block;font-size:.8rem;color:#7b8794;margin-bottom:6px">자녀 (교적의 같은 세대에서 찾음)</label>' +
+        (kids.length ? '<div style="display:flex;flex-wrap:wrap;gap:8px 16px">' + kids.map(function (k) {
+          var me = k['매칭키'] === cur['매칭키'];
+          return '<label class="sw"><input type="checkbox" class="ct-kid" value="' + esc(k['이름']) + '"' + ((isHead || isSpouse) && !me ? ' checked' : '') + '> ' + esc(k['이름']) + ' <span style="color:#9aa5b1;font-size:.78rem">' + esc(k['관계'] || '') + (me ? ' · 본인' : '') + '</span></label>';
+        }).join('') + '</div>' : '<p style="color:#9aa5b1;font-size:.82rem;margin:0">같은 세대에 자녀로 등록된 사람이 없습니다.</p>') +
+        '<input type="text" id="ct_kid_extra" placeholder="자녀 직접 추가 (쉼표로 구분)" style="margin-top:8px;width:100%;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"></div></div>' +
+        '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px;border-top:1px solid #eef1f5;padding-top:12px">' +
+        fld('발급일', 'ct_issue', certDate(todayStr())) +
+        '<div class="af-field"><label>발급 교회 · 담임목사</label><input type="text" value="' + esc(CERT_DENOM + ' ' + CHURCH_NAME() + ' · ' + PASTOR_NAME()) + '" disabled style="background:#f5f7fa;color:#7b8794"></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;align-items:center;margin-top:14px"><button class="btn btn-solid" id="ct_print">🖨 인쇄 미리보기 열기</button><span class="fin-msg" id="ct_msg"></span></div>';
+
+      box.querySelector('#ct_back').onclick = function () { viewMode(cur); };
+      box.querySelector('#ct_print').onclick = function () {
+        function v(id) { return box.querySelector('#' + id).value.trim(); }
+        var no = v('ct_no'); if (no && !/호$/.test(no) && !/-\s*$/.test(no)) no += '호';
+        if (/-\s*$/.test(no)) no = '';   // '2026-' 처럼 번호를 안 적었으면 빈 칸으로
+        var kidNames = Array.prototype.map.call(box.querySelectorAll('.ct-kid:checked'), function (c) { return c.value; });
+        v('ct_kid_extra').split(/[,·]/).forEach(function (s) { s = s.trim(); if (s && kidNames.indexOf(s) < 0) kidNames.push(s); });
+        var famParts = [];
+        if (v('ct_head')) famParts.push('세대주 ' + v('ct_head') + (v('ct_headrel') ? ' (' + v('ct_headrel') + ')' : ''));
+        if (kidNames.length) famParts.push('자녀 ' + kidNames.join(', '));
+        if (!v('ct_name')) { var mg = box.querySelector('#ct_msg'); mg.style.color = '#c0392b'; mg.textContent = '성명은 비울 수 없습니다.'; return; }
+        gjCertDoc({ no: no, name: v('ct_name'), birth: v('ct_birth'), addr: v('ct_addr'), family: famParts.join('  ·  '), reg: v('ct_reg'), issue: v('ct_issue') });
+        var msg = box.querySelector('#ct_msg'); msg.style.color = 'green'; msg.textContent = '✓ 새 창을 열었습니다 — 안 보이면 팝업 차단을 확인해 주세요';
       };
     }
 
@@ -1299,6 +1375,64 @@ console.log('[gyojeok.js] v20260701di');
     );
     w.document.close();
     setTimeout(function () { try { w.focus(); w.print(); } catch (e) { } }, 400);
+  }
+
+  /* ── 교인증명서 ──
+   * 바탕화면 '교인증명서_양식(노진교회).hwpx' 와 같은 구성:
+   * 제목 → 테두리 없는 표(증 제·성 명·생년월일·주 소·가족관계·등 록 일) → 증명 문구 → 발급일 → 교회명(직인)·담임목사(인) */
+  var CERT_DENOM = '예장 합동';
+  var CERT_CHILD_RELS = ['장남', '차남', '삼남', '아들', '장녀', '차녀', '삼녀', '딸', '자녀'];
+  function CHURCH_NAME() { return (window.CHURCH && CHURCH.name) || '노진교회'; }
+  function PASTOR_NAME() { var p = window.CHURCH && CHURCH.pastors && CHURCH.pastors[0]; return p ? (p.role + ' ' + p.name) : '담임목사 손병민'; }
+  // 'YYYY-MM-DD' → 'YYYY년 M월 D일'. 이미 한글 날짜이거나 형식이 다르면 그대로 둔다
+  function certDate(s) {
+    s = String(s || '').trim(); if (!s) return '';
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? m[1] + '년 ' + Number(m[2]) + '월 ' + Number(m[3]) + '일' : s;
+  }
+  function gjCertDoc(d) {
+    var w = window.open('', '_blank', 'width=900,height=1000');
+    if (!w) { alert('팝업이 차단되었습니다. 브라우저에서 팝업을 허용한 뒤 다시 시도해 주세요.'); return; }
+    var css = [
+      '@page{size:A4 portrait;margin:25mm 22mm}',
+      '*{box-sizing:border-box}',
+      'html{color-scheme:light;background:#fff}',
+      'body{font-family:"Noto Serif KR","Batang","바탕","Malgun Gothic",serif;color:#111;background:#fff;margin:0;padding:0;line-height:1.7}',
+      '.sheet{max-width:166mm;margin:0 auto}',
+      'h1{font-size:26pt;font-weight:700;letter-spacing:.3em;text-align:center;margin:18mm 0 16mm;padding-left:.3em}',
+      'table.info{border-collapse:collapse;width:100%;font-size:14pt;margin:0 0 14mm}',
+      'table.info td{padding:3.2mm 0;vertical-align:top}',
+      'table.info td.lb{width:30mm;text-align:justify;text-align-last:justify;padding-right:4mm;white-space:nowrap}',
+      'table.info td.cl{width:8mm;text-align:center}',
+      'table.info td.vl{word-break:keep-all}',
+      '.stmt{text-align:center;font-size:15pt;margin:0 0 16mm;letter-spacing:.05em}',
+      '.issue{text-align:center;font-size:14pt;font-weight:700;margin:0 0 20mm}',
+      'table.sign{border-collapse:collapse;margin:0 0 0 auto;font-size:16pt;font-weight:700}',
+      'table.sign td{padding:3mm 0}',
+      'table.sign td.seal{padding-left:8mm;color:#666;font-weight:400;font-size:12pt;white-space:nowrap}',
+      '@media print{.noprint{display:none}}'
+    ].join('\n');
+    function row(label, val) { return '<tr><td class="lb">' + esc(label) + '</td><td class="cl">:</td><td class="vl">' + esc(val || '') + '</td></tr>'; }
+    w.document.write(
+      '<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>교인증명서 — ' + esc(d.name) + '</title>' +
+      '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">' +
+      '<style>' + css + '</style></head><body>' +
+      '<div class="noprint" style="text-align:right;margin:8px 0"><button onclick="window.print()" style="padding:8px 18px;font:inherit;font-weight:700;cursor:pointer;background:#1f3a5f;color:#fff;border:0;border-radius:6px">🖨 인쇄 / PDF 저장</button></div>' +
+      '<div class="sheet">' +
+      '<h1>교인증명서</h1>' +
+      '<table class="info">' +
+      row('증 제', d.no) + row('성 명', d.name) + row('생년월일', d.birth) + row('주 소', d.addr) + row('가족관계', d.family) + row('등 록 일', d.reg) +
+      '</table>' +
+      '<p class="stmt">위의 사람은 본 교회 교인임을 증명합니다.</p>' +
+      '<p class="issue">' + esc(d.issue) + '</p>' +
+      '<table class="sign">' +
+      '<tr><td>' + esc(CERT_DENOM) + '&nbsp;&nbsp;' + esc(CHURCH_NAME()) + '</td><td class="seal">(직인)</td></tr>' +
+      '<tr><td>' + esc(PASTOR_NAME()) + '</td><td class="seal">(인)</td></tr>' +
+      '</table>' +
+      '</div></body></html>'
+    );
+    w.document.close();
+    setTimeout(function () { try { w.focus(); } catch (e) { } }, 300);
   }
 
   function renderPrint(panel) {
