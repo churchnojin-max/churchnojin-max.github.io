@@ -22,8 +22,8 @@
       { href: "story.html#album", label: "우리들 소식" },
       { href: "story.html#notice", label: "공지사항" },
       { href: "story.html#qna", label: "삶의 질문" },
-      { href: "story.html#groups", label: "다음 세대" },
-      { href: "story.html#communities", label: "그리스도의 몸 된 지체들" },
+      { href: "story.html#groups", label: "전도회" },
+      { href: "story.html#communities", label: "다음 세대" },
       { href: "library.html#edu", label: "교육 자료실" },
     ] },
     { href: "world.html", label: "선교와 사역", sub: [
