@@ -5804,16 +5804,32 @@ console.log('[affairs.js] v20260712memo2');
       function htmlDec(s) { return String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#(\d+);/g, function (_, n) { return String.fromCharCode(+n); }); }
       function parseHwpxSummaryNews(lines) {
         var norm = function (s) { return s.replace(/\s+/g, ''); };
-        var iSum = -1, iNews = -1, iEnd = -1;
+        // '교회소식' 은 예배 순서표의 한 줄로도 나오기 때문에, 처음 만나는 것을
+        // 잡으면 순서표를 광고로 읽어 버린다. 진짜 광고 표제는 글상자에 있고
+        // 그 뒤에 '섬기는 분' 이 이어지므로, 섬기는 분 바로 앞의 것을 고른다.
+        // (예전에는 '말씀 요약' 을 먼저 만나야만 광고를 읽어서, 말씀 요약이
+        //  빠진 주에는 광고가 통째로 비어 버렸다.)
+        var sums = [], news = [], ends = [];
         for (var i = 0; i < lines.length; i++) {
           var t = norm(lines[i]);
-          if (iSum < 0 && t === '말씀요약') { iSum = i; continue; }
-          if (iSum >= 0 && iNews < 0 && t === '교회소식') { iNews = i; continue; }
-          if (iNews >= 0 && iEnd < 0 && t === '섬기는분') { iEnd = i; break; }
+          if (t === '말씀요약') sums.push(i);
+          else if (t === '교회소식') news.push(i);
+          else if (t === '섬기는분') ends.push(i);
         }
+        var iEnd = ends.length ? ends[0] : -1;
+        var nCand = (iEnd >= 0) ? news.filter(function (x) { return x < iEnd; }) : news;
+        var iNews = nCand.length ? nCand[nCand.length - 1] : -1;      // 섬기는 분 바로 앞의 것
+        var sCand = sums.filter(function (x) { return iNews < 0 || x < iNews; });
+        var iSum = sCand.length ? sCand[0] : -1;
+
         var out = {};
-        if (iSum >= 0 && iNews > iSum) out.summary = lines.slice(iSum + 1, iNews).join('\n').trim();
-        if (iNews >= 0) out.notices = lines.slice(iNews + 1, iEnd >= 0 ? iEnd : lines.length).join('\n').trim();
+        if (iSum >= 0) {
+          var sEnd = (iNews >= 0) ? iNews : (iEnd >= 0 ? iEnd : lines.length);
+          out.summary = lines.slice(iSum + 1, sEnd).join('\n').trim();
+        }
+        if (iNews >= 0) {
+          out.notices = lines.slice(iNews + 1, iEnd >= 0 ? iEnd : lines.length).join('\n').trim();
+        }
         return out;
       }
       function autoFillFromHwpx(file) {
