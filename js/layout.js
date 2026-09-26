@@ -83,7 +83,7 @@
       <div class="nav-inner">
         <div class="nav-left">
           <a href="index.html" class="logo">
-            <img src="images/icon-192.png?v=20260926logo" alt="" class="logo-mark" />
+            <img src="images/icon-192.png?v=20260926icon2" alt="" class="logo-mark" />
             <span class="logo-txt"><span class="logo-kr">${CH_NAME}</span>${CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}</span>
           </a>
           <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
@@ -152,7 +152,7 @@
       </div>
     </footer>
     <div class="install-bar" id="installBar" hidden>
-      <img src="images/icon-192.png?v=20260926logo" alt="${CH_NAME}" class="install-icon" />
+      <img src="images/icon-192.png?v=20260926icon2" alt="${CH_NAME}" class="install-icon" />
       <div class="install-text">
         <strong>${CH_NAME} 앱 설치</strong>
         <span id="installMsg">홈 화면에 추가하여 앱처럼 사용하세요.</span>
@@ -167,7 +167,7 @@
       <div class="modal-box modal-box-auth" role="dialog" aria-modal="true" aria-label="로그인">
         <button class="modal-close" data-close aria-label="닫기">&times;</button>
         <div class="auth-head">
-          <img src="images/icon-192.png?v=20260926logo" alt="" class="auth-logo" />
+          <img src="images/icon-192.png?v=20260926icon2" alt="" class="auth-logo" />
           <h3 id="authTitle">로그인</h3>
           <p id="authSubtitle">${CH_NAME} 나눔터에 오신 것을 환영합니다.</p>
         </div>

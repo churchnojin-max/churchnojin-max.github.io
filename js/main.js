@@ -1243,7 +1243,7 @@ if (modal) {
         '<div class="modal-box modal-box-ios" role="dialog" aria-modal="true" aria-label="앱 설치 방법">' +
           '<button class="modal-close" data-iclose aria-label="닫기">&times;</button>' +
           '<div class="ios-guide">' +
-            '<img src="images/icon-192.png?v=20260926logo" class="ios-guide-icon" alt="" />' +
+            '<img src="images/icon-192.png?v=20260926icon2" class="ios-guide-icon" alt="" />' +
             '<h3>홈 화면에 앱 추가하기</h3>' +
             '<p class="ios-guide-sub">아이폰·아이패드는 아래 방법으로 설치합니다.</p>' +
             '<ol class="ios-steps">' + safariSteps + '</ol>' +
