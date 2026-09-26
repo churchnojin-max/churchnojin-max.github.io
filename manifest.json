@@ -8,11 +8,11 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#032257",
+  "theme_color": "#1A3A2F",
   "icons": [
-    { "src": "images/icon-192.png?v=20260625e", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "images/icon-512.png?v=20260625e", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "images/icon-maskable-512.png?v=20260625e", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "images/icon-192.png?v=20260926logo", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "images/icon-512.png?v=20260926logo", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "images/icon-maskable-512.png?v=20260926logo", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "share_target": {
     "action": "./share.html",

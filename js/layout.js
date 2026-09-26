@@ -82,7 +82,7 @@
       <div class="nav-inner">
         <div class="nav-left">
           <a href="index.html" class="logo">
-            <img src="images/icon-192.png?v=20260625e" alt="" class="logo-mark" />
+            <img src="images/icon-192.png?v=20260926logo" alt="" class="logo-mark" />
             <span class="logo-kr">${CH_NAME}</span>
           </a>
           <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
@@ -151,7 +151,7 @@
       </div>
     </footer>
     <div class="install-bar" id="installBar" hidden>
-      <img src="images/icon-192.png?v=20260625e" alt="${CH_NAME}" class="install-icon" />
+      <img src="images/icon-192.png?v=20260926logo" alt="${CH_NAME}" class="install-icon" />
       <div class="install-text">
         <strong>${CH_NAME} 앱 설치</strong>
         <span id="installMsg">홈 화면에 추가하여 앱처럼 사용하세요.</span>
@@ -166,7 +166,7 @@
       <div class="modal-box modal-box-auth" role="dialog" aria-modal="true" aria-label="로그인">
         <button class="modal-close" data-close aria-label="닫기">&times;</button>
         <div class="auth-head">
-          <img src="images/icon-192.png?v=20260625e" alt="" class="auth-logo" />
+          <img src="images/icon-192.png?v=20260926logo" alt="" class="auth-logo" />
           <h3 id="authTitle">로그인</h3>
           <p id="authSubtitle">${CH_NAME} 나눔터에 오신 것을 환영합니다.</p>
         </div>
@@ -234,7 +234,7 @@
       const t = document.createElement("div");
       t.className = "flash-toast";
       t.textContent = msg;
-      t.setAttribute("style", "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(34,51,80,.96);color:#fff;padding:12px 22px;border-radius:30px;font-size:.95rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:9999;opacity:0;transition:opacity .25s;");
+      t.setAttribute("style", "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(26,58,47,.96);color:#fff;padding:12px 22px;border-radius:30px;font-size:.95rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:9999;opacity:0;transition:opacity .25s;");
       document.body.appendChild(t);
       requestAnimationFrame(() => { t.style.opacity = "1"; });
       setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.remove(), 300); }, 2600);
@@ -416,9 +416,9 @@
                 const a = document.createElement("a");
                 a.href = "affairs.html";
                 a.className = "ac-admin-go";
-                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#223350;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
+                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#1A3A2F;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
                 a.onmouseenter = function () { this.style.background = "#1a4080"; };
-                a.onmouseleave = function () { this.style.background = "#223350"; };
+                a.onmouseleave = function () { this.style.background = "#1A3A2F"; };
                 a.innerHTML = "<span>⚙</span><span>목회행정</span>";
                 card.appendChild(a);
               }
@@ -438,9 +438,9 @@
                 const a = document.createElement("a");
                 a.href = "dashboard.html";
                 a.className = "ac-dash-go";
-                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#223350;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
+                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#1A3A2F;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
                 a.onmouseenter = function () { this.style.background = "#1a4080"; };
-                a.onmouseleave = function () { this.style.background = "#223350"; };
+                a.onmouseleave = function () { this.style.background = "#1A3A2F"; };
                 a.innerHTML = "<span>🏠</span><span>대시보드</span>";
                 card.appendChild(a);
               }

@@ -8,7 +8,7 @@
 (function () {
   "use strict";
 
-  var DEFAULT_LOGO = "images/icon-192.png?v=20260625e";
+  var DEFAULT_LOGO = "images/icon-192.png?v=20260926logo";
 
   // 주보 기준 기본값(welcome.html 폴백과 동일). '주보 기준으로 채우기'로 불러올 수 있음.
   var DEFAULT_SERVANTS = {

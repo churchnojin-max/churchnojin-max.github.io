@@ -20,7 +20,7 @@ console.log('[district.js] v20260822');
     });
   }
   function msgCard(t, x) {
-    return '<div class="fin-card" style="text-align:center;padding:40px 18px"><h3 style="margin:0 0 8px;color:var(--accent,#223350)">' +
+    return '<div class="fin-card" style="text-align:center;padding:40px 18px"><h3 style="margin:0 0 8px;color:var(--accent,#1A3A2F)">' +
       esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);line-height:1.7">' + esc(x) + '</p></div>';
   }
   function won(n) { return Number(n || 0).toLocaleString('ko-KR'); }
@@ -275,7 +275,7 @@ console.log('[district.js] v20260822');
     box.innerHTML = '<div class="fin-card">' +
       '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
       '<span class="dr-pill">' + esc(r.district) + '</span>' +
-      '<b style="font-size:1.05rem;color:var(--accent,#223350)">' + esc(r.met_on) + '</b>' +
+      '<b style="font-size:1.05rem;color:var(--accent,#1A3A2F)">' + esc(r.met_on) + '</b>' +
       '<span style="color:#7b8794">보고자 ' + esc(r.reporter || '-') + '</span>' +
       '<button class="btn btn-line" id="d_edit" style="margin-left:auto;padding:5px 12px;font-size:.82rem">고치기</button>' +
       '</div>' +

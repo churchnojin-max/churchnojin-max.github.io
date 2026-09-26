@@ -13,7 +13,7 @@ console.log('[gyojeok.js] v20260701di');
   function birthDisplay(m) { var iso = birthOf(m); var mm = iso.match(/^(\d{4})-(\d{2})-(\d{2})/); if (!mm) return ''; return mm[1] + '년' + Number(mm[2]) + '월' + Number(mm[3]) + '일(' + (m['음력생일'] ? '음' : '양') + ')'; }
   // 휴대폰: 앞 0 복원 + 010-XXXX-XXXX 형식
   function fmtPhone(p) { p = String(p == null ? '' : p).replace(/[^0-9]/g, ''); if (!p) return ''; if (p.length === 10 && p.charAt(0) !== '0') p = '0' + p; if (p.length === 11) return p.slice(0, 3) + '-' + p.slice(3, 7) + '-' + p.slice(7); if (p.length === 10) return p.slice(0, 3) + '-' + p.slice(3, 6) + '-' + p.slice(6); return p; }
-  function msgCard(t, x) { return '<div class="fin-card" style="text-align:center;padding:40px 18px;"><h3 style="margin:0 0 8px;color:var(--accent,#223350);">' + esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);">' + esc(x) + '</p></div>'; }
+  function msgCard(t, x) { return '<div class="fin-card" style="text-align:center;padding:40px 18px;"><h3 style="margin:0 0 8px;color:var(--accent,#1A3A2F);">' + esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);">' + esc(x) + '</p></div>'; }
   function loading(el) { el.innerHTML = '<p class="qt-loading">불러오는 중…</p>'; }
   function stPill(st) { return '<span class="fin-pill ' + (st === '정회원' ? 'in' : 'out') + '">' + (st === '정회원' ? '정회원' : '준회원') + '</span>'; }
 
@@ -85,8 +85,8 @@ console.log('[gyojeok.js] v20260701di');
       var bars = '', labels = '';
       months.forEach(function (m, i) {
         var cx = PL + (i + 0.5) * (pw / n), v = counts[m], h = maxV ? (v / maxV) * ph : 0;
-        bars += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + (baseY - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="4" fill="#223350" opacity="' + (v ? '0.85' : '0.15') + '"></rect>';
-        bars += '<text x="' + cx.toFixed(1) + '" y="' + (baseY - h - 6).toFixed(1) + '" text-anchor="middle" font-size="11" fill="#223350" font-weight="700">' + (v || '') + '</text>';
+        bars += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + (baseY - h).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="4" fill="#1A3A2F" opacity="' + (v ? '0.85' : '0.15') + '"></rect>';
+        bars += '<text x="' + cx.toFixed(1) + '" y="' + (baseY - h - 6).toFixed(1) + '" text-anchor="middle" font-size="11" fill="#1A3A2F" font-weight="700">' + (v || '') + '</text>';
         labels += '<text x="' + cx.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="#8a8a8e">' + Number(m.slice(5)) + '월</text>';
       });
       return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" style="max-width:320px;display:block;margin:0 auto">' + bars + labels + '</svg>';
@@ -102,7 +102,7 @@ console.log('[gyojeok.js] v20260701di');
       if (!top.length) return '<p style="color:#9aa5b1;font-size:.85rem">' + (q ? '검색 결과가 없습니다.' : '아직 등록된 새가족이 없습니다.') + '</p>';
       return top.map(function (m) {
         return '<div class="nf-recent-row" data-key="' + esc(m['매칭키']) + '" style="display:flex;justify-content:space-between;gap:8px;padding:7px 4px;border-bottom:1px solid #f0f3f7;cursor:pointer">' +
-          '<span style="font-weight:600;color:var(--accent,#223350)">' + esc(m['이름']) + '</span><span style="color:#9aa5b1;font-size:.82rem">' + esc(m['등록일']) + '</span></div>';
+          '<span style="font-weight:600;color:var(--accent,#1A3A2F)">' + esc(m['이름']) + '</span><span style="color:#9aa5b1;font-size:.82rem">' + esc(m['등록일']) + '</span></div>';
       }).join('');
     }
 
@@ -117,7 +117,7 @@ console.log('[gyojeok.js] v20260701di');
         '<b>새가족 등록</b>' +
         '<p style="color:var(--ink-soft);font-size:.85rem;margin:6px 0 16px">방문 시 작성한 등록카드를 그대로 입력하세요. 함께 오신 가족이 있으면 아래에 추가하면 자동으로 한 가정으로 연결됩니다. 등록하면 회원상태는 우선 <b>정회원후보</b>로 저장됩니다.</p>' +
         '<div style="border-bottom:1px solid #eef1f5;padding-bottom:14px;margin-bottom:14px">' +
-        '<div style="font-size:.85rem;color:var(--accent,#223350);font-weight:700;margin-bottom:8px">등록자(세대주)</div>' +
+        '<div style="font-size:.85rem;color:var(--accent,#1A3A2F);font-weight:700;margin-bottom:8px">등록자(세대주)</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
         '<div class="af-field" style="flex:1;min-width:110px"><label>이름*</label><input type="text" id="nf_name"></div>' +
         '<div class="af-field" style="flex:1;min-width:140px"><label>생년월일(선택)</label><input type="text" id="nf_birth" inputmode="numeric" placeholder="8자리, 예: 19800101"></div>' +
@@ -133,7 +133,7 @@ console.log('[gyojeok.js] v20260701di');
         '<div class="af-field" style="flex:1;min-width:120px"><label>새가족 심방여부</label><select id="nf_visited">' + VISITED_OPTS.map(function (o) { return '<option>' + o + '</option>'; }).join('') + '</select></div>' +
         '<div class="af-field full" style="flex:1 1 100%;min-width:220px"><label>특이사항</label><textarea id="nf_note" rows="2" style="width:100%;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"></textarea></div>' +
         '</div></div>' +
-        '<div style="font-size:.85rem;color:var(--accent,#223350);font-weight:700;margin-bottom:8px">함께 오신 가족 (선택)</div>' +
+        '<div style="font-size:.85rem;color:var(--accent,#1A3A2F);font-weight:700;margin-bottom:8px">함께 오신 가족 (선택)</div>' +
         '<div id="nf_famlist"></div>' +
         '<button type="button" class="btn btn-line" id="nf_addrow" style="margin-bottom:14px">＋ 가족 추가</button>' +
         '<div style="display:flex;gap:10px;align-items:center;border-top:1px solid #eef1f5;padding-top:14px">' +
@@ -322,7 +322,7 @@ console.log('[gyojeok.js] v20260701di');
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:40px 16px;overflow:auto';
     ov.innerHTML = '<div class="fin-card" style="max-width:460px;width:100%;background:#fff;margin:auto">' +
-      '<h3 style="margin:0 0 8px;color:var(--accent,#223350)">교적 연결</h3>' +
+      '<h3 style="margin:0 0 8px;color:var(--accent,#1A3A2F)">교적 연결</h3>' +
       '<p style="color:var(--ink-soft);font-size:.86rem;margin-bottom:10px">정회원으로 연결할 교적 인물을 선택하세요. 본인 헌금 조회·가정 합산이 이 교적과 연동됩니다.</p>' +
       '<input type="text" id="pg_q" placeholder="🔍 이름 검색" style="width:100%;padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' +
       '<div id="pg_list" style="max-height:320px;overflow:auto;margin-top:8px;border:1px solid #eef1f5;border-radius:8px"></div>' +
@@ -386,9 +386,9 @@ console.log('[gyojeok.js] v20260701di');
       function gradeOrder(v) { var i = GRADE_OPTS.indexOf(v); return i >= 0 ? i : (v ? GRADE_OPTS.length : GRADE_OPTS.length + 1); }
       function rowHtml(m) {
         var isHead = (m['세대주'] || m['이름']) === m['이름'];
-        return '<tr' + (isHead ? ' style="background:#f7faff"' : '') + '><td style="color:#7b8794;font-variant-numeric:tabular-nums">' + esc(m['교적번호'] || '') + '</td><td><a href="#" class="gj-name" data-key="' + esc(m['매칭키']) + '" style="color:var(--accent,#223350);font-weight:700;text-decoration:none;border-bottom:1px dashed #9ab">' + esc(m['이름']) + '</a></td><td>' + esc(birthDisplay(m)) + '</td><td>' + esc(m['세대주'] || '') + '</td><td>' + esc(m['관계'] || '') + '</td><td>' + (m['배우자'] ? '💑 ' + esc(m['배우자']) : '') + '</td><td>' + esc(m['그룹']) + '</td><td>' + esc(m['직책']) + '</td><td>' + esc(m['신급']) + '</td><td>' + esc(fmtPhone(m['휴대폰'])) + '</td><td style="text-align:center;white-space:nowrap">' + signupCell(signupOf(m)) + '</td></tr>';
+        return '<tr' + (isHead ? ' style="background:#f7faff"' : '') + '><td style="color:#7b8794;font-variant-numeric:tabular-nums">' + esc(m['교적번호'] || '') + '</td><td><a href="#" class="gj-name" data-key="' + esc(m['매칭키']) + '" style="color:var(--accent,#1A3A2F);font-weight:700;text-decoration:none;border-bottom:1px dashed #9ab">' + esc(m['이름']) + '</a></td><td>' + esc(birthDisplay(m)) + '</td><td>' + esc(m['세대주'] || '') + '</td><td>' + esc(m['관계'] || '') + '</td><td>' + (m['배우자'] ? '💑 ' + esc(m['배우자']) : '') + '</td><td>' + esc(m['그룹']) + '</td><td>' + esc(m['직책']) + '</td><td>' + esc(m['신급']) + '</td><td>' + esc(fmtPhone(m['휴대폰'])) + '</td><td style="text-align:center;white-space:nowrap">' + signupCell(signupOf(m)) + '</td></tr>';
       }
-      function groupHeaderHtml(label, count) { return '<tr><td colspan="11" style="background:#eef2f7;font-weight:700;color:var(--accent,#223350);padding:8px 9px;border-bottom:2px solid #dfe5ee">' + esc(label) + ' <span style="font-weight:400;color:#7b8794;font-size:.82rem">(' + count + '명)</span></td></tr>'; }
+      function groupHeaderHtml(label, count) { return '<tr><td colspan="11" style="background:#eef2f7;font-weight:700;color:var(--accent,#1A3A2F);padding:8px 9px;border-bottom:2px solid #dfe5ee">' + esc(label) + ' <span style="font-weight:400;color:#7b8794;font-size:.82rem">(' + count + '명)</span></td></tr>'; }
       function draw(q, groupBy) {
         q = (q || '').trim();
         var rows = q ? ms.filter(function (m) { return String(m['이름']).indexOf(q) >= 0; }) : ms;
@@ -524,10 +524,10 @@ console.log('[gyojeok.js] v20260701di');
       function row(label, val) { return val ? '<div style="display:flex;padding:7px 0;border-bottom:1px solid #f0f3f7"><div style="flex:0 0 96px;color:#7b8794;font-size:.85rem">' + esc(label) + '</div><div style="flex:1;font-size:.92rem">' + esc(val) + '</div></div>' : ''; }
       var age = '', bd = (String(cur['매칭키'] || '').split('|')[1]) || '';
       if (bd.length === 8) { var y = Number(bd.slice(0, 4)); if (y) age = (new Date().getFullYear() - y + 1) + '세'; }
-      var famRows = family.map(function (f) { var isMe = f['매칭키'] === cur['매칭키']; return '<tr' + (isMe ? ' style="background:#eef4ff"' : '') + '><td><a href="#" class="gd-fam" data-key="' + esc(f['매칭키']) + '" style="color:var(--accent,#223350);text-decoration:none;font-weight:600">' + esc(f['이름']) + '</a></td><td>' + esc(f['관계'] || '') + '</td><td>' + esc(birthDisplay(f)) + '</td><td>' + esc(f['직책'] || '') + '</td></tr>'; }).join('');
+      var famRows = family.map(function (f) { var isMe = f['매칭키'] === cur['매칭키']; return '<tr' + (isMe ? ' style="background:#eef4ff"' : '') + '><td><a href="#" class="gd-fam" data-key="' + esc(f['매칭키']) + '" style="color:var(--accent,#1A3A2F);text-decoration:none;font-weight:600">' + esc(f['이름']) + '</a></td><td>' + esc(f['관계'] || '') + '</td><td>' + esc(birthDisplay(f)) + '</td><td>' + esc(f['직책'] || '') + '</td></tr>'; }).join('');
       box.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">' +
-        '<div style="display:flex;gap:14px;align-items:center">' + avatar(cur, 84) + '<div><h3 style="margin:0;color:var(--accent,#223350)">' + esc(cur['이름']) + (cur['직책'] ? ' <span style="font-size:.8rem;color:#7b8794">' + esc(cur['직책']) + '</span>' : '') + '</h3><div style="color:#7b8794;font-size:.85rem;margin-top:3px">' + esc(cur['그룹'] || '') + (cur['세대주'] ? ' · ' + esc(cur['세대주']) + '의 가정' : '') + '</div></div></div>' +
+        '<div style="display:flex;gap:14px;align-items:center">' + avatar(cur, 84) + '<div><h3 style="margin:0;color:var(--accent,#1A3A2F)">' + esc(cur['이름']) + (cur['직책'] ? ' <span style="font-size:.8rem;color:#7b8794">' + esc(cur['직책']) + '</span>' : '') + '</h3><div style="color:#7b8794;font-size:.85rem;margin-top:3px">' + esc(cur['그룹'] || '') + (cur['세대주'] ? ' · ' + esc(cur['세대주']) + '의 가정' : '') + '</div></div></div>' +
         '<div style="display:flex;gap:6px"><button class="btn btn-solid" id="gd_edit" style="padding:4px 14px">수정</button><button class="btn btn-line" id="gd_delete" style="padding:4px 12px;color:#c0392b;border-color:#e6b0aa">삭제</button><button class="btn btn-line" id="gd_close" style="padding:4px 12px">닫기</button></div></div>' +
         '<div style="display:flex;gap:18px;flex-wrap:wrap"><div style="flex:1;min-width:240px">' +
         row('교인번호', cur['교적번호']) + row('생년월일', birthDisplay(cur) + (age ? ' (' + age + ')' : '')) + row('성별', cur['성별']) + row('휴대폰', fmtPhone(cur['휴대폰'])) + row('집전화', cur['집전화']) + row('구역직분', cur['구역직분']) + row('기관직책', cur['기관직책']) + row('세례여부', cur['세례여부'] ? '받음' + (cur['세례일메모'] ? ' (' + cur['세례일메모'] + ')' : '') : '') + row('세례받은교회', cur['세례받은교회']) + row('집례자', cur['집례자']) + row('직장주소', cur['직장주소']) + row('직장전화', cur['직장전화']) + row('가족사항', cur['가족사항']) +
@@ -541,7 +541,7 @@ console.log('[gyojeok.js] v20260701di');
         '</div></div>' + (cur['특이사항'] ? '<div style="margin-top:6px;padding:10px 12px;background:#fbfaf6;border:1px solid #f0ece0;border-radius:8px"><div style="color:#7b8794;font-size:.8rem;margin-bottom:3px">특이사항</div><div style="font-size:.9rem;white-space:pre-wrap">' + esc(cur['특이사항']) + '</div></div>' : '') +
         (groupsOf(cur).length ? '<div style="margin-top:12px"><div style="color:#7b8794;font-size:.85rem;margin-bottom:5px">소속 그룹</div>' + groupsOf(cur).map(function (g) { return '<span class="fin-pill" style="background:#e8f0fb;color:#2b5797;margin:0 6px 6px 0;display:inline-block">' + esc(g) + '</span>'; }).join('') + '</div>' : '') +
         '<div id="gd_edu" style="margin-top:12px"></div>' +
-        '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--accent,#223350)">가족 관계</b><span style="display:flex;gap:6px"><button class="btn btn-line" id="gd_cert" hidden style="padding:3px 12px;font-size:.8rem">📄 교인증명서 만들기</button><button class="btn btn-line" id="gd_family" style="padding:3px 12px;font-size:.8rem">👪 가족 구성/수정</button></span></div><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.86rem"><thead><tr><th>이름</th><th>관계</th><th>생년월일</th><th>직책</th></tr></thead><tbody>' + famRows + '</tbody></table></div></div>';
+        '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--accent,#1A3A2F)">가족 관계</b><span style="display:flex;gap:6px"><button class="btn btn-line" id="gd_cert" hidden style="padding:3px 12px;font-size:.8rem">📄 교인증명서 만들기</button><button class="btn btn-line" id="gd_family" style="padding:3px 12px;font-size:.8rem">👪 가족 구성/수정</button></span></div><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.86rem"><thead><tr><th>이름</th><th>관계</th><th>생년월일</th><th>직책</th></tr></thead><tbody>' + famRows + '</tbody></table></div></div>';
       box.querySelector('#gd_close').onclick = close;
       // 증명서는 교회 이름과 담임목사 이름으로 나가는 공식 문서라 전권 관리자에게만 연다
       isFullAdmin().then(function (ok) { var b = box.querySelector('#gd_cert'); if (ok && b) { b.hidden = false; b.onclick = function () { certMode(cur); }; } });
@@ -589,7 +589,7 @@ console.log('[gyojeok.js] v20260701di');
         return '<div class="af-field"' + (type === 'textarea' ? ' style="flex:1 1 100%"' : '') + '><label>' + esc(label) + '</label>' + ctrl + '</div>';
       }
       box.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin:0;color:var(--accent,#223350)">교적 수정 — ' + esc(cur['이름']) + '</h3><button class="btn btn-line" id="gd_cancel" style="padding:4px 12px">취소</button></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin:0;color:var(--accent,#1A3A2F)">교적 수정 — ' + esc(cur['이름']) + '</h3><button class="btn btn-line" id="gd_cancel" style="padding:4px 12px">취소</button></div>' +
         '<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px">' +
         '<div style="text-align:center"><div id="gd_drop" style="border:2px dashed #cdd7e3;border-radius:14px;padding:10px;cursor:pointer;transition:.15s"><div id="gd_photo">' + avatar(cur, 96) + '</div><div style="font-size:.7rem;color:#9aa5b1;margin-top:6px;line-height:1.4">사진을 여기로<br>드래그하세요</div></div><div style="margin-top:8px"><input type="file" id="gd_file" accept="image/*" style="display:none"><button type="button" class="btn btn-line" id="gd_upbtn" style="padding:4px 10px;font-size:.8rem">📷 사진 선택</button></div><input type="hidden" data-col="사진" id="gd_photourl" value="' + esc(photoUrl(cur)) + '"><div id="gd_upmsg" style="font-size:.76rem;color:#7b8794;margin-top:4px"></div></div>' +
         '<div class="fin-grid" style="flex:1;min-width:260px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">' +
@@ -703,7 +703,7 @@ console.log('[gyojeok.js] v20260701di');
       }
 
       box.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#223350)">👪 가족 관계 설정</h3><button class="btn btn-line" id="fm_back" style="padding:4px 12px">← 돌아가기</button></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#1A3A2F)">👪 가족 관계 설정</h3><button class="btn btn-line" id="fm_back" style="padding:4px 12px">← 돌아가기</button></div>' +
         '<p style="color:#7b8794;font-size:.85rem;margin-bottom:10px"><b>' + esc(head) + '</b>의 가정 · ' + fam.length + '명</p>' +
         '<span class="fin-msg" id="fm_msg" style="display:block;margin-bottom:8px"></span>' +
         '<div class="fin-card" style="padding:12px;margin-bottom:14px"><b style="font-size:.85rem">현재 가족</b><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.85rem"><thead><tr><th>이름</th><th>생년월일</th><th>관계</th><th>관리</th></tr></thead><tbody>' +
@@ -765,7 +765,7 @@ console.log('[gyojeok.js] v20260701di');
       function fld(label, id, val, ph) { return '<div class="af-field"><label>' + esc(label) + '</label><input type="text" id="' + id + '" value="' + esc(val) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></div>'; }
 
       box.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#223350)">📄 교인증명서 만들기</h3><button class="btn btn-line" id="ct_back" style="padding:4px 12px">← 돌아가기</button></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--accent,#1A3A2F)">📄 교인증명서 만들기</h3><button class="btn btn-line" id="ct_back" style="padding:4px 12px">← 돌아가기</button></div>' +
         '<p style="color:#7b8794;font-size:.85rem;margin:0 0 12px">교적에 있는 값을 미리 채워 두었습니다. 확인·수정한 뒤 <b>인쇄 미리보기</b>를 누르면 새 창이 뜨고, 거기서 인쇄하거나 PDF로 저장할 수 있습니다. 빈 칸은 빈 채로 나오니 손으로 적으셔도 됩니다.</p>' +
         '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">' +
         fld('증서 번호', 'ct_no', year + '-', '예: ' + year + '-3') +
@@ -774,7 +774,7 @@ console.log('[gyojeok.js] v20260701di');
         fld('등록일', 'ct_reg', certDate(cur['등록일']), '예: 2020년 3월 1일') +
         '<div class="af-field" style="grid-column:1/-1"><label>주소</label><input type="text" id="ct_addr" value="' + esc(cur['주소'] || (headRow && headRow['주소']) || '') + '"></div>' +
         '</div>' +
-        '<div style="margin-top:12px;border-top:1px solid #eef1f5;padding-top:12px"><div style="font-size:.85rem;color:var(--accent,#223350);font-weight:700;margin-bottom:8px">가족 사항 <span style="font-weight:400;color:#9aa5b1;font-size:.78rem">· 증명서의 ‘가족관계’ 줄에 들어갑니다. 넣지 않으려면 비우세요.</span></div>' +
+        '<div style="margin-top:12px;border-top:1px solid #eef1f5;padding-top:12px"><div style="font-size:.85rem;color:var(--accent,#1A3A2F);font-weight:700;margin-bottom:8px">가족 사항 <span style="font-weight:400;color:#9aa5b1;font-size:.78rem">· 증명서의 ‘가족관계’ 줄에 들어갑니다. 넣지 않으려면 비우세요.</span></div>' +
         '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">' +
         fld('가족 대표(세대주)', 'ct_head', head) +
         fld('본인과의 관계', 'ct_headrel', isHead ? '본인' : (cur['관계'] || ''), '예: 배우자, 장남') +
@@ -835,7 +835,7 @@ console.log('[gyojeok.js] v20260701di');
         var cand = heads().filter(function (h) { return exclude.indexOf(h['이름']) < 0; }).sort(function (a, b) { return String(a['이름']).localeCompare(String(b['이름']), 'ko'); });
         var ov = document.createElement('div');
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:40px 16px;overflow:auto';
-        ov.innerHTML = '<div class="fin-card" style="max-width:380px;width:100%;background:#fff;margin:auto"><h3 style="margin:0 0 8px;color:var(--accent,#223350)">부모 세대 선택</h3><p style="font-size:.84rem;color:#7b8794;margin:0 0 8px">이 가정이 분가해 나온 <b>부모 가정(세대주)</b>을 고르세요.</p><input type="text" id="ph_q" placeholder="🔍 세대주 검색" style="width:100%;padding:8px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"><div id="ph_list" style="max-height:300px;overflow:auto;margin-top:8px;border:1px solid #eef1f5;border-radius:8px"></div><div style="text-align:right;margin-top:10px"><button class="btn btn-line" id="ph_cancel">취소</button></div></div>';
+        ov.innerHTML = '<div class="fin-card" style="max-width:380px;width:100%;background:#fff;margin:auto"><h3 style="margin:0 0 8px;color:var(--accent,#1A3A2F)">부모 세대 선택</h3><p style="font-size:.84rem;color:#7b8794;margin:0 0 8px">이 가정이 분가해 나온 <b>부모 가정(세대주)</b>을 고르세요.</p><input type="text" id="ph_q" placeholder="🔍 세대주 검색" style="width:100%;padding:8px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"><div id="ph_list" style="max-height:300px;overflow:auto;margin-top:8px;border:1px solid #eef1f5;border-radius:8px"></div><div style="text-align:right;margin-top:10px"><button class="btn btn-line" id="ph_cancel">취소</button></div></div>';
         document.body.appendChild(ov);
         function close(v) { ov.remove(); resolve(v); }
         function rend(qq) { var ql = (qq || '').trim().toLowerCase(); var L = ov.querySelector('#ph_list'); L.innerHTML = cand.filter(function (h) { return !ql || h['이름'].toLowerCase().indexOf(ql) >= 0; }).map(function (h) { return '<div class="ph-item" data-name="' + esc(h['이름']) + '" style="padding:9px 11px;border-bottom:1px solid #f0f0f0;cursor:pointer">⌂ <b>' + esc(h['이름']) + '</b> <span style="color:#9aa5b1;font-size:.8rem">' + esc(birthDisplay(h)) + '</span></div>'; }).join('') || '<p style="padding:10px;color:#9aa5b1">결과 없음</p>'; Array.prototype.forEach.call(L.querySelectorAll('.ph-item'), function (d) { d.onclick = function () { close(d.dataset.name); }; }); }
@@ -854,7 +854,7 @@ console.log('[gyojeok.js] v20260701di');
       return new Promise(function (resolve) {
         var ov = document.createElement('div');
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
-        ov.innerHTML = '<div class="fin-card" style="max-width:340px;width:100%;background:#fff"><h3 style="margin:0 0 10px;color:var(--accent,#223350)">관계 지정</h3>' +
+        ov.innerHTML = '<div class="fin-card" style="max-width:340px;width:100%;background:#fff"><h3 style="margin:0 0 10px;color:var(--accent,#1A3A2F)">관계 지정</h3>' +
           '<p style="font-size:.86rem;color:#7b8794;margin:0 0 10px"><b>' + esc(member['이름']) + '</b> → <b>' + esc(head) + '</b>님 가정</p>' +
           '<select id="pr_rel" style="width:100%;padding:8px;border:1px solid #cdd7e3;border-radius:8px;font:inherit">' + REL.map(function (o) { return '<option' + (o === dflt ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>' +
           '<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end"><button class="btn btn-line" id="pr_cancel">취소</button><button class="btn btn-solid" id="pr_ok">확인</button></div></div>';
@@ -909,7 +909,7 @@ console.log('[gyojeok.js] v20260701di');
         var isHead = kind === 'head';
         var icon = kind === 'head' ? '<span style="color:#c9a227;font-size:1.05rem">⌂</span>' : (kind === 'spouse' ? '<span style="color:#e0639b">💑</span>' : '<span style="color:#cbd5e1">└</span>');
         return '<span class="fam-node"' + (isHead ? '' : ' draggable="true"') + ' data-id="' + esc(m['교적ID']) + '" style="display:inline-flex;align-items:center;gap:6px;cursor:' + (isHead ? 'default' : 'grab') + '">' +
-          icon + '<b style="' + (isHead ? 'color:var(--accent,#223350);font-size:1.02rem' : '') + '">' + esc(m['이름']) + '</b>' +
+          icon + '<b style="' + (isHead ? 'color:var(--accent,#1A3A2F);font-size:1.02rem' : '') + '">' + esc(m['이름']) + '</b>' +
           '<span style="font-size:.74rem;color:#7b8794">' + (isHead ? '세대주' : esc(m['관계'] || (kind === 'spouse' ? '배우자' : '관계 미지정'))) + ' · ' + esc(birthDisplay(m)) + '</span>' +
           (isHead ? '' : '<button class="fam-x" data-id="' + esc(m['교적ID']) + '" title="가족에서 제외" style="border:0;background:none;color:#c0392b;cursor:pointer;font-size:.82rem">✕</button>') +
           '</span>';
@@ -919,12 +919,12 @@ console.log('[gyojeok.js] v20260701di');
       var origin = headM ? (headM['부모세대'] || '') : '';
       var parentBar = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;font-size:.83rem">' +
         (origin
-          ? '<span style="color:#7b8794">↑ 분가 출신: <b style="color:var(--accent,#223350)">' + esc(origin) + '</b>님 가정</span> <button class="btn btn-line" id="fam_origin_open" style="padding:2px 9px;font-size:.74rem">부모 가정 열기</button> <button class="btn btn-line" id="fam_origin_set" style="padding:2px 9px;font-size:.74rem">변경</button> <button class="btn btn-line" id="fam_origin_rm" style="padding:2px 9px;font-size:.74rem">해제</button>'
+          ? '<span style="color:#7b8794">↑ 분가 출신: <b style="color:var(--accent,#1A3A2F)">' + esc(origin) + '</b>님 가정</span> <button class="btn btn-line" id="fam_origin_open" style="padding:2px 9px;font-size:.74rem">부모 가정 열기</button> <button class="btn btn-line" id="fam_origin_set" style="padding:2px 9px;font-size:.74rem">변경</button> <button class="btn btn-line" id="fam_origin_rm" style="padding:2px 9px;font-size:.74rem">해제</button>'
           : '<button class="btn btn-line" id="fam_origin_set" style="padding:3px 11px;font-size:.78rem">＋ 부모 세대 연결(분가 출신 가정 지정)</button>') +
         '</div>';
       var kids = childHouseholds(activeHead);
       var kidsHTML = kids.length ? '<div style="margin-top:12px"><div style="font-size:.78rem;color:#9aa5b1;margin-bottom:5px">└ 분가한 자녀 세대 (' + kids.length + ')</div>' + kids.map(function (k) { return '<button class="fam-kid btn btn-line" data-name="' + esc(k['이름']) + '" style="padding:5px 12px;font-size:.83rem;margin:0 6px 6px 0">→ ' + esc(k['이름']) + '님 가정</button>'; }).join('') + '</div>' : '';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="color:var(--accent,#223350)">' + esc(activeHead) + '님 가정 (' + fam.length + '명)</b><button class="btn btn-line" id="fam_close" style="padding:3px 11px;font-size:.78rem">✕ 닫기</button></div>' +
+      return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="color:var(--accent,#1A3A2F)">' + esc(activeHead) + '님 가정 (' + fam.length + '명)</b><button class="btn btn-line" id="fam_close" style="padding:3px 11px;font-size:.78rem">✕ 닫기</button></div>' +
         parentBar +
         '<div id="fam_canvas" style="border:2px dashed #b9cdee;border-radius:12px;padding:12px 14px;min-height:130px;background:#fafcff">' + topLine + childRows + '<div style="font-size:.76rem;color:#9aa5b1;margin-top:8px;border-top:1px dashed #e1e7ef;padding-top:6px">＋ 왼쪽에서 이름을 여기로 드래그하면 이 가정에 추가됩니다</div></div>' +
         kidsHTML;
@@ -1063,7 +1063,7 @@ console.log('[gyojeok.js] v20260701di');
   function renderImport(panel) {
     panel.innerHTML =
       '<div class="fin-card">' +
-      '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">📥 엑셀로 교적 업데이트</h3>' +
+      '<h3 style="margin:0 0 6px;color:var(--accent,#1A3A2F)">📥 엑셀로 교적 업데이트</h3>' +
       '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-soft,#7b8794)">' +
       '<b>교인 신상 통합 명부(.xlsx)</b>를 올리면 <b>교인기본정보</b> 시트를 읽어 교적에 반영합니다. ' +
       '올리자마자 저장되지 않고, <b>무엇이 새로 생기고 무엇이 바뀌는지 먼저 보여드린 뒤</b> 확인을 받습니다.</p>' +
@@ -1232,7 +1232,7 @@ console.log('[gyojeok.js] v20260701di');
   function renderNumbering(panel) {
     panel.innerHTML =
       '<div class="fin-card">' +
-      '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">🔢 교인번호(1001~) 일괄 부여</h3>' +
+      '<h3 style="margin:0 0 6px;color:var(--accent,#1A3A2F)">🔢 교인번호(1001~) 일괄 부여</h3>' +
       '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-soft,#7b8794)">' +
       '성도는 <b>1001번대</b>(원로목사·원로사모를 1001·1002로 놓고 생년월일 순), 담임목사·교역자 가정은 <b>7000번대</b>로 ' +
       '미리 정해둔 번호 목록(성도 ' + GJ_NUMBERING_LIST.length + '명 · 교역자 ' + GJ_NUMBERING_LIST_MIN.length + '명)을 ' +
@@ -1336,7 +1336,7 @@ console.log('[gyojeok.js] v20260701di');
       '*{box-sizing:border-box}',
       'body{font-family:"Noto Sans KR","Malgun Gothic","맑은 고딕",sans-serif;color:#1a1a1a;margin:0;padding:0;font-size:10.5px;line-height:1.35}',
       '.head{text-align:center;margin-bottom:12px;border-bottom:2px solid #1f3a5f;padding-bottom:8px}',
-      '.head h1{font-family:"Noto Serif KR",serif;font-size:20px;margin:0;letter-spacing:.1em;color:#16263d}',
+      '.head h1{font-family:"Noto Serif KR",serif;font-size:20px;margin:0;letter-spacing:.1em;color:#122A22}',
       '.head .sub{color:#555;font-size:11px;margin-top:5px}',
       '.head .meta{color:#9aa5b1;font-size:9.5px;margin-top:3px}',
       'table{width:100%;border-collapse:collapse;font-size:10px}',
@@ -1447,7 +1447,7 @@ console.log('[gyojeok.js] v20260701di');
 
       panel.innerHTML =
         '<div class="fin-card">' +
-        '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">🖨 교적 명단 인쇄</h3>' +
+        '<h3 style="margin:0 0 6px;color:var(--accent,#1A3A2F)">🖨 교적 명단 인쇄</h3>' +
         '<p style="margin:0 0 14px;font-size:.88rem;color:var(--ink-soft,#7b8794)">서식과 범위를 고르고 <b>[인쇄 미리보기 열기]</b>를 누르면 새 창이 뜹니다. 그 창에서 인쇄하거나 <b>PDF로 저장</b>할 수 있습니다. (총 ' + ms.length + '명)</p>' +
         '<div class="form-field" style="margin-bottom:12px"><label style="font-weight:700">서식</label>' +
         GJ_PRINT_FORMS.map(function (f, i) {
@@ -1638,7 +1638,7 @@ console.log('[gyojeok.js] v20260701di');
 
       panel.innerHTML =
         '<div class="fin-card">' +
-        '<h3 style="margin:0 0 6px;color:var(--accent,#223350)">🩺 세대 점검</h3>' +
+        '<h3 style="margin:0 0 6px;color:var(--accent,#1A3A2F)">🩺 세대 점검</h3>' +
         '<p style="margin:0 0 12px;font-size:.88rem;color:var(--ink-soft,#7b8794)">세대주·관계·배우자 연결이 서로 어긋난 기록을 찾습니다. (검사 대상 ' + list.length + '명)</p>' +
         (!issues.length
           ? '<p style="color:#1e874b;font-weight:700;font-size:1.02rem">✓ 어긋난 기록이 없습니다.</p>'
