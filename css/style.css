@@ -961,6 +961,21 @@ ul { list-style: none; }
 .page-hero .ph-eyebrow { font-family:"Cormorant Garamond",serif; letter-spacing:.4em; font-size:.85rem; color:var(--gold); }
 .page-hero h1 { font-family:"Noto Serif KR",serif; font-size: clamp(1.9rem,4.5vw,2.9rem); margin: 12px 0 14px; }
 .page-hero p { color: rgba(255,255,255,.82); max-width: 640px; margin: 0 auto; font-weight: 300; }
+/* 처음 오셨나요: 교단 소속 안내 (총회 마크 + 문구, 잘 보이게 굵고 밝게) */
+.ph-denom { display: inline-flex; align-items: center; gap: 20px; margin-top: 10px;
+  padding: 16px 28px 16px 16px; border: 1px solid rgba(191,160,108,.6); border-radius: 18px;
+  background: rgba(255,255,255,.08); text-align: left; }
+.ph-denom-mark { flex: none; width: 68px; height: 68px; padding: 5px; border-radius: 14px;
+  background: #fff; object-fit: contain; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.page-hero .ph-denom p { margin: 0; max-width: none; color: #fff; font-size: 1.15rem; font-weight: 500;
+  line-height: 1.7; word-break: keep-all; }
+.ph-denom strong { color: #E3C98F; font-weight: 700; }
+@media (max-width: 640px) {
+  .ph-denom { flex-direction: column; gap: 12px; padding: 18px 18px 16px; text-align: center; }
+  .ph-denom-mark { width: 60px; height: 60px; }
+  .page-hero .ph-denom p { font-size: 1.02rem; }
+  .ph-br { display: none; }
+}
 
 /* 페이지 내부 블록 */
 .block { padding: 84px 0; }
