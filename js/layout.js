@@ -47,6 +47,7 @@
   const C = window.CHURCH || {};
   const CH_NAME = C.name || "우리 교회";
   const CH_EN_LINE = (C.nameEn || "") + (C.since ? " · SINCE " + C.since : "");
+  const CH_DENOM = C.denomination || "";
   const CH_PASTORS = (C.pastors || []).map((p) => `${p.role} ${p.name}`).join(" · ");
   const CH_ADDR = C.address || "";
   const CH_PHONE = C.phone || "";
@@ -83,7 +84,7 @@
         <div class="nav-left">
           <a href="index.html" class="logo">
             <img src="images/icon-192.png?v=20260926logo" alt="" class="logo-mark" />
-            <span class="logo-kr">${CH_NAME}</span>
+            <span class="logo-txt"><span class="logo-kr">${CH_NAME}</span>${CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}</span>
           </a>
           <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
         </div>
@@ -136,7 +137,7 @@
       <div class="container footer-inner">
         <div class="footer-brand">
           <span class="logo-kr">${CH_NAME}</span>
-          <span class="logo-en">${CH_EN_LINE}</span>
+          ${CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}
         </div>
         <nav class="footer-nav">${NAV.filter((n) => !n.adminOnly && !n.memberOnly).map((n) => `<a href="${n.href}">${n.label}</a>`).join("")}<a href="bylaws.html">정관</a><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a><a href="withdraw.html">회원탈퇴</a></nav>
         <div class="footer-actions">

@@ -841,6 +841,8 @@ ul { list-style: none; }
 .footer-brand { display: flex; flex-direction: column; }
 .footer-brand .logo-kr { color: #fff; font-size: 1.3rem; }
 .footer-brand .logo-en { color: var(--gold); margin-top: 4px; }
+.footer-brand .logo-kr { font-weight: 700; letter-spacing: .444em; margin-right: -.444em; white-space: nowrap; }
+.footer-brand .logo-denom { margin-top: 7px; font-size: .8667rem; color: rgba(255,255,255,.8); }
 .footer-meta { text-align: right; }
 .footer-meta p { font-size: .88rem; color: rgba(255,255,255,.6); margin-bottom: 4px; }
 .footer-meta .copy { margin-top: 14px; font-size: .78rem; color: rgba(255,255,255,.35); }
@@ -932,6 +934,12 @@ ul { list-style: none; }
 .logo { flex-direction: row; align-items: center; gap: 11px; }
 .logo-mark { width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
 .logo-txt { display: flex; flex-direction: column; line-height: 1.15; }
+/* 로고 글자: '노진교회'는 굵고 크게, 글자 사이를 넓게(0.444em) 벌리고
+   아래 '대한예수교장로회'는 크기 2/3로 붙여 써서 두 줄 폭을 똑같이 맞춘다(한글 한 글자 = 1em) */
+.logo-txt .logo-kr { font-weight: 700; font-size: 1.4rem; letter-spacing: .444em; margin-right: -.444em; white-space: nowrap; }
+.logo-denom { display: block; margin-top: 5px; white-space: nowrap;
+  font-family: "Noto Serif KR", serif; font-weight: 600; font-size: .9333rem; line-height: 1;
+  color: var(--accent); }
 
 .nav-menu a.active { color: var(--accent); }
 .nav-menu a.active::after { width: 100%; background: var(--gold); }
@@ -2218,6 +2226,8 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
   /* 교회 이름은 어떤 경우에도 글자 단위로 쪼개지지 않게 */
   .logo { min-width: 0; }
   .logo-kr { white-space: nowrap; font-size: 1.1rem; letter-spacing: .02em; }
+  .logo-txt .logo-kr { font-size: 1.15rem; }
+  .logo-denom { font-size: .7667rem; margin-top: 4px; }
   .logo-mark { width: 34px; height: 34px; border-radius: 8px; }
 
   /* '대시보드'는 로고를 밀어낼 만큼 크지 않게 (좁으면 아예 숨김) */
@@ -2232,6 +2242,8 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
      (같은 기능을 햄버거 메뉴 안에서 쓸 수 있다) */
   .hdr-dash-btn { display: none !important; }
   .logo-kr { font-size: 1.02rem; }
+  .logo-txt .logo-kr { font-size: 1.05rem; }
+  .logo-denom { font-size: .7rem; }
 }
 
 /* ============================================================
