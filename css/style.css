@@ -2812,3 +2812,54 @@ html.snap-page .section-head .eyebrow { display: block; }
   .nav-caret { display: none; }
   .auth-btn-join { display: none !important; }   /* 가입은 로그인 창 안의 '회원가입'으로 */
 }
+
+/* ============================================================
+   2026-09-29 (2차) 목사님 요청
+   ① 화면이 부드럽게 미끄러지듯 넘어가게 — 움직이는 동안 css 맞춤을 끈다(js/layout.js glideTo)
+   ② '메인화면으로'에 마우스를 올리면 전체 메뉴(모든 메뉴의 세부 항목)가 한눈에
+   ============================================================ */
+html.snap-gliding { scroll-snap-type: none !important; scroll-behavior: auto !important; }
+
+/* ② 전체 메뉴 — 컴퓨터 화면에서만 */
+.nav-mega { display: none; }
+@media (min-width: 761px) {
+  /* 전체 메뉴는 위 메뉴줄 전체의 가운데 아래에 뜬다(화면 오른쪽으로 넘치지 않게) */
+  .nav-menu { position: relative; }
+  .nav-item.has-mega { position: static; }
+  .nav-mega {
+    display: block; position: absolute; top: 100%; left: 50%; padding-top: 14px; z-index: 130;
+    opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, 10px);
+    transition: opacity .22s ease, transform .22s ease, visibility 0s linear .22s;
+  }
+  .nav-item.has-mega:hover .nav-mega,
+  .nav-item.has-mega:focus-within .nav-mega {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0);
+    transition: opacity .22s ease, transform .22s ease, visibility 0s;
+  }
+  .nav-item.has-mega:hover .mega-caret { transform: rotate(180deg); opacity: 1; }
+  .nav-mega-inner {
+    display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 0 30px;
+    width: min(1060px, calc(100vw - 80px)); padding: 22px 30px 26px;
+    background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 4px 4px 12px 12px;
+    box-shadow: 0 22px 50px rgba(0,0,0,.18);
+  }
+  .mega-head {
+    display: block; font-family: "Noto Serif KR", serif; font-weight: 700; font-size: 1.05rem;
+    color: var(--accent) !important; padding: 4px 2px 10px; margin-bottom: 4px; border-bottom: 2px solid var(--gold);
+    white-space: nowrap;
+  }
+  .nav-mega .mega-links { display: flex; flex-direction: column; }
+  .nav-mega .mega-links a {
+    display: flex; align-items: center; gap: 8px; padding: 9px 2px 7px;
+    border-bottom: 1px solid var(--line); color: var(--ink) !important;
+    font-size: .93rem; font-weight: 500; line-height: 1.45; white-space: normal; word-break: keep-all;
+    transition: padding .18s ease, color .18s ease;
+  }
+  .nav-mega .mega-links a::before { content: "\203A"; color: var(--gold); font-size: 1.2em; line-height: 1; font-weight: 700; }
+  .nav-mega a::after { display: none !important; }
+  .nav-mega .mega-links a:hover { color: var(--accent) !important; padding-left: 8px; font-weight: 700; }
+  .nav-mega .mega-head:hover { color: #10241D !important; }
+}
+@media (max-width: 760px) {
+  .mega-caret { display: none !important; }
+}

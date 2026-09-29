@@ -19,23 +19,23 @@
       { href: "library.html#worship", label: "예배 자료실" },
     ] },
     { href: "story.html", label: "공동체와 양육", sub: [
+      { href: "story.html#communities", label: "다음 세대" },
       { href: "story.html#album", label: "우리들 소식" },
-      { href: "story.html#notice", label: "공지사항" },
       { href: "story.html#qna", label: "삶의 질문" },
       { href: "story.html#groups", label: "전도회" },
-      { href: "story.html#communities", label: "다음 세대" },
-      { href: "library.html#edu", label: "교육 자료실" },
+      { href: "district.html", label: "교구사역" },
     ] },
     { href: "world.html", label: "선교와 사역", sub: [
       { href: "world.html#local", label: "지역 연합사역" },
       { href: "world.html#mission", label: "선교" },
-      { href: "district.html", label: "교구사역" },
     ] },
     { href: "office.html", label: "행정", sub: [
       { href: "office.html#give", label: "온라인 헌금" },
       { href: "office.html#receipt", label: "기부금영수증" },
       { href: "office.html#rooms", label: "모임장소 확인" },
       { href: "office.html#reserve", label: "장소신청" },
+      { href: "office.html#notice", label: "공지사항" },
+      { href: "office.html#edu", label: "교육 자료실" },
     ] },
     { href: "finance.html", label: "교회행정", adminOnly: true, sub: [
       { href: "finance.html", label: "재정관리" },
@@ -50,18 +50,45 @@
   const path = location.pathname.split("/").pop() || "index.html";
 
   // ===== 한 화면씩 넘어가는 페이지 =====
-  // 아래 페이지들은 컴퓨터(마우스)에서 휠을 굴리면 한 화면씩 딱딱 넘어간다(css: html.snap-page).
+  // 아래 페이지들은 컴퓨터(마우스)에서 휠을 굴리면 한 화면씩 넘어간다(css: html.snap-page).
   // 휴대폰·태블릿에서는 css 쪽 조건(화면 폭·마우스 여부)에 걸려 평소처럼 자유롭게 내려간다.
   const SNAP_PAGES = ["index.html", "welcome.html", "word.html", "story.html", "world.html", "library.html", "office.html"];
   if (SNAP_PAGES.indexOf(path) !== -1) {
-    document.documentElement.classList.add("snap-page");
-    // css 의 스크롤 맞춤(scroll-snap)만으로는 노트북 터치패드처럼 조금씩 굴리는 경우 제자리로 되돌아가 버린다.
-    // 그래서 휠을 한 번 굴리면(방향만 보고) 바로 다음/이전 화면으로 부드럽게 넘긴다.
+    const root = document.documentElement;
+    root.classList.add("snap-page");
+    // 휠을 한 번 굴리면(방향만 보고) 다음/이전 화면으로 넘어간다.
+    // 브라우저 기본 '부드러운 스크롤'은 너무 빨라 툭 끊기듯 보여서(2026-09-29 목사님 의견),
+    // 약 1초 동안 천천히 출발해 천천히 멈추도록 직접 움직인다(GLIDE_MS 로 빠르기 조절).
     // 한 화면보다 긴 화면은 그 안을 끝까지 내려 본 다음에 다음 화면으로 넘어간다.
+    const GLIDE_MS = 1000;
     const snapMQ = window.matchMedia("(min-width: 1025px) and (hover: hover) and (pointer: fine)");
-    let lockUntil = 0;
+    const pageOf = (p) => p.split("/").pop() || "index.html";
+    let lockUntil = 0, glideRaf = 0;
+    const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+    const glideTo = (target) => {
+      const maxY = root.scrollHeight - window.innerHeight;
+      target = Math.max(0, Math.min(maxY, Math.round(target)));
+      const from = window.scrollY, dist = target - from;
+      if (Math.abs(dist) < 2) return 0;
+      const screens = Math.abs(dist) / window.innerHeight;
+      const dur = Math.round(Math.min(GLIDE_MS * 1.6, GLIDE_MS + Math.max(0, screens - 1) * 160));
+      cancelAnimationFrame(glideRaf);
+      root.classList.add("snap-gliding");        // 움직이는 동안은 css 맞춤·기본 부드러운 스크롤을 끈다
+      const t0 = performance.now();
+      const frame = (now) => {
+        const p = Math.min(1, (now - t0) / dur);
+        window.scrollTo(0, from + dist * easeInOutSine(p));
+        if (p < 1) glideRaf = requestAnimationFrame(frame);
+        else root.classList.remove("snap-gliding");
+      };
+      glideRaf = requestAnimationFrame(frame);
+      return dur;
+    };
+    const blocked = () =>
+      root.classList.contains("pop-open") || document.body.classList.contains("menu-lock") ||
+      !!document.querySelector(".modal:not([hidden])");
     const canScrollInside = (el, dir) => {
-      for (; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+      for (; el && el !== document.body && el !== root; el = el.parentElement) {
         const st = getComputedStyle(el);
         if (!/(auto|scroll)/.test(st.overflowY) || el.scrollHeight <= el.clientHeight + 1) continue;
         if (dir > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0) return true;
@@ -69,7 +96,7 @@
       return false;
     };
     const snapStops = () => {
-      const maxY = document.documentElement.scrollHeight - window.innerHeight;
+      const maxY = root.scrollHeight - window.innerHeight;
       const stops = [];
       document.querySelectorAll("body > section").forEach((s) => {
         if (s.hidden || getComputedStyle(s).scrollSnapAlign.indexOf("start") === -1) return;
@@ -78,34 +105,69 @@
       stops.push({ top: maxY, bottom: maxY + window.innerHeight });
       return stops.filter((s) => s.top <= maxY + 1).sort((a, b) => a.top - b.top);
     };
-    window.addEventListener("wheel", (e) => {
-      if (!snapMQ.matches || e.ctrlKey || e.defaultPrevented) return;
-      if (Math.abs(e.deltaY) < Math.abs(e.deltaX) || !e.deltaY) return;
-      if (document.documentElement.classList.contains("pop-open") || document.body.classList.contains("menu-lock")) return;
-      if (document.querySelector(".modal:not([hidden])")) return;
-      const dir = e.deltaY > 0 ? 1 : -1;
-      if (canScrollInside(e.target, dir)) return;               // 안쪽 목록 상자 등은 그 안에서 먼저 스크롤
+    // dir 방향으로 갈 곳: 숫자(화면 위치) / "native"(긴 화면 안이라 평소처럼 스크롤) / null(더 갈 곳 없음)
+    const nextTarget = (dir) => {
       const y = window.scrollY, vh = window.innerHeight, stops = snapStops();
-      // 지금 보고 있는 화면이 한 화면보다 길면, 그 화면 안에서는 평소처럼 내려간다
       const cur = stops.filter((s) => s.top <= y + 2).pop();
       if (cur && cur.bottom - cur.top > vh + 4) {
-        if (dir > 0 && y + vh < cur.bottom - 4) return;
-        if (dir < 0 && y > cur.top + 4) return;
+        if (dir > 0 && y + vh < cur.bottom - 4) return "native";
+        if (dir < 0 && y > cur.top + 4) return "native";
       }
-      e.preventDefault();
+      if (dir > 0) { const n = stops.find((s) => s.top > y + 2); return n ? n.top : null; }
+      const prev = stops.filter((s) => s.top < y - 2).pop();
+      // 위로 갈 때, 긴 화면이면 그 화면의 맨 아래(끝부분)부터 보여 준다
+      return prev ? ((prev.bottom - prev.top > vh + 4) ? Math.max(prev.top, prev.bottom - vh) : prev.top) : null;
+    };
+    const go = (target) => { lockUntil = Date.now() + glideTo(target) + 150; };
+
+    window.addEventListener("wheel", (e) => {
+      if (!snapMQ.matches || e.ctrlKey || e.defaultPrevented) return;
+      if (Math.abs(e.deltaY) < Math.abs(e.deltaX) || !e.deltaY || blocked()) return;
       const now = Date.now();
-      if (now < lockUntil) { lockUntil = Math.max(lockUntil, now + 180); return; } // 관성 스크롤로 두 칸씩 넘어가지 않게
-      let target = null;
-      if (dir > 0) { const n = stops.find((s) => s.top > y + 2); if (n) target = n.top; }
-      else {
-        const prev = stops.filter((s) => s.top < y - 2).pop();
-        // 위로 갈 때, 긴 화면이면 그 화면의 맨 아래(끝부분)부터 보여 준다
-        if (prev) target = (prev.bottom - prev.top > vh + 4) ? Math.max(prev.top, prev.bottom - vh) : prev.top;
-      }
-      if (target == null) return;
-      lockUntil = now + 850;
-      window.scrollTo({ top: target, behavior: "smooth" });
+      // 움직이는 중이거나 막 멈춘 직후(터치패드 관성)에는 휠을 무시 — 두 칸씩 넘어가지 않게
+      if (now < lockUntil) { e.preventDefault(); lockUntil = Math.max(lockUntil, now + 180); return; }
+      const dir = e.deltaY > 0 ? 1 : -1;
+      if (canScrollInside(e.target, dir)) return;               // 안쪽 목록 상자 등은 그 안에서 먼저 스크롤
+      const t = nextTarget(dir);
+      if (t === "native") return;
+      e.preventDefault();
+      if (t != null) go(t);
     }, { passive: false });
+
+    // 키보드(Page Down·화살표·스페이스·Home·End)도 똑같이 부드럽게
+    window.addEventListener("keydown", (e) => {
+      if (!snapMQ.matches || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || blocked()) return;
+      const ae = document.activeElement;
+      if (ae && (ae.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) return;
+      if (e.key === " " && ae && /^(BUTTON|A|SUMMARY)$/.test(ae.tagName)) return;
+      let dir = 0;
+      if (e.key === "PageDown" || e.key === "ArrowDown" || (e.key === " " && !e.shiftKey)) dir = 1;
+      else if (e.key === "PageUp" || e.key === "ArrowUp" || (e.key === " " && e.shiftKey)) dir = -1;
+      else if (e.key === "Home") { e.preventDefault(); go(0); return; }
+      else if (e.key === "End") { e.preventDefault(); go(root.scrollHeight); return; }
+      if (!dir) return;
+      if (Date.now() < lockUntil) { e.preventDefault(); return; }
+      const t = nextTarget(dir);
+      if (t === "native") return;
+      e.preventDefault();
+      if (t != null) go(t);
+    });
+
+    // 같은 페이지 안으로 가는 링크(표지의 차례, 위 메뉴의 세부 항목, 맨 위로 버튼 등)도 부드럽게
+    document.addEventListener("click", (e) => {
+      if (!snapMQ.matches || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      const a = e.target.closest && e.target.closest("a[href*='#']");
+      if (!a || (a.target && a.target !== "_self")) return;
+      const url = new URL(a.getAttribute("href"), location.href);
+      if (pageOf(url.pathname) !== pageOf(location.pathname) || !url.hash) return;
+      const el = document.getElementById(decodeURIComponent(url.hash.slice(1)));
+      if (!el || el.closest(".pop-src")) return;                 // 팝업 속 내용은 SitePopup 이 연다
+      e.preventDefault();
+      try { history.replaceState(null, "", url.hash); } catch (err) {}
+      const sec = el.closest("body > section") || el;
+      go(sec.getBoundingClientRect().top + window.scrollY);
+    });
+    window.__snapGlideTo = go;   // '맨 위로' 버튼 등에서 같이 쓴다
   }
 
   // ===== 우리 교회 정보(js/church.js) 읽기 =====
@@ -127,7 +189,17 @@
   // ===== 헤더 =====
   // 로고 클릭으로도 처음화면에 갈 수 있지만, 다른 창(외부 링크 등)에서 넘어왔을 때
   // "메인화면으로"라는 글자 링크가 명확히 보이는 게 낫다는 요청으로 다시 추가함.
-  const homeLink = `<div class="nav-item nav-home-link"><a href="index.html"${path === "index.html" ? ' class="active"' : ""}>메인화면으로</a></div>`;
+  // '메인화면으로'에 마우스를 올리면 모든 메뉴와 그 세부 항목을 한눈에 보여 주는 큰 메뉴(전체 메뉴)가 뜬다.
+  const megaCols = NAV.filter((n) => n.sub && !n.adminOnly && !n.memberOnly && !n.footerOnly).map((n) => `
+          <div class="mega-col">
+            <a class="mega-head" href="${n.href}">${n.label}</a>
+            <div class="mega-links">${n.sub.map((s) => `<a href="${s.href}">${s.label}</a>`).join("")}</div>
+          </div>`).join("");
+  const homeLink = `<div class="nav-item nav-home-link has-mega">
+        <a href="index.html"${path === "index.html" ? ' class="active"' : ""}>메인화면으로<span class="nav-caret mega-caret" aria-hidden="true">⌄</span></a>
+        <div class="nav-mega" aria-label="전체 메뉴"><div class="nav-mega-inner">${megaCols}
+        </div></div>
+      </div>`;
   // footerOnly 항목(사이트맵)은 상단 메뉴를 4개로 간소하게 유지하기 위해 상단에서는 뺀다(푸터에는 남음).
   const navLinks = homeLink + NAV.filter((n) => !n.footerOnly).map((n) => {
     const active = path === n.href.split("#")[0] ? ' class="active"' : "";
@@ -162,18 +234,28 @@
   document.body.insertAdjacentHTML("afterbegin", headerHTML);
 
   // ===== 각 메뉴 첫 화면(표지)에 이 페이지의 차례 붙이기 =====
-  // 페이지 안의 <section id=".."><h2>제목</h2> 을 읽어 만들기 때문에, 섹션을 고치면 차례도 저절로 따라간다.
+  // 위 메뉴(NAV)에 이 페이지가 있으면 그 세부 항목을 그대로 쓰고(메뉴와 차례가 늘 같게),
+  // 없으면 페이지 안의 <section id=".."><h2>제목</h2> 을 읽어 만든다.
   // (한 화면씩 넘어가는 페이지에서만. 휴대폰에서는 css에서 숨긴다)
   if (document.documentElement.classList.contains("snap-page")) {
     const ph = document.querySelector(".page-hero");
+    const navEntry = NAV.find((n) => n.sub && !n.adminOnly && n.href.split("#")[0] === path);
     const buildToc = () => {
-      const items = Array.prototype.slice.call(document.querySelectorAll("body > section[id]"))
-        .filter((s) => !s.hidden)
-        .map((s) => { const h = s.querySelector("h2"); return h ? { id: s.id, label: (s.getAttribute("data-toc") || h.textContent).trim() } : null; })
-        .filter(Boolean);
+      const items = navEntry
+        ? navEntry.sub
+            .map((s) => ({ href: s.href.split("#")[0] === path ? "#" + (s.href.split("#")[1] || "") : s.href, label: s.label }))
+            .filter((it) => {
+              if (it.href.charAt(0) !== "#") return true;             // 다른 페이지로 가는 항목(교구사역 등)
+              const el = document.getElementById(it.href.slice(1));
+              return !!el && !el.hidden;
+            })
+        : Array.prototype.slice.call(document.querySelectorAll("body > section[id]"))
+            .filter((s) => !s.hidden)
+            .map((s) => { const h = s.querySelector("h2"); return h ? { href: "#" + s.id, label: (s.getAttribute("data-toc") || h.textContent).trim() } : null; })
+            .filter(Boolean);
       const old = ph.querySelector(".ph-toc");
       if (old) old.remove();
-      if (items.length) ph.insertAdjacentHTML("beforeend", `<nav class="ph-toc" aria-label="이 페이지 차례">${items.map((it) => `<a href="#${it.id}">${it.label}</a>`).join("")}</nav>`);
+      if (items.length) ph.insertAdjacentHTML("beforeend", `<nav class="ph-toc" aria-label="이 페이지 차례">${items.map((it) => `<a href="${it.href}">${it.label}</a>`).join("")}</nav>`);
     };
     if (ph) {
       buildToc();
@@ -690,7 +772,7 @@
   topBtn.setAttribute("aria-label", "맨 위로");
   topBtn.innerHTML = "↑";
   document.body.appendChild(topBtn);
-  topBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  topBtn.addEventListener("click", () => { if (window.__snapGlideTo && window.matchMedia("(min-width: 1025px) and (hover: hover) and (pointer: fine)").matches) window.__snapGlideTo(0); else window.scrollTo({ top: 0, behavior: "smooth" }); });
   window.addEventListener("scroll", () => {
     topBtn.classList.toggle("show", window.scrollY > 480);
   }, { passive: true });

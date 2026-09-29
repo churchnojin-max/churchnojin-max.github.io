@@ -13,17 +13,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=20260929tidy" />
+  <link rel="stylesheet" href="css/style.css?v=20260929tidy2" />
 </head>
 <body>
 
   <!-- ===== 행정 (2026-09-29 새로 만듦) =====
-       위 메뉴 '행정' 의 네 항목: 온라인 헌금 · 기부금영수증 · 모임장소 확인 · 장소신청
+       위 메뉴 '행정' 의 항목: 온라인 헌금 · 기부금영수증 · 모임장소 확인 · 장소신청 · 공지사항 · 교육 자료실
        모임장소 확인 · 장소신청은 아직 자리만 만들어 둔 상태(준비 중). -->
   <section class="page-hero">
     <p class="ph-eyebrow">OFFICE</p>
     <h1>행정</h1>
-    <p>헌금과 기부금영수증, 교회 모임 장소 안내를 한곳에 모았습니다.</p>
+    <p>공지사항과 헌금·기부금영수증, 모임 장소, 교육 자료를 한곳에 모았습니다.</p>
   </section>
 
   <!-- ===== 온라인 헌금 ===== -->
@@ -90,11 +90,38 @@
     </div>
   </section>
 
+  <!-- ===== 공지사항 (2026-09-29 공동체와 양육에서 옮겨 옴) ===== -->
+  <section id="notice" class="block">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">NOTICE</span>
+        <h2>공지사항</h2>
+        <p>교회의 안내와 소식을 전합니다.</p>
+      </div>
+      <div class="nt-wrap" id="communityNoticeBox"><p class="qt-loading">공지를 불러오는 중…</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 교육 자료실 (회원 전용, 2026-09-29 자료실에서 옮겨 옴) ===== -->
+  <section id="edu" class="block block-alt">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">LIBRARY</span>
+        <h2>교육 자료실</h2>
+        <p>리더 대본·교재 등 교육 자료를 카테고리별로 내려받을 수 있습니다. (로그인한 교인 전용)</p>
+      </div>
+      <div id="resourceArea"><p class="qt-loading">불러오는 중…</p></div>
+    </div>
+  </section>
+
   <script src="js/church.js?v=20260926denom"></script>
   <script src="js/brand.js?v=1"></script>
   <script src="js/config.js?v=20260730lib13"></script>
-  <script src="js/layout.js?v=20260929tidy"></script>
+  <script src="js/layout.js?v=20260929tidy2"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
+  <script src="js/upload.js?v=20260709sb"></script>
+  <script src="js/notices.js?v=20260929tidy2"></script>
+  <script src="js/resources.js?v=20260730lib13"></script>
   <script>
     // 온라인 헌금 계좌 안내 — js/church.js 의 give 값을 그대로 보여 준다
     (function () {

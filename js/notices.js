@@ -71,7 +71,7 @@ window.ChurchNotices = (function () {
       html += `<p class="nt-empty">${loaded ? "등록된 공지사항이 없습니다." : "불러오는 중…"}</p>`;
     } else {
       html += `<div class="nt-list">` + list.map((n) => noticeHtml(n, m.compact, admin)).join("") + `</div>`;
-      if (m.compact && notices.length > list.length) html += `<a class="nt-more" href="story.html#notice">공지 전체 보기 →</a>`;
+      if (m.compact && notices.length > list.length) html += `<a class="nt-more" href="office.html#notice">공지 전체 보기 →</a>`;
     }
     el.innerHTML = html;
 
