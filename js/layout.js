@@ -41,12 +41,13 @@
     ] },
     // 교회행정: 위 메뉴줄이 아니라 오른쪽 이름(○○○ 담임목사님) 왼편에 따로 뜬다(2026-09-29).
     // 권한을 받은 사람에게만 보이고, 각 항목은 perm 권한(또는 관리자)이 있을 때만 보인다.
-    // 목회행정·홈페이지 설정은 지금 페이지 자체가 관리자 전용이라 isAdmin 으로 둔다.
+    // perm 에 "a|b" 처럼 적으면 둘 중 하나만 있어도 보인다(관리자는 항상 전부).
+    // 목회행정은 목회행정 권한(심방·상담·설교) 또는 예배 권한(이달의 찬양·주보)이 있으면 열리고, 안의 탭도 권한별로 나뉜다.
     { href: "finance.html", label: "교회행정", adminOnly: true, sub: [
       { href: "finance.html", label: "재정관리", perm: "canFinance" },
       { href: "gyojeok.html", label: "교적관리", perm: "canGyojeok" },
-      { href: "affairs.html", label: "목회행정", perm: "isAdmin" },
-      { href: "home-settings.html", label: "홈페이지 설정", perm: "isAdmin" },
+      { href: "affairs.html", label: "목회행정", perm: "canAffairs|canWorship" },
+      { href: "home-settings.html", label: "홈페이지 설정", perm: "canHomepage" },
     ] },
     // 사이트맵: 상단 메뉴는 4개로 간소화하기 위해 빼고, 푸터에서만 보이게 함(footerOnly)
     { href: "sitemap.html", label: "사이트맵", footerOnly: true },
@@ -587,7 +588,7 @@
       p = p || {};
       let any = false;
       document.querySelectorAll("[data-perm]").forEach((a) => {
-        const show = !!(p.isAdmin || p[a.getAttribute("data-perm")]);
+        const show = !!(p.isAdmin || a.getAttribute("data-perm").split("|").some((k) => p[k]));
         a.hidden = !show;
         if (show) any = true;
       });

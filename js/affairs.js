@@ -203,10 +203,27 @@ console.log('[affairs.js] v20260712memo2');
     { name: '예언서', t: '신약', books: ['요한계시록'] }
   ];
 
+  // 탭마다 필요한 권한(관리자는 전부). 목회행정 권한 = 심방·상담·설교관리 쪽, 예배 권한 = 찬양·주보 쪽.
+  // '나의 도서관'과 '설정'은 담임목사(관리자) 전용으로 둔다. (2026-09-29)
+  var TAB_PERM = {
+    dashboard: 'canAffairs', sermon: 'canAffairs', worship: 'canAffairs', illus: 'canAffairs',
+    visit: 'canAffairs', counsel: 'canAffairs', edu: 'canAffairs', doc: 'canAffairs',
+    read: 'canAffairs', sermonfile: 'canAffairs', bible: 'any',
+    song: 'canWorship', bulletin: 'canWorship',
+    library: 'isAdmin', settings: 'isAdmin'
+  };
+  var PERMS = {};
+  function tabAllowed(t) {
+    var need = TAB_PERM[t] || 'isAdmin';
+    return !!(PERMS.isAdmin || need === 'any' || PERMS[need]);
+  }
+  function allowedTabs() { return TAB_ORDER.filter(function (t) { return tabAllowed(t[0]); }); }
+
   var tab = 'dashboard';
   var pendingSermon = null;   // 설교 제안에서 '이 책으로 시작' 클릭 시, 설교관리 탭이 열며 편집기 prefill
   function render() {
-    root.innerHTML = '<div class="fin-tabs">' + TAB_ORDER.map(function (t) { return '<button data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div><div id="afPanel"></div>';
+    if (!tabAllowed(tab)) { var first = allowedTabs()[0]; tab = first ? first[0] : 'bible'; }
+    root.innerHTML = '<div class="fin-tabs">' + allowedTabs().map(function (t) { return '<button data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div><div id="afPanel"></div>';
     Array.prototype.forEach.call(root.querySelectorAll('.fin-tabs button'), function (b) {
       if (b.dataset.t === tab) b.classList.add('active');
       b.onclick = function () { if (b.dataset.t === tab) return; var prev = tab; tab = b.dataset.t; render(); pushBackClose(function () { tab = prev; render(); }); };
@@ -7840,12 +7857,20 @@ console.log('[affairs.js] v20260712memo2');
       root.querySelector('.fin-card').appendChild(lb);
       return;
     }
-    api('GET', 'admins?uid=eq.' + s.uid + '&select=uid').then(function (rows) {
-      if (!rows || !rows.length) { root.innerHTML = msgCard('접근 권한이 없습니다', '행정관리는 관리자만 이용할 수 있습니다.'); return; }
+    // 권한 확인: my_perms(관리자·목회행정·예배 권한). 옛 DB라 my_perms 가 없으면 관리자 여부만 본다.
+    api('POST', 'rpc/my_perms', {}).catch(function () { return null; }).then(function (p) {
+      if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+      return api('GET', 'admins?uid=eq.' + s.uid + '&select=uid').then(function (rows) { return { isAdmin: !!(rows && rows.length) }; });
+    }).then(function (p) {
+      PERMS = p || {};
+      if (!(PERMS.isAdmin || PERMS.canAffairs || PERMS.canWorship)) {
+        root.innerHTML = msgCard('접근 권한이 없습니다', '목회행정은 담임목사님이나 목회행정·예배 권한을 받은 분만 이용할 수 있습니다.');
+        return;
+      }
       loadMembers();
       loadGeneral(); // 설립일(호수 주년 기준) 미리 로드
       render();
-      maybeQtIncoming();
+      if (tabAllowed('sermon')) maybeQtIncoming();
     }).catch(function (e) { root.innerHTML = msgCard('오류', e.message); });
   }
 

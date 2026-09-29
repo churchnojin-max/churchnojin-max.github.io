@@ -81,14 +81,19 @@
       $("hsLockMsg").textContent = "관리자 계정으로 로그인한 뒤 다시 열어 주세요.";
       return;
     }
-    api("GET", "admins?uid=eq." + uid + "&select=uid")
-      .then(function (rows) {
-        var isAdmin = Array.isArray(rows) && rows.length > 0;
+    // 권한 확인: 관리자 또는 홈페이지 권한(my_perms). 옛 DB라 my_perms 가 없으면 관리자 여부만 본다. (2026-09-29)
+    api("POST", "rpc/my_perms", {})
+      .catch(function () { return null; })
+      .then(function (p) {
+        if (p && typeof p === "object" && !Array.isArray(p)) return !!(p.isAdmin || p.canHomepage);
+        return api("GET", "admins?uid=eq." + uid + "&select=uid").then(function (rows) { return Array.isArray(rows) && rows.length > 0; });
+      })
+      .then(function (allowed) {
         loading.hidden = true;
-        if (!isAdmin) {
+        if (!allowed) {
           lock.hidden = false;
           $("hsLockTitle").textContent = "권한 없음";
-          $("hsLockMsg").textContent = "이 페이지는 관리자만 사용할 수 있습니다.";
+          $("hsLockMsg").textContent = "이 페이지는 담임목사님이나 홈페이지 권한을 받은 분만 사용할 수 있습니다.";
           return;
         }
         bodyEl.hidden = false;
