@@ -361,6 +361,7 @@ if (sermonDeck) {
           <div class="ws-actions">
             ${body ? `<button type="button" class="btn btn-solid" data-pop="pop-sermon">설교 요약 읽기</button>` : ""}
             <a class="ws-more" href="word.html#archive">주보 모아 보기 →</a>
+            <a class="ws-more ws-yt" href="${SERMON_YOUTUBE_URL}" target="_blank" rel="noopener">▶ 유튜브 설교 영상 보기</a>
           </div>
           ${body ? `<div class="pop-src" id="pop-sermon" data-pop-title="이번 주 설교 요약" hidden>
             <div class="ws-pop">

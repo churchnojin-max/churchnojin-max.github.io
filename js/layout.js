@@ -3,14 +3,8 @@
    헤더(5대메뉴)·푸터·설치배너 주입 + 스크롤/모바일메뉴 + PWA/푸시
    ============================================================ */
 (function () {
+  // 위 메뉴 순서(2026-09-29 목사님 지정): 메인화면으로 · 예배와 말씀 · 공동체와 양육 · 선교와 사역 · 교회 안내 · 행정
   const NAV = [
-    { href: "welcome.html", label: "교회 안내", sub: [
-      { href: "welcome.html#about", label: "우리교회를 소개합니다" },
-      { href: "welcome.html#worship", label: "예배 안내" },
-      { href: "welcome.html#bulletin", label: "이번 주 주보" },
-      { href: "welcome.html#directions", label: "찾아오시는 길" },
-      { href: "welcome.html#newfamily", label: "새가족 등록" },
-    ] },
     { href: "word.html", label: "예배와 말씀", sub: [
       { href: "word.html#sermon", label: "이번 주 말씀" },
       { href: "word.html#qt", label: "매일 말씀 묵상" },
@@ -28,6 +22,13 @@
       { href: "world.html#mission", label: "선교" },
       { href: "world.html#local", label: "지역 연합사역" },
     ] },
+    { href: "welcome.html", label: "교회 안내", sub: [
+      { href: "welcome.html#about", label: "우리교회를 소개합니다" },
+      { href: "welcome.html#worship", label: "예배 안내" },
+      { href: "welcome.html#bulletin", label: "이번 주 주보" },
+      { href: "welcome.html#directions", label: "찾아오시는 길" },
+      { href: "welcome.html#newfamily", label: "새가족 등록" },
+    ] },
     { href: "office.html", label: "행정", sub: [
       { href: "office.html#notice", label: "공지사항" },
       { href: "office.html#give", label: "온라인 헌금" },
@@ -36,6 +37,7 @@
       { href: "office.html#reserve", label: "장소신청" },
       { href: "office.html#edu", label: "교육 자료실" },
       { href: "office.html#worship-lib", label: "예배 자료실" },
+      { href: "office.html#app", label: "앱 설치 안내" },
     ] },
     { href: "finance.html", label: "교회행정", adminOnly: true, sub: [
       { href: "finance.html", label: "재정관리" },
@@ -52,7 +54,7 @@
   // ===== 한 화면씩 넘어가는 페이지 =====
   // 아래 페이지들은 컴퓨터(마우스)에서 휠을 굴리면 한 화면씩 넘어간다(css: html.snap-page).
   // 휴대폰·태블릿에서는 css 쪽 조건(화면 폭·마우스 여부)에 걸려 평소처럼 자유롭게 내려간다.
-  const SNAP_PAGES = ["index.html", "welcome.html", "word.html", "story.html", "world.html", "library.html", "office.html"];
+  const SNAP_PAGES = ["index.html", "welcome.html", "word.html", "story.html", "world.html", "office.html"];
   if (SNAP_PAGES.indexOf(path) !== -1) {
     const root = document.documentElement;
     root.classList.add("snap-page");
@@ -255,7 +257,8 @@
             .filter(Boolean);
       const old = ph.querySelector(".ph-toc");
       if (old) old.remove();
-      if (items.length) ph.insertAdjacentHTML("beforeend", `<nav class="ph-toc" aria-label="이 페이지 차례">${items.map((it) => `<a href="${it.href}">${it.label}</a>`).join("")}</nav>`);
+      // 항목이 많으면(행정 등) 두 칸으로 나눠 한 화면에 들어가게
+      if (items.length) ph.insertAdjacentHTML("beforeend", `<nav class="ph-toc${items.length > 6 ? " is-long" : ""}" aria-label="이 페이지 차례">${items.map((it) => `<a href="${it.href}">${it.label}</a>`).join("")}</nav>`);
     };
     if (ph) {
       buildToc();
