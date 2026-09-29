@@ -1,4 +1,4 @@
-/* district.js — 교구사역(구역장 사역보고 · 말씀 나눔지)
+/* district.js — 교구사역(구역장 사역보고서 · 말씀 나눔지)  ※ 화면 글자는 '보고서'로 통일(2026-09-29 목사님 요청, '보고자'는 사람이라 그대로)
  * 콘솔: [district.js] v20260822
  *
  * 권한은 화면이 아니라 DB(RLS)가 막는다. 여기서 탭을 숨기는 것은
@@ -145,7 +145,7 @@ console.log('[district.js] v20260822');
   }
 
   function render() {
-    var tabs = [['write', '사역보고 작성'], ['list', perms.all ? '보고 모아보기' : '내 보고'], ['stat', '월별 통계'], ['sheet', '말씀 나눔지']];
+    var tabs = [['write', '사역보고서 작성'], ['list', perms.all ? '보고서 모아보기' : '내 보고서'], ['stat', '월별 통계'], ['sheet', '말씀 나눔지']];
     root.innerHTML = '<div class="fin-tabs">' + tabs.map(function (t) {
       return '<button data-t="' + t[0] + '"' + (tab === t[0] ? ' class="active"' : '') + '>' + esc(t[1]) + '</button>';
     }).join('') + '</div><div id="dtPanel"></div>';
@@ -159,7 +159,7 @@ console.log('[district.js] v20260822');
     else renderWrite(p);
   }
 
-  /* ══════════════ 사역보고 작성 ══════════════ */
+  /* ══════════════ 사역보고서 작성 ══════════════ */
   function renderWrite(p, edit) {
     var r = edit || {};
     function opt(v) { return '<option' + (r.district === v ? ' selected' : '') + '>' + v + '</option>'; }
@@ -189,7 +189,7 @@ console.log('[district.js] v20260822');
       '</div>' +
 
       '<div class="dr-actions">' +
-      '<button class="btn" id="f_save">' + (edit ? '수정 저장' : '보고 올리기') + '</button>' +
+      '<button class="btn" id="f_save">' + (edit ? '수정 저장' : '보고서 올리기') + '</button>' +
       (edit ? '<button class="btn btn-line" id="f_cancel">취소</button>' : '') +
       '<span class="dr-msg" id="f_msg"></span></div>' +
       '</div>';
@@ -238,12 +238,12 @@ console.log('[district.js] v20260822');
     };
   }
 
-  /* ══════════════ 보고 목록 ══════════════ */
+  /* ══════════════ 보고서 목록 ══════════════ */
   function renderList(p) {
     p.innerHTML = '<p class="qt-loading">불러오는 중…</p>';
     api('GET', 'district_reports?select=*&order=met_on.desc,id.desc&limit=200').then(function (rows) {
       rows = rows || [];
-      if (!rows.length) { p.innerHTML = msgCard('아직 보고가 없습니다', '‘사역보고 작성’에서 첫 보고를 올려 보세요.'); return; }
+      if (!rows.length) { p.innerHTML = msgCard('아직 보고서가 없습니다', '‘사역보고서 작성’에서 첫 보고서를 올려 보세요.'); return; }
       p.innerHTML = '<div class="fin-card"><table class="fin-table"><thead><tr>' +
         '<th>모임일자</th><th>구역</th><th>보고자</th><th>예배장소</th>' +
         '<th class="num">출석</th><th class="num">헌금</th><th></th>' +
@@ -299,7 +299,7 @@ console.log('[district.js] v20260822');
     p.innerHTML = '<p class="qt-loading">불러오는 중…</p>';
     api('GET', 'district_reports?select=met_on,district,attend_count,offering&order=met_on.desc&limit=1000').then(function (rows) {
       rows = rows || [];
-      if (!rows.length) { p.innerHTML = msgCard('통계를 낼 자료가 없습니다', '보고가 쌓이면 월별로 정리해 보여드립니다.'); return; }
+      if (!rows.length) { p.innerHTML = msgCard('통계를 낼 자료가 없습니다', '보고서가 쌓이면 월별로 정리해 보여드립니다.'); return; }
 
       var months = [];
       rows.forEach(function (r) { var m = ym(r.met_on); if (months.indexOf(m) < 0) months.push(m); });
@@ -321,7 +321,7 @@ console.log('[district.js] v20260822');
         var body = keys.map(function (k) {
           var v = by[k];
           if (!v) {
-            return '<tr><td>' + esc(k) + '</td><td colspan="4" style="color:#c0392b">이번 달 보고 없음</td></tr>';
+            return '<tr><td>' + esc(k) + '</td><td colspan="4" style="color:#c0392b">이번 달 보고서 없음</td></tr>';
           }
           tn += v.n; ta += v.att; to += v.off;
           return '<tr><td>' + esc(k) + '</td>' +
@@ -339,7 +339,7 @@ console.log('[district.js] v20260822');
           '<select id="s_m" style="padding:7px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' +
           months.map(function (m) { return '<option' + (m === cur ? ' selected' : '') + '>' + m + '</option>'; }).join('') +
           '</select>' +
-          (missing.length ? '<span class="dr-pill dr-none">보고 없는 구역 ' + missing.length + '곳</span>' : '<span class="dr-pill">모든 구역 보고 완료</span>') +
+          (missing.length ? '<span class="dr-pill dr-none">보고서 없는 구역 ' + missing.length + '곳</span>' : '<span class="dr-pill">모든 구역 보고서 완료</span>') +
           '</div>' +
           '<table class="fin-table"><thead><tr><th>구역</th><th class="num">모임</th><th class="num">평균 출석</th><th class="num">연인원</th><th class="num">헌금</th></tr></thead>' +
           '<tbody>' + body + '</tbody>' +

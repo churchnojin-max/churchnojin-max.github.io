@@ -2581,7 +2581,7 @@ html.snap-page .section-head .eyebrow { display: block; }
     url("../images/hero-bg-wilderness.jpg") center 45% / cover no-repeat;
 }
 .hero-full .hero-stage {
-  position: relative; z-index: 2; width: 100%; max-width: 1180px; margin: 0 auto;
+  position: relative; z-index: 2; width: 100%; max-width: 1280px; margin: 0 auto;
   padding: calc(var(--hdr) + 4vh) 28px 7vh;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 28px; text-align: center;
 }
@@ -2593,11 +2593,12 @@ html.snap-page .section-head .eyebrow { display: block; }
 /* 붓으로 그은 흰 바탕 + 제목 */
 .hero-brush {
   margin: 0; font-family: "Noto Serif KR", serif; font-weight: 900; color: var(--accent);
-  font-size: clamp(2.1rem, 5.1vw, 4.6rem); line-height: 1.2; letter-spacing: .03em; word-break: keep-all;
+  font-size: clamp(2.1rem, 4.7vw, 4.4rem); line-height: 1.2; letter-spacing: .03em; word-break: keep-all;
   animation: brushIn 1.1s cubic-bezier(.65,.05,.3,1) .25s both;
 }
 .hero-brush .hb-stroke {
-  display: inline-block; padding: .4em 1.2em .48em .9em;
+  display: inline-block; padding: .4em 2.5em .48em .9em;   /* 오른쪽을 길게: 글자 끝(은혜)이 붓 끝 갈라짐에 물리지 않게 */
+  margin-right: -1.6em;                                   /* 오른쪽이 긴 만큼 밀어 글자가 화면 가운데 오게 */
   background: url("../images/brush-stroke-white.svg") center / 100% 100% no-repeat;
   filter: drop-shadow(0 6px 18px rgba(0,0,0,.28));
   transform: rotate(-1.6deg);
@@ -2625,9 +2626,9 @@ html.snap-page .section-head .eyebrow { display: block; }
   .hero-full .hero-headline { gap: 18px; }
   .hero-brush { font-size: clamp(1.9rem, 9.4vw, 2.6rem); line-height: 1.5; }
   /* 좁은 화면: 두 줄로 나누고 줄마다 붓 획 */
-  .hero-brush .hb-stroke { background: none; filter: none; padding: 0; transform: none; }
+  .hero-brush .hb-stroke { background: none; filter: none; padding: 0; margin-right: 0; transform: none; }
   .hero-brush .hb-line {
-    display: block; width: max-content; margin: 0 auto; padding: .28em .8em .36em;
+    display: block; width: max-content; margin: 0 auto; padding: .28em 1.6em .36em .8em;
     background: url("../images/brush-stroke-white.svg") center / 100% 100% no-repeat;
     filter: drop-shadow(0 4px 12px rgba(0,0,0,.28)); transform: rotate(-1.5deg);
   }

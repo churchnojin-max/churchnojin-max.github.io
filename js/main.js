@@ -13,6 +13,26 @@ let active = 0; // 0 = 이번 주(최신)
 
 const SERMON_YOUTUBE_URL = "https://www.youtube.com/@노진교회";
 
+// 설교 이름표를 주보의 주일 날짜와 오늘 날짜로 자동으로 정한다(2026-09-29).
+//   그 주일 당일        → "오늘의 설교"
+//   지난 주일(1~7일 전) → "지난 주일 설교 · 9월 27일"
+//   다가올 주일(미리 올린 주보) → "이번 주일 설교 · 10월 4일"
+//   그보다 오래됨       → "최근 설교 · 9월 13일"
+// short 는 '○○ 주일 낮 예배' 앞에 붙이는 말(오늘/지난/이번).
+function sermonWhen(bdate) {
+  const m = String(bdate || "").slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return { label: "이번 주 설교", short: "" };
+  const sun = new Date(+m[1], +m[2] - 1, +m[3]);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((sun - today) / 86400000);
+  const md = `${+m[2]}월 ${+m[3]}일`;
+  if (diff === 0) return { label: "오늘의 설교", short: "오늘" };
+  if (diff > 0) return { label: `이번 주일 설교 · ${md}`, short: "이번" };
+  if (diff >= -7) return { label: `지난 주일 설교 · ${md}`, short: "지난" };
+  return { label: `최근 설교 · ${md}`, short: "" };
+}
+
 function cardInner(b, i) {
   return `
     <div class="sermon-meta">
@@ -352,7 +372,7 @@ if (sermonDeck) {
       // 한 화면에는 제목·본문 말씀만 두고, 긴 설교 요약은 팝업(#pop-sermon)으로 연다
       box.innerHTML = `
         <article class="week-sermon">
-          <span class="ws-date">${escH(dateLabel)} · 주일 낮 예배</span>
+          <span class="ws-date">${escH(dateLabel)} · ${sermonWhen(b.bdate).short ? sermonWhen(b.bdate).short + " " : ""}주일 낮 예배</span>
           ${b.title ? `<h3 class="ws-title">${escH(b.title)}</h3>` : ""}
           ${b.scripture ? `<p class="ws-ref">${escH(b.scripture)}</p>` : ""}
           ${b.preacher ? `<p class="ws-preacher">설교 · ${escH(b.preacher)}</p>` : ""}
@@ -1308,6 +1328,8 @@ if (homeBulletin) {
         const sermonBanner = document.getElementById("heroSermonBanner");
         if (sermonBanner && b && b.title) {
           const t = sermonBanner.querySelector(".hsb-title"), r = sermonBanner.querySelector(".hsb-ref");
+          const lb = sermonBanner.querySelector(".hsb-label");
+          if (lb) lb.textContent = sermonWhen(b.bdate).label;   // 오늘의 설교 / 지난 주일 설교 / 이번 주일 설교
           if (t) t.textContent = b.title;
           if (r) r.textContent = [b.scripture, b.preacher].filter(Boolean).join(" · ");
         }
