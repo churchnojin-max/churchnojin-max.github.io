@@ -70,18 +70,6 @@
     </div>
   </section>
 
-  <!-- ===== 이달의 찬양 ===== -->
-  <section id="song" class="block">
-    <div class="container">
-      <div class="block-head">
-        <span class="eyebrow2">THIS MONTH</span>
-        <h2>이달의 찬양</h2>
-        <p>이번 달 함께 부르는 찬양입니다. 화면에서 바로 듣고, 필요하면 악보도 함께 보세요.</p>
-      </div>
-      <div id="monthlySong"><p class="qt-loading">불러오는 중…</p></div>
-    </div>
-  </section>
-
   <!-- ===== 매일 묵상 QT ===== -->
   <section id="qt" class="block block-alt">
     <div class="container">
@@ -95,25 +83,8 @@
     </div>
   </section>
 
-  <!-- ===== 설교 아카이브 ===== -->
-  <section class="block" id="archive">
-    <div class="container">
-      <div class="block-head">
-        <span class="eyebrow2">BULLETIN</span>
-        <h2>주보</h2>
-        <p>주일 주보를 본문·제목·날짜로 검색하세요. 예배 순서·교회 소식·향기로운 예물을 한눈에 보실 수 있습니다.</p>
-      </div>
-      <div class="bulletin-controls">
-        <label class="ctrl"><span>월 선택</span><select id="bulletinMonth"></select></label>
-        <label class="ctrl ctrl-search"><span>검색</span><input id="bulletinSearch" type="search" placeholder="설교 제목 · 본문 · 날짜 검색" /></label>
-      </div>
-      <div class="bulletin-list" id="bulletinList"></div>
-      <p class="bulletin-empty" id="bulletinEmpty" hidden>검색 결과가 없습니다.</p>
-    </div>
-  </section>
-
   <!-- ===== 우리가 믿는 것 ===== -->
-  <section id="believe" class="block block-alt">
+  <section id="believe" class="block">
     <div class="container">
       <div class="block-head">
         <span class="eyebrow2">WHAT WE BELIEVE</span>
@@ -138,13 +109,42 @@
     </div>
   </section>
 
+  <!-- ===== 이달의 찬양 ===== -->
+  <section id="song" class="block block-alt">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">THIS MONTH</span>
+        <h2>이달의 찬양</h2>
+        <p>이번 달 함께 부르는 찬양입니다. 화면에서 바로 듣고, 필요하면 악보도 함께 보세요.</p>
+      </div>
+      <div id="monthlySong"><p class="qt-loading">불러오는 중…</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 설교 아카이브 ===== -->
+  <section id="archive" class="block">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">BULLETIN</span>
+        <h2>주보</h2>
+        <p>주일 주보를 본문·제목·날짜로 검색하세요. 예배 순서·교회 소식·향기로운 예물을 한눈에 보실 수 있습니다.</p>
+      </div>
+      <div class="bulletin-controls">
+        <label class="ctrl"><span>월 선택</span><select id="bulletinMonth"></select></label>
+        <label class="ctrl ctrl-search"><span>검색</span><input id="bulletinSearch" type="search" placeholder="설교 제목 · 본문 · 날짜 검색" /></label>
+      </div>
+      <div class="bulletin-list" id="bulletinList"></div>
+      <p class="bulletin-empty" id="bulletinEmpty" hidden>검색 결과가 없습니다.</p>
+    </div>
+  </section>
+
   <!-- ===== 이동 유도 ===== -->
   <section class="block block-alt">
     <div class="container">
       <div class="cta-flow">
         <span class="cta-eyebrow">NEXT STEP</span>
-        <h3>교육 자료가 필요하다면</h3>
-        <div class="cta-btns"><a class="btn btn-line" href="library.html">자료실로 →</a></div>
+        <h3>자료가 필요하다면</h3>
+        <div class="cta-btns"><a class="btn btn-line" href="office.html#edu">교육 자료실 →</a><a class="btn btn-line" href="office.html#worship-lib">예배 자료실 →</a></div>
       </div>
     </div>
   </section>
@@ -198,7 +198,7 @@
   <script src="js/bulletins.js?v=20260709nojin2"></script>
   <script src="js/heidelberg.js?v=20260730lib13"></script>
   <script src="js/columns.js?v=20260709nojin"></script>
-  <script src="js/layout.js?v=20260929tidy2"></script>
+  <script src="js/layout.js?v=20260929tidy3"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
   <script src="js/bulletin-render.js?v=20260709nojin"></script>
   <script src="js/main.js?v=20260929tidy"></script>
