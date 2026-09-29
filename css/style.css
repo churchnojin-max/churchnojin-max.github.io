@@ -2420,3 +2420,395 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
   .confess .verse { padding: 13px 15px; }
   .confess-invite { padding: 20px 18px; }
 }
+
+/* ============================================================
+   2026-09-29 홈페이지 정리 (목사님 요청)
+   ① 머리글 로고 뒤 바탕 상자  ② 바닥글: 딥그린 바탕 + 흰 교회 마크
+   ③ 위 메뉴의 세부 항목: 한 줄씩 아래로, 항목마다 밑줄
+   ④ 한 화면씩 넘어가기(컴퓨터에서만)  ⑤ 긴 내용은 팝업
+   ⑥ 첫 화면: 그림 꽉 차게 + 붓으로 그은 흰 바탕 제목 + 이번 주 설교 상자
+   ⑦ 첫 화면 다음: 바로가기 · 주보 요약
+   ============================================================ */
+:root { --hdr: 84px; --cream: #F6F4EB; --gold-logo: #BFA06C; }
+
+/* ① 머리글: 로고와 교회 이름 뒤에 크림색 바탕 상자 */
+#header { padding: 12px 0; }
+#header.scrolled { padding: 10px 0; }
+#header .logo {
+  background: var(--cream); border: 1px solid rgba(191,160,108,.6); border-radius: 14px;
+  padding: 6px 18px 6px 6px; box-shadow: 0 3px 14px rgba(26,58,47,.12);
+  transition: box-shadow .25s ease, transform .25s ease;
+}
+#header .logo:hover { box-shadow: 0 6px 20px rgba(26,58,47,.18); transform: translateY(-1px); }
+#header .logo-mark { box-shadow: none; border-radius: 9px; }
+@media (max-width: 760px) {
+  #header { padding: 9px 0; }
+  #header.scrolled { padding: 8px 0; }
+  #header .logo { padding: 4px 12px 4px 4px; border-radius: 11px; }
+}
+
+/* ② 바닥글: 교회 마크를 흰색으로, 바탕은 교회 색(딥그린 #1A3A2F) */
+.footer { background: var(--accent); }
+.footer-brand { flex-direction: row; align-items: center; gap: 16px; text-decoration: none; }
+.footer-mark { width: 64px; height: auto; flex: 0 0 auto; }
+.footer-brand-txt { display: flex; flex-direction: column; }
+.footer-brand .logo-denom { color: rgba(255,255,255,.85); }
+.footer-meta p { color: rgba(255,255,255,.72); }
+.footer-meta .copy { color: rgba(255,255,255,.45); }
+.footer-nav a { color: rgba(255,255,255,.85); }
+.footer-inner { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 22px 48px; }
+.footer-nav { justify-content: flex-end; }
+.footer-actions:empty { display: none; }
+.footer-actions { grid-column: 1 / -1; }
+.footer-meta { grid-column: 1 / -1; text-align: left; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.16); }
+@media (max-width: 760px) {
+  .footer-inner { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .footer-nav { justify-content: center; }
+  .footer-meta { text-align: center; width: 100%; }
+  .footer-brand { justify-content: center; }
+  .footer-mark { width: 54px; }
+}
+
+/* ③ 위 메뉴 세부 항목 — 두 줄(2칸) 대신 한 줄씩 아래로, 줄간은 좁게, 항목마다 밑줄 (컴퓨터 화면) */
+@media (min-width: 761px) {
+  .nav-dropdown { min-width: 0; padding-top: 14px; }
+  .nav-dropdown-inner {
+    background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 4px 4px 10px 10px;
+    padding: 6px 22px 12px; box-shadow: 0 18px 40px rgba(0,0,0,.18); min-width: 236px;
+  }
+  .nav-dropdown-links { display: flex; flex-direction: column; gap: 0; }
+  .nav-dropdown-links a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 4px 8px; border-radius: 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink) !important; font-size: .98rem; font-weight: 500; line-height: 1.5;
+    transition: padding .18s ease, color .18s ease;
+  }
+  .nav-dropdown-links a::before {
+    content: "\203A"; color: var(--gold-logo); font-size: 1.25em; line-height: 1; font-weight: 700;
+    transform: translateY(-1px);
+  }
+  .nav-dropdown-inner a:hover { background: transparent; color: var(--accent) !important; padding-left: 10px; font-weight: 700; }
+}
+
+/* ⑤ 팝업 (긴 글, 주보 전체, 새가족 등록서 등) — js/layout.js 의 SitePopup */
+.pop-src[hidden] { display: none !important; }
+html.pop-open, html.pop-open body { overflow: hidden; }
+.pop-modal { position: fixed; inset: 0; z-index: 450; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.pop-modal[hidden] { display: none; }
+.pop-backdrop { position: absolute; inset: 0; background: rgba(10,22,17,.64); backdrop-filter: blur(3px); animation: fade .25s ease; }
+.pop-box {
+  position: relative; z-index: 1; width: min(920px, 100%); max-height: calc(100vh - 48px);
+  display: flex; flex-direction: column; background: var(--paper); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,.35); animation: pop .3s ease;
+}
+.pop-head {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 18px 16px 28px; background: var(--accent); color: #fff;
+}
+.pop-title { font-family: "Noto Serif KR", serif; font-size: 1.2rem; font-weight: 700; letter-spacing: .02em; }
+.pop-close {
+  width: 42px; height: 42px; border-radius: 50%; border: 0; cursor: pointer; flex: 0 0 auto;
+  background: rgba(255,255,255,.12); color: #fff; font-size: 1.8rem; line-height: 1;
+  transition: background .2s ease;
+}
+.pop-close:hover { background: rgba(255,255,255,.26); }
+.pop-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 36px 44px 48px; }
+.pop-body .reveal { opacity: 1; transform: none; }
+@media (max-width: 640px) {
+  .pop-modal { padding: 0; }
+  .pop-box { width: 100%; height: 100%; max-height: none; border-radius: 0; }
+  .pop-head { padding: 12px 12px 12px 18px; }
+  .pop-body { padding: 24px 18px 40px; }
+}
+
+/* 팝업 여는 버튼 묶음 */
+.pop-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.pop-link {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-family: inherit;
+  padding: 11px 20px; border-radius: 999px; border: 1.5px solid var(--accent);
+  background: transparent; color: var(--accent); font-size: .95rem; font-weight: 700;
+  transition: background .2s ease, color .2s ease;
+}
+.pop-link::after { content: "+"; font-size: 1.1em; line-height: 1; color: var(--gold); }
+.pop-link:hover { background: var(--accent); color: #fff; }
+.pop-link.is-solid { background: var(--accent); color: #fff; }
+.pop-link.is-solid:hover { background: #10241D; }
+
+/* 제목 위 작은 영문(QUICK MENU 등)은 제목 위 한 줄로 */
+html.snap-page .section-head .eyebrow { display: block; }
+
+/* 각 메뉴 첫 화면(표지)의 차례 — 컴퓨터 화면에서만 */
+.ph-toc { display: none; }
+
+/* ④ 한 화면씩 넘어가기 — 마우스를 쓰는 넓은 화면(컴퓨터)에서만.
+   휴대폰·태블릿은 손가락으로 자유롭게 내리는 편이 편해서 적용하지 않는다. */
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  html.snap-page { scroll-snap-type: y mandatory; scroll-padding-top: 0; }
+  html.snap-page body > section {
+    scroll-snap-align: start; scroll-snap-stop: always;
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+    padding-top: calc(var(--hdr) + 18px); padding-bottom: 30px;
+  }
+  html.snap-page body > section > .container { width: 100%; }
+  html.snap-page body > section[hidden] { display: none; }   /* 내용이 없어 숨겨 둔 화면(팟캐스트 등)은 건너뛴다 */
+  html.snap-page body > footer.footer { scroll-snap-align: end; }
+  /* 맨 끝의 '다음 걸음' 초록 상자는 바닥글과 한 화면으로 묶는다 */
+  html.snap-page body > section:has(.cta-flow) { min-height: 0; scroll-snap-align: none; padding-top: 56px; padding-bottom: 56px; }
+  html.snap-page body > section .block-head { margin-bottom: 22px; }
+  html.snap-page body > section .section-head { margin-bottom: 40px; }
+
+  /* 표지: 화면 가득, 제목 아래 차례 */
+  html.snap-page .page-hero { padding-left: 24px; padding-right: 24px; align-items: center; }
+  html.snap-page .ph-toc {
+    display: flex; flex-direction: column; width: min(380px, 100%); margin: 38px auto 0; text-align: left;
+    border-top: 1px solid rgba(246,244,235,.3);
+  }
+  html.snap-page .ph-toc a {
+    display: flex; align-items: center; gap: 12px; padding: 13px 6px 11px;
+    border-bottom: 1px solid rgba(246,244,235,.3); color: var(--cream);
+    font-size: 1.08rem; font-weight: 500; transition: padding .2s ease, color .2s ease;
+  }
+  html.snap-page .ph-toc a::before { content: "\203A"; color: var(--gold-logo); font-size: 1.3em; line-height: 1; font-weight: 700; }
+  html.snap-page .ph-toc a:hover { color: #fff; padding-left: 14px; }
+}
+
+/* ⑥ 첫 화면 — 그림이 화면(휴대폰·컴퓨터 모두)을 꽉 채운다 */
+.hero.hero-full {
+  height: 100vh; height: 100svh; min-height: 540px; padding: 0; align-items: stretch;
+  background:
+    linear-gradient(180deg, rgba(8,10,20,.34) 0%, rgba(8,10,20,.06) 26%, rgba(8,10,20,0) 60%, rgba(8,10,20,.16) 100%),
+    url("../images/hero-bg-wilderness.jpg") center 45% / cover no-repeat;
+}
+.hero-full .hero-stage {
+  position: relative; z-index: 2; width: 100%; max-width: 1180px; margin: 0 auto;
+  padding: calc(var(--hdr) + 4vh) 28px 7vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 28px; text-align: center;
+}
+.hero-full .hero-headline { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; padding-bottom: 2vh; }
+.hero-full .hero-tagline {
+  margin: 0; white-space: normal; font-weight: 600; letter-spacing: .08em;
+  font-size: clamp(1.05rem, 1.9vw, 1.5rem); text-shadow: 0 2px 12px rgba(0,0,0,.75);
+}
+/* 붓으로 그은 흰 바탕 + 제목 */
+.hero-brush {
+  margin: 0; font-family: "Noto Serif KR", serif; font-weight: 900; color: var(--accent);
+  font-size: clamp(2.1rem, 5.1vw, 4.6rem); line-height: 1.2; letter-spacing: .03em; word-break: keep-all;
+  animation: brushIn 1.1s cubic-bezier(.65,.05,.3,1) .25s both;
+}
+.hero-brush .hb-stroke {
+  display: inline-block; padding: .4em 1.2em .48em .9em;
+  background: url("../images/brush-stroke-white.svg") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.28));
+  transform: rotate(-1.6deg);
+}
+.hero-brush .hb-line { white-space: nowrap; display: inline-block; transform: rotate(1.2deg); }
+@keyframes brushIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@media (prefers-reduced-motion: reduce) { .hero-brush { animation: none; } }
+
+/* 첫 화면에 남긴 '이번 주 설교' 상자 — 제목 글씨를 가리지 않게 아래쪽에 */
+.hero-full .hero-sermon-banner {
+  flex: 0 0 auto; width: min(600px, 100%); align-items: center; text-align: center; gap: 8px;
+  padding: 22px 30px 20px; background: rgba(255,255,255,.9); border-color: rgba(255,255,255,.95);
+  box-shadow: 0 16px 40px rgba(0,0,0,.28); animation: fadeUp 1s ease .7s both;
+}
+.hero-full .hero-sermon-banner:hover { background: #fff; }
+.hero-full .hero-sermon-banner .hsb-label { align-self: center; }
+.hero-full .hero-sermon-banner .hsb-title { font-size: clamp(1.4rem, 2.3vw, 2rem); color: var(--accent); padding-left: 0; }
+.hero-full .hero-sermon-banner .hsb-ref { font-size: .95rem; color: var(--ink-soft); font-weight: 600; }
+.hero-full .hero-sermon-banner .hsb-arrow { color: var(--accent); }
+
+@media (max-width: 760px) {
+  :root { --hdr: 64px; }
+  .hero.hero-full { background-position: 36% 45%, 36% 45%; }
+  .hero-full .hero-stage { padding: calc(var(--hdr) + 3vh) 16px 86px; gap: 18px; }
+  .hero-full .hero-headline { gap: 18px; }
+  .hero-brush { font-size: clamp(1.9rem, 9.4vw, 2.6rem); line-height: 1.5; }
+  /* 좁은 화면: 두 줄로 나누고 줄마다 붓 획 */
+  .hero-brush .hb-stroke { background: none; filter: none; padding: 0; transform: none; }
+  .hero-brush .hb-line {
+    display: block; width: max-content; margin: 0 auto; padding: .28em .8em .36em;
+    background: url("../images/brush-stroke-white.svg") center / 100% 100% no-repeat;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,.28)); transform: rotate(-1.5deg);
+  }
+  .hero-brush .hb-line + .hb-line { margin-top: .1em; transform: rotate(1deg) translateX(.4em); }
+  .hero-full .hero-sermon-banner { padding: 16px 18px 14px; gap: 6px; }
+  .hero-full .hero-sermon-banner .hsb-label { font-size: .7rem; padding: 4px 12px; }
+  .hero-full .hero-sermon-banner .hsb-title { font-size: 1.3rem; }
+  .hero-full .hero-sermon-banner .hsb-ref { font-size: .86rem; }
+}
+
+/* ⑦ 바로가기 (첫 화면에 떠 있던 상자들) */
+.home-quick { background: var(--bg); }
+.quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 980px; margin: 0 auto; }
+.quick-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center;
+  min-height: 170px; padding: 26px 20px; border-radius: 16px; background: var(--paper);
+  border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(26,58,47,.05);
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.quick-card[hidden] { display: none; }
+.quick-card:hover { transform: translateY(-4px); box-shadow: 0 16px 34px rgba(26,58,47,.12); border-color: var(--gold); }
+.qc-icon {
+  width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--cream); border: 1px solid rgba(191,160,108,.45); font-size: 1.6rem; color: var(--accent); margin-bottom: 4px;
+}
+.qc-title { font-family: "Noto Serif KR", serif; font-size: 1.16rem; font-weight: 700; color: var(--accent); word-break: keep-all; }
+.qc-sub { font-size: .9rem; color: var(--ink-soft); word-break: keep-all; }
+@media (max-width: 900px) { .quick-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } .quick-card { min-height: 140px; padding: 20px 12px; } }
+
+/* 이번 주 주보 요약 카드 (전체는 팝업) */
+.hbb { max-width: 880px; margin: 0 auto; }
+.hbb-card {
+  display: grid; grid-template-columns: 1.25fr 1fr; background: var(--paper); border: 1px solid var(--line);
+  border-radius: 16px; overflow: hidden; box-shadow: 0 6px 24px rgba(26,58,47,.08);
+}
+.hbb-main { padding: 30px 34px; }
+.hbb-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .88rem; color: var(--ink-soft); padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+.hbb-week { font-weight: 700; color: var(--accent); letter-spacing: .03em; }
+.hbb-title { font-family: "Noto Serif KR", serif; font-size: clamp(1.4rem, 2.4vw, 1.9rem); font-weight: 700; color: var(--accent); line-height: 1.35; word-break: keep-all; }
+.hbb-ref { margin-top: 8px; font-weight: 600; color: var(--ink-soft); }
+.hbb-verse {
+  margin-top: 16px; padding: 14px 16px; background: var(--paper-alt); border-left: 3px solid var(--gold); border-radius: 0 8px 8px 0;
+  font-family: "Noto Serif KR", serif; font-size: .98rem; line-height: 1.85; color: var(--ink);
+}
+.hbb-verse > span { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.hbb-news { padding: 30px 30px; background: var(--accent); color: #fff; }
+.hbb-news-title { font-family: "Noto Serif KR", serif; font-weight: 700; color: var(--gold-logo); margin-bottom: 12px; }
+.hbb-news li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.18); font-size: .93rem; line-height: 1.6; color: rgba(255,255,255,.92); }
+.hbb-news li:last-child { border-bottom: 0; }
+.hbb-actions { grid-column: 1 / -1; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; padding: 18px 20px; border-top: 1px solid var(--line); background: #fbfaf6; }
+.hbb-card:not(:has(.hbb-news)) { grid-template-columns: 1fr; }
+@media (max-width: 760px) {
+  .hbb-card { grid-template-columns: 1fr; }
+  .hbb-main, .hbb-news { padding: 22px 20px; }
+}
+/* 팝업 안의 주보 전체: 카드 그림자 없이 */
+.pop-body .hb-card { box-shadow: none; }
+
+/* 교회 안내(welcome.html) — 우리교회를 소개합니다 한 화면 */
+.about-grid { display: grid; grid-template-columns: 1fr 1.05fr; gap: 56px; align-items: center; }
+.about-text .block-head { margin-bottom: 18px; }
+.about-refrain {
+  font-family: "Noto Serif KR", serif; font-weight: 700; color: var(--accent);
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem); line-height: 1.6; word-break: keep-all;
+  padding: 14px 0; border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold); display: inline-block;
+}
+.about-lead { margin-top: 16px; color: var(--ink-soft); font-size: 1.05rem; line-height: 1.8; word-break: keep-all; }
+.about-text .ph-denom.is-light { margin-top: 18px; justify-content: flex-start; text-align: left; }
+.about-text .ph-denom.is-light p { margin: 0; color: var(--accent); font-size: 1.02rem; font-weight: 500; line-height: 1.6; }
+.about-text .ph-denom.is-light .ph-denom-mark { width: 54px; height: 54px; }
+.about-photo { margin: 0; }
+.about-photo img { width: 100%; height: auto; display: block; border-radius: 14px; box-shadow: 0 18px 40px rgba(0,0,0,.14); aspect-ratio: 1600 / 975; object-fit: cover; }
+.about-photo figcaption { margin-top: 10px; text-align: center; font-family: "Noto Serif KR", serif; font-size: .92rem; color: var(--muted); }
+@media (max-width: 900px) {
+  .about-grid { grid-template-columns: 1fr; gap: 30px; }
+}
+/* 팝업 속 신앙고백·심볼 이야기는 위 여백을 줄인다 */
+.pop-body .confess, .pop-body .symbol-story, .pop-body .servants { margin-top: 0; margin-bottom: 0; }
+.pop-body .form-card { margin: 0 auto; box-shadow: none; }
+
+/* 새가족: 등록서 여는 버튼 */
+.nf-cta { margin-top: 34px; text-align: center; }
+.nf-cta .btn { font-size: 1.05rem; padding: 15px 40px; }
+
+.text-link { color: var(--accent); font-weight: 600; border-bottom: 1px solid rgba(26,58,47,.3); }
+.text-link:hover { border-bottom-color: var(--accent); }
+
+/* 행정(office.html) */
+.office-card {
+  max-width: 720px; background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  padding: 34px 36px; box-shadow: 0 6px 22px rgba(26,58,47,.06);
+}
+.office-soon { text-align: center; padding: 44px 36px; }
+.office-soon p { color: var(--ink-soft); font-size: 1.04rem; line-height: 1.8; margin: 14px 0 0; word-break: keep-all; }
+.office-soon .btn { margin-top: 22px; }
+.soon-badge {
+  display: inline-block; padding: 6px 16px; border-radius: 999px; font-size: .85rem; font-weight: 700; letter-spacing: .08em;
+  background: var(--cream); color: #8A6A2F; border: 1px solid rgba(191,160,108,.6);
+}
+.og-acct { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 8px 0 4px; }
+.og-bank { font-weight: 700; color: var(--accent-soft); }
+.og-no { font-family: "Noto Serif KR", serif; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; color: var(--accent); letter-spacing: .04em; }
+.og-holder { color: var(--ink-soft); }
+.office-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 26px; }
+.office-steps { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 0; margin: 6px 0 0; }
+.office-steps li { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 24px 20px; }
+.office-steps .os-num {
+  display: inline-flex; width: 32px; height: 32px; border-radius: 50%; align-items: center; justify-content: center;
+  background: var(--accent); color: #fff; font-weight: 700; font-size: .9rem; margin-bottom: 12px;
+}
+.office-steps strong { display: block; font-family: "Noto Serif KR", serif; font-size: 1.08rem; color: var(--accent); margin-bottom: 6px; }
+.office-steps p { color: var(--ink-soft); font-size: .93rem; line-height: 1.7; word-break: keep-all; }
+.office-steps + .office-actions { justify-content: flex-start; }
+@media (max-width: 900px) { .office-steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .office-steps { grid-template-columns: 1fr; } .office-card { padding: 26px 20px; } }
+
+/* 이번 주 말씀(word.html): 화면에는 요약, 설교 요약 전문은 팝업 */
+.ws-quote > span { display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
+.ws-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 22px; }
+.ws-actions .ws-more { margin-top: 0; }
+.ws-pop { max-width: 760px; margin: 0 auto; }
+.ws-pop .ws-title { margin-top: 0; }
+
+/* 한 화면씩 넘어가는 페이지(컴퓨터)에서 한 화면보다 긴 곳 줄이기 */
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  /* 이번 주 말씀: 왼쪽 제목, 오른쪽 본문 말씀 */
+  html.snap-page .week-sermon { max-width: 1000px; display: grid; grid-template-columns: 1fr 1.15fr; column-gap: 44px; align-items: start; }
+  html.snap-page .week-sermon > * { grid-column: 1; }
+  html.snap-page .week-sermon > .ws-quote { grid-column: 2; grid-row: 1 / span 8; margin: 0; align-self: center; }
+  /* 우리들 소식: 사진 넘기기 상자를 화면 높이에 맞게 */
+  html.snap-page #album .hn-box { max-width: min(860px, calc((100vh - var(--hdr) - 290px) * 1.6)); }
+  /* 이달의 찬양: 영상 크기를 한 화면에 맞게 */
+  html.snap-page #song .song-box { max-width: 640px; }
+  /* 주보 모아 보기 · 공지사항: 목록은 그 상자 안에서 스크롤 */
+  html.snap-page #archive .bulletin-list,
+  html.snap-page #notice .nt-wrap {
+    max-height: calc(100vh - var(--hdr) - 340px); overflow-y: auto; overscroll-behavior: contain;
+    padding: 4px 8px 8px 4px; scrollbar-width: thin;
+  }
+  /* 삶의 질문: 물질 · 건강 · 관계를 세 칸으로 나란히 */
+  html.snap-page #qna .qna { columns: 3; column-gap: 22px; }
+  html.snap-page #qna .qna-cat { break-before: column; margin-top: 0; }
+  html.snap-page #qna .qna-cat:first-child { break-before: auto; }
+  html.snap-page #qna .qna-item { break-inside: avoid; }
+  html.snap-page #qna .qna-q { padding: 16px 18px; font-size: .98rem; }
+  /* 지역 연합사역: 세 카드를 나란히 */
+  html.snap-page #local > .container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch; }
+  html.snap-page #local > .container > .block-head { grid-column: 1 / -1; margin-bottom: 8px; }
+  html.snap-page #local .region-card { margin-bottom: 0; padding: 28px 24px; display: flex; flex-direction: column; }
+  html.snap-page #local .region-card .rc-tag { align-self: flex-start; }
+  html.snap-page #local .region-card .rc-btn, html.snap-page #local .region-card .rc-go { margin-top: auto; padding-top: 14px; align-self: flex-start; }
+  html.snap-page #local .region-card .rc-btn { padding-top: 13px; }
+}
+
+/* 키가 작은 노트북 화면(높이 760px 이하)에서는 여백을 조금 더 줄여 한 화면에 들어가게 */
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) and (max-height: 760px) {
+  html.snap-page body > section { padding-top: calc(var(--hdr) + 10px); padding-bottom: 18px; }
+  html.snap-page body > section .section-head { margin-bottom: 22px; }
+  html.snap-page .section-head .eyebrow { margin-bottom: 4px; }
+  html.snap-page .section-head h2::after { margin-top: 10px; }
+  html.snap-page body > section .block-head { margin-bottom: 16px; }
+  html.snap-page .block-head p { margin-top: 6px; }
+  html.snap-page #song .song-box { max-width: 560px; }
+  html.snap-page .hbb-main { padding: 22px 28px; }
+  html.snap-page .hbb-news { padding: 22px 24px; }
+  html.snap-page .hbb-actions { padding: 12px 16px; }
+  html.snap-page #mission .mission-card { padding-top: 22px; padding-bottom: 22px; }
+}
+
+/* 중간 폭 화면(작은 노트북·태블릿 가로)에서 위 메뉴가 로고와 겹치지 않게:
+   '메인화면으로'는 숨기고(로고를 누르면 처음 화면으로 감), 로고 상자를 조금 줄인다 */
+@media (min-width: 761px) and (max-width: 1080px) {
+  .nav-home-link { display: none !important; }
+  #header .logo { padding: 5px 12px 5px 5px; }
+  #header .logo-txt .logo-kr { font-size: 1.15rem; }
+  #header .logo-mark { width: 34px; height: 34px; }
+}
+@media (min-width: 761px) and (max-width: 940px) {
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; column-gap: 12px; padding: 0 14px; }
+  .nav-menu { gap: 14px; }
+  .nav-menu a { font-size: .86rem; }
+  .nav-caret { display: none; }
+  .auth-btn-join { display: none !important; }   /* 가입은 로그인 창 안의 '회원가입'으로 */
+}

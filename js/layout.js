@@ -4,12 +4,12 @@
    ============================================================ */
 (function () {
   const NAV = [
-    { href: "welcome.html", label: "환영합니다", sub: [
+    { href: "welcome.html", label: "교회 안내", sub: [
+      { href: "welcome.html#about", label: "우리교회를 소개합니다" },
       { href: "welcome.html#worship", label: "예배 안내" },
-      { href: "welcome.html#directions", label: "교회 가는 길" },
-      { href: "welcome.html#newfamily", label: "새가족 등록" },
-      { href: "welcome.html#about", label: "우리 교회는 어떤 곳" },
-      { href: "word.html#archive", label: "주보" },
+      { href: "welcome.html#bulletin", label: "이번 주 주보" },
+      { href: "welcome.html#directions", label: "찾아오시는 길" },
+      { href: "welcome.html#newfamily", label: "새가족 등록을 원하시나요?" },
     ] },
     { href: "word.html", label: "예배와 말씀", sub: [
       { href: "word.html#sermon", label: "이번 주 말씀" },
@@ -31,6 +31,12 @@
       { href: "world.html#mission", label: "선교" },
       { href: "district.html", label: "교구사역" },
     ] },
+    { href: "office.html", label: "행정", sub: [
+      { href: "office.html#give", label: "온라인 헌금" },
+      { href: "office.html#receipt", label: "기부금영수증" },
+      { href: "office.html#rooms", label: "모임장소 확인" },
+      { href: "office.html#reserve", label: "장소신청" },
+    ] },
     { href: "finance.html", label: "교회행정", adminOnly: true, sub: [
       { href: "finance.html", label: "재정관리" },
       { href: "gyojeok.html", label: "교적관리" },
@@ -42,6 +48,65 @@
   ];
 
   const path = location.pathname.split("/").pop() || "index.html";
+
+  // ===== 한 화면씩 넘어가는 페이지 =====
+  // 아래 페이지들은 컴퓨터(마우스)에서 휠을 굴리면 한 화면씩 딱딱 넘어간다(css: html.snap-page).
+  // 휴대폰·태블릿에서는 css 쪽 조건(화면 폭·마우스 여부)에 걸려 평소처럼 자유롭게 내려간다.
+  const SNAP_PAGES = ["index.html", "welcome.html", "word.html", "story.html", "world.html", "library.html", "office.html"];
+  if (SNAP_PAGES.indexOf(path) !== -1) {
+    document.documentElement.classList.add("snap-page");
+    // css 의 스크롤 맞춤(scroll-snap)만으로는 노트북 터치패드처럼 조금씩 굴리는 경우 제자리로 되돌아가 버린다.
+    // 그래서 휠을 한 번 굴리면(방향만 보고) 바로 다음/이전 화면으로 부드럽게 넘긴다.
+    // 한 화면보다 긴 화면은 그 안을 끝까지 내려 본 다음에 다음 화면으로 넘어간다.
+    const snapMQ = window.matchMedia("(min-width: 1025px) and (hover: hover) and (pointer: fine)");
+    let lockUntil = 0;
+    const canScrollInside = (el, dir) => {
+      for (; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+        const st = getComputedStyle(el);
+        if (!/(auto|scroll)/.test(st.overflowY) || el.scrollHeight <= el.clientHeight + 1) continue;
+        if (dir > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0) return true;
+      }
+      return false;
+    };
+    const snapStops = () => {
+      const maxY = document.documentElement.scrollHeight - window.innerHeight;
+      const stops = [];
+      document.querySelectorAll("body > section").forEach((s) => {
+        if (s.hidden || getComputedStyle(s).scrollSnapAlign.indexOf("start") === -1) return;
+        stops.push({ top: s.offsetTop, bottom: s.offsetTop + s.offsetHeight });
+      });
+      stops.push({ top: maxY, bottom: maxY + window.innerHeight });
+      return stops.filter((s) => s.top <= maxY + 1).sort((a, b) => a.top - b.top);
+    };
+    window.addEventListener("wheel", (e) => {
+      if (!snapMQ.matches || e.ctrlKey || e.defaultPrevented) return;
+      if (Math.abs(e.deltaY) < Math.abs(e.deltaX) || !e.deltaY) return;
+      if (document.documentElement.classList.contains("pop-open") || document.body.classList.contains("menu-lock")) return;
+      if (document.querySelector(".modal:not([hidden])")) return;
+      const dir = e.deltaY > 0 ? 1 : -1;
+      if (canScrollInside(e.target, dir)) return;               // 안쪽 목록 상자 등은 그 안에서 먼저 스크롤
+      const y = window.scrollY, vh = window.innerHeight, stops = snapStops();
+      // 지금 보고 있는 화면이 한 화면보다 길면, 그 화면 안에서는 평소처럼 내려간다
+      const cur = stops.filter((s) => s.top <= y + 2).pop();
+      if (cur && cur.bottom - cur.top > vh + 4) {
+        if (dir > 0 && y + vh < cur.bottom - 4) return;
+        if (dir < 0 && y > cur.top + 4) return;
+      }
+      e.preventDefault();
+      const now = Date.now();
+      if (now < lockUntil) { lockUntil = Math.max(lockUntil, now + 180); return; } // 관성 스크롤로 두 칸씩 넘어가지 않게
+      let target = null;
+      if (dir > 0) { const n = stops.find((s) => s.top > y + 2); if (n) target = n.top; }
+      else {
+        const prev = stops.filter((s) => s.top < y - 2).pop();
+        // 위로 갈 때, 긴 화면이면 그 화면의 맨 아래(끝부분)부터 보여 준다
+        if (prev) target = (prev.bottom - prev.top > vh + 4) ? Math.max(prev.top, prev.bottom - vh) : prev.top;
+      }
+      if (target == null) return;
+      lockUntil = now + 850;
+      window.scrollTo({ top: target, behavior: "smooth" });
+    }, { passive: false });
+  }
 
   // ===== 우리 교회 정보(js/church.js) 읽기 =====
   const C = window.CHURCH || {};
@@ -72,7 +137,6 @@
     return `<div class="nav-item has-sub"${admAttr}>
         <a href="${n.href}"${active}>${n.label}<span class="nav-caret" aria-hidden="true">⌄</span></a>
         <div class="nav-dropdown"><div class="nav-dropdown-inner">
-          <div class="nav-dropdown-head">${n.label}</div>
           <div class="nav-dropdown-links">${subs}</div>
         </div></div>
       </div>`;
@@ -96,6 +160,28 @@
       </div>
     </header>`;
   document.body.insertAdjacentHTML("afterbegin", headerHTML);
+
+  // ===== 각 메뉴 첫 화면(표지)에 이 페이지의 차례 붙이기 =====
+  // 페이지 안의 <section id=".."><h2>제목</h2> 을 읽어 만들기 때문에, 섹션을 고치면 차례도 저절로 따라간다.
+  // (한 화면씩 넘어가는 페이지에서만. 휴대폰에서는 css에서 숨긴다)
+  if (document.documentElement.classList.contains("snap-page")) {
+    const ph = document.querySelector(".page-hero");
+    const buildToc = () => {
+      const items = Array.prototype.slice.call(document.querySelectorAll("body > section[id]"))
+        .filter((s) => !s.hidden)
+        .map((s) => { const h = s.querySelector("h2"); return h ? { id: s.id, label: (s.getAttribute("data-toc") || h.textContent).trim() } : null; })
+        .filter(Boolean);
+      const old = ph.querySelector(".ph-toc");
+      if (old) old.remove();
+      if (items.length) ph.insertAdjacentHTML("beforeend", `<nav class="ph-toc" aria-label="이 페이지 차례">${items.map((it) => `<a href="#${it.id}">${it.label}</a>`).join("")}</nav>`);
+    };
+    if (ph) {
+      buildToc();
+      // 팟캐스트처럼 내용이 있을 때만 나타나는 화면이 뒤늦게 열리면 차례도 다시 만든다
+      const mo = new MutationObserver(buildToc);
+      document.querySelectorAll("body > section[id]").forEach((s) => mo.observe(s, { attributes: true, attributeFilter: ["hidden"] }));
+    }
+  }
 
   // ===== 홈페이지 설정(공개 읽기) — 로고 · 섬기는 사람들 · 월별 봉사위원 =====
   // church_settings 의 공개 키를 익명 anon 키로 1회씩 읽어 캐시한다.
@@ -135,10 +221,13 @@
   const footerHTML = `
     <footer class="footer">
       <div class="container footer-inner">
-        <div class="footer-brand">
-          <span class="logo-kr">${CH_NAME}</span>
-          ${CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}
-        </div>
+        <a href="index.html" class="footer-brand">
+          <img src="images/logo-symbol-white.svg?v=20260929" alt="" class="footer-mark" width="72" height="61" />
+          <span class="footer-brand-txt">
+            <span class="logo-kr">${CH_NAME}</span>
+            ${CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}
+          </span>
+        </a>
         <nav class="footer-nav">${NAV.filter((n) => !n.adminOnly && !n.memberOnly).map((n) => `<a href="${n.href}">${n.label}</a>`).join("")}<a href="bylaws.html">정관</a><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a><a href="withdraw.html">회원탈퇴</a></nav>
         <div class="footer-actions">
           ${KAKAO_ON ? `<a class="kakao-channel-btn" href="${C.kakaoChannel}" target="_blank" rel="noopener">💬 카카오톡 채널 추가</a>` : ""}
@@ -631,4 +720,90 @@ window.ModalNav = (function () {
     },
     count: function () { return stack.length; }
   };
+})();
+
+/* ============================================================
+   SitePopup — 긴 내용은 팝업으로 (전 페이지 공통)
+   한 화면씩 넘어가는 페이지에서 한 화면에 다 안 들어가는 긴 글(신앙고백, 섬기는 사람들,
+   주보 전체, 새가족 등록서 등)은 페이지 안에 숨겨 두었다가 버튼을 누르면 팝업으로 연다.
+   팝업 안에서는 평소처럼 자유롭게 스크롤된다.
+
+   쓰는 법:
+     숨겨 둘 내용   <div class="pop-src" id="pop-xxx" data-pop-title="제목" hidden> … </div>
+     여는 버튼      <button type="button" data-pop="pop-xxx">열기</button>  (a 태그도 됨)
+   주소 끝이 #pop-xxx 이거나, 팝업 안에 있는 요소의 id(예: #committee)면 페이지를 열 때 바로 띄운다.
+   ※ 내용을 복사하지 않고 그대로 옮겼다가 닫을 때 제자리로 돌려놓는다
+     (그래서 main.js 가 id 로 채워 넣는 섬기는 사람들·봉사위원·주보도 그대로 동작한다).
+   ============================================================ */
+window.SitePopup = (function () {
+  var modal = null, body = null, titleEl = null, cur = null, mark = null;
+  function build() {
+    if (modal) return;
+    document.body.insertAdjacentHTML("beforeend",
+      '<div class="pop-modal" id="sitePop" hidden>' +
+        '<div class="pop-backdrop" data-pop-close></div>' +
+        '<div class="pop-box" role="dialog" aria-modal="true" aria-labelledby="sitePopTitle">' +
+          '<div class="pop-head"><h3 class="pop-title" id="sitePopTitle"></h3>' +
+          '<button type="button" class="pop-close" data-pop-close aria-label="닫기">&times;</button></div>' +
+          '<div class="pop-body" id="sitePopBody"></div>' +
+        '</div>' +
+      '</div>');
+    modal = document.getElementById("sitePop");
+    body = document.getElementById("sitePopBody");
+    titleEl = document.getElementById("sitePopTitle");
+    modal.addEventListener("click", function (e) {
+      if (e.target.closest("[data-pop-close]")) { e.preventDefault(); close(); }
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && cur) close(); });
+  }
+  function closeDom() {
+    if (!cur) return;
+    cur.hidden = true;
+    if (mark && mark.parentNode) { mark.parentNode.insertBefore(cur, mark); mark.parentNode.removeChild(mark); }
+    cur = null; mark = null;
+    modal.hidden = true;
+    document.documentElement.classList.remove("pop-open");
+  }
+  function open(id, focusEl) {
+    var src = document.getElementById(id);
+    if (!src) return;
+    build();
+    if (cur) closeDom();
+    mark = document.createComment("pop-src:" + id);
+    src.parentNode.insertBefore(mark, src);
+    body.appendChild(src);
+    src.hidden = false;
+    cur = src;
+    titleEl.textContent = src.getAttribute("data-pop-title") || "";
+    modal.hidden = false;
+    document.documentElement.classList.add("pop-open");
+    body.scrollTop = 0;
+    if (focusEl && focusEl !== src) {
+      setTimeout(function () { body.scrollTop = focusEl.getBoundingClientRect().top - body.getBoundingClientRect().top - 12; }, 30);
+    }
+    if (window.ModalNav) window.ModalNav.open(closeDom); // 휴대폰 '뒤로 가기'로 팝업만 닫히게
+  }
+  function close() {
+    if (!cur) return;
+    if (!(window.ModalNav && window.ModalNav.close())) closeDom();
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-pop]");
+    if (!t) return;
+    e.preventDefault();
+    open(t.getAttribute("data-pop"));
+  });
+  // 주소로 바로 열기: #pop-xxx, 또는 팝업 속 요소의 id(#committee 등)
+  function openFromHash() {
+    var h = decodeURIComponent((location.hash || "").slice(1));
+    if (!h) return;
+    var el = document.getElementById(h);
+    if (!el) return;
+    var src = el.classList.contains("pop-src") ? el : el.closest(".pop-src");
+    if (src) open(src.id, el);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", openFromHash);
+  else setTimeout(openFromHash, 0);
+  window.addEventListener("hashchange", openFromHash);
+  return { open: open, close: close };
 })();

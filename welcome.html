@@ -24,14 +24,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=20260927symbol" />
+  <link rel="stylesheet" href="css/style.css?v=20260929tidy" />
 </head>
 <body>
 
   <!-- ===== Page Hero ===== -->
   <section class="page-hero">
     <p class="ph-eyebrow">WELCOME</p>
-    <h1>노진교회를 소개합니다</h1>
+    <h1>교회 안내</h1>
     <div class="ph-denom">
       <img src="images/denom-mark.png?v=20260926" alt="대한예수교장로회 합동 총회 마크" class="ph-denom-mark" width="68" height="68" />
       <p>우리 노진교회는 <strong>대한예수교장로회 합동측</strong><br class="ph-br" />
@@ -39,46 +39,181 @@
     </div>
   </section>
 
-  <!-- ===== 환영합니다 — 한눈에 둘러보기 ===== -->
-  <section class="block">
-    <div class="container">
-      <div class="entry-grid entry-grid-5">
-        <a class="entry-card" href="#about">
-          <span class="entry-icon">⛪</span>
-          <h3>우리 교회는 어떤 곳</h3>
-          <p>노진교회가 소중히 여기는 가치와 이야기입니다.</p>
-          <span class="entry-go">알아보기 →</span>
-        </a>
-        <a class="entry-card" href="#worship">
-          <span class="entry-icon">🕐</span>
-          <h3>예배 안내</h3>
-          <p>처음 오시는 분께 좋은 예배 시간과 순서를 안내합니다.</p>
-          <span class="entry-go">보러 가기 →</span>
-        </a>
-        <a class="entry-card" href="word.html#archive">
-          <span class="entry-icon">📰</span>
-          <h3>주보</h3>
-          <p>이번 주 예배 순서와 말씀을 미리 확인하세요.</p>
-          <span class="entry-go">주보 보기 →</span>
-        </a>
-        <a class="entry-card" href="#directions">
-          <span class="entry-icon">🚗</span>
-          <h3>교회 가는 길</h3>
-          <p>오시는 길과 주차 안내를 확인하세요.</p>
-          <span class="entry-go">길 안내 →</span>
-        </a>
-        <a class="entry-card" href="#newfamily">
-          <span class="entry-icon">🤝</span>
-          <h3>새가족 등록</h3>
-          <p>노진교회의 새 가족이 되시는 첫 걸음입니다.</p>
-          <span class="entry-go">등록하기 →</span>
-        </a>
+  <!-- ===== 우리교회를 소개합니다 =====
+       한 화면에 들어가도록 요약만 두고, 긴 글(신앙고백·심볼 이야기·섬기는 사람들·예배 순서자)은
+       아래 pop-src 에 넣어 두었다가 버튼을 누르면 팝업으로 연다(js/layout.js SitePopup). -->
+  <section id="about" class="block about-screen">
+    <div class="container about-grid">
+      <div class="about-text">
+        <div class="block-head">
+          <span class="eyebrow2">ABOUT US</span>
+          <h2>우리교회를 소개합니다</h2>
+        </div>
+        <p class="about-refrain">그러나 노진교회는<br />여호와께 은혜를 입었더라</p>
+        <p class="about-lead">은혜를 먼저 받은 사람들이 모여, 말씀을 한 장씩 이어 듣는 공동체입니다.</p>
+        <div class="ph-denom is-light">
+          <img src="images/denom-mark.png?v=20260926" alt="대한예수교장로회 합동 총회 마크" class="ph-denom-mark" width="68" height="68" loading="lazy" />
+          <p>우리 노진교회는 <strong>대한예수교장로회 합동측</strong><br class="ph-br" />
+            시화산노회 남부시찰에 소속된 교회입니다.</p>
+        </div>
+        <div class="pop-links">
+          <button type="button" class="pop-link is-solid" data-pop="pop-confess">노진교회는 어떤 곳일까요</button>
+          <button type="button" class="pop-link" data-pop="pop-symbol">노진교회 심볼 이야기</button>
+          <button type="button" class="pop-link" data-pop="pop-servants">섬기는 사람들</button>
+          <button type="button" class="pop-link" data-pop="pop-committee">예배 순서자 안내</button>
+        </div>
       </div>
+      <figure class="about-photo">
+        <img src="images/church-family.jpg?v=20260820" alt="노진교회 예배당 앞에 함께 모인 온 교우들" width="1600" height="975" />
+        <figcaption>은혜로 함께 모인 노진교회 교우들</figcaption>
+      </figure>
+    </div>
+
+    <!-- 팝업 1: 신앙고백 전문 -->
+    <div class="pop-src" id="pop-confess" data-pop-title="노진교회는 어떤 곳일까요" hidden>
+        <!-- 우리 교회의 신앙고백 -->
+        <div class="confess">
+          <!-- 사진 칸: images/pastor.jpg 파일만 바꾸면 여기 사진이 교체된다 -->
+          <figure class="confess-portrait">
+            <img src="images/pastor.jpg?v=20260820" alt="노진교회 담임목사 손병민" loading="lazy" width="200" height="267" />
+            <figcaption>담임목사 <strong>손병민</strong></figcaption>
+          </figure>
+
+          <p class="confess-refrain">그러나 노진교회는<br />여호와께 은혜를 입었더라</p>
+
+          <p class="confess-lead">노진교회는 은혜를 먼저 받은 사람들이 모인 곳입니다.</p>
+
+          <h3>우리는 잘 믿어서 이 자리에 서 있는 것이 아닙니다.</h3>
+          <p>성경은 홍수 이야기를 시작하면서 이렇게 기록합니다.</p>
+          <span class="verse">“그러나 노아는 여호와께 은혜를 입었더라”<cite>창세기 6장 8절</cite></span>
+          <p>노아가 의로워서 은혜를 입은 것이 아니라, 은혜가 먼저 찾아왔기에 노아가 그렇게 살 수 있었습니다. 이 순서가 우리 교회의 신앙고백입니다. 부르심이 먼저이고 순종이 나중입니다. 이 순서가 뒤집히면 복음은 곧바로 율법이 되어 버립니다.</p>
+
+          <h3>우리는 말씀을 한 권씩, 한 장씩 이어서 듣습니다.</h3>
+          <p>노진교회의 강단은 오직 성경을 펼칩니다. 그날그날 마음에 드는 구절을 골라 오는 것이 아니라, 창세기면 창세기, 요한일서면 요한일서를 처음부터 끝까지 차례로 걸어갑니다. 그리고 그 모든 본문이 결국 어디를 가리키는지를 함께 찾습니다. 방주도, 노아의 제단도, 셈의 장막도 결국 한 분 예수 그리스도를 향한 그림자였습니다. 구약의 인물들은 우리의 모범이기 이전에 그리스도를 비추는 거울입니다. 그래서 우리 강단은 “이렇게 살아야 합니다”보다 <strong>“주님께서 이렇게 하셨습니다”</strong>를 먼저 말합니다.</p>
+
+          <h3>우리의 담대함은 우리 안에 있지 않습니다.</h3>
+          <p>신앙생활을 오래 한 사람일수록 자기 부족함을 더 잘 압니다. 그래서 우리는 구원의 확신을 우리의 열심이나 꾸준함에서 찾지 않습니다. 우리가 하나님 앞에 설 수 있는 단 하나의 근거는 그리스도께서 이루시고 우리에게 입혀 주신 의뿐입니다.</p>
+
+          <h3>그러나 우리는 가만히 있지 않습니다.</h3>
+          <p>성경은 우리에게 거룩하게 살라고 분명히 명령합니다. 그러나 그 명령을 이룰 힘조차 우리가 짜내는 것이 아닙니다.</p>
+          <span class="verse">“너희 안에서 행하시는 이는 하나님이시니 자기의 기쁘신 뜻을 위하여 너희에게 소원을 두고 행하게 하시나니”<cite>빌립보서 2장 13절</cite></span>
+          <p>거룩은 외로운 자기 수양이 아니라, 이미 우리 안에서 일하고 계신 성령님과 함께 걷는 은혜의 여정입니다.</p>
+
+          <h3>우리는 서로를 덮어 주는 공동체입니다.</h3>
+          <p>노아가 장막 안에서 부끄러운 모습으로 누워 있을 때, 함은 그것을 보고 밖에 나가 알렸고 셈과 야벳은 뒷걸음쳐 들어가 옷으로 덮었습니다. 교회 안에서도 이 두 가지 시선은 늘 함께 있습니다. 노진교회는 셈과 야벳의 손을 택하려 합니다. 우리가 먼저 그리스도의 의로 덮임 받은 사람들이기 때문입니다. <strong>덮음 받은 사람만이 남을 덮을 수 있습니다.</strong></p>
+
+          <h3>우리는 작지만 오래 지켜 온 제단입니다.</h3>
+          <p>우리 교회에는 평생 흙과 더불어 살아온 어르신들이 많습니다. 손마디는 굵어졌고 머리에는 하얀 서리가 내렸습니다. 무릎이 아파도 주일이면 어김없이 성전 문을 여는 분들, 도시에 나가 있는 자녀와 손주를 위해 수십 년째 눈물로 기도해 온 분들입니다. 이 빈 들녘 같은 시골 제단은 그분들의 기도로 지금까지 서 있습니다.</p>
+          <p>우리는 모인 숫자가 적은 것을 부끄러워하지 않습니다. 낡아 가는 몸을 서글퍼하지도 않습니다. 겉사람은 낡아지나 속사람은 날로 새로워지며, 이 몸도 마지막 날에 주님의 영광의 몸과 같은 형체로 다시 살아날 것을 믿기 때문입니다. 우리에게 노년은 저물어 가는 시간이 아니라 <strong>부활을 바라보는 시간</strong>입니다.</p>
+
+          <h3>그리고 우리는 다음 세대를 품습니다.</h3>
+          <p>하나님 나라는 돈으로도 갈 수 없고 노력으로도 갈 수 없습니다. 위로부터 새로 나야 들어갑니다. 우리는 그 진리를 아이들에게도 아이들의 말로 정직하게 가르칩니다. 재미있는 이야기로 시간을 채우거나 착한 아이가 되라는 훈계로 그치지 않습니다. 아이들도 죄인이고, 아이들에게도 구주가 필요하기 때문입니다. 어른의 복음과 아이의 복음이 따로 있지 않도록, 우리는 같은 은혜를 함께 듣습니다.</p>
+
+          <div class="confess-invite">
+            <p>혹시 지금 세상 물결에 휩쓸려 무너진 제단 앞에 다시 서고 싶은 마음이 있으시다면, 혹은 아직 아무것도 모른 채 그저 한번 와 보고 싶으시다면, 그 자리가 바로 은혜가 시작되는 자리입니다. 언제든 오십시오. 여기서 함께 이렇게 고백하기를 원합니다.</p>
+          </div>
+
+          <p class="confess-refrain is-close">그러나 노진교회는<br />여호와께 은혜를 입었더라.</p>
+
+          <!-- 온 교우 단체사진: images/church-family.jpg 파일만 바꾸면 여기 사진이 교체된다 -->
+          <figure class="confess-family">
+            <img src="images/church-family.jpg?v=20260820" alt="노진교회 예배당 앞에 함께 모인 온 교우들" loading="lazy" width="1600" height="975" />
+            <figcaption>은혜로 함께 모인 노진교회 교우들</figcaption>
+          </figure>
+        </div>
+    </div>
+
+    <!-- 팝업 2: 심볼 이야기 -->
+    <div class="pop-src" id="pop-symbol" data-pop-title="노진교회 심볼 이야기" hidden>
+        <!-- 노진교회 심볼 이야기: 로고 풀이 (심볼 그림은 로고 최종안 좌표 그대로) -->
+        <div class="symbol-story" id="symbol">
+          <div class="ss-head">
+            <span class="eyebrow2">OUR SYMBOL</span>
+            <h3 class="ss-title">노진교회 심볼 이야기</h3>
+          </div>
+          <div class="ss-logo">
+            <svg class="ss-mark" viewBox="26 30 192 158" role="img" aria-label="노진교회 심볼"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#1A3A2F" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15ZM151.00 72.00L150.85 72.43L150.76 72.87L150.69 73.33L150.63 73.81L150.58 74.30L150.55 74.79L150.52 75.30L150.51 75.82L150.50 76.34L150.49 76.88L150.50 77.42L150.51 77.96L150.52 78.51L150.54 79.06L150.56 79.62L150.58 80.18L150.60 80.74L150.63 81.30L150.65 81.86L150.67 82.42L150.69 82.98L150.71 83.54L150.73 84.10L150.74 84.66L150.75 85.21L150.76 85.76L150.76 86.30L150.80 86.85L150.94 86.32L151.02 85.77L151.08 85.22L151.13 84.67L151.17 84.11L151.20 83.55L151.22 82.98L151.23 82.42L151.24 81.85L151.24 81.28L151.23 80.72L151.22 80.16L151.20 79.60L151.19 79.04L151.17 78.49L151.15 77.94L151.13 77.40L151.10 76.86L151.08 76.34L151.07 75.82L151.05 75.31L151.04 74.80L151.03 74.31L151.02 73.83L151.02 73.36L151.02 72.90L151.03 72.45Z" fill="#1A3A2F" fill-rule="evenodd"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60ZM122.00 97.90L122.87 97.89L123.72 97.86L124.58 97.83L125.43 97.81L126.29 97.81L127.14 97.81L127.98 97.82L128.83 97.84L129.68 97.87L130.52 97.90L131.36 97.94L132.19 97.97L133.03 98.01L133.86 98.05L134.69 98.09L135.51 98.12L136.33 98.15L137.15 98.17L137.96 98.19L138.77 98.19L139.58 98.19L140.37 98.18L141.16 98.15L141.95 98.11L142.72 98.05L143.49 97.97L144.25 97.86L145.00 97.70L144.24 97.69L143.48 97.70L142.71 97.71L141.94 97.71L141.16 97.70L140.37 97.69L139.58 97.66L138.78 97.63L137.98 97.60L137.17 97.56L136.36 97.52L135.54 97.48L134.72 97.44L133.89 97.40L133.06 97.36L132.22 97.33L131.38 97.31L130.53 97.29L129.69 97.28L128.84 97.28L127.98 97.30L127.13 97.32L126.27 97.36L125.42 97.42L124.56 97.50L123.70 97.59L122.85 97.72ZM158.00 101.10L158.75 101.11L159.50 101.09L160.23 101.07L160.95 101.06L161.67 101.05L162.39 101.05L163.10 101.05L163.81 101.05L164.51 101.05L165.21 101.05L165.91 101.05L166.61 101.04L167.31 101.02L168.01 101.00L168.71 100.97L169.41 100.92L170.12 100.87L170.82 100.80L171.53 100.71L172.24 100.61L172.95 100.49L173.66 100.35L174.38 100.18L175.10 99.99L175.83 99.77L176.55 99.53L177.28 99.25L178.00 98.90L177.23 99.08L176.48 99.27L175.74 99.45L175.01 99.61L174.29 99.74L173.57 99.86L172.86 99.97L172.16 100.06L171.46 100.13L170.76 100.19L170.07 100.24L169.37 100.29L168.68 100.32L167.99 100.35L167.29 100.37L166.60 100.40L165.90 100.42L165.20 100.44L164.50 100.46L163.80 100.49L163.09 100.52L162.37 100.56L161.66 100.61L160.93 100.67L160.21 100.74L159.48 100.83L158.74 100.93Z" fill="#1A3A2F" fill-rule="evenodd"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00ZM149.20 115.75L149.21 117.04L149.25 118.33L149.28 119.61L149.30 120.90L149.31 122.18L149.31 123.47L149.30 124.75L149.29 126.04L149.27 127.32L149.25 128.60L149.22 129.89L149.19 131.17L149.16 132.46L149.13 133.74L149.09 135.03L149.06 136.31L149.04 137.60L149.02 138.89L149.00 140.17L148.99 141.46L148.99 142.75L149.00 144.03L149.02 145.32L149.06 146.61L149.10 147.90L149.17 149.18L149.26 150.47L149.40 151.75L149.43 150.46L149.43 149.17L149.44 147.89L149.45 146.61L149.47 145.32L149.49 144.04L149.52 142.75L149.55 141.47L149.59 140.18L149.63 138.90L149.67 137.61L149.70 136.33L149.74 135.04L149.77 133.76L149.80 132.47L149.83 131.19L149.85 129.90L149.86 128.61L149.86 127.32L149.85 126.04L149.83 124.75L149.80 123.46L149.75 122.17L149.69 120.89L149.61 119.60L149.51 118.31L149.39 117.03Z" fill="#1A3A2F" fill-rule="evenodd"/></svg>
+            <span class="ss-name">노진교회</span>
+            <span class="ss-denom">대한예수교장로회</span>
+          </div>
+          <p class="ss-lead">노진교회의 심볼은 교회 이름의 첫 글자 <strong>N·J·C</strong>(NoJin Church)로 그렸습니다.<br />노진리 이 땅과 그리스도의 십자가, 그리고 교회가 서로 이어져 있는 모양입니다.</p>
+          <ol class="ss-list">
+            <li class="ss-item">
+              <svg class="ss-tile" viewBox="8 -6 230 230" role="img" aria-label="심볼에서 N 부분(산 모양)"><g opacity=".24"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#F6F4EB" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#F6F4EB"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#F6F4EB"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#F6F4EB"/></g><path d="M63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L150.00 180.00" fill="none" stroke="#BFA06C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="ss-text">
+                <h4><span class="ss-key">N</span>노진리, 함께 세워져 갈 공동체</h4>
+                <p>산처럼 솟아오른 N은 노진(Nojin), 곧 우리가 살아가는 노진리 이 땅입니다. 이 마을에서 함께 세워져 갈 교회 공동체를 뜻합니다.</p>
+              </div>
+            </li>
+            <li class="ss-item">
+              <svg class="ss-tile" viewBox="8 -6 230 230" role="img" aria-label="심볼에서 J 부분(십자가로 이어지는 선)"><g opacity=".24"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#F6F4EB" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#F6F4EB"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#F6F4EB"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#F6F4EB"/></g><path d="M122.28 150.60L150.00 180.00" fill="none" stroke="#BFA06C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#BFA06C"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#BFA06C"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#BFA06C"/></svg>
+              <div class="ss-text">
+                <h4><span class="ss-key">J</span>십자가로 이어지는 길</h4>
+                <p>노진리에서 시작된 선은 J처럼 휘어 십자가로 이어집니다. 이 땅의 공동체가 우리의 열심이 아니라 오직 그리스도의 십자가로 이어져, 예수 그리스도께서 머리 되신 교회로 세워져 간다는 고백입니다. 매끈한 장식 대신 거친 나무 십자가로 그린 것은, 주님께서 실제로 지신 그 십자가를 기억하기 위해서입니다.</p>
+              </div>
+            </li>
+            <li class="ss-item">
+              <svg class="ss-tile" viewBox="8 -6 230 230" role="img" aria-label="심볼에서 C 부분(둥근 테두리)"><g opacity=".24"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#F6F4EB" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#F6F4EB"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#F6F4EB"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#F6F4EB"/></g><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21" fill="none" stroke="#BFA06C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="ss-text">
+                <h4><span class="ss-key">C</span>이 땅을 품는 교회</h4>
+                <p>이 모든 것을 둥글게 감싼 테두리는 C, 곧 교회(Church)입니다. 교회가 노진리를 품에 안듯 감싸고 있는 모습으로, 이 마을과 이웃을 품고 기도하는 교회가 되겠다는 다짐을 담았습니다.</p>
+              </div>
+            </li>
+            <li class="ss-item">
+              <svg class="ss-tile" viewBox="8 -6 230 230" role="img" aria-label="심볼에서 옆으로 뻗은 획"><g opacity=".24"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#F6F4EB" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#F6F4EB"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#F6F4EB"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#F6F4EB"/></g><path d="M150.00 180.00L212.00 180.00" fill="none" stroke="#BFA06C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="ss-text">
+                <h4><span class="ss-key ss-key-line" aria-hidden="true"></span>옆으로 뻗은 획 — 이웃과 이 땅으로</h4>
+                <p>십자가 곁에서 수평으로 곧게 뻗어 나간 획은, 십자가에서 받은 하나님의 사랑이 이웃에게, 이 땅으로 흘러가는 모습입니다.</p>
+              </div>
+            </li>
+          </ol>
+          <div class="ss-close">
+            <p>위로는 십자가를 지나 하나님의 영광으로,<br />옆으로는 그 사랑을 따라 이웃에게.</p>
+            <p class="ss-close-main">노진교회는 십자가로 이어져<br />하나님의 영광으로 나아가는 교회입니다.</p>
+            <span class="ss-verse">“우리가 사랑함은 그가 먼저 우리를 사랑하셨음이라”<cite>요한일서 4장 19절</cite></span>
+          </div>
+        </div>
+    </div>
+
+    <!-- 팝업 3: 섬기는 사람들 -->
+    <div class="pop-src" id="pop-servants" data-pop-title="섬기는 사람들" hidden>
+        <!-- 섬기는 사람들 -->
+        <div class="servants">
+          <h3 class="sub-title">섬기는 사람들</h3>
+          <div class="servant-grid" id="servantCards">
+            <div class="servant-card"><span class="role">원로목사</span><span class="name">신동열</span></div>
+            <div class="servant-card highlight"><span class="role">담임목사</span><span class="name">손병민</span></div>
+          </div>
+          <div class="servant-rows" id="servantRows">
+            <div class="servant-row"><span class="row-label">시무장로</span><span class="row-names">문명수</span></div>
+            <div class="servant-row"><span class="row-label">안수집사</span><span class="row-names">김종학 · 최명철 · 신성찬</span></div>
+            <div class="servant-row"><span class="row-label">은퇴권사</span><span class="row-names">장정숙 · 김교선 · 임희순</span></div>
+            <div class="servant-row"><span class="row-label">시무권사</span><span class="row-names">유금순 · 오성자 · 이경순 · 김평애 · 진대순 · 정명남 · 박금숙 · 전정식 · 이수현 · 최지연 · 김은희 · 고은성 · 박명옥</span></div>
+            <div class="servant-row"><span class="row-label">협동권사</span><span class="row-names">박성애</span></div>
+          </div>
+          <h4 class="servant-subgroup">기관 부서 봉사자</h4>
+          <div class="servant-rows" id="servantOrg">
+            <div class="servant-row"><span class="row-label">루디아전도회</span><span class="row-names">회장 김은희 · 총무 고은성</span></div>
+            <div class="servant-row"><span class="row-label">에스더전도회</span><span class="row-names">회장 문선경 · 총무 장한주</span></div>
+            <div class="servant-row"><span class="row-label">바울전도회</span><span class="row-names">회장 김종학 · 총무 신성찬 · 지도 문명수</span></div>
+            <div class="servant-row"><span class="row-label">엘림회</span><span class="row-names">지도 이수현</span></div>
+            <div class="servant-row"><span class="row-label">찬양대</span><span class="row-names">지휘 신성찬 · 총무 임혜은 · 인도 최명철 · 반주 양유정</span></div>
+            <div class="servant-row"><span class="row-label">주일학교</span><span class="row-names">부장 신성호 · 총무 황귀순</span></div>
+            <div class="servant-row"><span class="row-label">식당</span><span class="row-names">총책임 오성자 · 부책임 최지연</span></div>
+            <div class="servant-row"><span class="row-label">차량 운행</span><span class="row-names">김종학 · 임희순</span></div>
+            <div class="servant-row"><span class="row-label">꽃꽂이</span><span class="row-names">김교선</span></div>
+          </div>
+        </div>
+    </div>
+
+    <!-- 팝업 4: 예배 순서자(월별 봉사위원) — 내용은 main.js 가 채운다 -->
+    <div class="pop-src" id="pop-committee" data-pop-title="예배 순서자 안내" hidden>
+      <div class="committee" id="committee"></div>
     </div>
   </section>
 
   <!-- ===== 예배 안내 ===== -->
-  <section id="worship" class="block">
+  <section id="worship" class="block block-alt">
     <div class="container">
       <div class="block-head">
         <span class="eyebrow2">WORSHIP</span>
@@ -130,12 +265,27 @@
     </div>
   </section>
 
-  <!-- ===== 교회 가는 길 ===== -->
+  <!-- ===== 이번 주 주보 (요약만 보이고, 전체는 팝업) ===== -->
+  <section id="bulletin" class="block">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">THIS WEEK</span>
+        <h2>이번 주 주보</h2>
+        <p>이번 주일 말씀과 한 주의 소식입니다. 지난 주보는 <a class="text-link" href="word.html#archive">주보 모아 보기 →</a></p>
+      </div>
+      <div id="homeBulletinBrief" class="hbb"><p class="qt-loading">주보를 불러오는 중…</p></div>
+      <div class="pop-src" id="pop-bulletin" data-pop-title="이번 주 주보" hidden>
+        <div id="homeBulletin"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 찾아오시는 길 ===== -->
   <section id="directions" class="block block-alt">
     <div class="container">
       <div class="block-head">
         <span class="eyebrow2">DIRECTIONS</span>
-        <h2>교회 가는 길</h2>
+        <h2>찾아오시는 길</h2>
         <p>경기도 화성시 만세구 장안면 화곡로 159-8번지 (장안면 노진리) · T. <a href="tel:070-4355-1598">070-4355-1598</a></p>
       </div>
 
@@ -159,148 +309,44 @@
     </div>
   </section>
 
-  <!-- ===== 우리 교회는 어떤 곳 ===== -->
-  <section id="about" class="block">
+  <!-- ===== 새가족 등록 ===== -->
+  <section id="newfamily" class="block">
     <div class="container">
       <div class="block-head">
-        <span class="eyebrow2">ABOUT US</span>
-        <h2>노진교회는 어떤 곳일까요</h2>
-        <p>은혜를 먼저 받은 사람들이 모여, 말씀을 한 장씩 이어 듣는 공동체입니다.</p>
-        <!-- 교단 소속 안내 (첫 화면의 상자와 같은 내용, 밝은 바탕용) -->
-        <div class="ph-denom is-light">
-          <img src="images/denom-mark.png?v=20260926" alt="대한예수교장로회 합동 총회 마크" class="ph-denom-mark" width="68" height="68" loading="lazy" />
-          <p>우리 노진교회는 <strong>대한예수교장로회 합동측</strong><br class="ph-br" />
-            시화산노회 남부시찰에 소속된 교회입니다.</p>
-        </div>
+        <span class="eyebrow2">NEW FAMILY</span>
+        <h2>새가족 등록을 원하시나요?</h2>
+        <p>이름과 연락처만 남겨 주시면, 새가족 담당자가 따뜻하게 연락드립니다. 부담 갖지 않으셔도 됩니다.</p>
       </div>
 
-      <!-- 우리 교회의 신앙고백 -->
-      <div class="confess">
-        <!-- 사진 칸: images/pastor.jpg 파일만 바꾸면 여기 사진이 교체된다 -->
-        <figure class="confess-portrait">
-          <img src="images/pastor.jpg?v=20260820" alt="노진교회 담임목사 손병민" loading="lazy" width="200" height="267" />
-          <figcaption>담임목사 <strong>손병민</strong></figcaption>
-        </figure>
-
-        <p class="confess-refrain">그러나 노진교회는<br />여호와께 은혜를 입었더라</p>
-
-        <p class="confess-lead">노진교회는 은혜를 먼저 받은 사람들이 모인 곳입니다.</p>
-
-        <h3>우리는 잘 믿어서 이 자리에 서 있는 것이 아닙니다.</h3>
-        <p>성경은 홍수 이야기를 시작하면서 이렇게 기록합니다.</p>
-        <span class="verse">“그러나 노아는 여호와께 은혜를 입었더라”<cite>창세기 6장 8절</cite></span>
-        <p>노아가 의로워서 은혜를 입은 것이 아니라, 은혜가 먼저 찾아왔기에 노아가 그렇게 살 수 있었습니다. 이 순서가 우리 교회의 신앙고백입니다. 부르심이 먼저이고 순종이 나중입니다. 이 순서가 뒤집히면 복음은 곧바로 율법이 되어 버립니다.</p>
-
-        <h3>우리는 말씀을 한 권씩, 한 장씩 이어서 듣습니다.</h3>
-        <p>노진교회의 강단은 오직 성경을 펼칩니다. 그날그날 마음에 드는 구절을 골라 오는 것이 아니라, 창세기면 창세기, 요한일서면 요한일서를 처음부터 끝까지 차례로 걸어갑니다. 그리고 그 모든 본문이 결국 어디를 가리키는지를 함께 찾습니다. 방주도, 노아의 제단도, 셈의 장막도 결국 한 분 예수 그리스도를 향한 그림자였습니다. 구약의 인물들은 우리의 모범이기 이전에 그리스도를 비추는 거울입니다. 그래서 우리 강단은 “이렇게 살아야 합니다”보다 <strong>“주님께서 이렇게 하셨습니다”</strong>를 먼저 말합니다.</p>
-
-        <h3>우리의 담대함은 우리 안에 있지 않습니다.</h3>
-        <p>신앙생활을 오래 한 사람일수록 자기 부족함을 더 잘 압니다. 그래서 우리는 구원의 확신을 우리의 열심이나 꾸준함에서 찾지 않습니다. 우리가 하나님 앞에 설 수 있는 단 하나의 근거는 그리스도께서 이루시고 우리에게 입혀 주신 의뿐입니다.</p>
-
-        <h3>그러나 우리는 가만히 있지 않습니다.</h3>
-        <p>성경은 우리에게 거룩하게 살라고 분명히 명령합니다. 그러나 그 명령을 이룰 힘조차 우리가 짜내는 것이 아닙니다.</p>
-        <span class="verse">“너희 안에서 행하시는 이는 하나님이시니 자기의 기쁘신 뜻을 위하여 너희에게 소원을 두고 행하게 하시나니”<cite>빌립보서 2장 13절</cite></span>
-        <p>거룩은 외로운 자기 수양이 아니라, 이미 우리 안에서 일하고 계신 성령님과 함께 걷는 은혜의 여정입니다.</p>
-
-        <h3>우리는 서로를 덮어 주는 공동체입니다.</h3>
-        <p>노아가 장막 안에서 부끄러운 모습으로 누워 있을 때, 함은 그것을 보고 밖에 나가 알렸고 셈과 야벳은 뒷걸음쳐 들어가 옷으로 덮었습니다. 교회 안에서도 이 두 가지 시선은 늘 함께 있습니다. 노진교회는 셈과 야벳의 손을 택하려 합니다. 우리가 먼저 그리스도의 의로 덮임 받은 사람들이기 때문입니다. <strong>덮음 받은 사람만이 남을 덮을 수 있습니다.</strong></p>
-
-        <h3>우리는 작지만 오래 지켜 온 제단입니다.</h3>
-        <p>우리 교회에는 평생 흙과 더불어 살아온 어르신들이 많습니다. 손마디는 굵어졌고 머리에는 하얀 서리가 내렸습니다. 무릎이 아파도 주일이면 어김없이 성전 문을 여는 분들, 도시에 나가 있는 자녀와 손주를 위해 수십 년째 눈물로 기도해 온 분들입니다. 이 빈 들녘 같은 시골 제단은 그분들의 기도로 지금까지 서 있습니다.</p>
-        <p>우리는 모인 숫자가 적은 것을 부끄러워하지 않습니다. 낡아 가는 몸을 서글퍼하지도 않습니다. 겉사람은 낡아지나 속사람은 날로 새로워지며, 이 몸도 마지막 날에 주님의 영광의 몸과 같은 형체로 다시 살아날 것을 믿기 때문입니다. 우리에게 노년은 저물어 가는 시간이 아니라 <strong>부활을 바라보는 시간</strong>입니다.</p>
-
-        <h3>그리고 우리는 다음 세대를 품습니다.</h3>
-        <p>하나님 나라는 돈으로도 갈 수 없고 노력으로도 갈 수 없습니다. 위로부터 새로 나야 들어갑니다. 우리는 그 진리를 아이들에게도 아이들의 말로 정직하게 가르칩니다. 재미있는 이야기로 시간을 채우거나 착한 아이가 되라는 훈계로 그치지 않습니다. 아이들도 죄인이고, 아이들에게도 구주가 필요하기 때문입니다. 어른의 복음과 아이의 복음이 따로 있지 않도록, 우리는 같은 은혜를 함께 듣습니다.</p>
-
-        <div class="confess-invite">
-          <p>혹시 지금 세상 물결에 휩쓸려 무너진 제단 앞에 다시 서고 싶은 마음이 있으시다면, 혹은 아직 아무것도 모른 채 그저 한번 와 보고 싶으시다면, 그 자리가 바로 은혜가 시작되는 자리입니다. 언제든 오십시오. 여기서 함께 이렇게 고백하기를 원합니다.</p>
-        </div>
-
-        <p class="confess-refrain is-close">그러나 노진교회는<br />여호와께 은혜를 입었더라.</p>
-
-        <!-- 온 교우 단체사진: images/church-family.jpg 파일만 바꾸면 여기 사진이 교체된다 -->
-        <figure class="confess-family">
-          <img src="images/church-family.jpg?v=20260820" alt="노진교회 예배당 앞에 함께 모인 온 교우들" loading="lazy" width="1600" height="975" />
-          <figcaption>은혜로 함께 모인 노진교회 교우들</figcaption>
-        </figure>
+      <div class="welcome-steps">
+        <div class="welcome-step"><span class="ws-num">01</span><h4>등록</h4><p>등록 신청서 작성 또는 안내위원에게 말씀</p></div>
+        <div class="welcome-step"><span class="ws-num">02</span><h4>환영 인사</h4><p>새가족 담당자가 연락·환영 선물 전달</p></div>
+        <div class="welcome-step"><span class="ws-num">03</span><h4>새가족반</h4><p>4주 과정으로 교회와 신앙을 편안히 안내</p></div>
+        <div class="welcome-step"><span class="ws-num">04</span><h4>정착</h4><p>소그룹·공동체 연결로 함께 자라갑니다</p></div>
       </div>
 
-      <!-- 노진교회 심볼 이야기: 로고 풀이 (심볼 그림은 로고 최종안 좌표 그대로) -->
-      <div class="symbol-story" id="symbol">
-        <div class="ss-head">
-          <span class="eyebrow2">OUR SYMBOL</span>
-          <h3 class="ss-title">노진교회 심볼 이야기</h3>
-        </div>
-        <div class="ss-logo">
-          <svg class="ss-mark" viewBox="26 30 192 158" role="img" aria-label="노진교회 심볼"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#1A3A2F" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15ZM151.00 72.00L150.85 72.43L150.76 72.87L150.69 73.33L150.63 73.81L150.58 74.30L150.55 74.79L150.52 75.30L150.51 75.82L150.50 76.34L150.49 76.88L150.50 77.42L150.51 77.96L150.52 78.51L150.54 79.06L150.56 79.62L150.58 80.18L150.60 80.74L150.63 81.30L150.65 81.86L150.67 82.42L150.69 82.98L150.71 83.54L150.73 84.10L150.74 84.66L150.75 85.21L150.76 85.76L150.76 86.30L150.80 86.85L150.94 86.32L151.02 85.77L151.08 85.22L151.13 84.67L151.17 84.11L151.20 83.55L151.22 82.98L151.23 82.42L151.24 81.85L151.24 81.28L151.23 80.72L151.22 80.16L151.20 79.60L151.19 79.04L151.17 78.49L151.15 77.94L151.13 77.40L151.10 76.86L151.08 76.34L151.07 75.82L151.05 75.31L151.04 74.80L151.03 74.31L151.02 73.83L151.02 73.36L151.02 72.90L151.03 72.45Z" fill="#1A3A2F" fill-rule="evenodd"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60ZM122.00 97.90L122.87 97.89L123.72 97.86L124.58 97.83L125.43 97.81L126.29 97.81L127.14 97.81L127.98 97.82L128.83 97.84L129.68 97.87L130.52 97.90L131.36 97.94L132.19 97.97L133.03 98.01L133.86 98.05L134.69 98.09L135.51 98.12L136.33 98.15L137.15 98.17L137.96 98.19L138.77 98.19L139.58 98.19L140.37 98.18L141.16 98.15L141.95 98.11L142.72 98.05L143.49 97.97L144.25 97.86L145.00 97.70L144.24 97.69L143.48 97.70L142.71 97.71L141.94 97.71L141.16 97.70L140.37 97.69L139.58 97.66L138.78 97.63L137.98 97.60L137.17 97.56L136.36 97.52L135.54 97.48L134.72 97.44L133.89 97.40L133.06 97.36L132.22 97.33L131.38 97.31L130.53 97.29L129.69 97.28L128.84 97.28L127.98 97.30L127.13 97.32L126.27 97.36L125.42 97.42L124.56 97.50L123.70 97.59L122.85 97.72ZM158.00 101.10L158.75 101.11L159.50 101.09L160.23 101.07L160.95 101.06L161.67 101.05L162.39 101.05L163.10 101.05L163.81 101.05L164.51 101.05L165.21 101.05L165.91 101.05L166.61 101.04L167.31 101.02L168.01 101.00L168.71 100.97L169.41 100.92L170.12 100.87L170.82 100.80L171.53 100.71L172.24 100.61L172.95 100.49L173.66 100.35L174.38 100.18L175.10 99.99L175.83 99.77L176.55 99.53L177.28 99.25L178.00 98.90L177.23 99.08L176.48 99.27L175.74 99.45L175.01 99.61L174.29 99.74L173.57 99.86L172.86 99.97L172.16 100.06L171.46 100.13L170.76 100.19L170.07 100.24L169.37 100.29L168.68 100.32L167.99 100.35L167.29 100.37L166.60 100.40L165.90 100.42L165.20 100.44L164.50 100.46L163.80 100.49L163.09 100.52L162.37 100.56L161.66 100.61L160.93 100.67L160.21 100.74L159.48 100.83L158.74 100.93Z" fill="#1A3A2F" fill-rule="evenodd"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00ZM149.20 115.75L149.21 117.04L149.25 118.33L149.28 119.61L149.30 120.90L149.31 122.18L149.31 123.47L149.30 124.75L149.29 126.04L149.27 127.32L149.25 128.60L149.22 129.89L149.19 131.17L149.16 132.46L149.13 133.74L149.09 135.03L149.06 136.31L149.04 137.60L149.02 138.89L149.00 140.17L148.99 141.46L148.99 142.75L149.00 144.03L149.02 145.32L149.06 146.61L149.10 147.90L149.17 149.18L149.26 150.47L149.40 151.75L149.43 150.46L149.43 149.17L149.44 147.89L149.45 146.61L149.47 145.32L149.49 144.04L149.52 142.75L149.55 141.47L149.59 140.18L149.63 138.90L149.67 137.61L149.70 136.33L149.74 135.04L149.77 133.76L149.80 132.47L149.83 131.19L149.85 129.90L149.86 128.61L149.86 127.32L149.85 126.04L149.83 124.75L149.80 123.46L149.75 122.17L149.69 120.89L149.61 119.60L149.51 118.31L149.39 117.03Z" fill="#1A3A2F" fill-rule="evenodd"/></svg>
-          <span class="ss-name">노진교회</span>
-          <span class="ss-denom">대한예수교장로회</span>
-        </div>
-        <p class="ss-lead">노진교회의 심볼은 교회 이름의 첫 글자 <strong>N·J·C</strong>(NoJin Church)로 그렸습니다.<br />노진리 이 땅과 그리스도의 십자가, 그리고 교회가 서로 이어져 있는 모양입니다.</p>
-        <ol class="ss-list">
-          <li class="ss-item">
-            <svg class="ss-tile" viewBox="8 -6 230 230" role="img" aria-label="심볼에서 N 부분(산 모양)"><g opacity=".24"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#F6F4EB" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#F6F4EB"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#F6F4EB"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#F6F4EB"/></g><path d="M63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L150.00 180.00" fill="none" stroke="#BFA06C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <div class="ss-text">
-              <h4><span class="ss-key">N</span>노진리, 함께 세워져 갈 공동체</h4>
-              <p>산처럼 솟아오른 N은 노진(Nojin), 곧 우리가 살아가는 노진리 이 땅입니다. 이 마을에서 함께 세워져 갈 교회 공동체를 뜻합니다.</p>
-            </div>
-          </li>
-          <li class="ss-item">
-            <svg class="ss-tile" viewBox="8 -6 230 230" role="img" aria-label="심볼에서 J 부분(십자가로 이어지는 선)"><g opacity=".24"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#F6F4EB" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#F6F4EB"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#F6F4EB"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#F6F4EB"/></g><path d="M122.28 150.60L150.00 180.00" fill="none" stroke="#BFA06C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#BFA06C"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#BFA06C"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#BFA06C"/></svg>
-            <div class="ss-text">
-              <h4><span class="ss-key">J</span>십자가로 이어지는 길</h4>
-              <p>노진리에서 시작된 선은 J처럼 휘어 십자가로 이어집니다. 이 땅의 공동체가 우리의 열심이 아니라 오직 그리스도의 십자가로 이어져, 예수 그리스도께서 머리 되신 교회로 세워져 간다는 고백입니다. 매끈한 장식 대신 거친 나무 십자가로 그린 것은, 주님께서 실제로 지신 그 십자가를 기억하기 위해서입니다.</p>
-            </div>
-          </li>
-          <li class="ss-item">
-            <svg class="ss-tile" viewBox="8 -6 230 230" role="img" aria-label="심볼에서 C 부분(둥근 테두리)"><g opacity=".24"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#F6F4EB" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#F6F4EB"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#F6F4EB"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#F6F4EB"/></g><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21" fill="none" stroke="#BFA06C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <div class="ss-text">
-              <h4><span class="ss-key">C</span>이 땅을 품는 교회</h4>
-              <p>이 모든 것을 둥글게 감싼 테두리는 C, 곧 교회(Church)입니다. 교회가 노진리를 품에 안듯 감싸고 있는 모습으로, 이 마을과 이웃을 품고 기도하는 교회가 되겠다는 다짐을 담았습니다.</p>
-            </div>
-          </li>
-          <li class="ss-item">
-            <svg class="ss-tile" viewBox="8 -6 230 230" role="img" aria-label="심볼에서 옆으로 뻗은 획"><g opacity=".24"><path d="M177.42 73.52A78 78 0 1 0 63.66 177.21Q72.61 184.28 74.26 173.52L82.79 117.91Q84.00 110.00 89.49 115.82L142.45 172.00Q150.00 180.00 161.00 180.00L212.00 180.00" fill="none" stroke="#F6F4EB" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M144.80 67.90L148.80 67.20L155.20 66.70L154.77 90.85L145.23 91.15Z" fill="#F6F4EB"/><path d="M117.10 94.40L136 94.48L184.60 93.30L183.70 96.50L184.20 98.60L183.30 101.50L162 102.66L115.10 104.00L116.60 100.60L115.50 99.00L116.40 96.60Z" fill="#F6F4EB"/><path d="M145.50 106.15L154.50 105.75L153.20 178.00L146.80 178.00Z" fill="#F6F4EB"/></g><path d="M150.00 180.00L212.00 180.00" fill="none" stroke="#BFA06C" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <div class="ss-text">
-              <h4><span class="ss-key ss-key-line" aria-hidden="true"></span>옆으로 뻗은 획 — 이웃과 이 땅으로</h4>
-              <p>십자가 곁에서 수평으로 곧게 뻗어 나간 획은, 십자가에서 받은 하나님의 사랑이 이웃에게, 이 땅으로 흘러가는 모습입니다.</p>
-            </div>
-          </li>
-        </ol>
-        <div class="ss-close">
-          <p>위로는 십자가를 지나 하나님의 영광으로,<br />옆으로는 그 사랑을 따라 이웃에게.</p>
-          <p class="ss-close-main">노진교회는 십자가로 이어져<br />하나님의 영광으로 나아가는 교회입니다.</p>
-          <span class="ss-verse">“우리가 사랑함은 그가 먼저 우리를 사랑하셨음이라”<cite>요한일서 4장 19절</cite></span>
-        </div>
+      <div class="nf-cta">
+        <button type="button" class="btn btn-solid" data-pop="pop-newfamily">새가족 등록 신청하기</button>
       </div>
 
-      <!-- 섬기는 사람들 -->
-      <div class="servants">
-        <h3 class="sub-title">섬기는 사람들</h3>
-        <div class="servant-grid" id="servantCards">
-          <div class="servant-card"><span class="role">원로목사</span><span class="name">신동열</span></div>
-          <div class="servant-card highlight"><span class="role">담임목사</span><span class="name">손병민</span></div>
+      <!-- 팝업: 새가족 등록 신청서 -->
+      <div class="pop-src" id="pop-newfamily" data-pop-title="새가족 등록 신청" hidden>
+        <form class="form-card" id="newcomerForm">
+          <div class="form-grid">
+            <div class="form-field"><label>이름</label><input type="text" name="name" required placeholder="홍길동" /></div>
+            <div class="form-field"><label>연락처</label><input type="tel" name="phone" required placeholder="070-4355-1598" /></div>
+            <div class="form-field"><label>방문 예정일</label><input type="text" name="visit" placeholder="예: 이번 주일 2부" /></div>
+            <div class="form-field"><label>함께 오는 가족</label><input type="text" name="family" placeholder="예: 배우자, 자녀 2명" /></div>
+            <div class="form-field full"><label>남기실 말씀 (선택)</label><textarea name="message" rows="3" placeholder="궁금한 점이나 기도 제목이 있다면 편하게 적어주세요."></textarea></div>
+          </div>
+          <div class="form-actions"><button type="submit" class="btn btn-solid">등록 신청</button></div>
+          <p class="placeholder-note">* 남겨주신 정보는 새가족 등록 안내 목적으로만 사용됩니다.</p>
+        </form>
+
+        <div class="newcomer-done" id="newcomerDone" hidden>
+          <h3>환영합니다! 🙏</h3>
+          <p>신청이 접수되었습니다. 새가족 담당자가 곧 연락드리겠습니다.</p>
         </div>
-        <div class="servant-rows" id="servantRows">
-          <div class="servant-row"><span class="row-label">시무장로</span><span class="row-names">문명수</span></div>
-          <div class="servant-row"><span class="row-label">안수집사</span><span class="row-names">김종학 · 최명철 · 신성찬</span></div>
-          <div class="servant-row"><span class="row-label">은퇴권사</span><span class="row-names">장정숙 · 김교선 · 임희순</span></div>
-          <div class="servant-row"><span class="row-label">시무권사</span><span class="row-names">유금순 · 오성자 · 이경순 · 김평애 · 진대순 · 정명남 · 박금숙 · 전정식 · 이수현 · 최지연 · 김은희 · 고은성 · 박명옥</span></div>
-          <div class="servant-row"><span class="row-label">협동권사</span><span class="row-names">박성애</span></div>
-        </div>
-        <h4 class="servant-subgroup">기관 부서 봉사자</h4>
-        <div class="servant-rows" id="servantOrg">
-          <div class="servant-row"><span class="row-label">루디아전도회</span><span class="row-names">회장 김은희 · 총무 고은성</span></div>
-          <div class="servant-row"><span class="row-label">에스더전도회</span><span class="row-names">회장 문선경 · 총무 장한주</span></div>
-          <div class="servant-row"><span class="row-label">바울전도회</span><span class="row-names">회장 김종학 · 총무 신성찬 · 지도 문명수</span></div>
-          <div class="servant-row"><span class="row-label">엘림회</span><span class="row-names">지도 이수현</span></div>
-          <div class="servant-row"><span class="row-label">찬양대</span><span class="row-names">지휘 신성찬 · 총무 임혜은 · 인도 최명철 · 반주 양유정</span></div>
-          <div class="servant-row"><span class="row-label">주일학교</span><span class="row-names">부장 신성호 · 총무 황귀순</span></div>
-          <div class="servant-row"><span class="row-label">식당</span><span class="row-names">총책임 오성자 · 부책임 최지연</span></div>
-          <div class="servant-row"><span class="row-label">차량 운행</span><span class="row-names">김종학 · 임희순</span></div>
-          <div class="servant-row"><span class="row-label">꽃꽂이</span><span class="row-names">김교선</span></div>
-        </div>
-        <div class="committee" id="committee"></div>
       </div>
     </div>
   </section>
@@ -517,41 +563,6 @@
   </section>
   -->
 
-  <!-- ===== 새가족 등록 ===== -->
-  <section id="newfamily" class="block block-alt">
-    <div class="container">
-      <div class="block-head">
-        <span class="eyebrow2">NEW FAMILY</span>
-        <h2>새가족 등록</h2>
-        <p>이름과 연락처만 남겨 주시면, 새가족 담당자가 따뜻하게 연락드립니다. 부담 갖지 않으셔도 됩니다.</p>
-      </div>
-
-      <div class="welcome-steps">
-        <div class="welcome-step"><span class="ws-num">01</span><h4>등록</h4><p>아래 폼 작성 또는 안내위원에게 말씀</p></div>
-        <div class="welcome-step"><span class="ws-num">02</span><h4>환영 인사</h4><p>새가족 담당자가 연락·환영 선물 전달</p></div>
-        <div class="welcome-step"><span class="ws-num">03</span><h4>새가족반</h4><p>4주 과정으로 교회와 신앙을 편안히 안내</p></div>
-        <div class="welcome-step"><span class="ws-num">04</span><h4>정착</h4><p>소그룹·공동체 연결로 함께 자라갑니다</p></div>
-      </div>
-
-      <form class="form-card" id="newcomerForm" style="margin-top:36px;">
-        <div class="form-grid">
-          <div class="form-field"><label>이름</label><input type="text" name="name" required placeholder="홍길동" /></div>
-          <div class="form-field"><label>연락처</label><input type="tel" name="phone" required placeholder="070-4355-1598" /></div>
-          <div class="form-field"><label>방문 예정일</label><input type="text" name="visit" placeholder="예: 이번 주일 2부" /></div>
-          <div class="form-field"><label>함께 오는 가족</label><input type="text" name="family" placeholder="예: 배우자, 자녀 2명" /></div>
-          <div class="form-field full"><label>남기실 말씀 (선택)</label><textarea name="message" rows="3" placeholder="궁금한 점이나 기도 제목이 있다면 편하게 적어주세요."></textarea></div>
-        </div>
-        <div class="form-actions"><button type="submit" class="btn btn-solid">등록 신청</button></div>
-        <p class="placeholder-note">* 남겨주신 정보는 새가족 등록 안내 목적으로만 사용됩니다.</p>
-      </form>
-
-      <div class="newcomer-done" id="newcomerDone" hidden>
-        <h3>환영합니다! 🙏</h3>
-        <p>신청이 접수되었습니다. 새가족 담당자가 곧 연락드리겠습니다.</p>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== 이동 유도 ===== -->
   <section class="block">
     <div class="container">
@@ -572,8 +583,9 @@
 
   <script src="js/config.js?v=20260730lib13"></script>
   <script src="js/bulletins.js?v=20260709nojin2"></script>
-  <script src="js/layout.js?v=20260926denom"></script>
+  <script src="js/layout.js?v=20260929tidy"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
-  <script src="js/main.js?v=20260829serve"></script>
+  <script src="js/bulletin-render.js?v=20260709nojin"></script>
+  <script src="js/main.js?v=20260929tidy"></script>
 </body>
 </html>

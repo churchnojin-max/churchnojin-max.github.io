@@ -349,15 +349,27 @@ if (sermonDeck) {
       const d = b.data || {};
       const dateLabel = String(b.bdate || "").replace(/-/g, ".");
       const body = paras(d.summary);
+      // 한 화면에는 제목·본문 말씀만 두고, 긴 설교 요약은 팝업(#pop-sermon)으로 연다
       box.innerHTML = `
         <article class="week-sermon">
           <span class="ws-date">${escH(dateLabel)} · 주일 낮 예배</span>
           ${b.title ? `<h3 class="ws-title">${escH(b.title)}</h3>` : ""}
           ${b.scripture ? `<p class="ws-ref">${escH(b.scripture)}</p>` : ""}
           ${b.preacher ? `<p class="ws-preacher">설교 · ${escH(b.preacher)}</p>` : ""}
-          ${d.headline ? `<blockquote class="ws-quote">${escH(d.headline)}</blockquote>` : ""}
-          ${body ? `<div class="ws-body">${body}</div>` : `<p class="qt-loading">이번 주 설교 요약이 아직 등록되지 않았습니다.</p>`}
-          <a class="ws-more" href="word.html#archive">주보 전체 보기 →</a>
+          ${d.headline ? `<blockquote class="ws-quote"><span>${escH(d.headline)}</span></blockquote>` : ""}
+          ${body ? "" : `<p class="qt-loading">이번 주 설교 요약이 아직 등록되지 않았습니다.</p>`}
+          <div class="ws-actions">
+            ${body ? `<button type="button" class="btn btn-solid" data-pop="pop-sermon">설교 요약 읽기</button>` : ""}
+            <a class="ws-more" href="word.html#archive">주보 모아 보기 →</a>
+          </div>
+          ${body ? `<div class="pop-src" id="pop-sermon" data-pop-title="이번 주 설교 요약" hidden>
+            <div class="ws-pop">
+              ${b.title ? `<h3 class="ws-title">${escH(b.title)}</h3>` : ""}
+              ${b.scripture ? `<p class="ws-ref">${escH(b.scripture)}${b.preacher ? " · " + escH(b.preacher) : ""}</p>` : ""}
+              ${d.headline ? `<blockquote class="ws-quote">${escH(d.headline)}</blockquote>` : ""}
+              <div class="ws-body">${body}</div>
+            </div>
+          </div>` : ""}
         </article>`;
     })
     .catch(() => { box.innerHTML = `<p class="qt-loading">설교를 불러오지 못했습니다.</p>`; });
@@ -1274,9 +1286,13 @@ if (homeSermon && typeof BULLETINS !== "undefined" && BULLETINS.length) {
 
 // ===== 4b. 홈 '이번 주 주보' 미리보기 — 게시된 주보(bulletins_public) 중 최신 1건 =====
 const homeBulletin = document.getElementById("homeBulletin");
+// 한 화면씩 넘어가는 페이지용 '주보 요약 카드' — 전체 주보(#homeBulletin)는 팝업(#pop-bulletin) 안에 있다
+const homeBulletinBrief = document.getElementById("homeBulletinBrief");
+const setBrief = (html) => { if (homeBulletinBrief) homeBulletinBrief.innerHTML = html; };
 if (homeBulletin) {
   if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) {
     homeBulletin.innerHTML = `<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`;
+    setBrief(`<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`);
   } else {
     const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=*&order=bdate.desc&limit=1";
     fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + window.SUPABASE_ANON_KEY } })
@@ -1289,9 +1305,29 @@ if (homeBulletin) {
           if (t) t.textContent = b.title;
           if (r) r.textContent = [b.scripture, b.preacher].filter(Boolean).join(" · ");
         }
-        if (!b) { homeBulletin.innerHTML = `<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`; return; }
+        if (!b) {
+          homeBulletin.innerHTML = `<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`;
+          setBrief(`<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`);
+          return;
+        }
         const d = b.data || {};
         const dl = String(b.bdate || "").slice(0, 10).replace(/-/g, ". ");
+
+        const briefNews = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 4);
+        setBrief(`
+          <div class="hbb-card">
+            <div class="hbb-main">
+              <div class="hbb-top"><span class="hbb-week">${escB(d.week || "주보")} · 주일 낮 예배</span><span class="hbb-date">${escB(dl)}</span></div>
+              ${b.title ? `<p class="hbb-title">${escB(b.title)}</p>` : ""}
+              ${b.scripture ? `<p class="hbb-ref">${escB(b.scripture)}${b.preacher ? " · " + escB(b.preacher) : ""}</p>` : ""}
+              ${d.headline ? `<p class="hbb-verse"><span>${escB(d.headline)}</span></p>` : ""}
+            </div>
+            ${briefNews.length ? `<div class="hbb-news"><p class="hbb-news-title">한 주의 소식</p><ul>${briefNews.map((l) => `<li>${escB(l)}</li>`).join("")}</ul></div>` : ""}
+            <div class="hbb-actions">
+              <button type="button" class="btn btn-solid" data-pop="pop-bulletin">주보 전체 보기</button>
+              ${d.pdf_url ? `<a class="btn btn-line" href="${escB(d.pdf_url)}" target="_blank" rel="noopener">PDF 원본 보기</a>` : ""}
+            </div>
+          </div>`);
 
         const scriptureHtml = d.headline
           ? `<div class="hb-sec"><p class="hb-col-title">오늘의 본문 말씀 <span style="font-weight:400;color:var(--ink-soft)">(개역개정)</span></p><p class="hb-scripture">${escB(d.headline)}</p></div>`
@@ -1334,7 +1370,10 @@ if (homeBulletin) {
         const hbBtn = document.getElementById("homeBulletinBtn");
         if (hbBtn) hbBtn.onclick = () => openPublicBulletinView(b);
       })
-      .catch(() => { homeBulletin.innerHTML = `<p class="qt-loading">주보를 불러오지 못했습니다.</p>`; });
+      .catch(() => {
+        homeBulletin.innerHTML = `<p class="qt-loading">주보를 불러오지 못했습니다.</p>`;
+        setBrief(`<p class="qt-loading">주보를 불러오지 못했습니다.</p>`);
+      });
   }
 }
 

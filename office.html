@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>행정 | 노진교회</title>
+  <meta name="description" content="노진교회 온라인 헌금, 기부금영수증, 모임장소 확인, 장소 신청 안내" />
+  <link rel="manifest" href="manifest.json?v=20260730lib13" />
+  <meta name="theme-color" content="#1A3A2F" />
+  <link rel="icon" href="images/favicon-32.png?v=20260926icon2" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png?v=20260926icon2" />
+  <meta name="apple-mobile-web-app-title" content="노진교회" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=20260929tidy" />
+</head>
+<body>
+
+  <!-- ===== 행정 (2026-09-29 새로 만듦) =====
+       위 메뉴 '행정' 의 네 항목: 온라인 헌금 · 기부금영수증 · 모임장소 확인 · 장소신청
+       모임장소 확인 · 장소신청은 아직 자리만 만들어 둔 상태(준비 중). -->
+  <section class="page-hero">
+    <p class="ph-eyebrow">OFFICE</p>
+    <h1>행정</h1>
+    <p>헌금과 기부금영수증, 교회 모임 장소 안내를 한곳에 모았습니다.</p>
+  </section>
+
+  <!-- ===== 온라인 헌금 ===== -->
+  <section id="give" class="block">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">OFFERING</span>
+        <h2>온라인 헌금</h2>
+        <p>교회에 오지 못하시는 날에도 계좌로 헌금하실 수 있습니다. 정성을 다해 드리는 헌금에 감사드립니다.</p>
+      </div>
+      <!-- 계좌는 js/church.js 의 give 에 적으면 여기와 바닥글 버튼에 함께 나타난다 -->
+      <div class="office-card" id="officeGive"></div>
+    </div>
+  </section>
+
+  <!-- ===== 기부금영수증 ===== -->
+  <section id="receipt" class="block block-alt">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">DONATION RECEIPT</span>
+        <h2>기부금영수증</h2>
+        <p>연말정산에 쓰실 기부금영수증을 온라인으로 신청하실 수 있습니다.</p>
+      </div>
+      <ol class="office-steps">
+        <li><span class="os-num">1</span><strong>로그인</strong><p>홈페이지 오른쪽 위 ‘로그인’을 눌러 들어오세요.</p></li>
+        <li><span class="os-num">2</span><strong>내 정보</strong><p>내 이름을 누르면 ‘내 정보’ 화면이 열립니다.</p></li>
+        <li><span class="os-num">3</span><strong>신청서 작성</strong><p>‘연말정산(기부금 영수증) 신청’ 칸을 채워 주세요.</p></li>
+        <li><span class="os-num">4</span><strong>발급</strong><p>교회에서 확인한 뒤 영수증을 발급해 드립니다.</p></li>
+      </ol>
+      <div class="office-actions">
+        <a class="btn btn-solid" href="admin.html#tax">기부금영수증 신청하러 가기</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 모임장소 확인 (준비 중 — 자리만) ===== -->
+  <section id="rooms" class="block">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">MEETING PLACES</span>
+        <h2>모임장소 확인</h2>
+        <p>구역·전도회·부서 모임이 어디에서 모이는지 한눈에 보실 수 있도록 준비하고 있습니다.</p>
+      </div>
+      <div class="office-card office-soon">
+        <span class="soon-badge">준비 중</span>
+        <p>곧 이곳에서 모임별 장소와 시간을 확인하실 수 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 장소신청 (준비 중 — 자리만) ===== -->
+  <section id="reserve" class="block block-alt">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">RESERVATION</span>
+        <h2>장소신청</h2>
+        <p>교회 장소를 모임이나 행사에 쓰고 싶으실 때 신청하는 곳입니다.</p>
+      </div>
+      <div class="office-card office-soon">
+        <span class="soon-badge">준비 중</span>
+        <p>온라인 신청을 준비하고 있습니다. 그 전까지는 교회 사무실로 연락해 주시면 도와드립니다.</p>
+        <a class="btn btn-line" id="officeTel" href="tel:07043551598">☎ 070-4355-1598</a>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/church.js?v=20260926denom"></script>
+  <script src="js/brand.js?v=1"></script>
+  <script src="js/config.js?v=20260730lib13"></script>
+  <script src="js/layout.js?v=20260929tidy"></script>
+  <script src="js/counsel.js?v=20260730lib13"></script>
+  <script>
+    // 온라인 헌금 계좌 안내 — js/church.js 의 give 값을 그대로 보여 준다
+    (function () {
+      var C = window.CHURCH || {}, G = C.give || {};
+      var box = document.getElementById("officeGive");
+      var esc = function (t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (m) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]; }); };
+      var digits = String(G.tossDigits || G.account || "").replace(/[^0-9]/g, "");
+      if (G.account && String(G.account).replace(/[^0-9]/g, "").length >= 6) {
+        box.innerHTML =
+          '<div class="og-acct"><span class="og-bank">' + esc(G.bank) + '</span>' +
+          '<span class="og-no">' + esc(G.account) + '</span>' +
+          '<span class="og-holder">예금주 · ' + esc(G.holder || C.name || "") + '</span></div>' +
+          '<div class="office-actions">' +
+          (G.tossDigits ? '<a class="btn btn-line" href="supertoss://send?bank=' + encodeURIComponent(G.bank || "") + '&accountNo=' + digits + '">📲 토스로 송금하기</a>' : '') +
+          '<button type="button" class="btn btn-solid" id="ogCopy">계좌번호 복사</button></div>';
+        var btn = document.getElementById("ogCopy");
+        btn.addEventListener("click", function () {
+          var done = function () { var o = btn.textContent; btn.textContent = "✓ 복사되었습니다"; setTimeout(function () { btn.textContent = o; }, 1800); };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(digits).then(done, function () { window.prompt("계좌번호를 복사하세요", digits); });
+          else window.prompt("계좌번호를 복사하세요", digits);
+        });
+      } else {
+        box.classList.add("office-soon");
+        box.innerHTML = '<span class="soon-badge">준비 중</span><p>헌금 계좌 안내를 준비하고 있습니다. 궁금하신 점은 교회 사무실로 문의해 주세요.</p>';
+      }
+      // 전화번호도 church.js 값으로
+      var tel = document.getElementById("officeTel");
+      if (tel && C.phone) { tel.href = "tel:" + C.phone.replace(/[^0-9+]/g, ""); tel.textContent = "☎ " + C.phone; }
+    })();
+  </script>
+</body>
+</html>

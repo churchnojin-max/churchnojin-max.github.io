@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -34,8 +34,8 @@
   <meta name="apple-mobile-web-app-title" content="○○교회" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=20260926denom" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700;900&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=20260929tidy" />
   <!-- 구조화 데이터(교회 정보) — 구글 검색 이해도 향상 -->
   <style>
     .hb-card{max-width:860px;margin:0 auto;border:1px solid var(--line,#e3e7ee);border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(26,58,47,.07)}
@@ -85,140 +85,76 @@
     <span>실시간 예배 영상보기</span>
   </a>
 
-  <!-- ===== Hero (와이드·심플) ===== -->
-  <section id="home" class="hero">
-    <div class="hero-overlay"></div>
-    <div class="hero-inner-simple">
-      <p class="hero-tagline">하나님을 기쁘시게 하는 아름다운 교회</p>
-      <div class="hero-cards hero-cards-row">
-        <a href="welcome.html#worship" class="hero-card">
-          <div class="card-icon">🕐</div>
-          <h3>예배 안내</h3>
-        </a>
-        <a href="welcome.html#newfamily" class="hero-card">
-          <div class="card-icon">🤝</div>
-          <h3>새가족 안내</h3>
-        </a>
-        <a href="welcome.html#committee" class="hero-card">
-          <div class="card-icon">📋</div>
-          <h3>예배 순서자 안내</h3>
-        </a>
-        <a href="welcome.html" class="hero-card">
-          <div class="card-icon">⛪</div>
-          <h3>노진교회를 소개합니다</h3>
-        </a>
+  <!-- ===== 첫 화면: 그림이 화면을 꽉 채우고, 붓으로 그은 흰 바탕 위에 이번 설교 시리즈 제목 =====
+       그림(images/hero-bg-wilderness.jpg)은 아브라함 시리즈 동안 유지.
+       제목 글씨는 아래 h1 안의 글자만 바꾸면 된다(흰 붓 바탕은 글자 길이에 맞춰 늘어남). -->
+  <section id="home" class="hero hero-full">
+    <div class="hero-stage">
+      <div class="hero-headline">
+        <p class="hero-tagline">하나님을 기쁘시게 하는 아름다운 교회</p>
+        <h1 class="hero-brush"><span class="hb-stroke"><span class="hb-line">창세기에 담긴</span> <span class="hb-line">하나님의 은혜</span></span></h1>
       </div>
-      <div class="hero-bottom-row">
-        <a href="https://www.youtube.com/@노진교회" class="hero-song-banner hero-bb-side" target="_blank" rel="noopener">
-          <span class="hsb-icon">▶</span>
-          <span class="hsb-text">
-            <span class="hsb-label">YOUTUBE</span>
-            <span class="hsb-title">노진교회 유튜브</span>
-            <span class="hsb-sub">주일낮예배 · 창세기</span>
-          </span>
-          <span class="hsb-arrow" aria-hidden="true">▶</span>
+      <a href="word.html#sermon" class="hero-sermon-banner" id="heroSermonBanner">
+        <span class="hsb-label">이번 주 설교</span>
+        <span class="hsb-title">불러오는 중…</span>
+        <span class="hsb-ref"></span>
+        <span class="hsb-arrow" aria-hidden="true">설교 보러가기 →</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ===== 두 번째 화면: 바로가기 (첫 화면에 떠 있던 상자들을 옮겨 옴) ===== -->
+  <section class="section home-quick" id="quick">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">QUICK MENU</span>
+        <h2>바로가기</h2>
+      </div>
+      <div class="quick-grid">
+        <a href="welcome.html#worship" class="quick-card">
+          <span class="qc-icon" aria-hidden="true">🕐</span>
+          <strong class="qc-title">예배 안내</strong>
+          <span class="qc-sub">예배 시간과 장소</span>
         </a>
-        <a href="word.html#sermon" class="hero-sermon-banner" id="heroSermonBanner">
-          <span class="hsb-label">이번 주 설교</span>
-          <span class="hsb-title">불러오는 중…</span>
-          <span class="hsb-ref"></span>
-          <span class="hsb-arrow" aria-hidden="true">설교 보러가기 →</span>
+        <a href="welcome.html#newfamily" class="quick-card">
+          <span class="qc-icon" aria-hidden="true">🤝</span>
+          <strong class="qc-title">새가족 안내</strong>
+          <span class="qc-sub">처음 오신 분을 환영합니다</span>
         </a>
-        <a href="word.html#song" class="hero-song-banner hero-bb-side" id="heroSongBanner" hidden>
-          <span class="hsb-icon">🎵</span>
-          <span class="hsb-text">
-            <span class="hsb-label">이달의 찬양</span>
-            <span class="hsb-title">불러오는 중…</span>
-          </span>
-          <span class="hsb-arrow" aria-hidden="true">▶</span>
+        <a href="welcome.html#committee" class="quick-card">
+          <span class="qc-icon" aria-hidden="true">📋</span>
+          <strong class="qc-title">예배 순서자 안내</strong>
+          <span class="qc-sub">이번 달 봉사위원</span>
+        </a>
+        <a href="welcome.html#about" class="quick-card">
+          <span class="qc-icon" aria-hidden="true">⛪</span>
+          <strong class="qc-title">노진교회를 소개합니다</strong>
+          <span class="qc-sub">우리가 믿고 걸어가는 길</span>
+        </a>
+        <a href="https://www.youtube.com/@노진교회" class="quick-card" target="_blank" rel="noopener">
+          <span class="qc-icon" aria-hidden="true">▶</span>
+          <strong class="qc-title">노진교회 유튜브</strong>
+          <span class="qc-sub">주일낮예배 · 창세기</span>
+        </a>
+        <a href="word.html#song" class="quick-card" id="heroSongBanner" hidden>
+          <span class="qc-icon" aria-hidden="true">🎵</span>
+          <strong class="qc-title">이달의 찬양</strong>
+          <span class="qc-sub hsb-title">불러오는 중…</span>
         </a>
       </div>
     </div>
   </section>
 
-  <!-- ===== 이번 주 주보 미리보기 ===== -->
+  <!-- ===== 세 번째 화면: 이번 주 주보 (요약만 보이고, 전체는 팝업) ===== -->
   <section class="section section-alt" id="nextSection">
     <div class="container">
       <div class="section-head">
         <span class="eyebrow">THIS WEEK</span>
         <h2>이번 주 주보</h2>
       </div>
-      <div id="homeBulletin"></div>
-    </div>
-  </section>
-
-  <!-- ===== 5개 진입점 (흐름) ===== -->
-  <section class="section section-alt">
-    <div class="container">
-      <div class="flow-narrative">
-        <span class="eyebrow">WELCOME</span>
-        <p class="flow-line">처음 온 사람이 말씀을 만나고, 공동체 안에서 자라고, 세상으로 나아갑니다.</p>
-        <p>밖에서 안으로, 그리고 다시 밖으로 — 그 여정의 어디쯤에 계신가요?</p>
-      </div>
-
-      <div class="entry-grid entry-grid-home">
-        <a class="entry-card" href="welcome.html">
-          <span class="entry-num">01</span>
-          <h3>노진교회를 소개합니다</h3>
-          <p>예배 시간, 오시는 길, 새가족 등록까지. 부담 없이 들어오는 문입니다.</p>
-          <span class="entry-go">둘러보기 →</span>
-        </a>
-        <a class="entry-card" href="word.html">
-          <span class="entry-num">02</span>
-          <h3>말씀으로</h3>
-          <p>주일 설교와 교리, 매일 묵상. 신앙의 뿌리를 내리는 공간입니다.</p>
-          <span class="entry-go">말씀 보기 →</span>
-        </a>
-        <a class="entry-card" href="story.html">
-          <span class="entry-num">03</span>
-          <h3>우리 이야기</h3>
-          <p>성도들의 삶과 간증, 공동체의 온기가 담긴 이야기들.</p>
-          <span class="entry-go">이야기 →</span>
-        </a>
-        <a class="entry-card" href="story.html#album">
-          <span class="entry-num">04</span>
-          <h3>나눔터</h3>
-          <p>성도들이 글로 마음을 나누는 공간. 기도요청·간증·일상을 함께 나눠요.</p>
-          <span class="entry-go">나누러 가기 →</span>
-        </a>
-        <a class="entry-card" href="story.html#album">
-          <span class="entry-num">05</span>
-          <h3>기도나눔</h3>
-          <p>이번 주 기도 제목을 한마음으로. 공동체가 함께 기도합니다.</p>
-          <span class="entry-go">기도하기 →</span>
-        </a>
-        <a class="entry-card" href="world.html">
-          <span class="entry-num">06</span>
-          <h3>지역과 세상 속에서</h3>
-          <p>교회 안에만 머물지 않습니다. 지역과 열방을 섬기는 이야기.</p>
-          <span class="entry-go">섬김 보기 →</span>
-        </a>
-        <a class="entry-card" href="library.html">
-          <span class="entry-num">07</span>
-          <h3>자료실</h3>
-          <p>새가족·양육반·제자훈련 등 교육 자료를 한곳에서 내려받습니다. (로그인 교인 전용)</p>
-          <span class="entry-go">자료 보기 →</span>
-        </a>
-        <a class="entry-card" href="admin.html#tax">
-          <span class="entry-num">08</span>
-          <h3>연말정산</h3>
-          <p>기부금 영수증(연말정산)을 온라인으로 간편하게 신청하세요.</p>
-          <span class="entry-go">신청하기 →</span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== 시작 CTA ===== -->
-  <section class="section">
-    <div class="container">
-      <div class="cta-flow">
-        <span class="cta-eyebrow">START HERE</span>
-        <h3>처음이라 어색하셔도 괜찮습니다</h3>
-        <div class="cta-btns">
-          <a class="btn btn-line" href="welcome.html">처음 방문 안내</a>
-          <a class="btn btn-line" href="word.html">이번 주 말씀 듣기</a>
-        </div>
+      <div id="homeBulletinBrief" class="hbb"><p class="qt-loading">주보를 불러오는 중…</p></div>
+      <div class="pop-src" id="pop-bulletin" data-pop-title="이번 주 주보" hidden>
+        <div id="homeBulletin"></div>
       </div>
     </div>
   </section>
@@ -229,10 +165,10 @@
 
   <script src="js/config.js?v=20260730lib13"></script>
   <script src="js/bulletins.js?v=20260709nojin2"></script>
-  <script src="js/layout.js?v=20260926denom"></script>
+  <script src="js/layout.js?v=20260929tidy"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
   <script src="js/bulletin-render.js?v=20260709nojin"></script>
-  <script src="js/main.js?v=20260829serve"></script>
+  <script src="js/main.js?v=20260929tidy"></script>
   <script src="js/upload.js?v=20260709sb"></script>
   <script src="js/categories.js?v=20260730news2"></script>
   <script src="js/notices.js?v=20260730r3"></script>
