@@ -39,11 +39,14 @@
       { href: "office.html#worship-lib", label: "예배 자료실" },
       { href: "office.html#app", label: "앱 설치 안내" },
     ] },
+    // 교회행정: 위 메뉴줄이 아니라 오른쪽 이름(○○○ 담임목사님) 왼편에 따로 뜬다(2026-09-29).
+    // 권한을 받은 사람에게만 보이고, 각 항목은 perm 권한(또는 관리자)이 있을 때만 보인다.
+    // 목회행정·홈페이지 설정은 지금 페이지 자체가 관리자 전용이라 isAdmin 으로 둔다.
     { href: "finance.html", label: "교회행정", adminOnly: true, sub: [
-      { href: "finance.html", label: "재정관리" },
-      { href: "gyojeok.html", label: "교적관리" },
-      { href: "affairs.html", label: "목회행정" },
-      { href: "home-settings.html", label: "홈페이지 설정" },
+      { href: "finance.html", label: "재정관리", perm: "canFinance" },
+      { href: "gyojeok.html", label: "교적관리", perm: "canGyojeok" },
+      { href: "affairs.html", label: "목회행정", perm: "isAdmin" },
+      { href: "home-settings.html", label: "홈페이지 설정", perm: "isAdmin" },
     ] },
     // 사이트맵: 상단 메뉴는 4개로 간소화하기 위해 빼고, 푸터에서만 보이게 함(footerOnly)
     { href: "sitemap.html", label: "사이트맵", footerOnly: true },
@@ -207,7 +210,7 @@
     const active = path === n.href.split("#")[0] ? ' class="active"' : "";
     const admAttr = n.adminOnly ? ' id="navAdmin" style="display:none"' : (n.memberOnly ? ' id="navMember" style="display:none"' : "");
     if (!n.sub) return `<div class="nav-item"${admAttr}><a href="${n.href}"${active}>${n.label}</a></div>`;
-    const subs = n.sub.map((s) => `<a href="${s.href}">${s.label}</a>`).join("");
+    const subs = n.sub.map((s) => `<a href="${s.href}"${s.perm ? ` data-perm="${s.perm}" hidden` : ""}>${s.label}</a>`).join("");
     return `<div class="nav-item has-sub"${admAttr}>
         <a href="${n.href}"${active}>${n.label}<span class="nav-caret" aria-hidden="true">⌄</span></a>
         <div class="nav-dropdown"><div class="nav-dropdown-inner">
@@ -215,6 +218,19 @@
         </div></div>
       </div>`;
   }).join("");
+
+  // 교회행정(업무) 메뉴 — 컴퓨터 화면에서 이름 왼쪽에. 휴대폰에서는 햄버거 메뉴 안의 '교회행정'을 쓴다.
+  const WORK = NAV.find((n) => n.adminOnly);
+  const workMenuHTML = WORK ? `
+          <div class="work-menu" id="workMenu" hidden>
+            <button type="button" class="work-btn" aria-haspopup="true" aria-expanded="false">
+              <span class="work-ico" aria-hidden="true">⚙</span>${WORK.label}<span class="nav-caret" aria-hidden="true">⌄</span>
+            </button>
+            <div class="work-dropdown"><div class="work-dropdown-inner">
+              <p class="work-note">권한을 받은 분께만 보이는 메뉴</p>
+              ${WORK.sub.map((s) => `<a href="${s.href}" data-perm="${s.perm || "isAdmin"}" hidden>${s.label}</a>`).join("")}
+            </div></div>
+          </div>` : "";
 
   const headerHTML = `
     <header id="header">
@@ -227,7 +243,7 @@
           <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
         </div>
         <nav class="nav-menu" id="navMenu">${navLinks}</nav>
-        <div class="nav-right">
+        <div class="nav-right">${workMenuHTML}
           <div class="auth-slot" id="authSlot"></div>
           <button class="nav-toggle" id="navToggle" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
         </div>
@@ -564,7 +580,37 @@
       }
     } catch (e) {}
     // 로그인한 사용자에게만 헤더 '대시보드' 링크 노출(대시보드는 정회원 전용)
-    if (cachedUser) { const hd = document.getElementById("hdrDash"); if (hd) hd.style.display = ""; }
+    if (cachedUser) { document.documentElement.classList.add("logged-in"); const hd = document.getElementById("hdrDash"); if (hd) hd.style.display = ""; }
+
+    // 권한(my_perms)에 맞춰 교회행정 메뉴와 그 안의 항목을 보이거나 숨긴다
+    function applyWorkPerms(p) {
+      p = p || {};
+      let any = false;
+      document.querySelectorAll("[data-perm]").forEach((a) => {
+        const show = !!(p.isAdmin || p[a.getAttribute("data-perm")]);
+        a.hidden = !show;
+        if (show) any = true;
+      });
+      const wm = document.getElementById("workMenu");
+      if (wm) wm.hidden = !any;
+      const na = document.getElementById("navAdmin");       // 휴대폰 햄버거 메뉴 속 교회행정
+      if (na) na.style.display = any ? "" : "none";
+    }
+    // 교회행정 버튼: 마우스를 올리면 열리고(css), 눌러도 열리고 닫힌다(터치 화면·키보드)
+    (function () {
+      const wm = document.getElementById("workMenu");
+      if (!wm) return;
+      const btn = wm.querySelector(".work-btn");
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open = !wm.classList.contains("open");
+        wm.classList.toggle("open", open);
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      document.addEventListener("click", (e) => {
+        if (!wm.contains(e.target)) { wm.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); }
+      });
+    })();
 
     // 직분(profiles.role)을 읽어 헤더 이름을 "홍길동 담임목사님" 형태로 보강
     function enhanceHeaderWithRole(uid, baseName) {
@@ -578,27 +624,19 @@
         } catch (e) {}
         const headers = { apikey: window.SUPABASE_ANON_KEY };
         if (token) headers.Authorization = "Bearer " + token;
-        // 관리자(admins 테이블)면 헤더 '관리자' 메뉴 노출 + 목회행정 바로가기 버튼 삽입
-        fetch(window.SUPABASE_URL + "/rest/v1/admins?uid=eq." + uid + "&select=uid", { headers })
+        // 권한(my_perms: 관리자·재정·교적 등)을 읽어 이름 왼쪽의 '교회행정' 메뉴를 채운다.
+        // my_perms 가 없는 옛 DB면 admins 테이블로 관리자 여부만 확인한다.
+        fetch(window.SUPABASE_URL + "/rest/v1/rpc/my_perms", {
+          method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, headers), body: "{}",
+        })
           .then((r) => (r.ok ? r.json() : null))
-          .then((rows) => {
-            if (rows && rows.length) {
-              const el = document.getElementById("navAdmin");
-              if (el) el.style.display = "";
-              // auth-card 안에 목회행정 바로가기 버튼 추가 (중복 방지)
-              const card = document.querySelector(".auth-card");
-              if (card && !card.querySelector(".ac-admin-go")) {
-                const a = document.createElement("a");
-                a.href = "affairs.html";
-                a.className = "ac-admin-go";
-                a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:9px 14px;background:#1A3A2F;color:#fff;border-radius:8px;font-size:.84rem;font-weight:700;text-decoration:none;letter-spacing:.03em;transition:background .18s";
-                a.onmouseenter = function () { this.style.background = "#1a4080"; };
-                a.onmouseleave = function () { this.style.background = "#1A3A2F"; };
-                a.innerHTML = "<span>⚙</span><span>목회행정</span>";
-                card.appendChild(a);
-              }
-            }
+          .then((p) => {
+            if (p && typeof p === "object" && !Array.isArray(p)) return p;
+            return fetch(window.SUPABASE_URL + "/rest/v1/admins?uid=eq." + uid + "&select=uid", { headers })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((rows) => ({ isAdmin: !!(rows && rows.length) }));
           })
+          .then(applyWorkPerms)
           .catch(() => {});
         // 정회원(member_links.member_status)이면 헤더 '대시보드' 메뉴 노출
         fetch(window.SUPABASE_URL + "/rest/v1/member_links?user_id=eq." + uid + "&select=member_status", { headers })
@@ -721,7 +759,7 @@
   }
 
   // ===== 사이트맵(sitemap.html) — NAV 구조를 그대로 재사용해 항상 최신 상태 유지 =====
-  // 관리자 전용 메뉴(교회행정)와 사이트맵 링크 자신은 목록에서 제외
+  // 교회행정(권한자 전용)과 사이트맵 링크 자신은 목록에서 제외
   const sitemapBox = document.getElementById("sitemapGrid");
   if (sitemapBox) {
     sitemapBox.innerHTML = NAV.filter((n) => !n.adminOnly && n.sub).map((n) => `

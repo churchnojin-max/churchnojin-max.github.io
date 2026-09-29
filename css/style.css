@@ -2889,3 +2889,80 @@ html.snap-gliding { scroll-snap-type: none !important; scroll-behavior: auto !im
   html.snap-page .ph-toc.is-long { display: grid; grid-template-columns: 1fr 1fr; column-gap: 34px; width: min(640px, 100%); border-top: 0; }
   html.snap-page .ph-toc.is-long a:nth-child(-n+2) { border-top: 1px solid rgba(246,244,235,.3); }
 }
+
+/* ============================================================
+   2026-09-29 (5차) 교회행정 — 위 메뉴줄에서 빼서 오른쪽 이름 왼편으로.
+   권한을 받은 사람에게만 보이고(js/layout.js applyWorkPerms), 항목도 권한별로.
+   ============================================================ */
+[data-perm][hidden] { display: none !important; }
+.work-menu[hidden] { display: none !important; }
+@media (min-width: 761px) {
+  #navAdmin { display: none !important; }            /* 컴퓨터 화면에서는 위 메뉴줄에 두지 않는다 */
+  .nav-right { gap: 10px; }
+  .work-menu { position: relative; display: flex; align-items: center; }
+  .work-btn {
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;
+    font-family: inherit; font-size: .85rem; font-weight: 700; color: #fff;
+    background: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 7px 14px 7px 12px;
+    transition: background .2s ease;
+  }
+  .work-btn:hover, .work-menu.open .work-btn { background: #10241D; }
+  .work-btn .work-ico { color: var(--gold-logo); font-size: .95em; }
+  .work-btn .nav-caret { color: rgba(255,255,255,.8); margin-left: 2px; }
+  .work-dropdown {
+    position: absolute; top: 100%; left: 50%; padding-top: 12px; z-index: 140;
+    opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, 8px);
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+  }
+  .work-menu:hover .work-dropdown, .work-menu.open .work-dropdown, .work-menu:focus-within .work-dropdown {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0);
+    transition: opacity .2s ease, transform .2s ease, visibility 0s;
+  }
+  .work-menu:hover .work-btn .nav-caret { transform: rotate(180deg); }
+  .work-dropdown-inner {
+    min-width: 200px; background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--gold);
+    border-radius: 4px 4px 10px 10px; padding: 8px 18px 12px; box-shadow: 0 18px 40px rgba(0,0,0,.18);
+  }
+  .work-note { font-size: .74rem; color: var(--muted); padding: 4px 2px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .work-dropdown-inner a {
+    display: flex; align-items: center; gap: 8px; padding: 10px 2px 8px; border-bottom: 1px solid var(--line);
+    color: var(--ink); font-size: .95rem; font-weight: 500; white-space: nowrap; transition: padding .18s ease, color .18s ease;
+  }
+  .work-dropdown-inner a::before { content: "\203A"; color: var(--gold); font-size: 1.2em; line-height: 1; font-weight: 700; }
+  .work-dropdown-inner a:hover { color: var(--accent); padding-left: 8px; font-weight: 700; }
+  .auth-slot { margin-left: 0; }
+}
+@media (max-width: 760px) {
+  .work-menu { display: none !important; }            /* 휴대폰은 햄버거 메뉴 속 '교회행정' */
+}
+/* 좁은 컴퓨터 화면에서는 버튼 글자를 줄인다 */
+@media (min-width: 761px) and (max-width: 1180px) {
+  .work-btn { font-size: .8rem; padding: 6px 11px 6px 10px; }
+}
+
+/* 주보 전체(팝업) 아래 버튼 두 개 나란히 */
+.hb-ft { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* 로그인하면 오른쪽에 [교회행정][이름][로그아웃]이 붙어 머리글이 붐빈다 →
+   컴퓨터 화면에서는 로고 옆 '대시보드'를 빼고(이름을 누르면 나오는 칸에 대시보드가 있음), 메뉴 간격을 조금 줄인다 */
+@media (min-width: 761px) {
+  html.logged-in .hdr-dash-btn { display: none !important; }
+  html.logged-in .nav-menu { gap: 28px; }
+}
+@media (min-width: 761px) and (max-width: 1380px) {
+  html.logged-in .nav-inner { padding: 0 18px; column-gap: 12px; }
+  html.logged-in .nav-menu { gap: 18px; }
+  html.logged-in .nav-menu > .nav-item > a { font-size: .92rem; }
+  html.logged-in a.auth-name { font-size: .88rem; padding: 7px 14px; white-space: nowrap; }
+  html.logged-in .auth-btn { padding: 6px 13px; }
+}
+@media (min-width: 761px) and (max-width: 1180px) {
+  html.logged-in .nav-menu { gap: 12px; }
+  html.logged-in .nav-menu > .nav-item > a { font-size: .84rem; }
+  html.logged-in .work-btn .work-ico { display: none; }
+}
+@media (min-width: 761px) and (max-width: 940px) {
+  html.logged-in #header .logo-txt { display: none; }          /* 아주 좁은 화면: 로고는 마크만 */
+  html.logged-in #header .logo { padding: 4px; }
+  html.logged-in a.auth-name { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+}

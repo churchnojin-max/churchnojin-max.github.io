@@ -1150,13 +1150,18 @@ function closeModal() {
   document.body.style.overflow = "";
 }
 
-// Supabase 게시 주보 — 완성된 PDF를 올려둔 경우 그 파일을 그대로 열고,
-// 아니면 공용 렌더러(js/bulletin-render.js)로 새 탭 보기(헌금 금액 없음)
+// Supabase 게시 주보 — 공용 렌더러(js/bulletin-render.js)로 완성된 주보 화면을 새 탭에 연다(헌금 금액 없음).
+// PDF를 함께 올린 주보도 내용이 있으면 완성된 화면을 먼저 보여 준다(2026-09-29 목사님 요청).
+// 예배 순서·본문 등 내용 없이 PDF만 올린 주보일 때만 PDF를 연다.
+function bulletinHasContent(b) {
+  const d = (b && b.data) || {};
+  return (d.order || []).some((o) => o && (o.name || o.detail)) || !!(d.headline || d.summary || d.notices);
+}
 function openPublicBulletinView(b) {
   if (!b) return;
   const pdfUrl = b.data && b.data.pdf_url;
+  if (window.BulletinRender && (bulletinHasContent(b) || !pdfUrl)) { window.BulletinRender.open(b, { amounts: false }); return; }
   if (pdfUrl) { window.open(pdfUrl, "_blank", "noopener"); return; }
-  if (window.BulletinRender) { window.BulletinRender.open(b, { amounts: false }); return; }
   alert("주보 보기를 불러오지 못했습니다. 페이지를 새로고침해 주세요.");
 }
 
@@ -1365,7 +1370,8 @@ if (homeBulletin) {
             ${offerHtml}
             ${noticeHtml}
             <div class="hb-ft">
-              ${d.pdf_url ? `<a class="btn btn-line" href="${escB(d.pdf_url)}" target="_blank" rel="noopener">📄 주보 PDF 원본 보기 →</a>` : `<button class="btn btn-line" id="homeBulletinBtn">🖨 인쇄용으로 보기 →</button>`}
+              <button class="btn btn-line" id="homeBulletinBtn">🖨 완성된 주보 보기 →</button>
+              ${d.pdf_url ? `<a class="btn btn-line" href="${escB(d.pdf_url)}" target="_blank" rel="noopener">📄 PDF 원본 →</a>` : ""}
             </div>
           </div>`;
         const hbBtn = document.getElementById("homeBulletinBtn");
