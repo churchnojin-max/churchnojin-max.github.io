@@ -61,7 +61,15 @@
       legs = `<ellipse cx="0" cy="4" rx="48" ry="14" fill="${pants}"/>
         <ellipse cx="-34" cy="10" rx="10" ry="6" fill="#fff"/><ellipse cx="34" cy="10" rx="10" ry="6" fill="#fff"/>`;
     } else if (p.pose === "crouch") {
-      legs = `<ellipse cx="0" cy="0" rx="30" ry="12" fill="${pants}"/>`;
+      // 쪼그려 앉은 다리: 무릎이 양옆으로 벌어지고 발은 아래에
+      legs = `<rect x="-22" y="-7" width="44" height="14" rx="7" fill="${pants}"/>
+        <path d="M-9-2L-24 16L-19 36M9-2L24 16L19 36" stroke="${pants}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <ellipse cx="-19" cy="41" rx="11" ry="5.5" fill="#E9E6DF"/><ellipse cx="19" cy="41" rx="11" ry="5.5" fill="#E9E6DF"/>`;
+    } else if (p.pose === "stand") {
+      // 서 있는 다리
+      legs = `<rect x="-22" y="-8" width="44" height="16" rx="6" fill="${pants}"/>
+        <rect x="-19" y="0" width="16" height="66" rx="7" fill="${pants}"/><rect x="3" y="0" width="16" height="66" rx="7" fill="${pants}"/>
+        <ellipse cx="-12" cy="68" rx="11" ry="5.5" fill="#E9E6DF"/><ellipse cx="12" cy="68" rx="11" ry="5.5" fill="#E9E6DF"/>`;
     }
     const kneesFront = p.pose === "knees"
       ? `<rect x="-22" y="-40" width="20" height="50" rx="10" fill="${pants}"/><rect x="2" y="-40" width="20" height="50" rx="10" fill="${pants}"/>
@@ -74,7 +82,7 @@
 
     return `<g transform="translate(${p.x} ${p.y}) scale(${p.s || 1})">
       <g class="ss-p ${p.anim || "ss-breathe"}" style="animation-delay:${p.d || 0}s">
-        ${p.pose === "sit" || p.pose === "cross" || p.pose === "crouch" ? legs : ""}
+        ${legs}
         <g transform="translate(0 -92)">${hb}</g>
         <rect x="-6" y="-76" width="12" height="12" fill="${skin}"/>
         <path d="M-26-64Q-31-38-24 0L24 0Q31-38 26-64Q0-72-26-64Z" fill="${shirt}"${edge}/>
@@ -96,7 +104,7 @@
 
   // 사진 속 자리 그대로(뒷줄은 무대 끝에 걸터앉고, 앞줄은 바닥에)
   const BACK = [
-    { x: 612, y: 305, s: .92, pose: "none", hair: "pony", shirt: "w", skin: 1, arms: ["rest", "wave"], anim: "ss-breathe", d: 1.2 },
+    { x: 612, y: 268, s: .92, pose: "stand", hair: "pony", shirt: "w", skin: 1, arms: ["rest", "wave"], anim: "ss-breathe", d: 1.2 },
     { x: 150, y: 338, s: .95, pose: "sit", hair: "short", shirt: "w", arms: ["rest", "wave"], anim: "ss-sway", d: 0, pants: "#5A5C62" },
     { x: 212, y: 342, s: .66, pose: "sit", hair: "kid", shirt: "b", glasses: 1, anim: "ss-hop", d: .3, skin: 2 },
     { x: 278, y: 338, s: .93, pose: "sit", hair: "long", shirt: "b", skin: 2, anim: "ss-sway", d: .8, pants: "#D8CFBF" },
@@ -110,7 +118,7 @@
     { x: 318, y: 456, s: 1.02, pose: "cross", hair: "long", shirt: "b", skin: 2, anim: "ss-sway", d: 1.4, pants: "#1E1F22" },
     { x: 440, y: 452, s: .9, pose: "knees", hair: "long", shirt: "b", arms: ["knees", "knees"], anim: "ss-breathe", nod: 1, d: .2, pants: "#9AA3AE" },
     { x: 562, y: 456, s: 1.02, pose: "cross", hair: "short", shirt: "b", skin: 3, anim: "ss-sway", d: 2.2, pants: "#1E1F22" },
-    { x: 646, y: 430, s: .95, pose: "crouch", hair: "long", shirt: "b", arms: ["rest", "wave"], anim: "ss-breathe", d: 3, pants: "#4A6EA0" },
+    { x: 648, y: 422, s: .95, pose: "crouch", hair: "long", shirt: "b", arms: ["rest", "wave"], anim: "ss-breathe", d: 3, pants: "#4A6EA0" },
   ];
 
   // 글자 상자(사진 양옆의 '살아가요' / '하나님나라')
@@ -200,18 +208,19 @@
   function fit() {
     if (!stage || !wide.matches || !document.documentElement.classList.contains("snap-page")) {
       svg.setAttribute("viewBox", "0 0 800 500");
-      if (stage) stage.style.removeProperty("--ng-side-w");
       return;
     }
     const W = stage.clientWidth, H = stage.clientHeight;
     if (!W || !H) return;
     const hdr = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hdr")) || 84;
-    const textLeft = stage.querySelector(".ng-side").getBoundingClientRect().left - stage.getBoundingClientRect().left;
-    const sceneX = Math.max(textLeft + 410, W * 0.36);            // 그림(사람들)이 시작되는 자리
-    const k = Math.min((W - sceneX) / 800, (H - hdr - 12) / 500);  // 그림 배율
+    const sideEl = stage.querySelector(".ng-side");
+    const textLeft = sideEl.getBoundingClientRect().left - stage.getBoundingClientRect().left;
+    // 그림 자리: 조직도 오른쪽 ~ 화면 오른쪽(왼쪽 여백과 같은 만큼 띄움). 그 안 가운데에 둔다.
+    const areaL = textLeft + sideEl.offsetWidth + 32, areaR = W - textLeft;
+    const k = Math.min((areaR - areaL) / 800, (H - hdr - 12) / 500);  // 그림 배율
+    const sceneLeft = areaL + (areaR - areaL - 800 * k) / 2;
     const vw = W / k, vh = H / k;
-    svg.setAttribute("viewBox", `${(800 - vw).toFixed(1)} ${(500 - vh).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
-    stage.style.setProperty("--ng-side-w", Math.max(360, Math.round(W - 800 * k - textLeft - 40)) + "px");
+    svg.setAttribute("viewBox", `${(-sceneLeft / k).toFixed(1)} ${(500 - vh).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
   }
   fit();
   window.addEventListener("resize", fit);
