@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="big-text">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -24,7 +24,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=20260929tidy7" />
+  <script src="js/page-slide.js?v=20261001"></script>
+  <link rel="stylesheet" href="css/style.css?v=20261001big" />
 </head>
 <body>
 
@@ -42,16 +43,24 @@
         <h2>선교</h2>
         <p>여러 나라의 선교사님들과 협력 교회를 기도와 물질로 후원합니다.</p>
       </div>
-      <div class="mission-grid mission-grid-3">
-        <div class="mission-card"><h4>필리핀</h4><p class="m-name">전성일 선교사</p></div>
-        <div class="mission-card"><h4>태국</h4><p class="m-name">전요한 선교사</p></div>
-        <div class="mission-card"><h4>케냐</h4><p class="m-name">박성기 선교사</p></div>
-        <div class="mission-card"><h4>스리랑카</h4><p class="m-name">강기엽 선교사</p></div>
-        <div class="mission-card"><h4>캄보디아</h4><p class="m-name">고진석 선교사</p></div>
-        <div class="mission-card"><h4>은목교회</h4><p class="m-name">강명우 목사</p></div>
-        <div class="mission-card"><h4>태국신학생</h4><p class="m-name">에스더 전도사</p></div>
-        <div class="mission-card"><h4>코스모스교회</h4><p class="m-name">최병선 목사</p></div>
-        <div class="mission-card"><h4>튀르키예</h4><p class="m-name">현덕 선교사</p></div>
+      <div class="mission-grid mission-grid-3" data-missions>
+        <div class="mission-card" data-mission="philippines"><h4>필리핀</h4><p class="m-name">전성일 선교사</p></div>
+        <div class="mission-card" data-mission="thailand"><h4>태국</h4><p class="m-name">전요한 선교사</p></div>
+        <div class="mission-card" data-mission="kenya"><h4>케냐</h4><p class="m-name">박성기 선교사</p></div>
+        <div class="mission-card" data-mission="srilanka"><h4>스리랑카</h4><p class="m-name">강기엽 선교사</p></div>
+        <div class="mission-card" data-mission="cambodia"><h4>캄보디아</h4><p class="m-name">고진석 선교사</p></div>
+        <div class="mission-card" data-mission="eunmok"><h4>은목교회</h4><p class="m-name">강명우 목사</p></div>
+        <div class="mission-card" data-mission="thai-student"><h4>태국신학생</h4><p class="m-name">에스더 전도사</p></div>
+        <div class="mission-card" data-mission="cosmos"><h4>코스모스교회</h4><p class="m-name">최병선 목사</p></div>
+        <div class="mission-card" data-mission="turkiye"><h4>튀르키예</h4><p class="m-name">현덕 선교사</p></div>
+      </div>
+      <!-- 선교사 후원 문의: 목사님 요청으로 자리만 만들어 둠(아직 숨김). 보이게 하려면 hidden 을 지우고 연락 방법을 채운다. -->
+      <div class="mission-support" hidden>
+        <div>
+          <h3>선교사 후원 문의</h3>
+          <p>선교사님들을 기도와 물질로 함께 섬기고 싶은 분은 연락해 주세요.</p>
+        </div>
+        <a class="btn btn-solid" href="tel:070-4355-1598">후원 문의하기</a>
       </div>
     </div>
   </section>
@@ -119,5 +128,7 @@
   <script src="js/layout.js?v=20260929tidy6"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
   <script src="js/main.js?v=20260929tidy7"></script>
+  <script src="js/upload.js?v=20260709sb"></script>
+  <script src="js/missions.js?v=20261001"></script>
 </body>
 </html>

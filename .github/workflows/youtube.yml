@@ -1,0 +1,33 @@
+# '예배와 말씀' 첫 화면의 설교 영상 창이 늘 그 주 설교를 보여 주도록
+# 교회 유튜브 채널의 최근 영상 목록(data/youtube.json)을 자동으로 새로 적는다.
+# 한국 시간 주일(= UTC 토 15:00 ~ 일 15:00)에는 30분마다, 그 밖에는 6시간마다 실행.
+name: 유튜브 설교 영상 목록 갱신
+on:
+  schedule:
+    - cron: "*/30 15-23 * * 6"
+    - cron: "*/30 0-15 * * 0"
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: youtube-update
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 최근 설교 영상 읽기
+        run: python tools/update_youtube.py
+      - name: 바뀐 것이 있으면 저장
+        run: |
+          if git diff --quiet -- data/youtube.json; then echo "바뀐 것 없음"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/youtube.json
+          git commit -m "설교 영상 목록 자동 갱신"
+          git push
