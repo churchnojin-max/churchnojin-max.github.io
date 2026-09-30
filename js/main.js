@@ -459,8 +459,11 @@ if (sermonDeck) {
     return `<div class="song-embed"><iframe src="https://www.youtube.com/embed/${id}?${q}" title="이달의 찬양"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
   }
-  function curYM() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
+  // 지금 달. 저장 자료에 current(예: "2026-10")가 있고 그게 더 뒤면 그 달 곡을 앞당겨 보여 준다(월말에 미리 바꿀 때)
+  let SONG_CURRENT = "";
+  function curYM() { const d = new Date(); const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; return SONG_CURRENT > ym ? SONG_CURRENT : ym; }
   function pickSong(data) {
+    SONG_CURRENT = (data && data.current) || "";
     if (!data || !data.months) return null;
     const ym = curYM();
     if (data.months[ym]) return data.months[ym];
