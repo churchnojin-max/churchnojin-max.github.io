@@ -250,7 +250,10 @@ console.log('[gyojeok.js] v20260701di');
         GJ_PERMS.map(function (p) { return '<th style="text-align:center" title="' + esc(p[2]) + '">' + p[1] + '</th>'; }).join('') +
         '</tr></thead><tbody>' +
         users.map(function (u) {
-          return '<tr data-uid="' + esc(u.uid) + '"><td><b>' + esc(u.name || '(이름없음)') + '</b></td><td style="color:var(--ink-soft)">' + esc(u.email) + '</td>' +
+          var badges = (u.provider === 'kakao' ? ' <span style="background:#FEE500;color:#3c1e1e;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">카카오</span>' : '') +
+            (u.joinVia === 'qr' ? ' <span style="background:#1A3A2F;color:#fff;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">교회 QR</span>' : '') +
+            (u.realName && u.realName !== u.name ? '<br><span style="color:#9aa5b1;font-size:.76rem">본인이 적은 이름: ' + esc(u.realName) + '</span>' : '');
+          return '<tr data-uid="' + esc(u.uid) + '"><td><b>' + esc(u.name || '(이름없음)') + '</b>' + badges + '</td><td style="color:var(--ink-soft)">' + esc(u.email || (u.provider === 'kakao' ? '(카카오 가입)' : '')) + '</td>' +
             '<td><span class="st-pill" style="margin-right:8px;display:inline-block;min-width:48px">' + stPill(u.status) + '</span><select class="ck-status" style="padding:5px 8px;border:1px solid #cdd7e3;border-radius:7px;font:inherit;background:#fff">' +
               '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
               '<option value="정회원"' + (u.status === '정회원' ? ' selected' : '') + '>정회원</option></select></td>' +

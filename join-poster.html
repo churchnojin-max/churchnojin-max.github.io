@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>홈페이지 가입 안내 (인쇄용) | 노진교회</title>
+  <!-- 교회 게시판·주보에 붙일 QR 가입 안내문. 이 페이지를 열고 인쇄(Ctrl+P)하면 A4 한 장으로 나온다.
+       QR 은 https://churchnojin-max.github.io/?join=qr 로 연결 → 가입 창이 바로 열리고 '교회 QR 가입' 표시가 남는다. -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Noto Sans KR", sans-serif; color: #1A3A2F; background: #F6F4EB; }
+    .sheet { max-width: 720px; margin: 24px auto; background: #fff; border: 2px solid #1A3A2F; border-radius: 24px; padding: 44px 40px 36px; text-align: center; }
+    .top { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .top img { width: 56px; height: 56px; border-radius: 12px; }
+    .top b { font-family: "Noto Serif KR", serif; font-size: 30px; letter-spacing: .3em; margin-right: -.3em; }
+    h1 { font-family: "Noto Serif KR", serif; font-size: 40px; margin: 26px 0 8px; }
+    .lead { font-size: 20px; color: #3a5a4d; margin: 0 0 26px; }
+    .qr { width: 330px; height: 330px; border: 1px solid #e3dccb; border-radius: 18px; padding: 10px; }
+    ol { text-align: left; max-width: 520px; margin: 26px auto 0; padding: 0; list-style: none; counter-reset: s; }
+    li { counter-increment: s; display: flex; gap: 14px; align-items: flex-start; font-size: 21px; line-height: 1.55; padding: 10px 0; border-top: 1px dashed #d8d0bd; }
+    li:first-child { border-top: 0; }
+    li::before { content: counter(s); flex: 0 0 34px; height: 34px; border-radius: 50%; background: #1A3A2F; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-top: 2px; }
+    .note { margin-top: 22px; font-size: 16px; color: #6b7a72; line-height: 1.7; }
+    .url { margin-top: 10px; font-size: 15px; color: #8a8f8b; }
+    .print { display: block; margin: 0 auto 30px; padding: 12px 26px; border-radius: 999px; border: 0; background: #1A3A2F; color: #fff; font: inherit; font-size: 16px; cursor: pointer; }
+    @media print { body { background: #fff; } .sheet { margin: 0 auto; border-width: 1.5px; } .print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="top"><img src="images/icon-192.png?v=20260926icon2" alt="" /><b>노진교회</b></div>
+    <h1>홈페이지 가입 안내</h1>
+    <p class="lead">휴대폰 카메라로 아래 QR 코드를 비춰 주세요</p>
+    <img class="qr" src="images/join-qr.png?v=20261001" alt="노진교회 홈페이지 가입 QR 코드" />
+    <ol>
+      <li>휴대폰 카메라로 QR 코드를 비추고, 뜨는 주소를 누릅니다.</li>
+      <li><b>카카오로 시작하기</b>를 누르면 가입이 끝납니다.<br /><span style="font-size:17px;color:#6b7a72">(카카오톡이 없으면 이메일로 가입할 수 있습니다)</span></li>
+      <li>성함을 적어 주시면, 교회 담당자가 확인한 뒤 교회 소식·주보·헌금 내역을 보실 수 있습니다.</li>
+    </ol>
+    <p class="note">교인 정보는 담당자가 교인이심을 확인한 분께만 열립니다.<br />도움이 필요하시면 안내위원에게 말씀해 주세요.</p>
+    <p class="url">churchnojin-max.github.io</p>
+  </div>
+  <button class="print" onclick="window.print()">인쇄하기</button>
+</body>
+</html>

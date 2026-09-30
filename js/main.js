@@ -1287,7 +1287,7 @@ function openPublicBulletinView(b) {
 }
 
 if (modal) {
-  bulletinList.addEventListener("click", (e) => {
+  if (bulletinList) bulletinList.addEventListener("click", (e) => {
     const card = e.target.closest(".bulletin-card");
     if (!card) return;
     if (card.dataset.sb != null) { openPublicBulletinView(SB_BULLETINS[Number(card.dataset.sb)]); return; }

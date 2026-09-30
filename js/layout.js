@@ -362,6 +362,10 @@
           <h3 id="authTitle">로그인</h3>
           <p id="authSubtitle">${CH_NAME} 나눔터에 오신 것을 환영합니다.</p>
         </div>
+        <div class="auth-social" id="kakaoField" hidden>
+          <button type="button" class="kakao-btn" id="kakaoLogin">💬 카카오로 시작하기</button>
+          <div class="auth-divider">또는</div>
+        </div>
         <form id="authForm" class="auth-form">
           <div class="form-field" id="nameField" hidden><label>이름</label><input type="text" name="name" autocomplete="name" placeholder="홍길동" /></div>
           <div class="form-field" id="emailField"><label>이메일</label><input type="email" name="email" required autocomplete="username" placeholder="name@example.com" /></div>
@@ -749,7 +753,7 @@
     sdk.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     sdk.onload = function () {
       const auth = document.createElement("script");
-      auth.src = "js/auth.js?v=20260816perms";
+      auth.src = "js/auth.js?v=20261001kakao";
       document.body.appendChild(auth);
     };
     // SDK 로드 실패 시에도 버튼은 유지(클릭 시 모달은 위 핸들러가 처리)

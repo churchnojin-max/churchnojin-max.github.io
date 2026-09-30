@@ -139,6 +139,13 @@ console.log('[dashboard.js] v20260705qtfallback');
      승인 대기자가 대시보드에 안 보이면 관리자가 가입 사실 자체를 모르고 지나치게 되므로
      첫 화면 맨 위에 띄운다. 목록은 list_access(관리자 전용 RPC)로 가져온다.
      ====================================================================== */
+  // 가입 방식 표시: 카카오로 가입 · 교회 QR 코드로 가입
+  function joinBadges(u) {
+    var b = '';
+    if (u.provider === 'kakao') b += '<span style="background:#FEE500;color:#3c1e1e;border-radius:999px;padding:1px 8px;font-size:.74rem;font-weight:700">카카오</span>';
+    if (u.joinVia === 'qr') b += '<span style="background:#1A3A2F;color:#fff;border-radius:999px;padding:1px 8px;font-size:.74rem;font-weight:700">교회 QR</span>';
+    return b;
+  }
   function loadPendingApproval() {
     var box = document.getElementById('pendingApproval');
     if (!box || !window.WPF) return;
@@ -160,7 +167,9 @@ console.log('[dashboard.js] v20260705qtfallback');
         '<div style="display:flex;flex-direction:column;gap:8px">' +
         pending.map(function (u) {
           return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:#fff;border:1px solid #efe3c4;border-radius:9px">' +
-            '<b style="min-width:80px">' + esc(u.name || '(이름없음)') + '</b>' +
+            '<b style="min-width:80px">' + esc(u.realName || u.name || '(이름없음)') + '</b>' +
+            (u.realName && u.name && u.realName !== u.name ? '<span style="color:#9aa5b1;font-size:.8rem">(' + esc(u.name) + ')</span>' : '') +
+            joinBadges(u) +
             '<span style="color:#7b8794;font-size:.85rem;flex:1;min-width:150px">' + esc(u.email) + '</span>' +
             '<span style="color:#9aa5b1;font-size:.78rem">' + esc(fmtJoin(u.joinedAt)) + '</span>' +
             '</div>';

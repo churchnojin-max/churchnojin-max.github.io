@@ -33,10 +33,39 @@
   const submitBtn = document.getElementById("authSubmit");
   const toggleBtn = document.getElementById("authToggle");
   const kakaoBtn = document.getElementById("kakaoLogin"); // 이메일 전용이면 없음(null)
+  const kakaoField = document.getElementById("kakaoField");
 
   const REMEMBER_KEY = "nojin_saved_email";
+  const JOIN_KEY = "nojin_join_via";   // 교회 QR 코드(?join=qr)로 들어온 분 표시
 
   let mode = "login"; // 'login' | 'signup' | 'reset'(새 비밀번호 설정)
+
+  // 카카오 버튼은 Supabase 에서 카카오 로그인이 켜져 있을 때만 보인다(켜기 전엔 눌러도 오류라 숨김).
+  // 목사님이 Supabase ▸ Authentication ▸ Providers ▸ Kakao 를 켜면 코드 수정 없이 자동으로 나타난다.
+  let KAKAO_ON = false;
+  fetch(window.SUPABASE_URL + "/auth/v1/settings", { headers: { apikey: window.SUPABASE_ANON_KEY } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((s) => {
+      KAKAO_ON = !!(s && s.external && s.external.kakao);
+      if (kakaoField) kakaoField.hidden = !KAKAO_ON || mode === "reset";
+    })
+    .catch(() => {});
+
+  // QR 코드 주소(…/?join=qr)로 들어오면: 표시를 남기고 가입 창을 바로 연다
+  try {
+    const jp = new URLSearchParams(location.search).get("join");
+    if (jp) {
+      localStorage.setItem(JOIN_KEY, JSON.stringify({ via: jp === "1" ? "qr" : jp.slice(0, 20), at: Date.now() }));
+      history.replaceState(null, "", location.pathname + location.hash);
+      window.__joinFromQR = true;
+    }
+  } catch (_) {}
+  function joinVia() {
+    try {
+      const j = JSON.parse(localStorage.getItem(JOIN_KEY) || "null");
+      return j && Date.now() - j.at < 7 * 86400000 ? j.via : "";   // 7일 안에 가입하면 QR 가입으로 본다
+    } catch (_) { return ""; }
+  }
 
   function openModal() { modal.hidden = false; document.body.style.overflow = "hidden"; }
   // layout.js 가 먼저 그린 헤더 버튼은 auth.js 로드 전에도 눌릴 수 있다.
@@ -57,6 +86,7 @@
     if (passwordLabel) passwordLabel.textContent = isReset ? "새 비밀번호" : "비밀번호";
     if (passwordInput) passwordInput.setAttribute("autocomplete", m === "login" ? "current-password" : "new-password");
     if (authOptions) authOptions.hidden = m !== "login";
+    if (kakaoField) kakaoField.hidden = isReset || !KAKAO_ON;
     if (authSwitch) authSwitch.hidden = isReset;
     if (toggleBtn) toggleBtn.textContent = m === "login" ? "회원가입" : "로그인하기";
     if (authSwitch && authSwitch.firstChild)
@@ -123,12 +153,68 @@
       });
       // 직분이 지정돼 있으면 이름 옆에 붙여 표시(레이아웃의 헬퍼 재사용)
       if (window.__enhanceHeaderRole) window.__enhanceHeaderRole(user.id, name);
+      afterLogin(user);
     } else {
+      if (window.__joinFromQR) { window.__joinFromQR = false; setTimeout(() => { setMode("signup"); openModal(); }, 300); }
       // 로그인 + 가입하기를 나란히 — 처음 오신 분이 '로그인'만 보고 막히지 않도록
       slot.innerHTML = `<span class="auth-wrap-out"><button class="auth-btn" id="loginBtn">로그인</button><button class="auth-btn auth-btn-join" id="joinBtn">가입하기</button></span>`;
       document.getElementById("loginBtn").addEventListener("click", () => { setMode("login"); openModal(); });
       document.getElementById("joinBtn").addEventListener("click", () => { setMode("signup"); openModal(); });
     }
+  }
+
+  // 로그인한 뒤 한 번씩 챙기는 일
+  //  ① QR 코드로 들어와 가입했으면 '교회 QR 가입' 표시를 계정에 남긴다(담당자 승인 목록에 보임)
+  //  ② 카카오로 가입하면 이름 자리에 카카오 별명이 들어가므로, 실명을 한 번 여쭤 저장한다
+  async function afterLogin(user) {
+    const meta = user.user_metadata || {};
+    const via = joinVia();
+    if (via) { try { localStorage.removeItem(JOIN_KEY); } catch (_) {} }   // 먼저 지워서 여러 번 보내지 않게
+    if (via && !meta.join_via) {
+      try { await sb.auth.updateUser({ data: { join_via: via } }); } catch (_) {}
+    }
+    const provider = (user.app_metadata && user.app_metadata.provider) || "email";
+    let asked = false;
+    try { asked = !!sessionStorage.getItem("nojin_name_asked"); } catch (_) {}
+    if (provider !== "email" && !meta.real_name && !asked) askRealName(meta.name || meta.nickname || "");
+  }
+  function askRealName(nick) {
+    try { sessionStorage.setItem("nojin_name_asked", "1"); } catch (_) {}
+    const box = document.createElement("div");
+    box.className = "modal";
+    box.innerHTML = `<div class="modal-backdrop"></div>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-label="성함 알려 주기" style="max-width:440px">
+        <h3 style="font-family:'Noto Serif KR',serif;color:var(--accent);margin-bottom:8px">반갑습니다!</h3>
+        <p style="color:var(--ink-soft);line-height:1.7;margin-bottom:16px">교회에서 쓰시는 <b>성함</b>을 알려 주세요.<br />담당자가 교인이신지 확인할 때만 씁니다.</p>
+        <form id="realNameForm">
+          <input type="text" name="n" required maxlength="30" autocomplete="name" placeholder="예: 홍길동" value=""
+            style="width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:1.05rem" />
+          <p id="realNameMsg" style="color:#c0392b;font-size:.9rem;margin-top:8px" hidden></p>
+          <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+            <button type="button" class="btn btn-line" data-later>나중에</button>
+            <button type="submit" class="btn btn-solid">저장</button>
+          </div>
+        </form>
+      </div>`;
+    document.body.appendChild(box);
+    const input = box.querySelector("input");
+    if (nick && /^[가-힣]{2,4}$/.test(nick)) input.value = nick;   // 카카오 이름이 한글 실명처럼 보이면 미리 채움
+    setTimeout(() => input.focus(), 50);
+    const close = () => box.remove();
+    box.querySelector("[data-later]").onclick = close;
+    box.querySelector("#realNameForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const v = input.value.trim();
+      const m = box.querySelector("#realNameMsg");
+      if (!v) return;
+      try {
+        const { error } = await sb.auth.updateUser({ data: { real_name: v, name: v } });
+        if (error) throw error;
+        await sb.rpc("set_my_name", { p_name: v });
+        close();
+        renderAuth();
+      } catch (err) { m.hidden = false; m.textContent = "저장하지 못했습니다: " + ((err && err.message) || err); }
+    };
   }
 
   // 저장된 이메일 미리 채우기
@@ -190,9 +276,10 @@
           showMsg("비밀번호가 변경되었습니다. 이제 로그인됩니다.", true);
           setTimeout(() => { closeModal(); location.reload(); }, 1200);
         } else if (mode === "signup") {
-          const { data, error } = await sb.auth.signUp({
-            email, password, options: { data: { name: name || email.split("@")[0] } },
-          });
+          const meta = { name: name || email.split("@")[0] };
+          if (name) meta.real_name = name;
+          if (joinVia()) meta.join_via = joinVia();
+          const { data, error } = await sb.auth.signUp({ email, password, options: { data: meta } });
           if (error) throw error;
           // Supabase 의 '이메일 확인' 설정이 꺼져 있으면 세션이 바로 나오고 메일도 안 간다.
           // 예전에는 무조건 "확인 메일을 보냈습니다"라고 띄워서 안내와 실제가 어긋났다.
