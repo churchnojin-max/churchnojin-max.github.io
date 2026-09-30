@@ -2967,3 +2967,71 @@ html.snap-gliding { scroll-snap-type: none !important; scroll-behavior: auto !im
   html.logged-in #header .logo { padding: 4px; }
   html.logged-in a.auth-name { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* ============================================================
+   우리 이야기 › 다음 세대 — 움직이는 그림(js/story-scene.js) + '배우고 성장합니다' 글 자리
+   컴퓨터: 왼쪽 그림 / 오른쪽 글.  휴대폰: 그림 아래 글.
+   ============================================================ */
+.ng-intro { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; align-items: stretch; max-width: 1100px; }
+.story-scene { border-radius: 18px; overflow: hidden; border: 1px solid #c9ddd3; background: #F3EFE6; line-height: 0;
+  box-shadow: 0 14px 34px rgba(26,58,47,.14); }
+.ng-grow { background: #fff; border: 1px solid #c9ddd3; border-radius: 18px; padding: 34px 32px; display: flex; flex-direction: column; }
+.ng-grow-eyebrow { font-family: "Cormorant Garamond", serif; letter-spacing: .25em; font-size: .8rem; color: #3a7d63; }
+.ng-grow h3 { font-family: "Noto Serif KR", serif; font-size: clamp(1.25rem, 2.2vw, 1.6rem); line-height: 1.45; color: #2f6f57; margin: 8px 0 18px; word-break: keep-all; }
+.ng-grow p { color: var(--ink-soft); line-height: 1.85; font-weight: 400; word-break: keep-all; }
+.ng-grow p + p { margin-top: 12px; }
+.ng-grow .ng-grow-wait { margin: auto 0; padding: 22px; border: 1px dashed #b6d2c5; border-radius: 12px; text-align: center; color: var(--muted); font-size: .92rem; }
+@media (max-width: 900px) {
+  .ng-intro { grid-template-columns: 1fr; gap: 18px; }
+  .ng-grow { padding: 26px 22px; }
+}
+/* 글 칸을 숨겨 둔 동안에는 그림만 한 화면에 알맞게 */
+.ng-intro:has(> .ng-grow[hidden]) { grid-template-columns: 1fr; max-width: 740px; }
+.ng-grow[hidden] { display: none; }
+/* 휴대폰·태블릿: 조직도는 바로 이어 붙인다(컴퓨터에서는 따로 한 화면) */
+@media (max-width: 1024px) { .block.ng-org-screen { padding-top: 0; } }
+.story-scene svg { display: block; width: 100%; height: auto; }
+.ss-lord { font: italic 900 15px "Noto Sans KR", sans-serif; text-anchor: middle; fill: url(#ssRainbow); letter-spacing: -.5px; }
+.ss-letter { font: 700 25px "Noto Sans KR", sans-serif; text-anchor: middle; fill: #fff; }
+.ss-screen { font: 700 20px "Noto Sans KR", sans-serif; text-anchor: middle; fill: #fff; }
+.ss-star { font-size: 15px; text-anchor: middle; letter-spacing: 4px; }
+.ss-note { font-size: 22px; fill: #3E9B4F; opacity: 0; }
+
+@keyframes ssBreathe { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-2px) } }
+@keyframes ssSway { 0%,100% { transform: rotate(-2.2deg) } 50% { transform: rotate(2.2deg) } }
+@keyframes ssHop { 0%,55%,100% { transform: translateY(0) } 65% { transform: translateY(-12px) } 75% { transform: translateY(0) } 82% { transform: translateY(-5px) } 90% { transform: translateY(0) } }
+@keyframes ssWave { 0%,100% { transform: rotate(-16deg) } 50% { transform: rotate(18deg) } }
+@keyframes ssShake { 0%,100% { transform: rotate(-6deg) } 50% { transform: rotate(8deg) } }
+@keyframes ssNod { 0%,70%,100% { transform: rotate(0) } 78% { transform: rotate(6deg) } 88% { transform: rotate(-3deg) } }
+@keyframes ssBlink { 0%,93%,100% { transform: scaleY(1) } 96% { transform: scaleY(.1) } }
+@keyframes ssDrop { 0% { transform: translateY(-460px); opacity: 0 } 12% { opacity: 1 } 100% { transform: translateY(0); opacity: 1 } }
+@keyframes ssBoxHop { 0%,88%,100% { transform: translateY(0) } 92% { transform: translateY(-10px) } 96% { transform: translateY(0) } }
+@keyframes ssFall { 0% { transform: translateY(0) rotate(0) } 100% { transform: translateY(540px) rotate(540deg) } }
+@keyframes ssFlag { 0%,100% { transform: rotate(-7deg) } 50% { transform: rotate(7deg) } }
+@keyframes ssFan { to { transform: rotate(360deg) } }
+@keyframes ssTri { 0%,100% { transform: translateY(0) rotate(0) } 50% { transform: translateY(-5px) rotate(12deg) } }
+@keyframes ssTwinkle { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+@keyframes ssNote { 0% { transform: translateY(0); opacity: 0 } 15% { opacity: .9 } 100% { transform: translateY(-190px); opacity: 0 } }
+@keyframes ssLight { 0%,100% { opacity: .6 } 50% { opacity: 1 } }
+
+.ss-p { transform-origin: 0 0; }
+.ss-breathe { animation: ssBreathe 3.2s ease-in-out infinite; }
+.ss-sway { animation: ssSway 4.4s ease-in-out infinite; }
+.ss-hop { animation: ssHop 3s ease-in-out infinite; }
+.ss-wave { transform-origin: 0 0; animation: ssWave .9s ease-in-out infinite; }
+.ss-cheer { transform-origin: 0 0; animation: ssShake 1.2s ease-in-out infinite; }
+.ss-shake { transform-origin: 0 0; animation: ssShake .7s ease-in-out infinite; }
+.ss-nod { animation: ssNod 5s ease-in-out infinite; }
+.ss-blink { animation: ssBlink 4.6s linear infinite; }
+.ss-drop { animation: ssDrop 1s cubic-bezier(.34,1.35,.55,1) both; }
+.ss-boxhop { animation: ssBoxHop 7s ease-in-out infinite; }
+.ss-conf { transform-box: fill-box; transform-origin: center; animation: ssFall 8s linear infinite; }
+.ss-flag { transform-origin: 0 0; animation: ssFlag 3s ease-in-out infinite; }
+.ss-fan { animation: ssFan 16s linear infinite; }
+.ss-tri { transform-box: fill-box; transform-origin: center; animation: ssTri 4s ease-in-out infinite; }
+.ss-tri.t2 { animation-delay: -1.3s; } .ss-tri.t3 { animation-delay: -2.6s; }
+.ss-stars { animation: ssTwinkle 1.6s ease-in-out infinite; }
+.ss-note { animation: ssNote 8s ease-out infinite; }
+.ss-lights { animation: ssLight 3s ease-in-out infinite; }
+.story-scene.is-paused * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) { .story-scene * { animation: none !important; } }

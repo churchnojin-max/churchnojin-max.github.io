@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=20260929tidy7" />
+  <link rel="stylesheet" href="css/style.css?v=20260930ng3" />
 </head>
 <body>
 
@@ -41,6 +41,21 @@
         <h2>다음 세대</h2>
         <p>다음 세대가 자라나는 곳</p>
       </div>
+      <div class="ng-intro">
+        <div class="story-scene" data-story-scene></div>
+        <!-- '배우고 성장합니다' 글 자리: 글이 오기 전까지 hidden 으로 숨김.
+             목사님이 글을 주시면 hidden 을 지우고, '준비 중' 문단 대신 <p> 문단으로 채운다 -->
+        <div class="ng-grow" hidden>
+          <span class="ng-grow-eyebrow">HOW WE GROW</span>
+          <h3>우리는 이렇게 배우고,<br />이렇게 성장합니다</h3>
+          <p class="ng-grow-wait">이 자리에 들어갈 글을 준비하고 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block block-mint ng-org-screen">
+    <div class="container">
       <div class="ng-box">
         <div class="ng-top">
           <div class="ng-title">주일학교 조직</div>
@@ -215,5 +230,6 @@
   <script src="js/categories.js?v=20260730news2"></script>
   <script src="js/notices.js?v=20260929tidy2"></script>
   <script src="js/home-news.js?v=20260730cam2"></script>
+  <script src="js/story-scene.js?v=20260930c"></script>
 </body>
 </html>
