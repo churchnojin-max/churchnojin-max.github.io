@@ -464,7 +464,7 @@ if (sermonDeck) {
     if (!data || !data.months) return null;
     const ym = curYM();
     if (data.months[ym]) return data.months[ym];
-    const keys = Object.keys(data.months).sort().reverse();
+    const keys = Object.keys(data.months).filter((k) => k <= ym).sort().reverse();   // 미리 넣어 둔 다음 달 곡은 그 달부터
     return keys.length ? data.months[keys[0]] : null;
   }
 
@@ -484,7 +484,7 @@ if (sermonDeck) {
       }
       // 지나온 찬양: 저장된 달(목회행정 › 이달의 찬양에서 달마다 저장) 가운데 곡이 있는 달, 최근 달부터
       const months = Object.keys((data && data.months) || {}).sort().reverse()
-        .filter((k) => { const s = data.months[k]; return s && (s.youtube || (s.sheets && s.sheets.length)); });
+        .filter((k) => { const s = data.months[k]; return k <= curYM() && s && (s.youtube || (s.sheets && s.sheets.length)); });   // 아직 오지 않은 달은 숨김
       const nowKey = months.find((k) => data.months[k] === song) || months[0];
       const ymLabel = (k) => { const m = k.match(/^(\d{4})-(\d{2})$/); return m ? `${m[1]}년 ${+m[2]}월` : k; };
       const songHTML = (s, k) => {
