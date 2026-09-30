@@ -3308,3 +3308,31 @@ html:active-view-transition-type(slide-prev)::view-transition-new(root) { animat
   html.snap-page #mission .mc-photo { width: 88px; height: 88px; margin-top: -44px; }
   html.snap-page #mission .mission-grid { gap: 18px; }
 }
+
+/* ============================================================
+   교회 안내 다듬기(2026-10)
+   ============================================================ */
+/* 찾아오시는 길: 안내 단계(1·2·3)를 빼고 지도를 크게 */
+.directions.dir-big { grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); gap: 24px; }
+.directions.dir-big .loc-map, .directions.dir-big .loc-map iframe { min-height: clamp(320px, 52vh, 520px) !important; }
+.dir-tel { margin-top: 12px; font-weight: 700; font-size: 1.15rem; color: var(--accent); }
+.dir-tel a { color: inherit; }
+@media (max-width: 820px) {
+  .directions.dir-big { grid-template-columns: 1fr; }
+  .directions.dir-big .loc-map, .directions.dir-big .loc-map iframe { min-height: 340px !important; }
+}
+/* 이번 주 주보: 상자를 크게, 본문 말씀을 더 많이 */
+.hbb { max-width: 1180px; }
+@media (min-width: 761px) { .hbb-card:has(.hbb-news) { grid-template-columns: 1.75fr 1fr; } }
+.hbb-verse { font-size: 1.1rem; line-height: 1.9; padding: 16px 20px; }
+.hbb-verse > span { -webkit-line-clamp: 9; }
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) and (max-height: 820px) {
+  .hbb-verse > span { -webkit-line-clamp: 6; }
+}
+@media (min-width: 1025px) {
+  .hbb-card:has(.hbb-news) { grid-template-rows: 1fr auto; }
+  .hbb-card:has(.hbb-news) .hbb-main { grid-row: 1 / span 2; }
+  .hbb-card:has(.hbb-news) .hbb-actions { grid-column: 2; grid-row: 2; border-top: 0; background: var(--accent); padding: 4px 24px 24px; justify-content: flex-start; }
+  .hbb-card:has(.hbb-news) .hbb-actions .btn-solid { background: var(--gold-logo); border-color: var(--gold-logo); color: var(--accent); }
+  .hbb-card:has(.hbb-news) .hbb-actions .btn-line { border-color: rgba(255,255,255,.6); color: #fff; }
+}

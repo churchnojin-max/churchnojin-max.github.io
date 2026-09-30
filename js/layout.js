@@ -23,7 +23,7 @@
       { href: "world.html#local", label: "지역 연합사역" },
     ] },
     { href: "welcome.html", label: "교회 안내", sub: [
-      { href: "welcome.html#about", label: "우리교회를 소개합니다" },
+      { href: "welcome.html#about", label: "노진교회를 소개합니다" },
       { href: "welcome.html#worship", label: "예배 안내" },
       { href: "welcome.html#bulletin", label: "이번 주 주보" },
       { href: "welcome.html#directions", label: "찾아오시는 길" },
