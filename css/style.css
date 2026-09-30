@@ -2969,10 +2969,11 @@ html.snap-gliding { scroll-snap-type: none !important; scroll-behavior: auto !im
 }
 
 /* ============================================================
-   우리 이야기 › 다음 세대 — 움직이는 그림(js/story-scene.js) + '배우고 성장합니다' 글 자리
-   컴퓨터: 왼쪽 그림 / 오른쪽 글.  휴대폰: 그림 아래 글.
+   우리 이야기 › 다음 세대 — 움직이는 그림(js/story-scene.js)
+   컴퓨터: 그림이 화면 전체 배경, 왼쪽 벽 자리에 제목·주일학교 조직.
+   휴대폰: 제목 → 그림(카드) → 조직 순서.
+   윈도우 '애니메이션 효과'가 꺼진 컴퓨터가 많아서 prefers-reduced-motion 으로 멈추지 않는다(움직임은 느리고 잔잔함).
    ============================================================ */
-.ng-intro { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; align-items: stretch; max-width: 1100px; }
 .story-scene { border-radius: 18px; overflow: hidden; border: 1px solid #c9ddd3; background: #F3EFE6; line-height: 0;
   box-shadow: 0 14px 34px rgba(26,58,47,.14); }
 .ng-grow { background: #fff; border: 1px solid #c9ddd3; border-radius: 18px; padding: 34px 32px; display: flex; flex-direction: column; }
@@ -2982,14 +2983,9 @@ html.snap-gliding { scroll-snap-type: none !important; scroll-behavior: auto !im
 .ng-grow p + p { margin-top: 12px; }
 .ng-grow .ng-grow-wait { margin: auto 0; padding: 22px; border: 1px dashed #b6d2c5; border-radius: 12px; text-align: center; color: var(--muted); font-size: .92rem; }
 @media (max-width: 900px) {
-  .ng-intro { grid-template-columns: 1fr; gap: 18px; }
   .ng-grow { padding: 26px 22px; }
 }
-/* 글 칸을 숨겨 둔 동안에는 그림만 한 화면에 알맞게 */
-.ng-intro:has(> .ng-grow[hidden]) { grid-template-columns: 1fr; max-width: 740px; }
 .ng-grow[hidden] { display: none; }
-/* 휴대폰·태블릿: 조직도는 바로 이어 붙인다(컴퓨터에서는 따로 한 화면) */
-@media (max-width: 1024px) { .block.ng-org-screen { padding-top: 0; } }
 .story-scene svg { display: block; width: 100%; height: auto; }
 .ss-lord { font: italic 900 15px "Noto Sans KR", sans-serif; text-anchor: middle; fill: url(#ssRainbow); letter-spacing: -.5px; }
 .ss-letter { font: 700 25px "Noto Sans KR", sans-serif; text-anchor: middle; fill: #fff; }
@@ -3034,4 +3030,31 @@ html.snap-gliding { scroll-snap-type: none !important; scroll-behavior: auto !im
 .ss-note { animation: ssNote 8s ease-out infinite; }
 .ss-lights { animation: ssLight 3s ease-in-out infinite; }
 .story-scene.is-paused * { animation-play-state: paused !important; }
-@media (prefers-reduced-motion: reduce) { .story-scene * { animation: none !important; } }
+
+.ng-stage .story-scene { margin-bottom: 18px; }
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  html.snap-page .ng-stage { position: relative; overflow: hidden; background: #F2EEE4; }
+  html.snap-page .ng-stage .ng-side { width: var(--ng-side-w, 380px); }
+  html.snap-page .ng-stage .ng-side > .block-head,
+  html.snap-page .ng-stage .ng-side > .ng-box { position: relative; z-index: 1; }
+  html.snap-page .ng-stage .story-scene {
+    position: absolute; inset: 0; z-index: 0; margin: 0; border: 0; border-radius: 0; box-shadow: none; background: #F2EEE4;
+  }
+  html.snap-page .ng-stage .story-scene svg { width: 100%; height: 100%; }
+  html.snap-page .ng-stage .block-head h2 { color: #1A3A2F; }
+  /* 좁은 왼쪽 자리에 맞춘 작은 조직도 */
+  html.snap-page .ng-stage .ng-box { max-width: none; padding: 20px 18px 18px; background: rgba(255,255,255,.95);
+    border-color: #E1D6C2; box-shadow: 0 14px 34px rgba(90,70,30,.14); }
+  html.snap-page .ng-stage .ng-title { font-size: 1.02rem; padding: 7px 24px; }
+  html.snap-page .ng-stage .ng-line { height: 14px; }
+  html.snap-page .ng-stage .ng-staff { padding: 14px 10px 10px; }
+  html.snap-page .ng-stage .ng-staff-grid { grid-template-columns: repeat(3, 1fr); gap: 8px 4px; }
+  html.snap-page .ng-stage .ng-role .ng-role-name { font-size: .72rem; margin-bottom: 1px; }
+  html.snap-page .ng-stage .ng-role b { font-size: .96rem; }
+  html.snap-page .ng-stage .ng-role small { font-size: .74rem; }
+  html.snap-page .ng-stage .ng-depts { grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 0; }
+  html.snap-page .ng-stage .ng-depts::before, html.snap-page .ng-stage .ng-dept::before { display: none; }
+  html.snap-page .ng-stage .ng-dept { padding: 10px 8px; }
+  html.snap-page .ng-stage .ng-dept h3 { font-size: 1rem; margin-bottom: 2px; }
+  html.snap-page .ng-stage .ng-dept .ng-who { font-size: .8rem; }
+}

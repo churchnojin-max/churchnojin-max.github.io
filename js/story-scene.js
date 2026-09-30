@@ -159,10 +159,10 @@
       <linearGradient id="ssRainbow" x1="0" x2="1">
         <stop offset="0" stop-color="#F0BE2C"/><stop offset=".3" stop-color="#E0484E"/><stop offset=".55" stop-color="#F28DB0"/><stop offset=".8" stop-color="#2F9BD1"/><stop offset="1" stop-color="#3E9B4F"/>
       </linearGradient>
-      <linearGradient id="ssWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7F4EC"/><stop offset="1" stop-color="#EDE8DC"/></linearGradient>
-      <linearGradient id="ssFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCBAE"/><stop offset="1" stop-color="#CDB894"/></linearGradient>
+      <linearGradient id="ssWall" gradientUnits="userSpaceOnUse" x1="0" y1="-500" x2="0" y2="330"><stop offset="0" stop-color="#F7F4EC"/><stop offset="1" stop-color="#EDE8DC"/></linearGradient>
+      <linearGradient id="ssFloor" gradientUnits="userSpaceOnUse" x1="0" y1="382" x2="0" y2="500"><stop offset="0" stop-color="#DCCBAE"/><stop offset="1" stop-color="#CDB894"/></linearGradient>
     </defs>
-    <rect width="800" height="500" fill="url(#ssWall)"/>
+    <rect x="-2000" y="-1500" width="4800" height="2000" fill="url(#ssWall)"/>
     <g class="ss-lights"><circle cx="120" cy="6" r="7" fill="#FFF6D6"/><circle cx="400" cy="4" r="7" fill="#FFF6D6"/><circle cx="680" cy="6" r="7" fill="#FFF6D6"/></g>
     ${bunting}
     <!-- 스크린 -->
@@ -180,17 +180,42 @@
     ${fan(262, 262, 26, 0)}${fan(530, 250, 22, 1.5)}${fan(610, 236, 16, .7)}
     ${notes}
     <!-- 무대와 바닥 -->
-    <rect x="0" y="330" width="800" height="52" fill="#B7865A"/>
-    <rect x="0" y="330" width="800" height="7" fill="#C99A6C"/>
-    <g stroke="#9E7149" stroke-width="2">${[80, 200, 320, 440, 560, 680].map((x) => `<path d="M${x} 340V382"/>`).join("")}</g>
-    <rect x="0" y="382" width="800" height="118" fill="url(#ssFloor)"/>
-    <g stroke="#C4AE88" stroke-width="1.5">${[410, 440, 472].map((y) => `<path d="M0 ${y}H800"/>`).join("")}</g>
+    <rect x="-2000" y="330" width="4800" height="52" fill="#B7865A"/>
+    <rect x="-2000" y="330" width="4800" height="7" fill="#C99A6C"/>
+    <g stroke="#9E7149" stroke-width="2">${Array.from({ length: 40 }, (_, k) => 80 + (k - 17) * 120).map((x) => `<path d="M${x} 340V382"/>`).join("")}</g>
+    <rect x="-2000" y="382" width="4800" height="400" fill="url(#ssFloor)"/>
+    <g stroke="#C4AE88" stroke-width="1.5">${[410, 440, 472].map((y) => `<path d="M-2000 ${y}H2800"/>`).join("")}</g>
     ${tower(18, [["요", "b"], ["가", "y"], ["아", "g"], ["살", "b"]], 0)}
     ${tower(706, [["라", "r"], ["나", "b"], ["님", "y"], ["나", "g"], ["하", "r"]], 0.5)}
     ${BACK.map(person).join("")}
     ${FRONT.map(person).join("")}
     <g class="ss-confetti">${confetti}</g>
   </svg>`;
+
+  // 컴퓨터(한 화면씩 넘기는 화면)에서는 그림이 다음 세대 화면 전체를 채운다.
+  // 사람들은 오른쪽 아래에 두고, 왼쪽으로 이어지는 벽·무대 자리에 제목과 주일학교 조직이 놓인다.
+  const svg = host.querySelector("svg");
+  const stage = host.closest(".ng-stage");
+  const wide = window.matchMedia("(min-width: 1025px) and (hover: hover) and (pointer: fine)");
+  function fit() {
+    if (!stage || !wide.matches || !document.documentElement.classList.contains("snap-page")) {
+      svg.setAttribute("viewBox", "0 0 800 500");
+      if (stage) stage.style.removeProperty("--ng-side-w");
+      return;
+    }
+    const W = stage.clientWidth, H = stage.clientHeight;
+    if (!W || !H) return;
+    const hdr = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hdr")) || 84;
+    const textLeft = stage.querySelector(".ng-side").getBoundingClientRect().left - stage.getBoundingClientRect().left;
+    const sceneX = Math.max(textLeft + 410, W * 0.36);            // 그림(사람들)이 시작되는 자리
+    const k = Math.min((W - sceneX) / 800, (H - hdr - 12) / 500);  // 그림 배율
+    const vw = W / k, vh = H / k;
+    svg.setAttribute("viewBox", `${(800 - vw).toFixed(1)} ${(500 - vh).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
+    stage.style.setProperty("--ng-side-w", Math.max(360, Math.round(W - 800 * k - textLeft - 40)) + "px");
+  }
+  fit();
+  window.addEventListener("resize", fit);
+  if (wide.addEventListener) wide.addEventListener("change", fit);
 
   // 화면 밖에 있을 때는 멈춰서 배터리·CPU를 아낀다.
   // 처음에도 멈춘 채 시작하므로, 글자 상자는 이 그림까지 내려왔을 때 떨어진다.

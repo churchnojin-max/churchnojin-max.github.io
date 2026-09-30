@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=20260930ng3" />
+  <link rel="stylesheet" href="css/style.css?v=20260930stage" />
 </head>
 <body>
 
@@ -34,62 +34,59 @@
     <p>여기, 사람 냄새가 납니다. 성도들의 삶과 공동체의 온기를 나눕니다.</p>
   </section>
 
-  <section id="communities" class="block block-mint">
+  <!-- 다음 세대: 컴퓨터에서는 움직이는 그림이 화면 전체 배경, 왼쪽 벽 자리에 제목과 주일학교 조직.
+       휴대폰에서는 제목 → 그림 → 조직 순서로 차례대로 보인다. (그림: js/story-scene.js) -->
+  <section id="communities" class="block block-mint ng-stage">
     <div class="container">
-      <div class="block-head">
-        <span class="eyebrow2">NEXT GENERATION</span>
-        <h2>다음 세대</h2>
-        <p>다음 세대가 자라나는 곳</p>
-      </div>
-      <div class="ng-intro">
+      <div class="ng-side">
+        <div class="block-head">
+          <span class="eyebrow2">NEXT GENERATION</span>
+          <h2>다음 세대</h2>
+          <p>다음 세대가 자라나는 곳</p>
+        </div>
         <div class="story-scene" data-story-scene></div>
-        <!-- '배우고 성장합니다' 글 자리: 글이 오기 전까지 hidden 으로 숨김.
-             목사님이 글을 주시면 hidden 을 지우고, '준비 중' 문단 대신 <p> 문단으로 채운다 -->
-        <div class="ng-grow" hidden>
-          <span class="ng-grow-eyebrow">HOW WE GROW</span>
-          <h3>우리는 이렇게 배우고,<br />이렇게 성장합니다</h3>
-          <p class="ng-grow-wait">이 자리에 들어갈 글을 준비하고 있습니다.</p>
+        <div class="ng-box">
+          <div class="ng-top">
+            <div class="ng-title">주일학교 조직</div>
+          </div>
+          <div class="ng-line" aria-hidden="true"></div>
+          <div class="ng-staff">
+            <div class="ng-staff-label">운영 조직</div>
+            <div class="ng-staff-grid">
+              <div class="ng-role"><span class="ng-role-name">교장</span><b>손병민</b><small>담임목사</small></div>
+              <div class="ng-role"><span class="ng-role-name">지도</span><b>채애리</b><small>사모</small></div>
+              <div class="ng-role"><span class="ng-role-name">부장</span><b>신성호</b><small>집사</small></div>
+              <div class="ng-role"><span class="ng-role-name">총무</span><b>문선경</b><small>집사</small></div>
+              <div class="ng-role"><span class="ng-role-name">반주 및 협력</span><b>양유정</b><small>청년</small></div>
+            </div>
+          </div>
+          <div class="ng-line" aria-hidden="true"></div>
+          <div class="ng-depts">
+            <div class="ng-dept">
+              <h3>유치부</h3>
+              <p class="ng-who">황귀순 선생님</p>
+            </div>
+            <div class="ng-dept">
+              <h3>초등부</h3>
+              <p class="ng-who">장한주 선생님</p>
+            </div>
+            <div class="ng-dept">
+              <h3>중고등부</h3>
+              <p class="ng-who">문선경 선생님</p>
+            </div>
+            <div class="ng-dept">
+              <h3>청년대학부</h3>
+              <p class="ng-who">신성호 선생님</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section class="block block-mint ng-org-screen">
-    <div class="container">
-      <div class="ng-box">
-        <div class="ng-top">
-          <div class="ng-title">주일학교 조직</div>
-        </div>
-        <div class="ng-line" aria-hidden="true"></div>
-        <div class="ng-staff">
-          <div class="ng-staff-label">운영 조직</div>
-          <div class="ng-staff-grid">
-            <div class="ng-role"><span class="ng-role-name">교장</span><b>손병민</b><small>담임목사</small></div>
-            <div class="ng-role"><span class="ng-role-name">지도</span><b>채애리</b><small>사모</small></div>
-            <div class="ng-role"><span class="ng-role-name">부장</span><b>신성호</b><small>집사</small></div>
-            <div class="ng-role"><span class="ng-role-name">총무</span><b>문선경</b><small>집사</small></div>
-            <div class="ng-role"><span class="ng-role-name">반주 및 협력</span><b>양유정</b><small>청년</small></div>
-          </div>
-        </div>
-        <div class="ng-line" aria-hidden="true"></div>
-        <div class="ng-depts">
-          <div class="ng-dept">
-            <h3>유치부</h3>
-            <p class="ng-who">황귀순 선생님</p>
-          </div>
-          <div class="ng-dept">
-            <h3>초등부</h3>
-            <p class="ng-who">장한주 선생님</p>
-          </div>
-          <div class="ng-dept">
-            <h3>중고등부</h3>
-            <p class="ng-who">문선경 선생님</p>
-          </div>
-          <div class="ng-dept">
-            <h3>청년대학부</h3>
-            <p class="ng-who">신성호 선생님</p>
-          </div>
-        </div>
+      <!-- '배우고 성장합니다' 글 자리: 글이 오기 전까지 hidden 으로 숨김.
+           목사님이 글을 주시면 hidden 을 지우고, '준비 중' 문단 대신 <p> 문단으로 채운다 -->
+      <div class="ng-grow" hidden>
+        <span class="ng-grow-eyebrow">HOW WE GROW</span>
+        <h3>우리는 이렇게 배우고,<br />이렇게 성장합니다</h3>
+        <p class="ng-grow-wait">이 자리에 들어갈 글을 준비하고 있습니다.</p>
       </div>
     </div>
   </section>
@@ -230,6 +227,6 @@
   <script src="js/categories.js?v=20260730news2"></script>
   <script src="js/notices.js?v=20260929tidy2"></script>
   <script src="js/home-news.js?v=20260730cam2"></script>
-  <script src="js/story-scene.js?v=20260930c"></script>
+  <script src="js/story-scene.js?v=20260930stage"></script>
 </body>
 </html>
