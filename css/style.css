@@ -3368,3 +3368,26 @@ html:active-view-transition-type(slide-prev)::view-transition-new(root) { animat
   html.big-text.snap-page .page-hero[data-symbol] .ph-toc a { padding-top: 8px; padding-bottom: 7px; }
   html.big-text.snap-page .page-hero[data-symbol] .ph-toc { margin-top: 22px; }
 }
+
+/* ============================================================
+   이달의 찬양 — 오른쪽 '지나온 찬양' 목록(누르면 왼쪽에 그 달 영상·악보)
+   ============================================================ */
+.song-wrap.has-history { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 28px; max-width: 1000px; margin: 0 auto; align-items: start; }
+.song-wrap.has-history .song-box { width: 100%; margin: 0 auto; }
+.song-history { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px 16px 12px; box-shadow: 0 6px 20px rgba(26,58,47,.06); }
+.song-history h4 { font-family: "Noto Serif KR", serif; font-size: 1.1rem; color: var(--accent); margin: 0 4px 10px; }
+.song-history ul { list-style: none; margin: 0; padding: 0; }
+.song-history li + li { border-top: 1px solid var(--line); }
+.song-history button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 11px 8px; border-radius: 10px;
+  font: inherit; cursor: pointer; color: var(--ink); transition: background .2s ease; }
+.song-history button:hover { background: var(--paper-alt, #f3efe6); }
+.song-history button.is-on { background: #eef6f1; }
+.sh-month { display: block; font-size: .82rem; color: var(--accent-soft, #3a7d63); font-weight: 600; }
+.sh-month em { font-style: normal; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: #fff; font-size: .72rem; }
+.sh-title { display: block; margin-top: 2px; font-weight: 600; text-decoration: underline; text-decoration-color: rgba(26,58,47,.25); text-underline-offset: 3px; }
+.song-history button.is-on .sh-title { text-decoration: none; color: var(--accent); }
+.song-past { text-align: center; margin: 0 0 8px; font-size: .92rem; color: var(--ink-soft); }
+.song-back { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); font-weight: 700; text-decoration: underline; cursor: pointer; }
+@media (max-width: 900px) {
+  .song-wrap.has-history { grid-template-columns: 1fr; }
+}

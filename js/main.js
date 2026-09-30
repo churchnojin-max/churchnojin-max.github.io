@@ -482,19 +482,47 @@ if (sermonDeck) {
         wordBox.innerHTML = `<p class="qt-loading">아직 등록된 이달의 찬양이 없습니다.</p>`;
         return;
       }
-      const embed = ytEmbedHTML(song.youtube, song.loop);
-      const sheetsHtml = (song.sheets || []).map((s) => {
-        const isPdf = /\.pdf($|\?)/i.test(s.url || "");
-        return isPdf
-          ? `<iframe src="${escH(s.url)}" title="${escH(s.name || "악보")}" class="song-sheet-pdf"></iframe>`
-          : `<img src="${escH(s.url)}" alt="${escH(s.name || "악보")}" class="song-sheet-img" loading="lazy" />`;
-      }).join("");
-      wordBox.innerHTML = `
-        <div class="song-box">
-          ${song.title ? `<h3 class="song-title">${escH(song.title)}</h3>` : ""}
+      // 지나온 찬양: 저장된 달(목회행정 › 이달의 찬양에서 달마다 저장) 가운데 곡이 있는 달, 최근 달부터
+      const months = Object.keys((data && data.months) || {}).sort().reverse()
+        .filter((k) => { const s = data.months[k]; return s && (s.youtube || (s.sheets && s.sheets.length)); });
+      const nowKey = months.find((k) => data.months[k] === song) || months[0];
+      const ymLabel = (k) => { const m = k.match(/^(\d{4})-(\d{2})$/); return m ? `${m[1]}년 ${+m[2]}월` : k; };
+      const songHTML = (s, k) => {
+        const embed = ytEmbedHTML(s.youtube, s.loop);
+        const sheetsHtml = (s.sheets || []).map((x) => {
+          const isPdf = /\.pdf($|\?)/i.test(x.url || "");
+          return isPdf
+            ? `<iframe src="${escH(x.url)}" title="${escH(x.name || "악보")}" class="song-sheet-pdf"></iframe>`
+            : `<img src="${escH(x.url)}" alt="${escH(x.name || "악보")}" class="song-sheet-img" loading="lazy" />`;
+        }).join("");
+        return `
+          ${k !== nowKey ? `<p class="song-past">${escH(ymLabel(k))}의 찬양 · <button type="button" class="song-back" data-song="${nowKey}">이달의 찬양으로 ↩</button></p>` : ""}
+          ${s.title ? `<h3 class="song-title">${escH(s.title)}</h3>` : ""}
           ${embed || `<p class="qt-loading">아직 유튜브 영상이 등록되지 않았습니다.</p>`}
-          ${sheetsHtml ? `<div class="song-sheets">${sheetsHtml}</div>` : ""}
-        </div>`;
+          ${sheetsHtml ? `<div class="song-sheets">${sheetsHtml}</div>` : ""}`;
+      };
+      const listHTML = months.length > 1 ? `
+        <aside class="song-history" aria-label="지나온 찬양">
+          <h4>지나온 찬양</h4>
+          <ul>${months.map((k) => `<li><button type="button" data-song="${k}"${k === nowKey ? ' class="is-on"' : ""}>
+            <span class="sh-month">${escH(ymLabel(k))}${k === nowKey ? ` <em>${k === curYM() ? "이달" : "최근"}</em>` : ""}</span>
+            <span class="sh-title">${escH(data.months[k].title || "제목 없음")}</span></button></li>`).join("")}</ul>
+        </aside>` : "";
+      wordBox.innerHTML = `<div class="song-wrap${listHTML ? " has-history" : ""}"><div class="song-box" id="songMain"></div>${listHTML}</div>`;
+      const main = wordBox.querySelector("#songMain");
+      const show = (k, scroll) => {
+        if (!data.months[k]) k = nowKey;
+        main.innerHTML = songHTML(data.months[k], k);
+        wordBox.querySelectorAll(".song-history [data-song]").forEach((b) => b.classList.toggle("is-on", b.dataset.song === k));
+        if (scroll && window.innerWidth < 900) main.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+      // 주소에 ?song=2026-08 이 있으면 그 달 곡으로 바로
+      const want = new URLSearchParams(location.search).get("song");
+      show(want && data.months[want] ? want : nowKey);
+      wordBox.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-song]");
+        if (b) show(b.dataset.song, true);
+      });
     }
   }).catch(() => {
     if (wordBox) wordBox.innerHTML = `<p class="qt-loading">이달의 찬양을 불러오지 못했습니다.</p>`;
