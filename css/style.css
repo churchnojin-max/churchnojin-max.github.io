@@ -3189,13 +3189,14 @@ html.big-text .block-head .ph-denom.is-light p { font-size: 18.4px; }
 @media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
   html.snap-page .page-hero.has-side {
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr); column-gap: 56px;
-    grid-template-rows: 1fr auto auto auto auto 1fr; align-items: start; text-align: left;
+    grid-template-rows: 1fr auto auto auto auto auto 1fr; align-items: start; text-align: left;
     padding-left: max(40px, calc((100% - 1280px) / 2)); padding-right: max(40px, calc((100% - 1280px) / 2));
   }
-  html.snap-page .page-hero.has-side > .ph-eyebrow { grid-column: 1; grid-row: 2; }
-  html.snap-page .page-hero.has-side > h1 { grid-column: 1; grid-row: 3; }
-  html.snap-page .page-hero.has-side > p { grid-column: 1; grid-row: 4; margin: 0; }
-  html.snap-page .page-hero.has-side > .ph-toc { grid-column: 1; grid-row: 5; margin-left: 0; }
+  html.snap-page .page-hero.has-side > .ph-symbol { grid-column: 1; grid-row: 2; justify-self: start; margin-left: 0; }
+  html.snap-page .page-hero.has-side > .ph-eyebrow { grid-column: 1; grid-row: 3; }
+  html.snap-page .page-hero.has-side > h1 { grid-column: 1; grid-row: 4; }
+  html.snap-page .page-hero.has-side > p { grid-column: 1; grid-row: 5; margin: 0; }
+  html.snap-page .page-hero.has-side > .ph-toc { grid-column: 1; grid-row: 6; margin-left: 0; }
   html.snap-page .page-hero.has-side > .ph-video { grid-column: 2; grid-row: 1 / -1; align-self: center; width: 100%; margin: 0; }
 }
 @media (min-width: 1025px) and (hover: hover) and (pointer: fine) and (max-height: 720px) {
@@ -3335,4 +3336,35 @@ html:active-view-transition-type(slide-prev)::view-transition-new(root) { animat
   .hbb-card:has(.hbb-news) .hbb-actions { grid-column: 2; grid-row: 2; border-top: 0; background: var(--accent); padding: 4px 24px 24px; justify-content: flex-start; }
   .hbb-card:has(.hbb-news) .hbb-actions .btn-solid { background: var(--gold-logo); border-color: var(--gold-logo); color: var(--accent); }
   .hbb-card:has(.hbb-news) .hbb-actions .btn-line { border-color: rgba(255,255,255,.6); color: #fff; }
+}
+
+/* ============================================================
+   메뉴 표지의 심벌 한 획(js/ph-symbol.js) — 전체는 흐리게, 그 메뉴의 획만 금색으로 그려진다
+   ============================================================ */
+.ph-symbol { display: inline-flex; align-items: center; gap: 12px; margin: 0 auto 16px; padding: 5px 20px 5px 6px; border-radius: 999px;
+  border: 1px solid rgba(191,160,108,.4); background: rgba(246,244,235,.05); color: var(--cream, #F6F4EB); text-decoration: none;
+  transition: background .25s ease, border-color .25s ease; }
+.ph-symbol:hover { background: rgba(246,244,235,.12); border-color: rgba(191,160,108,.8); }
+.ph-symbol svg { width: clamp(46px, 7.5vh, 64px); height: clamp(46px, 7.5vh, 64px); flex: 0 0 auto; }
+.phs-base path { stroke: rgba(246,244,235,.28); fill: none; }
+.phs-base path:not(:first-child) { stroke: none; fill: rgba(246,244,235,.28); }
+.phs-fill path { fill: #BFA06C; opacity: 0; animation: phsFill .9s ease 1.3s forwards; }
+.phs-draw { stroke: #BFA06C; stroke-dasharray: 1; stroke-dashoffset: 1; animation: phsDraw 1.6s cubic-bezier(.45,0,.25,1) .55s forwards; }
+@keyframes phsDraw { to { stroke-dashoffset: 0; } }
+@keyframes phsFill { to { opacity: 1; } }
+.phs-text { font-size: 1rem; font-weight: 500; letter-spacing: .02em; white-space: nowrap; }
+.phs-text b { display: inline-block; margin-right: 10px; font-family: "Cormorant Garamond", serif; font-size: 1.45rem; font-weight: 600;
+  color: #BFA06C; line-height: 1; vertical-align: -2px; }
+.phs-text b.is-line { width: 22px; height: 3px; border-radius: 2px; background: #BFA06C; vertical-align: middle; }
+@media (max-width: 600px) {
+  .ph-symbol { margin-bottom: 12px; padding-right: 16px; max-width: 100%; }
+  .phs-text { font-size: .92rem; white-space: normal; text-align: left; }
+}
+/* 세로가 짧은 노트북 화면: 심벌이 있는 표지는 영어 작은 제목을 빼고 배지·차례를 촘촘하게(한 화면 안에) */
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) and (max-height: 720px) {
+  html.snap-page .page-hero[data-symbol] > .ph-eyebrow { display: none; }
+  html.snap-page .page-hero[data-symbol] > .ph-symbol { margin-bottom: 6px; }
+  html.snap-page .page-hero[data-symbol] .ph-symbol svg { width: 42px; height: 42px; }
+  html.big-text.snap-page .page-hero[data-symbol] .ph-toc a { padding-top: 8px; padding-bottom: 7px; }
+  html.big-text.snap-page .page-hero[data-symbol] .ph-toc { margin-top: 22px; }
 }
