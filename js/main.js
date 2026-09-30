@@ -1023,14 +1023,87 @@ const bulletinMonth = document.getElementById("bulletinMonth");
 const bulletinSearch = document.getElementById("bulletinSearch");
 const bulletinEmpty = document.getElementById("bulletinEmpty");
 
+// 월 목록: 실제 게시된 주보(SB_BULLETINS, bdate) + 예전 방식 주보(BULLETINS)에서 만든다. 고르던 달은 유지.
 function buildMonthOptions() {
   const months = [];
-  BULLETINS.forEach((b) => {
-    if (!months.find((m) => m.value === b.month)) months.push({ value: b.month, label: b.monthLabel });
+  const add = (value, label) => { if (value && !months.find((m) => m.value === value)) months.push({ value, label }); };
+  (typeof SB_BULLETINS !== "undefined" ? SB_BULLETINS : []).forEach((b) => {
+    const m = String(b.bdate || "").match(/^(\d{4})-(\d{2})/);
+    if (m) add(`${m[1]}-${m[2]}`, `${m[1]}년 ${+m[2]}월`);
   });
+  BULLETINS.forEach((b) => add(b.month, b.monthLabel));
+  months.sort((a, b) => b.value.localeCompare(a.value));
+  const cur = bulletinMonth.value || "all";
   bulletinMonth.innerHTML =
     `<option value="all">전체 보기</option>` +
     months.map((m) => `<option value="${m.value}">${m.label}</option>`).join("");
+  bulletinMonth.value = months.find((m) => m.value === cur) ? cur : "all";
+}
+
+// ----- 주보 검색: 날짜('8월 9일'·'8/9'·'2026.8.9'·'8월'·'9일'), 주차('8월 둘째 주'), 제목, 본문('창 15'·'창세기 12장')을 모두 알아듣는다 -----
+const BIBLE_ABBR = [["창세기","창"],["출애굽기","출"],["레위기","레"],["민수기","민"],["신명기","신"],["여호수아","수"],["사사기","삿"],["룻기","룻"],
+  ["사무엘상","삼상"],["사무엘하","삼하"],["열왕기상","왕상"],["열왕기하","왕하"],["역대상","대상"],["역대하","대하"],["에스라","스"],["느헤미야","느"],
+  ["에스더","에"],["욥기","욥"],["시편","시"],["잠언","잠"],["전도서","전"],["아가","아"],["이사야","사"],["예레미야애가","애"],["예레미야","렘"],
+  ["에스겔","겔"],["다니엘","단"],["호세아","호"],["요엘","욜"],["아모스","암"],["오바댜","옵"],["요나","욘"],["미가","미"],["나훔","나"],["하박국","합"],
+  ["스바냐","습"],["학개","학"],["스가랴","슥"],["말라기","말"],["마태복음","마"],["마가복음","막"],["누가복음","눅"],["요한복음","요"],["사도행전","행"],
+  ["로마서","롬"],["고린도전서","고전"],["고린도후서","고후"],["갈라디아서","갈"],["에베소서","엡"],["빌립보서","빌"],["골로새서","골"],
+  ["데살로니가전서","살전"],["데살로니가후서","살후"],["디모데전서","딤전"],["디모데후서","딤후"],["디도서","딛"],["빌레몬서","몬"],["히브리서","히"],
+  ["야고보서","약"],["베드로전서","벧전"],["베드로후서","벧후"],["요한일서","요일"],["요한이서","요이"],["요한삼서","요삼"],["유다서","유"],["요한계시록","계"]];
+const BIBLE_RE = new RegExp("(" + BIBLE_ABBR.map((b) => b[0]).sort((a, b) => b.length - a.length).join("|") + ")(?=\\s*\\d)", "g");
+const BIBLE_MAP = Object.fromEntries(BIBLE_ABBR);
+// 글자 비교용으로 고르게 만든다: 띄어쓰기 없애기, 성경 이름은 줄임말로, '15장 1~6절' → '15:1-6'
+function normText(s) {
+  return String(s || "").toLowerCase()
+    .replace(BIBLE_RE, (m) => BIBLE_MAP[m])
+    .replace(/(\d)\s*장\s*/g, "$1:").replace(/(\d)\s*절/g, "$1")
+    .replace(/[~～–—]/g, "-").replace(/\s+/g, "");
+}
+// 검색어에서 날짜 조건을 떼어 낸다 → { y, m, d, rest }
+function parseBulletinQuery(q) {
+  let s = " " + q + " ", y = null, m = null, d = null;
+  const take = (re, fn) => { const r = s.match(re); if (r) { fn(r); s = s.replace(r[0], " "); return true; } return false; };
+  take(/(\d{4})\s*[년.\-\/]\s*(\d{1,2})\s*[월.\-\/]\s*(\d{1,2})\s*일?/, (r) => { y = +r[1]; m = +r[2]; d = +r[3]; }) ||
+  take(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/, (r) => { m = +r[1]; d = +r[2]; }) ||
+  take(/(^|[^\d:])(\d{1,2})\s*[\/.]\s*(\d{1,2})(?![\d:])/, (r) => { m = +r[2]; d = +r[3]; });
+  if (y === null) take(/(\d{4})\s*년?(?!\s*[.\-\/]?\s*\d)/, (r) => { y = +r[1]; });
+  if (m === null) take(/(\d{1,2})\s*월(?!\s*\d)/, (r) => { m = +r[1]; });
+  if (d === null) take(/(^|\s)(\d{1,2})\s*일(?![가-힣])/, (r) => { d = +r[2]; });
+  return { y, m, d, rest: s.trim() };
+}
+
+function bulletinMatches(b, month, q) {
+  const bd = String(b.bdate || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (month !== "all" && (!bd || `${bd[1]}-${bd[2]}` !== month)) return false;
+  if (!q) return true;
+  const p = parseBulletinQuery(q);
+  if (bd) {
+    if (p.y !== null && +bd[1] !== p.y) return false;
+    if (p.m !== null && +bd[2] !== p.m) return false;
+    if (p.d !== null && +bd[3] !== p.d) return false;
+  } else if (p.y !== null || p.m !== null || p.d !== null) return false;
+  if (!p.rest) return true;
+  const d = b.data || {};
+  // 성경 본문으로 찾기('창 15', '창세기 12장', '창세기 13장 7절'): 같은 책·장이고, 절을 적었으면 본문 범위 안에 들 때
+  const nq = normText(p.rest);
+  const qr = nq.match(BIBLE_REF_Q);
+  if (qr) {
+    const v = qr[3] ? +qr[3] : null;
+    return bibleRefs(normText(b.scripture)).some((r) => r.book === qr[1] && r.ch === +qr[2] && (v === null || r.v1 === null || (v >= r.v1 && v <= r.v2)));
+  }
+  const raw = `${b.title || ""} ${b.scripture || ""} ${d.week || ""} ${b.preacher || ""} ${d.headline || ""}`;
+  const hay = normText(raw) + "|" + raw.toLowerCase().replace(/\s+/g, "");   // 줄임말로 바꾼 것 + 원래 글자(‘창세기’만 쳐도 찾게)
+  if (hay.includes(nq)) return true;
+  // 여러 낱말이면(숫자 없는 낱말끼리) 모두 들어 있을 때
+  const words = p.rest.split(/\s+/).filter(Boolean);
+  return words.length > 1 && !/\d/.test(p.rest) && words.every((w) => hay.includes(normText(w)));
+}
+const BIBLE_ABBR_ALT = BIBLE_ABBR.map((b) => b[1]).sort((a, b) => b.length - a.length).join("|");
+const BIBLE_REF_Q = new RegExp("^(" + BIBLE_ABBR_ALT + ")(\\d+):?(?:(\\d+)(?:-\\d+)?)?$");
+function bibleRefs(s) {
+  const out = [], re = new RegExp("(" + BIBLE_ABBR_ALT + ")(\\d+)(?::(\\d+)(?:-(\\d+))?)?", "g");
+  let m;
+  while ((m = re.exec(s))) out.push({ book: m[1], ch: +m[2], v1: m[3] ? +m[3] : null, v2: m[4] ? +m[4] : (m[3] ? +m[3] : null) });
+  return out;
 }
 
 function bulletinCardHTML(b, idx) {
@@ -1061,12 +1134,9 @@ function sbBulletinCardHTML(b, i) {
 }
 
 function renderBulletins() {
-  const month = bulletinMonth.value;
+  const month = bulletinMonth.value || "all";
   const q = bulletinSearch.value.trim().toLowerCase();
-  const sbItems = SB_BULLETINS.map((b, i) => ({ b, i })).filter(({ b }) => {
-    const text = `${b.title || ""} ${b.scripture || ""} ${String(b.bdate || "")} ${(b.data && b.data.week) || ""}`.toLowerCase();
-    return !q || text.includes(q);
-  });
+  const sbItems = SB_BULLETINS.map((b, i) => ({ b, i })).filter(({ b }) => bulletinMatches(b, month, q));
   const items = BULLETINS.map((b, i) => ({ b, i })).filter(({ b }) => {
     const monthOk = month === "all" || b.month === month;
     const text = `${b.title} ${b.scripture} ${b.dateLabel} ${b.week} ${b.preacher}`.toLowerCase();
@@ -1081,10 +1151,10 @@ function renderBulletins() {
 
 function loadSBBulletins() {
   if (!bulletinList || !(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) return;
-  const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=*&order=bdate.desc&limit=60";
+  const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=*&order=bdate.desc&limit=400";
   fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + window.SUPABASE_ANON_KEY } })
     .then((r) => (r.ok ? r.json() : []))
-    .then((rows) => { SB_BULLETINS = rows || []; if (SB_BULLETINS.length) renderBulletins(); })
+    .then((rows) => { SB_BULLETINS = rows || []; if (SB_BULLETINS.length) { buildMonthOptions(); renderBulletins(); } })
     .catch(() => {});
 }
 
