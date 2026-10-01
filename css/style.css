@@ -3587,8 +3587,12 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
 @keyframes spGlow { from { opacity: .6; } to { opacity: 1; } }
 @keyframes spRays { from { transform: rotate(-3deg); opacity: .35; } to { transform: rotate(3deg); opacity: .7; } }
 @media (min-width: 1025px) {
-  /* 글은 화면 가운데 쪽으로 당겨서(글 묶음 가운데가 화면 왼쪽에서 36% 자리), 그림은 오른쪽 */
-  html .page-hero.ph-spire-hero, html.snap-page .page-hero.ph-spire-hero { padding-left: 9vw; padding-right: 37vw; }
+  /* 글과 그림을 화면 가운데를 사이에 두고 붙여 둔다 — 그림 크기는 화면 높이를 따르므로 거리도 높이(vh)로 잡아서
+     넓은 모니터에서도 1366×768 화면과 같은 간격으로 보인다. 글 묶음 가운데 = 가운데-25vh, 종탑 = 가운데+43vh */
+  html .page-hero.ph-spire-hero, html.snap-page .page-hero.ph-spire-hero {
+    padding-left: 3vw; padding-right: calc(3vw + 2 * min(25vh, 22vw)); }
+  .ph-spire { right: auto; left: calc(50% + min(43vh, 36vw)); width: auto; aspect-ratio: 900 / 1110; transform: translateX(-50%);
+    -webkit-mask-image: none; mask-image: none; }
   html.snap-page .page-hero.ph-spire-hero .ph-toc { width: min(560px, 100%) !important; column-gap: 24px; }
 }
 @media (max-width: 1024px) {
