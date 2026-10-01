@@ -3546,3 +3546,42 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
   html.snap-page .hbb-order li { padding: 4px 0; font-size: .92rem; }
   html.snap-page .hbb-top { margin-bottom: 12px; }
 }
+
+/* ===== 2026-10-01 오후: 표지 그림 자리 ===== */
+/* 우리 이야기 표지: 연필 그림을 왼쪽으로(오른쪽에 두니 기울어 보인다는 말씀) */
+.page-hero.ph-sketch::before {
+  background-position: left 6% top 30%;
+  -webkit-mask-image: linear-gradient(to right, #000 20%, rgba(0,0,0,.55) 45%, transparent 72%);
+          mask-image: linear-gradient(to right, #000 20%, rgba(0,0,0,.55) 45%, transparent 72%);
+}
+@media (max-width: 760px) {
+  .page-hero.ph-sketch::before {
+    background-position: center top 40%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 95%);
+            mask-image: linear-gradient(to bottom, #000 30%, transparent 95%);
+  }
+}
+/* 교회 안내 표지: 파란 하늘과 종탑 사진(images/church-spire-sky.jpg)을 오른쪽에, 글은 왼쪽 */
+.page-hero.ph-photo { overflow: hidden; isolation: isolate; }
+.page-hero.ph-photo::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: url("../images/church-spire-sky.jpg") no-repeat center 35% / cover;
+}
+.page-hero.ph-photo::after {     /* 글이 잘 읽히게 초록 막 */
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(16,36,29,.55) 0%, rgba(16,36,29,.72) 100%);
+}
+@media (min-width: 1025px) {
+  .page-hero.ph-photo::before {
+    left: 46%;
+    background-position: 30% 40%;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22%);
+            mask-image: linear-gradient(to right, transparent 0%, #000 22%);
+  }
+  .page-hero.ph-photo::after {
+    background: linear-gradient(90deg, rgba(16,36,29,0) 40%, rgba(16,36,29,.12) 70%, rgba(16,36,29,.28) 100%);
+  }
+  /* 글은 사진이 없는 왼쪽 자리 가운데에 */
+  html .page-hero.ph-photo, html.snap-page .page-hero.ph-photo { padding-left: 4vw; padding-right: 50vw; }
+  html.snap-page .page-hero.ph-photo .ph-toc { width: min(560px, 100%) !important; column-gap: 24px; }
+}
