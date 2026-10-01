@@ -3585,3 +3585,15 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
   html .page-hero.ph-photo, html.snap-page .page-hero.ph-photo { padding-left: 4vw; padding-right: 50vw; }
   html.snap-page .page-hero.ph-photo .ph-toc { width: min(560px, 100%) !important; column-gap: 24px; }
 }
+/* 교회 안내 표지: 종탑 사진 대신 연필 그림(images/spire-sketch.png)으로 — 우리 이야기 표지와 같은 느낌 */
+.page-hero.ph-photo::before { background-image: url("../images/spire-sketch.png"); opacity: .3; }
+.page-hero.ph-photo::after { display: none; }
+@media (max-width: 1024px) {
+  .page-hero.ph-photo::before { background-position: 55% 40%; opacity: .18;
+    -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%); mask-image: linear-gradient(to bottom, #000 40%, transparent 100%); }
+}
+@media (min-width: 1025px) {
+  .page-hero.ph-photo::before { left: 44%; background-position: 32% 40%; background-size: cover; opacity: .36;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 25%, #000 85%, rgba(0,0,0,.6) 100%);
+            mask-image: linear-gradient(to right, transparent 0%, #000 25%, #000 85%, rgba(0,0,0,.6) 100%); }
+}
