@@ -3589,11 +3589,11 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
 .page-hero.ph-photo::before { background-image: url("../images/spire-sketch.png"); opacity: .3; }
 .page-hero.ph-photo::after { display: none; }
 @media (max-width: 1024px) {
-  .page-hero.ph-photo::before { background-position: 55% 40%; opacity: .18;
+  .page-hero.ph-photo::before { background-position: 55% 40%; opacity: .26;
     -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%); mask-image: linear-gradient(to bottom, #000 40%, transparent 100%); }
 }
 @media (min-width: 1025px) {
-  .page-hero.ph-photo::before { left: 44%; background-position: 32% 40%; background-size: cover; opacity: .36;
+  .page-hero.ph-photo::before { left: 44%; background-position: 32% 40%; background-size: cover; opacity: .55;
     -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 25%, #000 85%, rgba(0,0,0,.6) 100%);
             mask-image: linear-gradient(to right, transparent 0%, #000 25%, #000 85%, rgba(0,0,0,.6) 100%); }
 }
