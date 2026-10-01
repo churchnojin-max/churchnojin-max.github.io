@@ -3561,39 +3561,36 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
             mask-image: linear-gradient(to bottom, #000 30%, transparent 95%);
   }
 }
-/* 교회 안내 표지: 파란 하늘과 종탑 사진(images/church-spire-sky.jpg)을 오른쪽에, 글은 왼쪽 */
-.page-hero.ph-photo { overflow: hidden; isolation: isolate; }
-.page-hero.ph-photo::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: url("../images/church-spire-sky-hd.jpg") no-repeat center 35% / cover;
-}
-.page-hero.ph-photo::after {     /* 글이 잘 읽히게 초록 막 */
-  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(180deg, rgba(16,36,29,.55) 0%, rgba(16,36,29,.72) 100%);
-}
+/* 교회 안내 표지: 종탑·십자가·'노진교회'를 연필로 스케치한 그림(js/spire-sketch.js 가 svg.ph-spire 로 그려 넣음)
+   — 사진이 아니라 선으로 그려서 화면을 키워도 깨지지 않는다. 글은 왼쪽, 그림은 오른쪽. */
+.page-hero.ph-spire-hero { overflow: hidden; isolation: isolate; }
+.ph-spire { position: absolute; z-index: -1; pointer-events: none; right: 0; bottom: 0;
+  width: 52vw; height: calc(100% - var(--hdr) - 4px); overflow: visible;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 18%); mask-image: linear-gradient(to right, transparent 0%, #000 18%); }
+.ph-spire .sp-drift { animation: spDrift var(--d, 24s) ease-in-out infinite alternate; animation-delay: var(--dl, 0s); }
+.ph-spire .sp-glow { animation: spGlow 5s ease-in-out infinite alternate; }
+.ph-spire .sp-rays { opacity: .6; transform-box: view-box; transform-origin: 450px 119px; animation: spRays 16s ease-in-out infinite alternate; }
+/* 연필 스케치(js/spire-sketch.js 가 그림): 크림색 연필 선, 처음 볼 때 그려 나가는 모습 */
+.ph-spire .sk { fill: none; stroke: #F6F4EB; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 2; }
+.ph-spire.is-drawing .sk { animation: skDraw var(--u, .4s) ease-out var(--t, 0s) both; }
+.ph-spire.is-drawing .sk-fade { animation: skFade .9s ease var(--t, 0s) both; }
+.ph-spire .sk-crossfill { fill: #F6F4EB; opacity: .5; }
+.ph-spire .sk-letter { font-family: "Gowun Batang", serif; font-weight: 700; fill: #F6F4EB; text-anchor: middle; dominant-baseline: central; }
+.ph-spire .sk-letter-o { font-family: "Gowun Batang", serif; font-weight: 700; fill: none; stroke: #F6F4EB; stroke-opacity: .35; stroke-width: 1px; text-anchor: middle; dominant-baseline: central; }
+.ph-spire .sk-glow { animation: spGlow 5s ease-in-out infinite alternate; }
+.ph-spire.is-drawing .sk-glow { animation: skFade 1.2s ease 2.6s both, spGlow 5s ease-in-out 3.8s infinite alternate; }
+.ph-spire .sk-star { animation: spTw 3.4s ease-in-out infinite alternate; animation-delay: var(--dl, 0s); }
+@keyframes skDraw { from { stroke-dashoffset: 1.001; } to { stroke-dashoffset: 0; } }
+@keyframes skFade { from { opacity: 0; } }
+@keyframes spTw { from { opacity: .25; } to { opacity: .9; } }
+@keyframes spDrift { from { transform: translateX(-16px); } to { transform: translateX(16px); } }
+@keyframes spGlow { from { opacity: .6; } to { opacity: 1; } }
+@keyframes spRays { from { transform: rotate(-3deg); opacity: .35; } to { transform: rotate(3deg); opacity: .7; } }
 @media (min-width: 1025px) {
-  .page-hero.ph-photo::before {
-    left: 46%;
-    background-position: 30% 40%;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22%);
-            mask-image: linear-gradient(to right, transparent 0%, #000 22%);
-  }
-  .page-hero.ph-photo::after {
-    background: linear-gradient(90deg, rgba(16,36,29,0) 40%, rgba(16,36,29,.12) 70%, rgba(16,36,29,.28) 100%);
-  }
-  /* 글은 사진이 없는 왼쪽 자리 가운데에 */
-  html .page-hero.ph-photo, html.snap-page .page-hero.ph-photo { padding-left: 4vw; padding-right: 50vw; }
-  html.snap-page .page-hero.ph-photo .ph-toc { width: min(560px, 100%) !important; column-gap: 24px; }
+  /* 글은 그림이 없는 왼쪽 자리 가운데에 */
+  html .page-hero.ph-spire-hero, html.snap-page .page-hero.ph-spire-hero { padding-left: 4vw; padding-right: 50vw; }
+  html.snap-page .page-hero.ph-spire-hero .ph-toc { width: min(560px, 100%) !important; column-gap: 24px; }
 }
-/* 교회 안내 표지: 종탑 사진 대신 연필 그림(images/spire-sketch.png)으로 — 우리 이야기 표지와 같은 느낌 */
-.page-hero.ph-photo::before { background-image: url("../images/spire-sketch.png"); opacity: .3; }
-.page-hero.ph-photo::after { display: none; }
 @media (max-width: 1024px) {
-  .page-hero.ph-photo::before { background-position: 55% 40%; opacity: .26;
-    -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%); mask-image: linear-gradient(to bottom, #000 40%, transparent 100%); }
-}
-@media (min-width: 1025px) {
-  .page-hero.ph-photo::before { left: 44%; background-position: 32% 40%; background-size: cover; opacity: .55;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 25%, #000 85%, rgba(0,0,0,.6) 100%);
-            mask-image: linear-gradient(to right, transparent 0%, #000 25%, #000 85%, rgba(0,0,0,.6) 100%); }
+  .ph-spire { right: -30vw; width: 86vw; height: calc(100% - var(--hdr) - 10px); opacity: .32; -webkit-mask-image: none; mask-image: none; }
 }
