@@ -166,7 +166,13 @@
   // 로그인한 뒤 한 번씩 챙기는 일
   //  ① QR 코드로 들어와 가입했으면 '교회 QR 가입' 표시를 계정에 남긴다(담당자 승인 목록에 보임)
   //  ② 카카오로 가입하면 이름 자리에 카카오 별명이 들어가므로, 실명을 한 번 여쭤 저장한다
-  async function afterLogin(user) {
+  // 화면이 로그인 표시를 여러 번 새로 그려도 이 순서(QR 표시 → 성함 → 승인 안내)는 한 번만 차례대로
+  let afterLoginRun = null;
+  function afterLogin(user) {
+    if (!afterLoginRun) afterLoginRun = afterLoginOnce(user).catch(() => {});
+    return afterLoginRun;
+  }
+  async function afterLoginOnce(user) {
     const meta = user.user_metadata || {};
     const via = joinVia();
     if (via) { try { localStorage.removeItem(JOIN_KEY); } catch (_) {} }   // 먼저 지워서 여러 번 보내지 않게
@@ -176,9 +182,39 @@
     const provider = (user.app_metadata && user.app_metadata.provider) || "email";
     let asked = false;
     try { asked = !!sessionStorage.getItem("nojin_name_asked"); } catch (_) {}
-    if (provider !== "email" && !meta.real_name && !asked) askRealName(meta.name || meta.nickname || "");
+    if (provider !== "email" && !meta.real_name && !asked) await askRealName(meta.name || meta.nickname || "");
+    showPendingNotice(user);
   }
+
+  // ③ 아직 정회원 승인 전이면 안내 창을 (이 창을 닫을 때까지) 한 번 띄운다
+  let pendingChecked = false;
+  async function showPendingNotice(user) {
+    if (pendingChecked) return;
+    pendingChecked = true;
+    try { if (sessionStorage.getItem("nojin_pending_shown")) return; } catch (_) {}
+    try {
+      const { data } = await sb.from("member_links").select("member_status").eq("user_id", user.id).maybeSingle();
+      if (data && data.member_status === "정회원") return;
+      const perm = await sb.rpc("my_perms");                        // 운영진(관리자)은 안내하지 않음
+      if (perm && perm.data && perm.data.isAdmin) return;
+    } catch (_) { return; }                                          // 확인이 안 되면 띄우지 않음
+    try { sessionStorage.setItem("nojin_pending_shown", "1"); } catch (_) {}
+    const box = document.createElement("div");
+    box.className = "modal";
+    box.innerHTML = `<div class="modal-backdrop" data-ok></div>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-label="정회원 승인 대기 안내" style="max-width:460px;text-align:center">
+        <div style="font-size:2.4rem;line-height:1;margin-bottom:10px" aria-hidden="true">⏳</div>
+        <h3 style="font-family:'Noto Serif KR',serif;color:var(--accent);margin-bottom:10px">정회원 승인 대기 중입니다</h3>
+        <p style="color:var(--ink-soft);line-height:1.8;margin-bottom:6px">가입해 주셔서 감사합니다.<br /><b>운영진의 승인이 필요합니다.</b></p>
+        <p style="color:var(--ink-soft);line-height:1.8;font-size:.95rem;margin-bottom:18px">교인이심이 확인되면 주보·헌금 내역 등<br />교회 정보를 보실 수 있습니다.</p>
+        <button type="button" class="btn btn-solid" data-ok style="min-width:140px">확인</button>
+      </div>`;
+    document.body.appendChild(box);
+    box.querySelectorAll("[data-ok]").forEach((b) => { b.onclick = () => box.remove(); });
+  }
+
   function askRealName(nick) {
+    return new Promise((resolveName) => {
     try { sessionStorage.setItem("nojin_name_asked", "1"); } catch (_) {}
     const box = document.createElement("div");
     box.className = "modal";
@@ -200,7 +236,7 @@
     const input = box.querySelector("input");
     if (nick && /^[가-힣]{2,4}$/.test(nick)) input.value = nick;   // 카카오 이름이 한글 실명처럼 보이면 미리 채움
     setTimeout(() => input.focus(), 50);
-    const close = () => box.remove();
+    const close = () => { box.remove(); resolveName(); };
     box.querySelector("[data-later]").onclick = close;
     box.querySelector("#realNameForm").onsubmit = async (e) => {
       e.preventDefault();
@@ -215,6 +251,7 @@
         renderAuth();
       } catch (err) { m.hidden = false; m.textContent = "저장하지 못했습니다: " + ((err && err.message) || err); }
     };
+    });
   }
 
   // 저장된 이메일 미리 채우기
