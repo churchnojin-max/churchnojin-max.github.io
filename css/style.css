@@ -3565,7 +3565,7 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
 .page-hero.ph-photo { overflow: hidden; isolation: isolate; }
 .page-hero.ph-photo::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: url("../images/church-spire-sky.jpg") no-repeat center 35% / cover;
+  background: url("../images/church-spire-sky-hd.jpg") no-repeat center 35% / cover;
 }
 .page-hero.ph-photo::after {     /* 글이 잘 읽히게 초록 막 */
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
