@@ -3587,8 +3587,8 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
 @keyframes spGlow { from { opacity: .6; } to { opacity: 1; } }
 @keyframes spRays { from { transform: rotate(-3deg); opacity: .35; } to { transform: rotate(3deg); opacity: .7; } }
 @media (min-width: 1025px) {
-  /* 글은 그림이 없는 왼쪽 자리 가운데에 */
-  html .page-hero.ph-spire-hero, html.snap-page .page-hero.ph-spire-hero { padding-left: 4vw; padding-right: 50vw; }
+  /* 글은 화면 가운데 쪽으로 당겨서(글 묶음 가운데가 화면 왼쪽에서 36% 자리), 그림은 오른쪽 */
+  html .page-hero.ph-spire-hero, html.snap-page .page-hero.ph-spire-hero { padding-left: 9vw; padding-right: 37vw; }
   html.snap-page .page-hero.ph-spire-hero .ph-toc { width: min(560px, 100%) !important; column-gap: 24px; }
 }
 @media (max-width: 1024px) {
