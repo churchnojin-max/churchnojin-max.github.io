@@ -1,0 +1,32 @@
+# '예배와 말씀 > 매일 말씀 묵상'에 띄울 매일성경 오늘의 본문(data/daily-bible.json)을
+# 매일 한국 시간 새벽 0시 10분, 5시 10분에 새로 받는다.
+name: 매일성경 본문 갱신
+on:
+  schedule:
+    - cron: "10 15 * * *"
+    - cron: "10 20 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: daily-bible-update
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 매일성경 본문 받기
+        run: python tools/update_daily_bible.py
+      - name: 바뀐 것이 있으면 저장
+        run: |
+          if git diff --quiet -- data/daily-bible.json; then echo "바뀐 것 없음"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/daily-bible.json
+          git commit -m "매일성경 본문 자동 갱신"
+          git pull --rebase
+          git push

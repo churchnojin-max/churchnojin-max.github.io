@@ -125,35 +125,40 @@
       if (rb) rb.addEventListener("click", () => { rb.textContent = "불러오는 중…"; rb.disabled = true; _autoReloads = 0; load(); });
       return;
     }
-    slides = photos.slice(0, 10);
+    // 2026-10-01: 옆으로 넘기는 사진 대신 '날짜별 상자'로 — 같은 날 올린 사진을 한 상자에 묶는다.
+    stop();
+    const groups = [];
+    photos.forEach((p) => {
+      const key = fmtDate(p) || "날짜 없음";
+      let g = groups.find((x) => x.key === key);
+      if (!g) { g = { key, list: [] }; groups.push(g); }
+      g.list.push(p);
+    });
+    groups.sort((x, y) => (x.key < y.key ? 1 : -1));
+    slides = groups.slice(0, 4);
     if (!slides.length) {
       carEl.innerHTML = `<div class="hn-empty"><span>📷</span><p>아직 올라온 소식이 없어요.${currentUser() ? " 첫 사진을 올려보세요!" : " 로그인 후 올릴 수 있어요."}</p></div>`;
       return;
     }
-    carEl.innerHTML = `
-      <div class="hn-track">${slides.map((p, i) => `
-        <figure class="hn-slide${i === 0 ? " on" : ""}" data-idx="${i}">
-          <img src="${esc(p.url)}" alt="${esc(titleOf(p))}" loading="${i === 0 ? "eager" : "lazy"}" draggable="false" />
-          <figcaption class="hn-cap">
+    carEl.classList.add("hn-days");
+    carEl.innerHTML = slides.map((g, i) => {
+      const p = g.list[0];
+      const m = g.key.match(/^(\d{4})\.(\d{2})\.(\d{2})$/);
+      const dayLabel = m ? `${+m[2]}월 ${+m[3]}일` : g.key;
+      const cap = (p.caption && p.caption.trim() && p.caption.trim() !== titleOf(p)) ? p.caption.trim() : "";
+      return `
+        <button type="button" class="hn-day" data-g="${i}">
+          <span class="hn-day-img"><img src="${esc(p.url)}" alt="${esc(titleOf(p))}" loading="lazy" draggable="false" />
+            ${g.list.length > 1 ? `<em class="hn-day-count">사진 ${g.list.length}장</em>` : ""}</span>
+          <span class="hn-day-text">
+            <span class="hn-day-date">${esc(dayLabel)}${m ? ` <small>${m[1]}</small>` : ""}</span>
             <b>${esc(titleOf(p))}</b>
-            <span>${esc(fmtDate(p))}${p.category && titleOf(p) !== p.category ? " · " + esc(p.category) : ""}</span>
-          </figcaption>
-        </figure>`).join("")}</div>
-      <button type="button" class="hn-arrow hn-a-prev" aria-label="이전">‹</button>
-      <button type="button" class="hn-arrow hn-a-next" aria-label="다음">›</button>
-      <div class="hn-dots">${slides.map((_, i) => `<span class="hn-dot${i === 0 ? " on" : ""}" data-idx="${i}"></span>`).join("")}</div>`;
-    curSlide = 0;
-    carEl.querySelector(".hn-a-prev").addEventListener("click", (e) => { e.stopPropagation(); go(curSlide - 1); rearm(); });
-    carEl.querySelector(".hn-a-next").addEventListener("click", (e) => { e.stopPropagation(); go(curSlide + 1); rearm(); });
-    carEl.querySelectorAll(".hn-dot").forEach((d) => d.addEventListener("click", (e) => { e.stopPropagation(); go(Number(d.dataset.idx)); rearm(); }));
-    carEl.querySelectorAll(".hn-slide").forEach((s) => s.addEventListener("click", () => openViewer(slides, Number(s.dataset.idx))));
-    // 스와이프(모바일)
-    let sx = null;
-    carEl.addEventListener("touchstart", (e) => { sx = e.touches[0].clientX; }, { passive: true });
-    carEl.addEventListener("touchend", (e) => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 45) { go(curSlide + (dx < 0 ? 1 : -1)); rearm(); } sx = null; });
-    carEl.addEventListener("mouseenter", stop);
-    carEl.addEventListener("mouseleave", rearm);
-    rearm();
+            ${cap ? `<span class="hn-day-cap">${esc(cap)}</span>` : ""}
+            ${p.category && titleOf(p) !== p.category ? `<span class="hn-day-cat">${esc(p.category)}</span>` : ""}
+          </span>
+        </button>`;
+    }).join("");
+    carEl.querySelectorAll(".hn-day").forEach((el) => el.addEventListener("click", () => openViewer(slides[Number(el.dataset.g)].list, 0)));
   }
   function go(n) {
     if (!slides.length) return;

@@ -3410,3 +3410,139 @@ html.snap-page .eyebrow2, html.snap-page .section-head .eyebrow { display: none;
   html.logged-in .nav-menu > .nav-item > a { font-size: .8rem; }
 }
 html.snap-page .w-en { display: none; }
+
+/* ===== 아래에서 올라오는 말씀 창(main.js SlideSheet) — 2026-10-01 ===== */
+.ss-sheet { position: fixed; inset: 0; z-index: 460; display: flex; align-items: flex-end; justify-content: center; }
+.ss-sheet[hidden] { display: none; }
+.ss-sheet-back { position: absolute; inset: 0; background: rgba(10,22,17,.6); backdrop-filter: blur(3px); opacity: 0; transition: opacity .35s ease; }
+.ss-sheet-panel {
+  position: relative; z-index: 1; width: min(860px, 100%); max-height: 88vh; display: flex; flex-direction: column;
+  background: var(--paper); border-radius: 22px 22px 0 0; box-shadow: 0 -20px 60px rgba(0,0,0,.3);
+  transform: translateY(105%); transition: transform .36s cubic-bezier(.22,.8,.3,1); cursor: pointer;
+}
+.ss-sheet.is-open .ss-sheet-back { opacity: 1; }
+.ss-sheet.is-open .ss-sheet-panel { transform: translateY(0); }
+.ss-sheet-grip { width: 54px; height: 5px; border-radius: 3px; background: var(--line); margin: 10px auto 0; flex: 0 0 auto; }
+.ss-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 18px 8px 32px; flex: 0 0 auto; }
+.ss-sheet-title { font-family: "Gowun Batang", serif; font-size: 1.05rem; color: var(--gold); letter-spacing: .08em; }
+.ss-sheet-close { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--paper-alt); color: var(--ink-soft); font-size: 1.7rem; line-height: 1; cursor: pointer; }
+.ss-sheet-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 6px 44px 18px; }
+.ss-sheet-hint { flex: 0 0 auto; text-align: center; font-size: .82rem; color: var(--muted); padding: 10px 0 14px; border-top: 1px solid var(--line); margin: 0; }
+.sv-lines { margin: 22px 0 6px; padding: 20px 24px; background: var(--paper-alt); border-left: 3px solid var(--gold); border-radius: 0 12px 12px 0; }
+.sv-line { font-family: "Gowun Batang", serif; font-size: 1.12rem; line-height: 1.95; color: var(--ink); word-break: keep-all; margin: 0; }
+.sv-line + .sv-line { margin-top: 6px; }
+.sv-line sup { font-family: "Noto Sans KR", sans-serif; font-size: .72em; font-weight: 700; color: var(--gold); margin-right: 6px; vertical-align: .35em; }
+.ss-part { font-family: "Gowun Batang", serif; font-size: 1.25rem; color: var(--accent); margin: 30px 0 4px; padding-top: 22px; border-top: 1px dashed var(--line); }
+.ss-sub { font-size: 1.02rem; font-weight: 700; color: var(--accent); margin: 22px 0 8px; }
+.ws-body .ss-xref { font-weight: 700; color: var(--gold); margin: 14px 0 2px; font-size: .98rem; }
+.ws-body .ss-xref + p { margin-top: 0; }
+.ws-body .ss-q { padding: 12px 16px; background: var(--paper-alt); border-radius: 10px; margin-top: 10px; }
+.ws-quote-open { cursor: pointer; transition: background .2s ease, border-color .2s ease; border-radius: 0 10px 10px 0; }
+.ws-quote-open:hover, .ws-quote-open:focus-visible { background: var(--paper-alt); outline: none; }
+.ws-quote-more { display: block; margin-top: 10px; font-style: normal; font-family: "Noto Sans KR", sans-serif; font-size: .85rem; font-weight: 600; color: var(--gold); }
+@media (max-width: 640px) {
+  .ss-sheet-panel { max-height: 92vh; border-radius: 18px 18px 0 0; }
+  .ss-sheet-head { padding: 6px 12px 6px 20px; }
+  .ss-sheet-body { padding: 4px 20px 16px; }
+  .sv-lines { padding: 16px 16px; }
+  .sv-line { font-size: 1.05rem; }
+}
+/* 매일 말씀 묵상: 매일성경 오늘의 본문 카드 */
+.db-card .qt-card-title { margin-bottom: 6px; }
+.db-hymn { margin-top: 6px; font-size: .88rem; color: var(--gold); font-weight: 600; }
+.db-preview {
+  margin-top: 18px; font-family: "Gowun Batang", serif; font-size: 1.02rem; line-height: 1.85; color: var(--ink-soft);
+  text-align: left; word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.db-preview sup { font-size: .7em; color: var(--gold); font-weight: 700; margin: 0 3px 0 2px; }
+.qt-church-link {
+  display: block; width: 100%; margin-top: 14px; padding: 14px 20px; border-radius: 12px; cursor: pointer; font-family: inherit;
+  background: var(--paper-alt); border: 1px solid var(--line); color: var(--accent); font-size: .95rem; font-weight: 600; text-align: center; word-break: keep-all;
+}
+.qt-church-link:hover { background: #fff; border-color: var(--accent-soft); }
+.db-copy { margin-top: 14px; font-size: .78rem; color: var(--muted); }
+.db-links { margin-top: 6px; }
+/* 주보: 이번 달만 펼치고 지난 달은 글자 단추로 */
+.bulletin-months { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 26px; justify-content: center; }
+.bulletin-months:empty { display: none; }
+.bm-label { font-size: .9rem; font-weight: 700; color: var(--ink-soft); margin-right: 4px; }
+.bm-link { font-family: inherit; font-size: .92rem; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--accent); cursor: pointer; }
+.bm-link:hover { background: #fff; border-color: var(--accent-soft); }
+.bm-all { color: var(--ink-soft); }
+/* 우리 이야기 표지: 교회 연필 그림을 흐리게 깔기(images/church-sketch.png — 교회 사진을 연필 그림처럼 바꾼 것) */
+.page-hero.ph-sketch { overflow: hidden; isolation: isolate; }
+.page-hero.ph-sketch::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: url("../images/church-sketch.png") no-repeat right 7% top 30% / auto 118%;
+  opacity: .26;
+  -webkit-mask-image: linear-gradient(to left, #000 20%, rgba(0,0,0,.55) 45%, transparent 72%);
+          mask-image: linear-gradient(to left, #000 20%, rgba(0,0,0,.55) 45%, transparent 72%);
+}
+@media (max-width: 760px) {
+  .page-hero.ph-sketch::before {
+    background-position: center top 40%; background-size: auto 110%; opacity: .16;
+    -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 95%);
+            mask-image: linear-gradient(to bottom, #000 30%, transparent 95%);
+  }
+}
+/* 전도회 다섯 모임 */
+.block-mint .group-grid.group-grid-5 { grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.group-grid-5 .group-card { padding: 26px 20px; }
+.group-grid-5 .group-card p { font-weight: 400; word-break: keep-all; }
+@media (max-width: 1100px) { .block-mint .group-grid.group-grid-5 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px) { .block-mint .group-grid.group-grid-5 { grid-template-columns: repeat(2, 1fr); } }
+/* 우리들 소식: 날짜별 상자(js/home-news.js) */
+#album .hn-box { max-width: 1120px; }
+.hn-carousel.hn-days { aspect-ratio: auto; overflow: visible; background: none; box-shadow: none; border-radius: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.hn-day { display: flex; flex-direction: column; text-align: left; padding: 0; cursor: pointer; font-family: inherit;
+  background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; transition: transform .25s ease, box-shadow .25s ease; }
+.hn-day:hover { transform: translateY(-5px); box-shadow: 0 16px 36px rgba(26,58,47,.12); }
+.hn-day-img { position: relative; display: block; aspect-ratio: 4 / 3; background: var(--paper-alt); }
+.hn-day-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hn-day-count { position: absolute; right: 10px; bottom: 10px; font-style: normal; font-size: .8rem; font-weight: 700; color: #fff;
+  background: rgba(16,36,29,.72); padding: 4px 10px; border-radius: 999px; }
+.hn-day-text { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px 18px; }
+.hn-day-date { font-family: "Gowun Batang", serif; font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+.hn-day-date small { font-family: "Cormorant Garamond", serif; font-size: .85rem; color: var(--gold); font-weight: 600; margin-left: 4px; }
+.hn-day-text b { font-size: 1rem; color: var(--ink); word-break: keep-all; }
+.hn-day-cap { font-size: .88rem; color: var(--ink-soft); word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hn-day-cat { align-self: flex-start; margin-top: 4px; font-size: .75rem; font-weight: 700; color: var(--accent); background: var(--paper-alt); padding: 3px 10px; border-radius: 999px; }
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) { html.snap-page #album .hn-box { max-width: 1120px; } }
+@media (max-width: 1000px) { .hn-carousel.hn-days { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .hn-carousel.hn-days { gap: 12px; } .hn-day-text { padding: 12px 12px 14px; } .hn-day-date { font-size: 1.05rem; } }
+/* 새가족 등록 네 단계: 글자 키우고 교회 색(깊은 초록 #1A3A2F · 금색 #BFA06C)으로 */
+#newfamily .welcome-steps { gap: 18px; margin-top: 34px; }
+#newfamily .welcome-step { padding: 28px 22px 26px; border: 1px solid rgba(191,160,108,.45); border-top: 4px solid #BFA06C; border-radius: 14px; background: #fff; box-shadow: 0 6px 22px rgba(26,58,47,.06); }
+#newfamily .welcome-step .ws-num { display: inline-block; font-size: 1.6rem; font-weight: 600; color: #BFA06C; letter-spacing: .04em; }
+#newfamily .welcome-step h4 { font-family: "Gowun Batang", serif; font-size: 1.32rem; color: #1A3A2F; margin: 8px 0 10px; }
+#newfamily .welcome-step p { font-size: 1.05rem; line-height: 1.65; color: #2C5244; font-weight: 400; word-break: keep-all; }
+html.big-text #newfamily .welcome-step h4 { font-size: 1.45rem; }
+html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
+/* 이번 주 주보 요약: 예배 순서(두 줄 칸) */
+.hbb-order-title { margin: 18px 0 8px; font-family: "Gowun Batang", serif; font-weight: 700; color: var(--gold); font-size: 1rem; }
+.hbb-order { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 26px; grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 7), auto); }
+.hbb-order li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: .95rem; line-height: 1.45; min-width: 0; }
+.hbb-order li b { flex: 0 0 auto; min-width: 5.2em; color: var(--accent); font-weight: 700; }
+.hbb-order li span { color: var(--ink-soft); word-break: keep-all; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+@media (max-width: 760px) { .hbb-order { grid-template-columns: 1fr; grid-auto-flow: row; grid-template-rows: none; } .hbb-order li span { white-space: normal; } }
+.sv-lines .sv-line { margin: 0; }
+.sv-lines .sv-line + .sv-line { margin-top: 8px; }
+@media (min-width: 1025px) {
+  /* 주보: 한 달(4~5주)이 한 줄에 들어오게 */
+  #archive .bulletin-list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  #archive .bulletin-card { padding: 22px 20px 20px; }
+  #archive .bulletin-card h4 { font-size: 1.12rem; word-break: keep-all; }
+  html.snap-page #archive .bulletin-list { max-height: calc(100vh - var(--hdr) - 400px); }
+  html.snap-page #archive .bulletin-months { margin-top: 16px; }
+}
+.hn-day-img { overflow: hidden; }
+.hn-day-img img { position: absolute; inset: 0; }
+.hn-carousel.hn-days { align-items: start; }
+.page-hero.ph-sketch::before { opacity: .2; }
+@media (min-width: 1025px) {
+  html.snap-page .hbb-title { font-size: clamp(1.3rem, 2vw, 1.6rem); }
+  html.snap-page .hbb-order-title { margin-top: 12px; }
+  html.snap-page .hbb-order li { padding: 4px 0; font-size: .92rem; }
+  html.snap-page .hbb-top { margin-bottom: 12px; }
+}

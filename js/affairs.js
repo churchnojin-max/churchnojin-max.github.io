@@ -5829,7 +5829,7 @@ console.log('[affairs.js] v20260712memo2');
         var sums = [], news = [], ends = [];
         for (var i = 0; i < lines.length; i++) {
           var t = norm(lines[i]);
-          if (t === '말씀요약') sums.push(i);
+          if (t === '말씀요약' || t === '말씀자료') sums.push(i);
           else if (t === '교회소식') news.push(i);
           else if (t === '섬기는분') ends.push(i);
         }
@@ -5842,7 +5842,15 @@ console.log('[affairs.js] v20260712memo2');
         var out = {};
         if (iSum >= 0) {
           var sEnd = (iNews >= 0) ? iNews : (iEnd >= 0 ? iEnd : lines.length);
-          out.summary = lines.slice(iSum + 1, sEnd).join('\n').trim();
+          // '말씀 자료' 형식(제목·본문 줄 + [함께 읽을 말씀] + [함께 나누는 질문])도 그대로 받는다.
+          // 제목·본문 줄은 위 칸과 겹치니 빼고, 글상자에서 줄이 끊긴 곳(공백으로 시작하는 조각)은 앞줄에 잇는다.
+          var sLines = [];
+          lines.slice(iSum + 1, sEnd).forEach(function (l) {
+            if (/^\s*(제목|본문)\s*[:：]/.test(l)) return;
+            if (/^\s/.test(l) && sLines.length && !/^\s*(\d+\.|●|\[)/.test(l)) sLines[sLines.length - 1] += l;
+            else sLines.push(l.trim());
+          });
+          out.summary = sLines.join('\n').trim();
         }
         if (iNews >= 0) {
           out.notices = lines.slice(iNews + 1, iEnd >= 0 ? iEnd : lines.length).join('\n').trim();

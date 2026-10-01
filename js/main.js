@@ -348,13 +348,105 @@ if (sermonDeck) {
   }
 })();
 
-// ===== 1-2b. 이번 주 말씀 — 게시된 주보(bulletins_public)의 설교 요약을 그대로 표시 =====
+// ===== 1-2a. 아래에서 올라오는 말씀 창(SlideSheet) — 이번 주 말씀·매일성경 본문 전체 보기 =====
+//   상자를 누르면 앞으로 올라오듯 열리고, 창(글)을 한 번 누르거나·아래로 쓸어내리거나·바깥을 누르면
+//   다시 내려가듯 사라진다. 휴대폰 '뒤로 가기'로도 닫힌다.
+window.SlideSheet = (function () {
+  let wrap = null, panel = null, bodyEl = null, titleEl = null, isOpen = false;
+  function build() {
+    if (wrap) return;
+    document.body.insertAdjacentHTML("beforeend",
+      '<div class="ss-sheet" id="slideSheet" hidden>' +
+        '<div class="ss-sheet-back"></div>' +
+        '<div class="ss-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="slideSheetTitle">' +
+          '<div class="ss-sheet-grip" aria-hidden="true"></div>' +
+          '<div class="ss-sheet-head"><h3 class="ss-sheet-title" id="slideSheetTitle"></h3>' +
+          '<button type="button" class="ss-sheet-close" aria-label="닫기">&times;</button></div>' +
+          '<div class="ss-sheet-body" id="slideSheetBody"></div>' +
+          '<p class="ss-sheet-hint">글을 누르거나 아래로 내리면 닫힙니다</p>' +
+        '</div>' +
+      '</div>');
+    wrap = document.getElementById("slideSheet");
+    panel = wrap.querySelector(".ss-sheet-panel");
+    bodyEl = document.getElementById("slideSheetBody");
+    titleEl = document.getElementById("slideSheetTitle");
+    wrap.addEventListener("click", (e) => {
+      if (e.target.closest("a, input, select, textarea")) return;     // 링크는 그대로
+      const sel = window.getSelection && String(window.getSelection());
+      if (sel && sel.trim()) return;                                    // 글을 고르는 중이면 닫지 않음
+      close();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isOpen) close(); });
+    // 아래로 쓸어내리면 닫기(글이 맨 위일 때만)
+    let y0 = null, dy = 0;
+    panel.addEventListener("touchstart", (e) => { y0 = bodyEl.scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
+    panel.addEventListener("touchmove", (e) => {
+      if (y0 == null) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy > 0) panel.style.transform = `translateY(${dy}px)`;
+    }, { passive: true });
+    panel.addEventListener("touchend", () => {
+      if (y0 == null) return;
+      panel.style.transform = "";
+      if (dy > 90) close();
+      y0 = null;
+    });
+  }
+  function hideDom() {
+    if (!isOpen) return;
+    isOpen = false;
+    wrap.classList.remove("is-open");
+    document.documentElement.classList.remove("pop-open");
+    setTimeout(() => { if (!isOpen) wrap.hidden = true; }, 360);
+  }
+  function open(title, html) {
+    build();
+    titleEl.textContent = title || "";
+    bodyEl.innerHTML = html;
+    bodyEl.scrollTop = 0;
+    wrap.hidden = false;
+    void wrap.offsetWidth;            // 다음 그림에서 올라오도록
+    wrap.classList.add("is-open");
+    document.documentElement.classList.add("pop-open");
+    isOpen = true;
+    if (window.ModalNav) window.ModalNav.open(hideDom);
+  }
+  function close() {
+    if (!isOpen) return;
+    if (!(window.ModalNav && window.ModalNav.close())) hideDom();
+  }
+  return { open: open, close: close };
+})();
+
+// 성경 본문 글("1 이 후에… \n2 아브람이…")을 절 번호가 보이게 바꾼다.
+function versesHtml(text, escH) {
+  return String(text || "").split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => {
+    const m = l.match(/^(\d+)\s+(.+)$/);
+    return m ? `<p class="sv-line"><sup>${m[1]}</sup>${escH(m[2])}</p>` : `<p class="sv-line">${escH(l)}</p>`;
+  }).join("");
+}
+
+// ===== 1-2b. 이번 주 말씀 — 게시된 주보(bulletins_public)의 본문 말씀·설교 요약(말씀 자료) =====
 (function () {
   const box = document.getElementById("weekSermon");
   if (!box) return;
   const escH = (t) => String(t == null ? "" : t).replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
-  const paras = (t) => String(t || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
-    .map((p) => `<p>${escH(p).replace(/\n/g, "<br />")}</p>`).join("");
+  // 설교 요약 또는 '말씀 자료'([함께 읽을 말씀] · ●구절 · 1. 질문) 글을 읽기 좋게
+  function summaryHtml(t) {
+    const lines = String(t || "").split(/\n/).map((l) => l.trim());
+    const isMaterial = lines.some((l) => /^\[.+\]$/.test(l) || /^●/.test(l));
+    if (!isMaterial) {
+      return String(t || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+        .map((p) => `<p>${escH(p).replace(/\n/g, "<br />")}</p>`).join("");
+    }
+    return lines.filter(Boolean).map((l) => {
+      let m;
+      if ((m = l.match(/^\[(.+)\]$/))) return `<h4 class="ss-sub">${escH(m[1])}</h4>`;
+      if ((m = l.match(/^●\s*(.+)$/))) return `<p class="ss-xref">${escH(m[1])}</p>`;
+      if (/^\d+\.\s/.test(l)) return `<p class="ss-q">${escH(l)}</p>`;
+      return `<p>${escH(l)}</p>`;
+    }).join("");
+  }
 
   if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) {
     box.innerHTML = `<p class="qt-loading">아직 등록된 설교가 없습니다.</p>`;
@@ -368,30 +460,45 @@ if (sermonDeck) {
       if (!b) { box.innerHTML = `<p class="qt-loading">아직 등록된 설교가 없습니다.</p>`; return; }
       const d = b.data || {};
       const dateLabel = String(b.bdate || "").replace(/-/g, ".");
-      const body = paras(d.summary);
-      // 한 화면에는 제목·본문 말씀만 두고, 긴 설교 요약은 팝업(#pop-sermon)으로 연다
+      const sum = String(d.summary || "").trim();
+      const sumLabel = /^\s*(\[.+\]|●)/m.test(sum) ? "말씀 자료" : "설교 요약";
+      const when = sermonWhen(b.bdate).short;
       box.innerHTML = `
         <article class="week-sermon">
-          <span class="ws-date">${escH(dateLabel)} · ${sermonWhen(b.bdate).short ? sermonWhen(b.bdate).short + " " : ""}주일 낮 예배</span>
+          <span class="ws-date">${escH(dateLabel)} · ${when ? when + " " : ""}주일 낮 예배</span>
           ${b.title ? `<h3 class="ws-title">${escH(b.title)}</h3>` : ""}
           ${b.scripture ? `<p class="ws-ref">${escH(b.scripture)}</p>` : ""}
           ${b.preacher ? `<p class="ws-preacher">설교 · ${escH(b.preacher)}</p>` : ""}
-          ${d.headline ? `<blockquote class="ws-quote"><span>${escH(d.headline)}</span></blockquote>` : ""}
-          ${body ? "" : `<p class="qt-loading">이번 주 설교 요약이 아직 등록되지 않았습니다.</p>`}
+          ${d.headline ? `<blockquote class="ws-quote ws-quote-open" role="button" tabindex="0" aria-label="본문 말씀 전체 보기">
+              <span>${escH(d.headline)}</span><em class="ws-quote-more">눌러서 본문 전체 보기 ↑</em></blockquote>` : ""}
           <div class="ws-actions">
-            ${body ? `<button type="button" class="btn btn-solid" data-pop="pop-sermon">설교 요약 읽기</button>` : ""}
+            ${sum ? `<button type="button" class="btn btn-solid" id="wsOpenSum">${sumLabel} 읽기</button>` : ""}
             <a class="ws-more" href="word.html#archive">주보 모아 보기 →</a>
             <a class="ws-more ws-yt" href="${SERMON_YOUTUBE_URL}" target="_blank" rel="noopener">▶ 유튜브 설교 영상 보기</a>
           </div>
-          ${body ? `<div class="pop-src" id="pop-sermon" data-pop-title="이번 주 설교 요약" hidden>
-            <div class="ws-pop">
-              ${b.title ? `<h3 class="ws-title">${escH(b.title)}</h3>` : ""}
-              ${b.scripture ? `<p class="ws-ref">${escH(b.scripture)}${b.preacher ? " · " + escH(b.preacher) : ""}</p>` : ""}
-              ${d.headline ? `<blockquote class="ws-quote">${escH(d.headline)}</blockquote>` : ""}
-              <div class="ws-body">${body}</div>
-            </div>
-          </div>` : ""}
         </article>`;
+      const sheetHtml = `
+        <div class="ws-pop">
+          <span class="ws-date">${escH(dateLabel)} · 주일 낮 예배</span>
+          ${b.title ? `<h3 class="ws-title">${escH(b.title)}</h3>` : ""}
+          ${b.scripture ? `<p class="ws-ref">${escH(b.scripture)}${b.preacher ? " · " + escH(b.preacher) : ""}</p>` : ""}
+          ${d.headline ? `<div class="sv-lines">${versesHtml(d.headline, escH)}</div>` : ""}
+          ${sum ? `<h4 class="ss-part" id="wsSumHead">${sumLabel}</h4><div class="ws-body">${summaryHtml(sum)}</div>` : ""}
+        </div>`;
+      const openSheet = (toSum) => {
+        window.SlideSheet.open("이번 주 말씀", sheetHtml);
+        if (toSum) {
+          const h = document.getElementById("wsSumHead"), sb = document.getElementById("slideSheetBody");
+          if (h && sb) sb.scrollTop += h.getBoundingClientRect().top - sb.getBoundingClientRect().top - 12;
+        }
+      };
+      const q = box.querySelector(".ws-quote-open");
+      if (q) {
+        q.addEventListener("click", () => openSheet(false));
+        q.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSheet(false); } });
+      }
+      const sb = document.getElementById("wsOpenSum");
+      if (sb) sb.addEventListener("click", () => openSheet(true));
     })
     .catch(() => { box.innerHTML = `<p class="qt-loading">설교를 불러오지 못했습니다.</p>`; });
 })();
@@ -868,8 +975,31 @@ window.WPCTts = WPCTts;
     return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
   }
 
+  // 매일성경(성서유니온) 오늘의 본문 — GitHub 자동 작업이 매일 data/daily-bible.json 에 받아 둔다
+  //   (tools/update_daily_bible.py, .github/workflows/daily-bible.yml). 해설은 매일성경 누리집 링크로.
+  let dailyBible = null;
+  const dailyBibleReady = fetch("data/daily-bible.json?d=" + todayStr().replace(/\./g, ""))
+    .then((r) => (r.ok ? r.json() : null)).then((j) => { dailyBible = j; }).catch(() => {});
+  function todayDb() {
+    const days = dailyBible && dailyBible.days;
+    return days ? days[todayStr().replace(/\./g, "-")] || null : null;
+  }
+  function openDailyBible(db) {
+    const verses = (db.verses || []).map((v) => `<p class="sv-line"><sup>${v[1]}</sup>${escQt(v[2])}</p>`).join("");
+    window.SlideSheet.open("오늘의 매일성경", `
+      <div class="ws-pop">
+        <span class="ws-date">${todayStr()} · 매일성경</span>
+        ${db.title ? `<h3 class="ws-title">${escQt(db.title)}</h3>` : ""}
+        <p class="ws-ref">${escQt(db.ref)}${db.hymn ? ` · 찬송가 ${db.hymn}장` : ""}</p>
+        <div class="sv-lines">${verses}</div>
+        <p class="db-copy">본문: 성경전서 개역개정판(저작권 재단법인 대한성서공회) · 본문 선정: 매일성경(성서유니온선교회)</p>
+        <p class="db-links"><a class="ws-more" href="https://sum.su.or.kr:8888/bible/today" target="_blank" rel="noopener">📖 매일성경 해설 보기 →</a></p>
+      </div>`);
+  }
+
   function renderToday() {
-    if (!entries.length) {
+    const db = todayDb();
+    if (!entries.length && !db) {
       todayBox.innerHTML = `<p class="qt-loading">아직 등록된 QT 말씀이 없습니다.</p>`;
       return;
     }
@@ -877,14 +1007,35 @@ window.WPCTts = WPCTts;
     const todayEntry = entries.find((e) => e.date === ts);
     const entry = todayEntry || entries[0];
     const isToday = !!todayEntry;
-    todayBox.innerHTML = `
+    let html = "";
+    if (db) {
+      const first = (db.verses || []).slice(0, 2).map((v) => `<sup>${v[1]}</sup>${escQt(v[2])}`).join(" ");
+      html += `
+      <button class="qt-card-today db-card" id="dbOpen">
+        <span class="qt-badge">오늘의 매일성경 · ${ts}</span>
+        ${db.title ? `<h3 class="qt-card-title">${escQt(db.title)}</h3>` : ""}
+        <p class="qt-card-ref">${escQt(db.ref)}</p>
+        ${db.hymn ? `<span class="db-hymn">찬송가 ${db.hymn}장</span>` : ""}
+        <p class="db-preview">${first}</p>
+        <span class="qt-card-more">눌러서 본문 전체 읽기 ↑</span>
+      </button>`;
+    }
+    if (entry) {
+      html += db
+        ? `<button class="qt-church-link" id="qtOpen">✍️ ${isToday ? "오늘의 교회 QT 묵상" : "최근 교회 QT 묵상"} · ${entry.date} — ${escQt(entry.title || "")} →</button>`
+        : `
       <button class="qt-card-today" id="qtOpen">
         <span class="qt-badge">${isToday ? "오늘의 QT" : "최근 QT"} · ${entry.date}</span>
         <h3 class="qt-card-title">${entry.title}</h3>
         ${entry.ref ? `<p class="qt-card-ref">${entry.ref}</p>` : ""}
         <span class="qt-card-more">묵상 전문 읽기 →</span>
       </button>`;
-    document.getElementById("qtOpen").addEventListener("click", () => openModal(entry.date));
+    }
+    todayBox.innerHTML = html;
+    const dbBtn = document.getElementById("dbOpen");
+    if (dbBtn) dbBtn.addEventListener("click", () => openDailyBible(db));
+    const qtBtn = document.getElementById("qtOpen");
+    if (qtBtn) qtBtn.addEventListener("click", () => openModal(entry.date));
   }
 
   const escQt = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1040,7 +1191,7 @@ window.WPCTts = WPCTts;
   }
 
   // QT는 Supabase qt_published 뷰에서만 가져온다(구글시트 레거시 제거 — 2026-06-30)
-  loadQtFromSupabase().then((sb) => {
+  Promise.all([loadQtFromSupabase().catch(() => null), dailyBibleReady]).then(([sb]) => {
     entries = sb || [];
     afterEntries();
   }).catch(() => {
@@ -1064,11 +1215,39 @@ function buildMonthOptions() {
   });
   BULLETINS.forEach((b) => add(b.month, b.monthLabel));
   months.sort((a, b) => b.value.localeCompare(a.value));
-  const cur = bulletinMonth.value || "all";
+  BULLETIN_MONTHS = months;
+  // 처음에는 가장 최근 주보가 있는 달만 보여 준다(10월 주보가 올라오면 자동으로 10월).
+  const cur = bulletinMonthPicked ? (bulletinMonth.value || "all") : (months[0] ? months[0].value : "all");
   bulletinMonth.innerHTML =
     `<option value="all">전체 보기</option>` +
     months.map((m) => `<option value="${m.value}">${m.label}</option>`).join("");
   bulletinMonth.value = months.find((m) => m.value === cur) ? cur : "all";
+}
+let BULLETIN_MONTHS = [];
+let bulletinMonthPicked = false;
+// 목록 아래 '지난 주보' — 다른 달은 접어 두고 글자 단추로만 보여 준다
+function renderBulletinMonthLinks(month, searching) {
+  let el = document.getElementById("bulletinMonths");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "bulletinMonths"; el.className = "bulletin-months";
+    bulletinEmpty.parentNode.insertBefore(el, bulletinEmpty.nextSibling);
+    el.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-month]");
+      if (!t) return;
+      bulletinMonthPicked = true;
+      bulletinMonth.value = t.getAttribute("data-month");
+      bulletinSearch.value = "";
+      renderBulletins();
+      const sec = document.getElementById("archive");
+      if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+  const others = BULLETIN_MONTHS.filter((m) => m.value !== month);
+  if (searching || !others.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<span class="bm-label">${month === "all" ? "달별로 보기" : "지난 주보"}</span>` +
+    others.map((m) => `<button type="button" class="bm-link" data-month="${m.value}">${m.label}</button>`).join("") +
+    (month !== "all" ? `<button type="button" class="bm-link bm-all" data-month="all">전체 보기</button>` : "");
 }
 
 // ----- 주보 검색: 날짜('8월 9일'·'8/9'·'2026.8.9'·'8월'·'9일'), 주차('8월 둘째 주'), 제목, 본문('창 15'·'창세기 12장')을 모두 알아듣는다 -----
@@ -1165,8 +1344,8 @@ function sbBulletinCardHTML(b, i) {
 }
 
 function renderBulletins() {
-  const month = bulletinMonth.value || "all";
   const q = bulletinSearch.value.trim().toLowerCase();
+  const month = q ? "all" : (bulletinMonth.value || "all");   // 검색할 때는 모든 달에서 찾는다
   const sbItems = SB_BULLETINS.map((b, i) => ({ b, i })).filter(({ b }) => bulletinMatches(b, month, q));
   const items = BULLETINS.map((b, i) => ({ b, i })).filter(({ b }) => {
     const monthOk = month === "all" || b.month === month;
@@ -1178,6 +1357,7 @@ function renderBulletins() {
     sbItems.map(({ b, i }) => sbBulletinCardHTML(b, i)).join("") +
     items.map(({ b, i }) => bulletinCardHTML(b, i)).join("");
   bulletinEmpty.hidden = (items.length + sbItems.length) > 0;
+  renderBulletinMonthLinks(month, !!q);
 }
 
 function loadSBBulletins() {
@@ -1193,7 +1373,7 @@ if (bulletinList) {
   buildMonthOptions();
   renderBulletins();
   loadSBBulletins();
-  bulletinMonth.addEventListener("change", renderBulletins);
+  bulletinMonth.addEventListener("change", () => { bulletinMonthPicked = true; renderBulletins(); });
   bulletinSearch.addEventListener("input", renderBulletins);
 }
 
@@ -1442,14 +1622,18 @@ if (homeBulletin) {
         const d = b.data || {};
         const dl = String(b.bdate || "").slice(0, 10).replace(/-/g, ". ");
 
-        const briefNews = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 4);
+        // 한 주의 소식은 모두, 본문 말씀 대신 예배 순서를 보여 준다(2026-10-01 목사님 요청)
+        const briefNews = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 10);
+        const briefOrder = (d.order || []).filter((o) => o && (o.name || o.detail));
         setBrief(`
           <div class="hbb-card">
             <div class="hbb-main">
               <div class="hbb-top"><span class="hbb-week">${escB(d.week || "주보")} · 주일 낮 예배</span><span class="hbb-date">${escB(dl)}</span></div>
               ${b.title ? `<p class="hbb-title">${escB(b.title)}</p>` : ""}
               ${b.scripture ? `<p class="hbb-ref">${escB(b.scripture)}${b.preacher ? " · " + escB(b.preacher) : ""}</p>` : ""}
-              ${d.headline ? `<p class="hbb-verse"><span>${escB(d.headline)}</span></p>` : ""}
+              ${briefOrder.length
+                ? `<p class="hbb-order-title">예배 순서</p><ol class="hbb-order" style="--rows:${Math.ceil(briefOrder.length / 2)}">${briefOrder.map((o) => `<li><b>${escB(/^([가-힣]\s+)+[가-힣]$/.test(String(o.name || "").trim()) ? String(o.name).replace(/\s+/g, "") : String(o.name || ""))}</b><span>${escB(o.detail || "")}</span></li>`).join("")}</ol>`
+                : (d.headline ? `<p class="hbb-verse"><span>${escB(d.headline)}</span></p>` : "")}
             </div>
             ${briefNews.length ? `<div class="hbb-news"><p class="hbb-news-title">한 주의 소식</p><ul>${briefNews.map((l) => `<li>${escB(l)}</li>`).join("")}</ul></div>` : ""}
             <div class="hbb-actions">
