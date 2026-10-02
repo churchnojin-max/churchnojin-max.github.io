@@ -3738,7 +3738,7 @@ button.vref[aria-expanded="true"] { text-decoration-style: solid; }
 }
 
 /* ③ 연합사역: 화성시 지도 */
-.local-map { max-width: 440px; margin: 0 auto 26px; }
+.local-map { max-width: 560px; margin: 0 auto 26px; }
 .hs-map { display: block; width: 100%; height: auto; overflow: visible; }
 .hs-map text { font-family: "Gowun Batang", serif; fill: #1A3A2F; paint-order: stroke; stroke: var(--paper-alt); stroke-width: .9px; stroke-linejoin: round; }
 .hs-city { font-size: 6.4px; font-weight: 700; letter-spacing: .3em; opacity: .5; text-anchor: middle; }
@@ -3749,4 +3749,6 @@ button.vref[aria-expanded="true"] { text-decoration-style: solid; }
 @media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
   html.snap-page #local > .container > .block-head { grid-column: 1 / 3; align-self: end; }
   html.snap-page #local .local-map { grid-column: 3; grid-row: 1 / span 2; align-self: center; max-width: none; width: 100%; margin: 0; }
+  /* 화성시 지도를 크게(목사님 요청): 이 화면만 폭을 넓히고 지도 칸을 카드 칸의 두 배 가까이로 */
+  html.snap-page #local > .container { max-width: min(96vw, 1560px); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.85fr); }
 }
