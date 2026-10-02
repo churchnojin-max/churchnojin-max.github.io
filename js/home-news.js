@@ -70,7 +70,9 @@
     const d = Math.floor(h / 24); if (d < 7) return d + "일 전";
     const dt = new Date(t); return `${dt.getFullYear()}.${String(dt.getMonth() + 1).padStart(2, "0")}.${String(dt.getDate()).padStart(2, "0")}`;
   }
-  const titleOf = (p) => (p.title && p.title.trim()) || (p.caption && p.caption.trim()) || p.category || "우리들 소식";
+  // 제목 앞에 붙은 날짜('5월31일 …', '2026.5.31 …')는 날짜 칸에 이미 나오므로 떼고 보여 준다
+  const noDate = (t) => String(t || "").trim().replace(/^(?:(?:\d{4}\s*년\s*)?\d{1,2}\s*월\s*\d{1,2}\s*일|(?:\d{4}\s*[.\-/]\s*)?\d{1,2}\s*[.\-/]\s*\d{1,2}\.?(?=\s))\s*/, "").trim();
+  const titleOf = (p) => noDate(p.title) || noDate(p.caption) || p.category || "우리들 소식";
 
   let _isAdmin = null;
   async function isAdminUser() {
@@ -145,7 +147,7 @@
       const p = g.list[0];
       const m = g.key.match(/^(\d{4})\.(\d{2})\.(\d{2})$/);
       const dayLabel = m ? `${+m[2]}월 ${+m[3]}일` : g.key;
-      const cap = (p.caption && p.caption.trim() && p.caption.trim() !== titleOf(p)) ? p.caption.trim() : "";
+      const cap = (noDate(p.caption) && noDate(p.caption) !== titleOf(p)) ? noDate(p.caption) : "";
       return `
         <button type="button" class="hn-day" data-g="${i}">
           <span class="hn-day-img"><img src="${esc(p.url)}" alt="${esc(titleOf(p))}" loading="lazy" draggable="false" />

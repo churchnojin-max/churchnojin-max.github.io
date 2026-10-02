@@ -2323,8 +2323,8 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
 /* 들어가는 한 문장 */
 .confess .confess-lead {
   font-family: "Gowun Batang", serif; font-size: clamp(1.1rem, 2.4vw, 1.28rem);
-  line-height: 1.9; color: var(--accent); text-align: center;
-  word-break: keep-all; margin: 0 0 40px;
+  line-height: 1.7; color: var(--accent); text-align: center;
+  word-break: keep-all; margin: 0 0 30px;
 }
 
 /* 각 단락의 머리 문장 — 굵게만 두지 않고 소제목으로 세운다 */
@@ -2332,22 +2332,22 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
   font-family: "Gowun Batang", serif; font-weight: 700;
   font-size: clamp(1.06rem, 2.2vw, 1.2rem); line-height: 1.7;
   color: var(--accent); word-break: keep-all;
-  margin: 42px 0 14px; padding-left: 15px;
+  margin: 32px 0 10px; padding-left: 15px;
   border-left: 3px solid var(--gold);
 }
 .confess h3:first-of-type { margin-top: 0; }
 
 .confess p {
-  font-size: 1.09rem; line-height: 2.05; color: var(--ink-soft);
-  word-break: keep-all; margin: 0 0 18px; letter-spacing: -.005em;
+  font-size: 1.09rem; line-height: 1.75; color: var(--ink-soft);
+  word-break: keep-all; margin: 0 0 14px; letter-spacing: -.005em;
 }
 
 /* 성경 인용 */
 .confess .verse {
   display: block; font-family: "Gowun Batang", serif;
-  font-size: 1.04rem; line-height: 1.95; color: var(--accent);
+  font-size: 1.04rem; line-height: 1.7; color: var(--accent);
   background: var(--paper-alt); border-left: 3px solid var(--gold);
-  border-radius: 0 8px 8px 0; padding: 15px 20px; margin: 22px 0;
+  border-radius: 0 8px 8px 0; padding: 13px 18px; margin: 16px 0;
   word-break: keep-all;
 }
 .confess .verse cite { display: block; font-style: normal; font-size: .88rem; color: var(--muted); margin-top: 7px; }
@@ -2423,8 +2423,8 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
   .confess .confess-family { margin-top: 28px; }
   .confess .confess-family img { border-radius: 10px; }
   .confess .confess-refrain { padding: 20px 12px; margin-bottom: 26px; }
-  .confess p { font-size: 1.05rem; line-height: 1.95; }
-  .confess h3 { margin: 34px 0 12px; padding-left: 12px; }
+  .confess p { font-size: 1.05rem; line-height: 1.72; }
+  .confess h3 { margin: 28px 0 10px; padding-left: 12px; }
   .confess .verse { padding: 13px 15px; }
   .confess-invite { padding: 20px 18px; }
 }
@@ -3642,3 +3642,20 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
 .sv-panel.sv-panel-list[hidden] { display: none; }
 .sv-panel-list .servant-subgroup.sv-first { margin-top: 0; }
 @media (max-width: 760px) { .sv-tabs { gap: 14px; } .sv-tab { font-size: .9rem; } }
+
+/* 예배 순서의 교독문 줄 — 누르면 교독문 전체가 아래에서 올라온다(js/gyodok-view.js) */
+li.is-gyodok { cursor: pointer; }
+li.is-gyodok:hover span, li.is-gyodok:hover { color: var(--accent); }
+li.is-gyodok .gd-more { font-style: normal; font-size: .82em; font-weight: 700; color: var(--gold-logo, #BFA06C);
+  margin-left: 6px; white-space: nowrap; }
+.gd-body { font-family: "Gowun Batang", serif; font-size: 1.08rem; line-height: 1.75; color: var(--ink); }
+.gd-line { display: flex; gap: 12px; margin: 0; padding: 7px 0; border-bottom: 1px dashed rgba(26,58,47,.12); }
+.gd-role { flex: 0 0 3.2em; padding-top: .15em; font-family: "IBM Plex Sans KR", sans-serif; font-size: .78rem;
+  color: var(--muted); letter-spacing: .02em; }
+.gd-people { font-weight: 700; color: var(--accent); }
+.gd-all { font-weight: 700; color: var(--accent); background: var(--paper-alt); border-radius: 8px; padding: 9px 10px; border-bottom: 0; margin-top: 6px; }
+.gd-note { margin: 14px 0 0; font-size: .82rem; color: var(--muted); }
+
+/* 찾아오시는 길: 주소 아래 대표 전화 */
+.block-head p.dir-addr { line-height: 1.75; }
+.dir-addr-tel { display: inline-block; margin-top: 4px; font-weight: 600; color: var(--accent); white-space: nowrap; }
