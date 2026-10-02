@@ -3672,3 +3672,81 @@ button.vref[aria-expanded="true"] { text-decoration-style: solid; }
 /* 찾아오시는 길: 주소 아래 대표 전화 */
 .block-head p.dir-addr { line-height: 1.75; }
 .dir-addr-tel { display: inline-block; margin-top: 4px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+
+/* ============================================================
+   선교와 사역 — 연필로 그린 그림(js/world-sketch.js) 2026-10-02
+   ① 표지의 하트 한 획  ② 선교: 세계 지도 + 지역 가까이 놓인 카드  ③ 연합사역: 화성시 지도
+   밝은 바탕에서는 깊은 초록 연필 선, 짙은 초록 표지에서는 금색 연필 선.
+   ============================================================ */
+.msk .sk { fill: none; stroke: #1A3A2F; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 2; }
+.msk.is-drawing .sk { animation: skDraw var(--u, .4s) ease-out var(--t, 0s) both; }
+.msk.is-drawing .sk-fade { animation: skFade .8s ease var(--t, 0s) both; }
+.mm-pin .mm-dot { fill: #1A3A2F; stroke: #fff; stroke-width: .14; }
+.mm-pin .mm-pulse { fill: none; stroke: #3F7A5E; stroke-width: .12; transform-box: fill-box; transform-origin: center; animation: mmPulse 2.6s ease-out infinite; }
+.mm-pin.is-home .mm-dot { fill: #BFA06C; stroke: #1A3A2F; }
+@keyframes mmPulse { from { transform: scale(.35); opacity: .9; } to { transform: scale(1.5); opacity: 0; } }
+
+/* ① 표지: 하트 한 획 */
+.page-hero.ph-heart-hero { overflow: hidden; isolation: isolate; }
+.ph-heart { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; overflow: visible; }
+.ph-heart .sk { stroke: #BFA06C; }
+@media (min-width: 1025px) {
+  /* 교회 안내 표지와 같은 짜임: 글은 왼쪽, 그림은 오른쪽 */
+  html .page-hero.ph-heart-hero, html.snap-page .page-hero.ph-heart-hero {
+    padding-left: 3vw; padding-right: calc(3vw + 2 * min(25vh, 22vw)); }
+}
+@media (max-width: 1024px) { .ph-heart { opacity: .42; } }
+
+/* ② 선교: 머리글(제목 · 안내 글 · 후원 안내) */
+.block-head.mm-head { max-width: none; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 34px; }
+.mm-head .mm-lead, .mm-head .mm-support { margin: 0; }
+.mm-head .mm-support { margin-left: auto; padding: 8px 0 8px 16px; border-left: 3px solid var(--gold); color: var(--accent); font-weight: 500; word-break: keep-all; }
+@media (max-width: 760px) { .mm-head .mm-support { margin-left: 0; } }
+/* 세계 지도 */
+.mm-stage { position: relative; }
+.mm-map { display: block; width: 100%; height: auto; overflow: hidden; }
+.mm-arcs .sk { stroke: #3F7A5E; }
+.mm-leads { display: none; }
+.mm-leads .sk { stroke: #1A3A2F; }
+.mm-end { fill: #1A3A2F; }
+.mm-home { font-family: "Gowun Batang", serif; font-weight: 700; font-size: 1.3px; fill: #1A3A2F; text-anchor: end; paint-order: stroke; stroke: #fff; stroke-width: .28px; stroke-linejoin: round; }
+@media (max-width: 1024px) {
+  .mm-stage .mm-map { margin: -6px auto 18px; max-width: 720px; }
+  .mm-home { font-size: 1.7px; }
+}
+@media (min-width: 1025px) {
+  /* 지도 크기: 화면 높이에 맞추되(한 화면에 들어오게) 가로 96% 를 넘지 않는다. --mu = 지도 가로의 1/107 */
+  #mission { --mmw: min(96vw, calc((100vh - var(--hdr) - 172px) * 2.887)); --mu: calc(var(--mmw) / 107); overflow: hidden; }
+  #mission > .container { max-width: none; width: var(--mmw); padding: 0; }
+  html.snap-page #mission .block-head.mm-head { margin-bottom: 12px; }
+  .mm-stage { width: var(--mmw); height: calc(var(--mu) * 37.06); margin: 0 auto; }
+  .mm-stage .mm-map { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mm-leads { display: inline; }
+  .mm-stage .mission-grid { position: absolute; inset: 0; display: block; }
+  #mission .mm-stage .mission-card.on-map, html.snap-page #mission .mm-stage .mission-card.on-map {
+    position: absolute; left: calc(var(--x) * var(--mu)); top: calc(var(--y) * var(--mu));
+    width: calc(17 * var(--mu)); height: calc(6 * var(--mu)); min-height: 0;
+    padding: 0 calc(5.4 * var(--mu)) 0 calc(1.3 * var(--mu)); border-radius: calc(.75 * var(--mu));
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  #mission .mm-stage .on-map h4, html.snap-page #mission .mm-stage .on-map h4 { font-size: calc(1.5 * var(--mu)); line-height: 1.25; margin: 0; white-space: nowrap; }
+  #mission .mm-stage .on-map .m-name, html.snap-page #mission .mm-stage .on-map .m-name { font-size: calc(1.14 * var(--mu)); line-height: 1.3; margin-top: calc(.12 * var(--mu)); white-space: nowrap; }
+  #mission .mm-stage .on-map .mc-more, html.snap-page #mission .mm-stage .on-map .mc-more { font-size: calc(.9 * var(--mu)); line-height: 1.3; margin-top: calc(.12 * var(--mu)); }
+  #mission .mm-stage .on-map .mc-photo, html.snap-page #mission .mm-stage .on-map .mc-photo {
+    width: calc(4.4 * var(--mu)); height: calc(4.4 * var(--mu)); margin-top: calc(-2.2 * var(--mu)); right: calc(.8 * var(--mu)); border-radius: calc(.7 * var(--mu)); }
+  #mission .mm-stage .on-map .mc-photo svg { width: 52%; height: 52%; }
+}
+
+/* ③ 연합사역: 화성시 지도 */
+.local-map { max-width: 440px; margin: 0 auto 26px; }
+.hs-map { display: block; width: 100%; height: auto; overflow: visible; }
+.hs-map text { font-family: "Gowun Batang", serif; fill: #1A3A2F; paint-order: stroke; stroke: var(--paper-alt); stroke-width: .9px; stroke-linejoin: round; }
+.hs-city { font-size: 6.4px; font-weight: 700; letter-spacing: .3em; opacity: .5; text-anchor: middle; }
+.hs-emd { font-size: 3.5px; font-weight: 700; text-anchor: middle; }
+.hs-church { font-size: 4.3px; font-weight: 700; }
+.hs-map .mm-pin .mm-dot { stroke-width: .4; }
+.hs-map .mm-pin .mm-pulse { stroke-width: .35; }
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  html.snap-page #local > .container > .block-head { grid-column: 1 / 3; align-self: end; }
+  html.snap-page #local .local-map { grid-column: 3; grid-row: 1 / span 2; align-self: center; max-width: none; width: 100%; margin: 0; }
+}
