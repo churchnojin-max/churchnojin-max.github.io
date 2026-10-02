@@ -9,6 +9,7 @@
        data = { items: { <카드 data-mission>: { photo:{url,key}, intro, photos:[{url,key,caption}],
                                                reports:[{id,date,title,body,photos:[{url,key}]}] } } }
      방문자가 읽으려면 supabase/missions.sql 을 한 번 실행해야 한다(실행 전에는 관리자만 보임).
+   - js/missions-data.js 에 미리 넣어 둔 자료는 자료실에 그 선교사님 자료가 비어 있을 때 대신 보인다.
    - 사진 파일은 공용 업로드(js/upload.js, 'uploads' 버킷 missions/ 폴더)
    ============================================================ */
 (function () {
@@ -44,13 +45,24 @@
   // ---------- 자료 ----------
   let DATA = { items: {} };
   const item = (id) => (DATA.items[id] = DATA.items[id] || { photo: null, intro: "", photos: [], reports: [] });
+  // 미리 넣어 둔 자료(js/missions-data.js): 자료실에 그 선교사님 자료가 비어 있을 때만 쓴다
+  const BUILTIN = window.MISSIONS_BUILTIN || {};
+  function fillBuiltin() {
+    Object.keys(BUILTIN).forEach((id) => {
+      const it = DATA.items[id];
+      const blank = !it || (!it.photo && !it.intro && !(it.photos || []).length && !(it.reports || []).length);
+      if (blank) DATA.items[id] = JSON.parse(JSON.stringify(BUILTIN[id]));
+    });
+  }
   async function load() {
-    if (!hasSB()) return;
-    try {
-      const rows = await api("GET", `church_settings?key=eq.${KEY}&select=data`);
-      DATA = (rows && rows[0] && rows[0].data) || { items: {} };
-      if (!DATA.items) DATA.items = {};
-    } catch (e) { /* 공개 읽기 준비 전: 비어 있는 채로 */ }
+    if (hasSB()) {
+      try {
+        const rows = await api("GET", `church_settings?key=eq.${KEY}&select=data`);
+        DATA = (rows && rows[0] && rows[0].data) || { items: {} };
+        if (!DATA.items) DATA.items = {};
+      } catch (e) { /* 공개 읽기 준비 전: 비어 있는 채로 */ }
+    }
+    fillBuiltin();
   }
   async function save(change) {
     // 저장 직전에 최신 자료를 다시 읽고, 바꿀 것만 적용해서 저장(두 사람이 동시에 고쳐도 덜 꼬이게)
