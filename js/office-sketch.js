@@ -1,7 +1,8 @@
 /* ============================================================
    행정 표지 — 종이 위에 손이 연필로 글씨를 써 내려가는 연필 그림 (2026-10-02)
    office.html 의 <section class="page-hero ph-pen-hero"> 오른쪽에 그린다(자리·크기는 css .ph-pen).
-   - 비스듬히 놓인 종이, 찻잔, 연필을 쥔 손을 크림색 연필 선으로 그린다(교회 안내 표지 종탑 그림과 같은 방법).
+   - 비스듬히 놓인 종이와 찻잔은 크림색 연필 선으로 그리고(교회 안내 표지 종탑 그림과 같은 방법),
+     연필을 쥔 손은 연필 스케치 그림 파일(images/office-hand.webp)을 쓴다.
    - 손이 움직이며 종이에 "무엇을 도와드릴까요?" 를 써 내려간다 — 글자는 손글씨 글꼴(Nanum Pen Script).
      (목사님 말씀: 손이 있어야 하고, 손이 움직이듯이. 성경 말씀 대신 이 인사말로.)
    - 표지가 화면에 들어올 때마다 처음부터 다시 그리고 쓴다.
@@ -101,58 +102,11 @@
   const clips = LINES.map((l, i) => `<clipPath id="penClip${i}"><rect x="${l.x - 8}" y="${l.y - l.size}" width="0" height="${l.size * 1.45}"/></clipPath>`).join("");
   const texts = LINES.map((l, i) => `<text class="pen-text" x="${l.x}" y="${l.y}" font-size="${l.size}" clip-path="url(#penClip${i})">${l.text}</text>`).join("");
 
-  // 연필을 쥔 손: 연필 끝이 (0,0), 손과 소매는 오른쪽 아래로 뻗는다
-  function cr(P, closed) {      // 점들을 부드럽게 잇는 선(캣멀-롬)
-    const n = P.length, g = (i) => (closed ? P[(i + n) % n] : P[Math.max(0, Math.min(n - 1, i))]);
-    let d = `M${f(P[0][0])},${f(P[0][1])}`;
-    for (let i = 0; i < (closed ? n : n - 1); i++) {
-      const a = g(i - 1), b = g(i), c = g(i + 1), e = g(i + 2);
-      d += ` C${f(b[0] + (c[0] - a[0]) / 6)},${f(b[1] + (c[1] - a[1]) / 6)} ${f(c[0] - (e[0] - b[0]) / 6)},${f(c[1] - (e[1] - b[1]) / 6)} ${f(c[0])},${f(c[1])}`;
-    }
-    return d + (closed ? " Z" : "");
-  }
-  const SKIN = "#2C4A3F", CLOTH = "#14302A", LINE = "#F6F4EB", GOLD = "#BFA06C";
-  const jit = (P, a) => P.map((q) => [q[0] + R(-a, a), q[1] + R(-a, a)]);
-  // 겉선은 두 번 겹쳐 긋는다(연필 느낌)
-  const outline = (P, closed, w) => `<path d="${cr(P, closed)}" fill="none" stroke="${LINE}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`
-    + `<path d="${cr(jit(P, 1.3), closed)}" fill="none" stroke="${LINE}" stroke-opacity=".45" stroke-width="${f(w * 0.6)}" stroke-linecap="round" stroke-linejoin="round"/>`;
-  const solid = (P, fill) => `<path d="${cr(P, true)}" fill="${fill}"/>` + outline(P, true, 2);
-  const finger = (P) => `<path d="${cr(P, true)}" fill="${SKIN}"/>` + outline(P, false, 2);      // 밑동은 손 안으로 이어지게 겉선을 열어 둔다
-  const mark = (P, w, op) => `<path d="${cr(P, false)}" fill="none" stroke="${LINE}" stroke-width="${w}" stroke-opacity="${op}" stroke-linecap="round"/>`;
-  seed = 777;
-  let HAND = `<path d="M300,-50 L1100,412 L1020,556 L246,112 Z" fill="${CLOTH}"/>`
-    + mark([[300, -50], [1100, 412]], 2, 0.95) + mark([[246, 112], [1020, 556]], 2, 0.95)
-    + mark([[302, -47], [1098, 414]], 1.1, 0.4) + mark([[247, 115], [1018, 559]], 1.1, 0.4);
-  for (let i = 0; i < 26; i++) {          // 소매 빗금
-    const t = 0.1 + i * 0.034, x = 300 + 800 * t - 22, y = -50 + 462 * t + 38 + R(-4, 4), L = R(60, 96);
-    HAND += mark([[x, y], [x - 0.33 * L, y + 0.66 * L]], 1, R(0.14, 0.26));
-  }
-  HAND += solid([[152, -116], [200, -112], [250, -86], [292, -46], [290, 30], [262, 110], [216, 112], [172, 98], [140, 84],
-      [116, 74], [104, 60], [88, 54], [70, 40], [63, 28], [50, 22], [37, 6], [38, -10], [52, -22], [110, -72]], SKIN)
-    + mark([[304, -52], [284, 30], [246, 112]], 2.2, 0.95) + mark([[336, -32], [314, 50], [276, 130]], 1.5, 0.6);
-  for (let i = 0; i < 8; i++) { const t = i / 7, x = 300 - 50 * t - 6 * Math.sin(t * 3.1), y = -36 + 148 * t; HAND += mark([[x, y], [x + 28, y + 16]], 1.1, 0.4); }
-  HAND += mark([[63, 28], [82, 8], [104, -2]], 1.5, 0.8) + mark([[104, 60], [122, 38], [144, 28]], 1.5, 0.8)
-    + mark([[180, -86], [192, -78], [198, -66]], 1.3, 0.5) + mark([[212, -58], [222, -48], [226, -36]], 1.3, 0.5) + mark([[236, -24], [244, -12], [246, 0]], 1.3, 0.45)
-    + mark([[44, 0], [48, 10]], 1.2, 0.5) + mark([[76, 34], [82, 44]], 1.2, 0.5) + mark([[120, 66], [128, 74]], 1.2, 0.45);
-  for (let i = 0; i < 9; i++) {           // 손등 그늘 빗금
-    const x = 214 + i * 7 + R(-2, 2), y = 96 - i * 9;
-    HAND += mark([[x, y], [x + 16, y - 26]], 1, R(0.16, 0.28));
-  }
-  HAND += `<g transform="rotate(-57)">
-      <path d="M34,-11 L286,-11 L286,11 L34,11 Z" fill="${GOLD}" stroke="${LINE}" stroke-width="1.8" stroke-linejoin="round"/>
-      <path d="M40,-3.5 L284,-3.5 M40,4 L284,4" fill="none" stroke="${CLOTH}" stroke-opacity=".45" stroke-width="1.2"/>
-      <path d="M0,0 L34,-11 L34,11 Z" fill="#E9DFC4" stroke="${LINE}" stroke-width="1.6" stroke-linejoin="round"/>
-      <path d="M0,0 L12,-3.9 L12,3.9 Z" fill="${CLOTH}" stroke="${LINE}" stroke-width="1"/>
-      <path d="M34,-11 Q40,-6 34,-3.5 Q40,0 34,4 Q40,8 34,11" fill="none" stroke="${CLOTH}" stroke-width="1.1" stroke-opacity=".6"/>
-      <rect x="286" y="-12" width="20" height="24" fill="#E9DFC4" stroke="${LINE}" stroke-width="1.2"/>
-      <path d="M292,-12 V12 M299,-12 V12" stroke="${CLOTH}" stroke-width="1" stroke-opacity=".5"/>
-      <path d="M306,-11 L322,-11 Q332,0 322,11 L306,11 Z" fill="${SKIN}" stroke="${LINE}" stroke-width="1.6" stroke-linejoin="round"/>
-    </g>`
-    + finger([[150, -14], [112, -27], [76, -39], [46, -47], [26, -43], [18, -31], [26, -20], [50, -14], [84, -2], [118, 12], [148, 22]])
-    + finger([[176, -116], [142, -119], [106, -107], [74, -89], [50, -67], [34, -49], [31, -38], [38, -32], [51, -38], [75, -56], [105, -72], [140, -83], [172, -86]])
-    + mark([[39, -55], [33, -45], [38, -38]], 1.2, 0.6) + mark([[27, -39], [21, -31], [28, -24]], 1.2, 0.55)
-    + mark([[80, -86], [88, -78]], 1.2, 0.45) + mark([[110, -103], [118, -95]], 1.2, 0.4) + mark([[78, -34], [82, -22]], 1.2, 0.4);
-  const PEN = `<g class="pen-body" transform="scale(1.05)">${HAND}</g>`;
+  // 연필을 쥔 손: 연필 스케치 그림(images/office-hand.webp — 크림색 선, 바탕은 투명, 소매 끝은 서서히 사라짐).
+  // 그림 안에서 연필 끝은 (13, 570) / 1100×904 이고, 그 점이 (0,0)에 오도록 놓는다.
+  // (처음에는 점을 찍어 선으로 그렸으나 손 모양이 어색하다는 말씀에 그림으로 바꿈)
+  const HS = 0.48;
+  const PEN = `<image class="pen-body" href="images/office-hand.webp?v=20261002" x="${f(-13 * HS)}" y="${f(-570 * HS)}" width="${f(1100 * HS)}" height="${f(904 * HS)}" preserveAspectRatio="none"/>`;
 
   const svg = `<svg class="msk ph-pen" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
     <defs>
@@ -173,7 +127,7 @@
       <path class="pen-sheet sk-fade" style="--t:.5s" d="M0,0 H${PW} V${PH} H0 Z"/>
       <g filter="url(#penGrain)">${paper.join("")}</g>
       <g class="pen-texts" filter="url(#penGrainSoft)">${texts}</g>
-      <g class="pen-move sk-fade" style="--t:.9s" filter="url(#penGrainSoft)">${PEN}</g>
+      <g class="pen-move sk-fade" style="--t:.9s">${PEN}</g>
     </g>
   </svg>`;
   hero.insertAdjacentHTML("afterbegin", svg);
@@ -183,7 +137,7 @@
   const pen = el.querySelector(".pen-move");
 
   /* ---- 써 내려가는 움직임 ---- */
-  const REST = [410, 566], START = [640, 760];    // 다 쓰고 손이 쉬는 자리, 처음 들어오는 자리(종이 밖 오른쪽 아래)
+  const REST = [300, 600], START = [640, 820];    // 다 쓰고 손이 쉬는 자리, 처음 들어오는 자리(종이 밖 오른쪽 아래)
   let widths = LINES.map((l) => l.text.length * l.size * 0.5), raf = 0;
   function measure() {
     tnodes.forEach((t, i) => { try { const w = t.getComputedTextLength(); if (w > 10) widths[i] = w; } catch (e) {} });
