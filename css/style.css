@@ -3630,6 +3630,8 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
 .sv-sub { display: inline-block; font-size: 1rem; color: var(--gold); padding-bottom: 6px; border-bottom: 2px solid var(--gold); margin: 0 0 16px; }
 .sv-text p { color: var(--ink-soft); line-height: 1.9; margin: 0 0 12px; }
 .sv-text .sv-wait { color: var(--muted); font-size: .92rem; }
+.sv-text .sv-lead { font-family: "Gowun Batang", serif; font-size: 1.3rem; color: var(--ink); line-height: 1.6; }
+.sv-text .sv-sign { margin: 26px 0 0; text-align: right; font-family: "Gowun Batang", serif; color: var(--ink); line-height: 1.8; }
 @media (max-width: 760px) {
   .sv-tabs { gap: 20px; }
   .sv-tab { font-size: .98rem; }
