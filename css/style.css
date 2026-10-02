@@ -18,6 +18,12 @@
 }
 
 html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+/* 한글 줄바꿈: 낱말 중간에서 끊지 않고(띄어쓰기 자리에서만), 제목은 두 줄일 때 길이를 고르게,
+   글은 마지막 줄에 한두 글자만 남지 않게 — 휴대폰에서 '축 / 복합니다' 처럼 끊기던 것 */
+html { word-break: keep-all; overflow-wrap: break-word; }
+h1, h2, h3, h4, h5, figcaption, blockquote { text-wrap: balance; }
+p, li, dd, dt { text-wrap: pretty; }
+.nw { white-space: nowrap; }   /* 한 덩어리로 읽어야 하는 말(만 70세, 한 장씩 등)은 줄을 나누지 않는다 */
 
 body {
   font-family: "IBM Plex Sans KR", sans-serif;
