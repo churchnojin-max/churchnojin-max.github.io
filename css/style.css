@@ -3752,3 +3752,21 @@ button.vref[aria-expanded="true"] { text-decoration-style: solid; }
   /* 화성시 지도를 크게(목사님 요청): 이 화면만 폭을 넓히고 지도 칸을 카드 칸의 두 배 가까이로 */
   html.snap-page #local > .container { max-width: min(96vw, 1560px); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.85fr); }
 }
+
+/* 행정 표지: 종이 위에 펜으로 글씨를 써 내려가는 연필 그림(js/office-sketch.js) — 짜임은 교회 안내 표지(종탑)와 같다 */
+.page-hero.ph-pen-hero { overflow: hidden; isolation: isolate; }
+.ph-pen { position: absolute; z-index: -1; pointer-events: none; right: 0; bottom: 0;
+  width: 52vw; height: calc(100% - var(--hdr) - 4px); overflow: visible; }
+.ph-pen .sk { stroke: #F6F4EB; }
+.ph-pen .pen-sheet { fill: #F6F4EB; opacity: .07; }
+.ph-pen .pen-text { font-family: "Nanum Pen Script", "Gowun Batang", cursive; fill: #F6F4EB; }
+.ph-pen .pen-steam { animation: spDrift 7s ease-in-out infinite alternate; animation-delay: var(--dl, 0s); }
+@media (min-width: 1025px) {
+  html .page-hero.ph-pen-hero, html.snap-page .page-hero.ph-pen-hero {
+    padding-left: 3vw; padding-right: calc(3vw + 2 * min(25vh, 22vw)); }
+  .ph-pen { right: auto; left: calc(50% + min(43vh, 36vw)); width: auto; aspect-ratio: 900 / 1000; transform: translateX(-50%); }
+  html.snap-page .page-hero.ph-pen-hero .ph-toc { width: min(560px, 100%) !important; column-gap: 24px; }
+}
+@media (max-width: 1024px) {
+  .ph-pen { right: -26vw; width: 90vw; height: calc(100% - var(--hdr) - 10px); opacity: .3; }
+}
