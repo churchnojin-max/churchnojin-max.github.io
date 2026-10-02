@@ -1,6 +1,6 @@
 /* ============================================================
    선교와 사역(world.html) — 연필로 그린 그림 세 가지 (2026-10-02)
-   ① 표지: 심벌의 가로 획(이웃과 이 땅으로)이 옆으로 뻗다가 한 획으로 하트를 그리고 아래로 내려간다(금색 연필 선).
+   ① 표지: 금색 연필 선이 화면 맨 아래에서 올라와 한 획으로 하트를 그리고 다시 아래로 사라진다.
    ② 선교: 세계 지도를 연필 스케치로 깔고, 선교지마다 점을 찍어 카드와 선으로 잇는다.
       컴퓨터 화면에서는 카드가 지도 위 그 지역 가까이에 놓인다(자리는 아래 CARD 표). 휴대폰에서는 지도 아래에 카드가 차례로 놓인다.
    ③ 지역 교회와 함께 하는 연합사역: 화성시 지도(우정읍·장안면에 빗금, 노진교회 자리에 점).
@@ -223,7 +223,7 @@
     replayOnView(box.querySelector(".hs-map"), box);
   }
 
-  /* ---------- ① 표지: 가로 획이 하트를 그리고 아래로 ---------- */
+  /* ---------- ① 표지: 아래에서 올라와 하트를 그리고 아래로 ---------- */
   function heartHero() {
     const hero = document.querySelector(".page-hero.ph-heart-hero");
     if (!hero) return;
@@ -246,12 +246,12 @@
       if (wide) {
         k = Math.min(vh * 0.2, W * 0.13) / 16;
         cx = W / 2 + Math.min(vh * 0.52, W * 0.37);
-        cy = HH * 0.5 - 2 * k;
+        cy = HH * 0.45 - 2 * k;
         sx = br ? br.right - hr.left + 18 : W * 0.3;
         sy = br ? br.top - hr.top + br.height / 2 : HH * 0.3;
       } else {
         k = Math.min(W * 0.2, HH * 0.17) / 16;
-        cx = W * 0.72; cy = HH * 0.6;
+        cx = W * 0.74; cy = HH * 0.52;
         sx = -12; sy = br ? br.bottom - hr.top + 14 : HH * 0.35;
       }
       const X = (t) => cx + hx(t) * k, Y = (t) => cy + hy(t) * k;
@@ -272,15 +272,15 @@
       const at = (dx, dy) => [cx + dx * k, cy + dy * k];
       const pr = [X(Math.PI - E), Y(Math.PI - E)], prN = [X(Math.PI - E - 0.25), Y(Math.PI - E - 0.25)];
       const pl = [X(Math.PI + E), Y(Math.PI + E)], plP = [X(Math.PI + E + 0.25), Y(Math.PI + E + 0.25)];
-      // 들어오는 선: 배지 옆에서 오른쪽으로 뻗다가 → 하트 왼쪽을 돌아 내려가 → 꼭지 아래에서 오른쪽 볼을 타고 올라간다
-      const turn = [Math.max(sx + 40, cx - 24.5 * k), sy];
-      let pts = spline([[sx - 80, sy], [sx, sy], turn, at(-20.5, 4.5), at(-13, 17.5), at(-4, 21.5), pr, prN], 12);
+      // 들어오는 선: 화면 맨 아래에서 올라와 → 꼭지를 지나 오른쪽 볼을 타고 올라간다(목사님 말씀: 아래에서 올라와 한 획을 긋고 아래로 사라지게)
+      const ey = HH + 30;
+      const lerpY = (dy, q) => Math.min(cy + dy * k, ey - q);
+      let pts = spline([[cx - 19 * k, ey + 80], [cx - 17 * k, ey], [cx - 11.5 * k, lerpY(32, 70)], at(-4, 21.5), pr, prN], 14);
       // 하트: 오른쪽 볼 → 가운데 골 → 왼쪽 볼 → 꼭지 쪽으로
       for (let t = Math.PI - E; t > 0; t -= 0.06) pts.push([X(t), Y(t)]);
       for (let t = 2 * Math.PI; t > Math.PI + E; t -= 0.06) pts.push([X(t), Y(t)]);
       // 나가는 선: 꼭지를 지나 아래로
-      const ey = HH + 30;
-      pts = pts.concat(spline([plP, pl, at(2.6, 23), [cx + 8 * k, Math.min(cy + 36 * k, ey - 60)], [cx + 9.5 * k, ey], [cx + 9.5 * k, ey + 80]], 12));
+      pts = pts.concat(spline([plP, pl, at(2.6, 23), [cx + 6.5 * k, lerpY(34, 60)], [cx + 8 * k, ey], [cx + 8.5 * k, ey + 80]], 12));
       seed = 5252;
       const base = Math.max(1.6, k * 0.34);
       const passes = [[1, 0.95, 0], [0.7, 0.55, 0.14], [0.55, 0.4, 0.26]].map(([w, op, dl], p) => {
@@ -295,7 +295,10 @@
         return stroke(polyPath(q, 0, true), base * w, op, 0.5 + dl, 2.8);
       });
       el.setAttribute("viewBox", `0 0 ${W} ${HH}`);
-      el.innerHTML = `${DEFS("phHeartGrain")}<g filter="url(#phHeartGrain)">${passes.join("")}</g>`;
+      // 맨 아래에서는 선이 옅어지며 사라진다
+      const fade = `<linearGradient id="phHeartFadeG" gradientUnits="userSpaceOnUse" x1="0" y1="${f(HH - Math.min(150, HH * 0.22))}" x2="0" y2="${f(HH)}"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/></linearGradient>
+        <mask id="phHeartFade" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${HH + 40}"><rect width="${W}" height="${HH + 40}" fill="url(#phHeartFadeG)"/></mask>`;
+      el.innerHTML = `${DEFS("phHeartGrain").replace("</defs>", fade + "</defs>")}<g mask="url(#phHeartFade)"><g filter="url(#phHeartGrain)">${passes.join("")}</g></g>`;
     }
     draw();
     let timer = 0, lastW = hero.clientWidth;
