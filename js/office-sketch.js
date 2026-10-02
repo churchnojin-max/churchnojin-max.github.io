@@ -69,7 +69,7 @@
   }
 
   /* ---- 찻잔과 받침(그림 전체 좌표) ---- */
-  const CX = 765, CY = 150;
+  const CX = 792, CY = 204;
   curve(cup, arc(CX, CY + 62, 104, 33, 0, 360, 28), { t: 0.7, dur: 0.7, op: [0.5, 0.8] });                 // 받침
   curve(cup, arc(CX, CY + 60, 62, 18, 20, 160, 10), { passes: 1, t: 0.9, dur: 0.4, op: [0.3, 0.5] });       // 받침 안쪽 선
   curve(cup, arc(CX, CY, 60, 19, 0, 360, 24), { t: 1.0, dur: 0.6, w: [1.1, 1.6] });                          // 잔 입
@@ -105,10 +105,10 @@
   // 연필을 쥔 손: 연필 스케치 그림(images/office-hand.webp — 크림색 선, 바탕은 투명, 소매 끝은 서서히 사라짐).
   // 그림 안에서 연필 끝은 (13, 570) / 1100×904 이고, 그 점이 (0,0)에 오도록 놓는다.
   // (처음에는 점을 찍어 선으로 그렸으나 손 모양이 어색하다는 말씀에 그림으로 바꿈)
-  const HS = 0.48;
-  const PEN = `<image class="pen-body" href="images/office-hand.webp?v=20261002" x="${f(-13 * HS)}" y="${f(-570 * HS)}" width="${f(1100 * HS)}" height="${f(904 * HS)}" preserveAspectRatio="none"/>`;
+  const HS = 0.34;
+  const PEN = `<image class="pen-body" href="images/office-hand.webp?v=20261002b" x="${f(-13 * HS)}" y="${f(-570 * HS)}" width="${f(1100 * HS)}" height="${f(904 * HS)}" preserveAspectRatio="none"/>`;
 
-  const svg = `<svg class="msk ph-pen" viewBox="0 0 900 1000" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
+  const svg = `<svg class="msk ph-pen" viewBox="-190 -330 1280 1422" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
     <defs>
       <filter id="penGrain" x="-5%" y="-5%" width="110%" height="110%">
         <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" result="n"/>
@@ -137,7 +137,7 @@
   const pen = el.querySelector(".pen-move");
 
   /* ---- 써 내려가는 움직임 ---- */
-  const REST = [300, 600], START = [640, 820];    // 다 쓰고 손이 쉬는 자리, 처음 들어오는 자리(종이 밖 오른쪽 아래)
+  const REST = [330, 560], START = [660, 800];    // 다 쓰고 손이 쉬는 자리, 처음 들어오는 자리(종이 밖 오른쪽 아래)
   let widths = LINES.map((l) => l.text.length * l.size * 0.5), raf = 0;
   function measure() {
     tnodes.forEach((t, i) => { try { const w = t.getComputedTextLength(); if (w > 10) widths[i] = w; } catch (e) {} });
