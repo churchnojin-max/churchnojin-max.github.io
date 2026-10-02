@@ -166,6 +166,16 @@ console.log('[affairs.js] v20260712memo2');
     }
   };
   var TAB_ORDER = [['dashboard', '설교 대시보드'], ['sermon', '설교관리'], ['worship', '예배매니저'], ['song', '🎵 찬양관리'], ['illus', '예화 클립'], ['bulletin', '주보제작'], ['visit', '심방관리'], ['counsel', '상담관리'], ['edu', '교육관리'], ['doc', '자료실'], ['read', '🔊 설교문 낭독'], ['sermonfile', '📄 설교자료'], ['library', '나의 도서관'], ['bible', '📖 성경 보기'], ['settings', '설정']];
+  // 메뉴가 15개라 한 줄에 다 늘어놓지 않고 다섯 묶음으로 나눠 보여 준다. (2026-10-02)
+  var TAB_GROUPS = [
+    ['설교', ['dashboard', 'sermon', 'illus', 'sermonfile', 'read']],
+    ['예배', ['worship', 'song', 'bulletin']],
+    ['목양', ['visit', 'counsel', 'edu', 'doc']],
+    ['서재', ['bible', 'library']],
+    ['설정', ['settings']]
+  ];
+  var lastInGroup = {};
+  function tabLabel(id) { var t = TAB_ORDER.filter(function (x) { return x[0] === id; })[0]; return t ? t[1] : id; }
 
   // ── 성경 66권(설교 권별 커버리지) ──
   var BIBLE_OT = ['창세기', '출애굽기', '레위기', '민수기', '신명기', '여호수아', '사사기', '룻기', '사무엘상', '사무엘하', '열왕기상', '열왕기하', '역대상', '역대하', '에스라', '느헤미야', '에스더', '욥기', '시편', '잠언', '전도서', '아가', '이사야', '예레미야', '예레미야애가', '에스겔', '다니엘', '호세아', '요엘', '아모스', '오바댜', '요나', '미가', '나훔', '하박국', '스바냐', '학개', '스가랴', '말라기'];
@@ -223,10 +233,24 @@ console.log('[affairs.js] v20260712memo2');
   var pendingSermon = null;   // 설교 제안에서 '이 책으로 시작' 클릭 시, 설교관리 탭이 열며 편집기 prefill
   function render() {
     if (!tabAllowed(tab)) { var first = allowedTabs()[0]; tab = first ? first[0] : 'bible'; }
-    root.innerHTML = '<div class="fin-tabs">' + allowedTabs().map(function (t) { return '<button data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div><div id="afPanel"></div>';
-    Array.prototype.forEach.call(root.querySelectorAll('.fin-tabs button'), function (b) {
-      if (b.dataset.t === tab) b.classList.add('active');
-      b.onclick = function () { if (b.dataset.t === tab) return; var prev = tab; tab = b.dataset.t; render(); pushBackClose(function () { tab = prev; render(); }); };
+    // 윗줄 = 묶음(설교·예배·목양·서재·설정), 아랫줄 = 그 묶음 안의 메뉴. 묶음을 누르면 그 묶음에서 마지막으로 보던 메뉴로 간다.
+    var groups = TAB_GROUPS.map(function (g) { return [g[0], g[1].filter(tabAllowed)]; }).filter(function (g) { return g[1].length; });
+    var cur = groups.filter(function (g) { return g[1].indexOf(tab) >= 0; })[0] || groups[0];
+    if (cur) lastInGroup[cur[0]] = tab;
+    var subs = cur && cur[1].length > 1 ? cur[1] : [];
+    root.innerHTML = '<div class="fin-tabs af-groups">' + groups.map(function (g) { return '<button data-g="' + g[0] + '"' + (g === cur ? ' class="active"' : '') + '>' + g[0] + '</button>'; }).join('') + '</div>' +
+      (subs.length ? '<div class="af-subtabs">' + subs.map(function (id) { return '<button data-t="' + id + '"' + (id === tab ? ' class="active"' : '') + '>' + tabLabel(id) + '</button>'; }).join('') + '</div>' : '') +
+      '<div id="afPanel"></div>';
+    function go(next) { if (next === tab) return; var prev = tab; tab = next; render(); pushBackClose(function () { tab = prev; render(); }); }
+    Array.prototype.forEach.call(root.querySelectorAll('.af-groups button'), function (b) {
+      b.onclick = function () {
+        var g = groups.filter(function (x) { return x[0] === b.dataset.g; })[0]; if (!g) return;
+        var last = lastInGroup[g[0]];
+        go(g[1].indexOf(last) >= 0 ? last : g[1][0]);
+      };
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('.af-subtabs button'), function (b) {
+      b.onclick = function () { go(b.dataset.t); };
     });
     var p = document.getElementById('afPanel');
     if (tab === 'dashboard') renderSermonDashboard(p);
