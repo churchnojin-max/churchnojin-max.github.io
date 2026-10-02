@@ -128,6 +128,27 @@ window.WPF = (function () {
             return { ok: true, offerings: list, total: list.reduce(function (s, o) { return s + (Number(o.amount) || 0); }, 0), spouse: me.spouse || '' };
           });
         });
+      case 'memberOfferings': {
+        // 교적 상세의 '가정 헌금 내역'(읽기 전용) — 가족의 매칭키로 찾고, 매칭키 없이 이름만 적힌 헌금도 함께.
+        // 재정 권한이 없으면 DB 규칙(offerings_select)에 막혀 본인 것 말고는 오지 않는다.
+        var mkeys = (params.keys || []).filter(Boolean), mnames = (params.names || []).filter(Boolean);
+        var qv = function (s) { return '"' + encodeURIComponent(String(s).replace(/"/g, '')) + '"'; };
+        var osel = 'offerings?select=id,offer_date,category,service,giver,member_key,amount&order=offer_date.desc,id.desc';
+        var jobs = [];
+        if (mkeys.length) jobs.push(restAll(osel + '&member_key=in.(' + mkeys.map(qv).join(',') + ')').then(function (r) { return { rows: r, byName: false }; }));
+        if (mnames.length) jobs.push(restAll(osel + '&member_key=is.null&giver=in.(' + mnames.map(qv).join(',') + ')').then(function (r) { return { rows: r, byName: true }; }));
+        return Promise.all(jobs).then(function (res) {
+          var seen = {}, list = [];
+          res.forEach(function (j) {
+            (j.rows || []).forEach(function (o) {
+              if (seen[o.id]) return; seen[o.id] = 1;
+              list.push({ date: o.offer_date || '', account: o.category || '', service: o.service || '', giver: o.giver || '', key: o.member_key || '', amount: Number(o.amount) || 0, byName: j.byName });
+            });
+          });
+          list.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+          return { ok: true, offerings: list };
+        });
+      }
       case 'myFamily':
         return rpc('my_family').then(function (rows) { return { ok: true, members: rows || [] }; });
       case 'masters':

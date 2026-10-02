@@ -512,6 +512,152 @@ console.log('[gyojeok.js] v20260701di');
   }
   function eduLabel(r) { return esc(r.title) + (r.cohort ? ' · ' + esc(r.cohort) : '') + (r.class_name ? ' · ' + esc(r.class_name) : ''); }
 
+  /* ── 가족 묶기 (교인 상세의 '가족 관계') ──
+   * 세대주가 같은 사람 → 배우자로 이어진 사람 → 세대주 칸에 가족 중 한 사람 이름이 적힌 사람(예: 자녀의 세대주가 어머니로 적힌 경우)을
+   * 차례로 모으고, 그래도 빠진 자녀는 '가족사항' 글(예: 자녀: 찬영, 찬익, 찬우, 하은)에서 찾는다.
+   * 교적에 있는 사람이면 그 사람을 잇고, 없으면 '교적 미등록'으로 이름만 보여 준다. 저장된 값은 바꾸지 않는다(보기 전용). */
+  var FAM_WORDS = ['배우자', '남편', '아내', '부인', '처', '아들', '딸', '자녀', '자식', '장남', '차남', '삼남', '사남', '장녀', '차녀', '삼녀', '사녀', '손자', '손녀', '며느리', '사위', '부친', '모친', '아버지', '어머니', '부', '모'];
+  var NOT_NAMES = ['없음', '미혼', '기혼', '출가', '군복무', '군대', '유학', '직장', '결혼', '이혼', '사별', '본인', '세대주', '교회', '출석', '미출석', '타교회', '해외', '외국', '거주', '함께', '모두', '현재', '이상', '아이', '가족'];
+  function nrm(s) { return String(s || '').replace(/\s+/g, ''); }
+  function famWordOf(tok) {
+    for (var i = 0; i < FAM_WORDS.length; i++) {
+      var w = FAM_WORDS[i];
+      if (tok === w || (tok.indexOf(w) === 0 && /^(은|는|이|가|들|들은|들이|:)$/.test(tok.slice(w.length)) && w.length > 1)) return w;
+    }
+    return '';
+  }
+  function parseFamilyNote(txt) {
+    var out = [], word = '';
+    String(txt || '').split(/[\s,，·\/、:：()（）\[\]]+/).forEach(function (tok) {
+      if (!tok) return;
+      var w = famWordOf(tok);
+      if (w) { word = w; return; }
+      if (!word || !/^[가-힣]{2,4}$/.test(tok) || NOT_NAMES.indexOf(tok) >= 0) return;
+      out.push({ word: word, name: tok });
+    });
+    return out;
+  }
+  function relFromWord(word, m) {
+    if (/^(장남|차남|삼남|사남|장녀|차녀|삼녀|사녀|손자|손녀|며느리|사위)$/.test(word)) return word;
+    if (/남편|아내|부인|^처$|배우자/.test(word)) return '배우자';
+    if (/부친|아버지|^부$/.test(word)) return '부';
+    if (/모친|어머니|^모$/.test(word)) return '모';
+    var sx = m && m['성별'];
+    if (word === '아들' || (sx === '남' && /자녀|자식/.test(word))) return '아들';
+    if (word === '딸' || (sx === '여' && /자녀|자식/.test(word))) return '딸';
+    return '자녀';
+  }
+  var REL_ORDER = ['세대주', '본인', '배우자', '부', '모', '장남', '차남', '삼남', '아들', '장녀', '차녀', '삼녀', '딸', '자녀', '며느리', '사위', '손자', '손녀'];
+  function gjFamily(cur, all) {
+    var byName = {};
+    all.forEach(function (x) { var k = nrm(x['이름']); (byName[k] = byName[k] || []).push(x); });
+    var set = [], has = {}, relMap = {};
+    function add(x) { if (!x || has[x['매칭키']]) return false; has[x['매칭키']] = 1; set.push(x); return true; }
+    function headName(x) { return nrm(x['세대주']) || nrm(x['이름']); }
+    function spouses(a, b) {
+      return (a['배우자매칭키'] && a['배우자매칭키'] === b['매칭키']) || (b['배우자매칭키'] && b['배우자매칭키'] === a['매칭키']) ||
+        (nrm(a['배우자']) && nrm(a['배우자']) === nrm(b['이름']) && (!nrm(b['배우자']) || nrm(b['배우자']) === nrm(a['이름'])));
+    }
+    // 가족사항 글이 그 사람을 가리키는지(이름 그대로, 또는 성을 뺀 이름 + 같은 성)
+    var notes = {};
+    all.forEach(function (x) { if (x['가족사항']) notes[x['매칭키']] = parseFamilyNote(x['가족사항']); });
+    function noteNames(x, y) {
+      var yn = nrm(y['이름']), xs = nrm(x['이름']).charAt(0);
+      return (notes[x['매칭키']] || []).some(function (p) { return p.name === yn || (yn.length === p.name.length + 1 && yn.slice(1) === p.name && yn.charAt(0) === xs); });
+    }
+    add(cur);
+    for (var round = 0, changed = true; changed && round < 6; round++) {
+      changed = false;
+      var heads = {}, names = {};
+      set.forEach(function (x) { heads[headName(x)] = 1; names[nrm(x['이름'])] = 1; });
+      all.forEach(function (x) {
+        if (has[x['매칭키']]) return;
+        var hit = heads[headName(x)] || names[nrm(x['세대주'])] ||
+          set.some(function (y) { return spouses(x, y) || noteNames(x, y) || noteNames(y, x); });
+        if (hit && add(x)) changed = true;
+      });
+    }
+    // 가족사항 글에 적힌 사람
+    var extra = [], extraSeen = {};
+    // 세대주: '관계'가 세대주인 사람 > 다른 가족이 세대주로 적은 사람 > 세대주 칸이 본인인 사람
+    var headM = cur, best = -1;
+    set.forEach(function (x) {
+      var n = nrm(x['이름']), sc = (String(x['관계'] || '').trim() === '세대주' ? 4 : 0) + (nrm(x['세대주']) === n ? 1 : 0);
+      set.forEach(function (y) { if (y !== x && nrm(y['세대주']) === n) sc += 2; });
+      if (sc > best) { best = sc; headM = x; }
+    });
+    set.slice().forEach(function (x) {
+      parseFamilyNote(x['가족사항']).forEach(function (p) {
+        var cand = (byName[p.name] || []).slice();
+        if (!cand.length && p.name.length <= 3) {
+          var sn = [nrm(x['이름']).charAt(0), nrm(headM['이름']).charAt(0)];
+          all.forEach(function (y) { var yn = nrm(y['이름']); if (yn.length === p.name.length + 1 && yn.slice(1) === p.name && sn.indexOf(yn.charAt(0)) >= 0) cand.push(y); });
+        }
+        if (cand.length === 1) {
+          var y = cand[0];
+          add(y);
+          if (!relMap[y['매칭키']]) relMap[y['매칭키']] = relFromWord(p.word, y);
+          return;
+        }
+        var already = set.some(function (s) { var n = nrm(s['이름']); return n === p.name || n.slice(1) === p.name; });
+        if (already || extraSeen[p.name]) return;
+        extraSeen[p.name] = 1;
+        extra.push({ name: p.name, rel: relFromWord(p.word, null) });
+      });
+    });
+    // 관계: 교적의 '관계' 칸이 있으면 그대로, 없으면 세대주·배우자·가족사항으로 채운다
+    var rows = set.map(function (x) {
+      var rel = String(x['관계'] || '').trim();
+      if (!rel || rel === '본인') {
+        if (x === headM) rel = '세대주';
+        else if (spouses(x, headM)) rel = '배우자';
+        else rel = relMap[x['매칭키']] || rel;
+      }
+      if (rel === '자녀') rel = relFromWord('자녀', x);
+      return { m: x, rel: rel };
+    });
+    function ord(r) { var i = REL_ORDER.indexOf(r); return i < 0 ? REL_ORDER.length : i; }
+    rows.sort(function (a, b) { return ord(a.rel) - ord(b.rel) || birthOf(a.m).localeCompare(birthOf(b.m)); });
+    extra.sort(function (a, b) { return ord(a.rel) - ord(b.rel); });
+    return { rows: rows, extra: extra };
+  }
+
+  // 가정 헌금 내역(재정 권한이 있는 분에게만) — 가족의 매칭키 + 이름으로만 적힌 헌금
+  function won(n) { return (Number(n) || 0).toLocaleString('ko-KR') + '원'; }
+  function loadFamilyOfferings(el, fam) {
+    WPF.call('myPerms').then(function (r) {
+      var p = (r && r.perms) || {};
+      if (!(p.canFinance || p.isAdmin)) { el.innerHTML = ''; return; }
+      el.innerHTML = '<div style="color:#7b8794;font-size:.85rem">헌금 내역을 불러오는 중…</div>';
+      var keys = fam.rows.map(function (x) { return x.m['매칭키']; });
+      var names = [];
+      fam.rows.forEach(function (x) { names.push(x.m['이름']); });
+      var surname = fam.rows.length ? nrm(fam.rows[0].m['이름']).charAt(0) : '';
+      fam.extra.forEach(function (e) { names.push(e.name); if (surname) names.push(surname + e.name); });
+      return WPF.call('memberOfferings', { keys: keys, names: names }).then(function (res) {
+        var list = res.offerings || [];
+        var head = '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><b style="color:var(--accent,#1A3A2F)">헌금 내역 <span style="font-weight:400;font-size:.8rem;color:#7b8794">(가정 전체 · 재정 권한)</span></b>';
+        if (!list.length) { el.innerHTML = head + '</div><p style="color:#7b8794;font-size:.85rem;margin:6px 0 0">이 가정 이름으로 입력된 헌금이 없습니다.</p>'; return; }
+        var total = 0, byYear = {}, years = [];
+        list.forEach(function (o) { total += o.amount; var y = String(o.date).slice(0, 4) || '날짜 없음'; if (byYear[y] == null) { byYear[y] = 0; years.push(y); } byYear[y] += o.amount; });
+        var nameOfKey = {}; fam.rows.forEach(function (x) { nameOfKey[x.m['매칭키']] = x.m['이름']; });
+        var SHOW = 12;
+        function rowsHtml(all) {
+          return (all ? list : list.slice(0, SHOW)).map(function (o) {
+            var who = nameOfKey[o.key] || o.giver;
+            return '<tr><td style="white-space:nowrap">' + esc(o.date) + '</td><td>' + esc(who) + (o.byName ? ' <span style="font-size:.72rem;color:#b8860b" title="교인 연결 없이 이름으로만 적힌 헌금">(이름)</span>' : '') + '</td><td>' + esc(o.account) + '</td><td style="text-align:right;white-space:nowrap">' + won(o.amount) + '</td></tr>';
+          }).join('');
+        }
+        el.innerHTML = head + '<span style="font-size:.86rem">모두 <b>' + list.length + '건 · ' + won(total) + '</b></span></div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">' + years.map(function (y) { return '<span class="fin-pill" style="background:#eef4ff;color:#1A3A2F">' + esc(y) + '년 ' + won(byYear[y]) + '</span>'; }).join('') + '</div>' +
+          '<div style="overflow:auto"><table class="fin-table" style="font-size:.84rem"><thead><tr><th>날짜</th><th>헌금자</th><th>항목</th><th style="text-align:right">금액</th></tr></thead><tbody class="gd-off-body">' + rowsHtml(false) + '</tbody></table></div>' +
+          (list.length > SHOW ? '<button type="button" class="btn btn-line gd-off-more" style="margin-top:8px;padding:4px 12px;font-size:.8rem">나머지 ' + (list.length - SHOW) + '건 더 보기</button>' : '');
+        var more = el.querySelector('.gd-off-more');
+        if (more) more.onclick = function () { el.querySelector('.gd-off-body').innerHTML = rowsHtml(true); more.remove(); };
+      });
+    }).catch(function (e) { el.innerHTML = '<div style="color:#c0392b;font-size:.84rem">헌금 내역을 불러오지 못했습니다: ' + esc(e.message) + '</div>'; });
+  }
+
   function showDetail(m) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:24px 16px;overflow:auto';
@@ -522,12 +668,12 @@ console.log('[gyojeok.js] v20260701di');
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
 
     function viewMode(cur) {
-      var head = cur['세대주'] || cur['이름'];
-      var family = ALL.filter(function (x) { return (x['세대주'] || x['이름']) === head; });
+      var fam = gjFamily(cur, ALL);
       function row(label, val) { return val ? '<div style="display:flex;padding:7px 0;border-bottom:1px solid #f0f3f7"><div style="flex:0 0 96px;color:#7b8794;font-size:.85rem">' + esc(label) + '</div><div style="flex:1;font-size:.92rem">' + esc(val) + '</div></div>' : ''; }
       var age = '', bd = (String(cur['매칭키'] || '').split('|')[1]) || '';
       if (bd.length === 8) { var y = Number(bd.slice(0, 4)); if (y) age = (new Date().getFullYear() - y + 1) + '세'; }
-      var famRows = family.map(function (f) { var isMe = f['매칭키'] === cur['매칭키']; return '<tr' + (isMe ? ' style="background:#eef4ff"' : '') + '><td><a href="#" class="gd-fam" data-key="' + esc(f['매칭키']) + '" style="color:var(--accent,#1A3A2F);text-decoration:none;font-weight:600">' + esc(f['이름']) + '</a></td><td>' + esc(f['관계'] || '') + '</td><td>' + esc(birthDisplay(f)) + '</td><td>' + esc(f['직책'] || '') + '</td></tr>'; }).join('');
+      var famRows = fam.rows.map(function (r) { var f = r.m, isMe = f['매칭키'] === cur['매칭키']; return '<tr' + (isMe ? ' style="background:#eef4ff"' : '') + '><td><a href="#" class="gd-fam" data-key="' + esc(f['매칭키']) + '" style="color:var(--accent,#1A3A2F);text-decoration:none;font-weight:600">' + esc(f['이름']) + '</a></td><td>' + esc(r.rel) + '</td><td>' + esc(birthDisplay(f)) + '</td><td>' + esc(f['직책'] || '') + '</td></tr>'; }).join('') +
+        fam.extra.map(function (e) { return '<tr style="color:#7b8794"><td>' + esc(e.name) + ' <span style="font-size:.72rem;background:#f3f4f6;border-radius:6px;padding:1px 6px">교적 미등록</span></td><td>' + esc(e.rel) + '</td><td></td><td></td></tr>'; }).join('');
       box.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">' +
         '<div style="display:flex;gap:14px;align-items:center">' + avatar(cur, 84) + '<div><h3 style="margin:0;color:var(--accent,#1A3A2F)">' + esc(cur['이름']) + (cur['직책'] ? ' <span style="font-size:.8rem;color:#7b8794">' + esc(cur['직책']) + '</span>' : '') + '</h3><div style="color:#7b8794;font-size:.85rem;margin-top:3px">' + esc(cur['그룹'] || '') + (cur['세대주'] ? ' · ' + esc(cur['세대주']) + '의 가정' : '') + '</div></div></div>' +
@@ -544,8 +690,12 @@ console.log('[gyojeok.js] v20260701di');
         '</div></div>' + (cur['특이사항'] ? '<div style="margin-top:6px;padding:10px 12px;background:#fbfaf6;border:1px solid #f0ece0;border-radius:8px"><div style="color:#7b8794;font-size:.8rem;margin-bottom:3px">특이사항</div><div style="font-size:.9rem;white-space:pre-wrap">' + esc(cur['특이사항']) + '</div></div>' : '') +
         (groupsOf(cur).length ? '<div style="margin-top:12px"><div style="color:#7b8794;font-size:.85rem;margin-bottom:5px">소속 그룹</div>' + groupsOf(cur).map(function (g) { return '<span class="fin-pill" style="background:#e8f0fb;color:#2b5797;margin:0 6px 6px 0;display:inline-block">' + esc(g) + '</span>'; }).join('') + '</div>' : '') +
         '<div id="gd_edu" style="margin-top:12px"></div>' +
-        '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--accent,#1A3A2F)">가족 관계</b><span style="display:flex;gap:6px"><button class="btn btn-line" id="gd_cert" hidden style="padding:3px 12px;font-size:.8rem">📄 교인증명서 만들기</button><button class="btn btn-line" id="gd_family" style="padding:3px 12px;font-size:.8rem">👪 가족 구성/수정</button></span></div><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.86rem"><thead><tr><th>이름</th><th>관계</th><th>생년월일</th><th>직책</th></tr></thead><tbody>' + famRows + '</tbody></table></div></div>';
+        '<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap"><b style="color:var(--accent,#1A3A2F)">가족 관계</b><span style="display:flex;gap:6px"><button class="btn btn-line" id="gd_cert" hidden style="padding:3px 12px;font-size:.8rem">📄 교인증명서 만들기</button><button class="btn btn-line" id="gd_family" style="padding:3px 12px;font-size:.8rem">👪 가족 구성/수정</button></span></div><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.86rem"><thead><tr><th>이름</th><th>관계</th><th>생년월일</th><th>직책</th></tr></thead><tbody>' + famRows + '</tbody></table></div>' +
+        (fam.extra.length ? '<p style="color:#9aa5b1;font-size:.78rem;margin:6px 0 0">‘교적 미등록’은 가족사항 글에만 적힌 분입니다. 교적에 등록하면 생년월일·헌금 내역도 함께 연결됩니다.</p>' : '') +
+        '<p style="color:#9aa5b1;font-size:.78rem;margin:4px 0 0">가족 이름을 누르면 그분의 정보와 가족 관계가 열립니다.</p></div>' +
+        '<div id="gd_off" style="margin-top:16px"></div>';
       box.querySelector('#gd_close').onclick = close;
+      loadFamilyOfferings(box.querySelector('#gd_off'), fam);
       // 증명서는 교회 이름과 담임목사 이름으로 나가는 공식 문서라 전권 관리자에게만 연다
       isFullAdmin().then(function (ok) { var b = box.querySelector('#gd_cert'); if (ok && b) { b.hidden = false; b.onclick = function () { certMode(cur); }; } });
       box.querySelector('#gd_edit').onclick = function () { editMode(cur); };
@@ -1383,7 +1533,7 @@ console.log('[gyojeok.js] v20260701di');
   /* ── 교인증명서 ──
    * 바탕화면 '교인증명서_양식(노진교회).hwpx' 와 같은 구성:
    * 제목 → 테두리 없는 표(증 제·성 명·생년월일·주 소·가족관계·등 록 일) → 증명 문구 → 발급일 → 교회명(직인)·담임목사(인) */
-  var CERT_DENOM = '예장 합동';
+  var CERT_DENOM = '대한예수교장로회';   // 2026-10-02 목사님: '예장 합동' 대신 정식 이름, 앞에 총회 마크
   var CERT_CHILD_RELS = ['장남', '차남', '삼남', '아들', '장녀', '차녀', '삼녀', '딸', '자녀'];
   function CHURCH_NAME() { return (window.CHURCH && CHURCH.name) || '노진교회'; }
   function PASTOR_NAME() { var p = window.CHURCH && CHURCH.pastors && CHURCH.pastors[0]; return p ? (p.role + ' ' + p.name) : '담임목사 손병민'; }
@@ -1411,7 +1561,8 @@ console.log('[gyojeok.js] v20260701di');
       '.stmt{text-align:center;font-size:15pt;margin:0 0 16mm;letter-spacing:.05em}',
       '.issue{text-align:center;font-size:14pt;font-weight:700;margin:0 0 20mm}',
       'table.sign{border-collapse:collapse;margin:0 0 0 auto;font-size:16pt;font-weight:700}',
-      'table.sign td{padding:3mm 0}',
+      'table.sign td{padding:3mm 0;vertical-align:middle}',
+      'table.sign img.mark{width:13mm;height:13mm;object-fit:contain;vertical-align:middle;margin:0 3mm 1mm 0}',
       'table.sign td.seal{padding-left:8mm;color:#666;font-weight:400;font-size:12pt;white-space:nowrap}',
       '@media print{.noprint{display:none}}'
     ].join('\n');
@@ -1429,7 +1580,7 @@ console.log('[gyojeok.js] v20260701di');
       '<p class="stmt">위의 사람은 본 교회 교인임을 증명합니다.</p>' +
       '<p class="issue">' + esc(d.issue) + '</p>' +
       '<table class="sign">' +
-      '<tr><td>' + esc(CERT_DENOM) + '&nbsp;&nbsp;' + esc(CHURCH_NAME()) + '</td><td class="seal">(직인)</td></tr>' +
+      '<tr><td><img class="mark" src="' + esc(new URL('images/denom-mark.png?v=20260926', location.href).href) + '" alt="대한예수교장로회 총회 마크">' + esc(CERT_DENOM) + '&nbsp;&nbsp;' + esc(CHURCH_NAME()) + '</td><td class="seal">(직인)</td></tr>' +
       '<tr><td>' + esc(PASTOR_NAME()) + '</td><td class="seal">(인)</td></tr>' +
       '</table>' +
       '</div></body></html>'
