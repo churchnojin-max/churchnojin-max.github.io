@@ -517,7 +517,7 @@ console.log('[gyojeok.js] v20260701di');
    * 차례로 모으고, 그래도 빠진 자녀는 '가족사항' 글(예: 자녀: 찬영, 찬익, 찬우, 하은)에서 찾는다.
    * 교적에 있는 사람이면 그 사람을 잇고, 없으면 '교적 미등록'으로 이름만 보여 준다. 저장된 값은 바꾸지 않는다(보기 전용). */
   var FAM_WORDS = ['배우자', '남편', '아내', '부인', '처', '아들', '딸', '자녀', '자식', '장남', '차남', '삼남', '사남', '장녀', '차녀', '삼녀', '사녀', '손자', '손녀', '며느리', '사위', '부친', '모친', '아버지', '어머니', '부', '모'];
-  var NOT_NAMES = ['없음', '미혼', '기혼', '출가', '군복무', '군대', '유학', '직장', '결혼', '이혼', '사별', '본인', '세대주', '교회', '출석', '미출석', '타교회', '해외', '외국', '거주', '함께', '모두', '현재', '이상', '아이', '가족'];
+  var NOT_NAMES = ['없음', '미혼', '기혼', '출가', '군복무', '군대', '유학', '직장', '결혼', '이혼', '사별', '본인', '세대주', '교회', '출석', '미출석', '타교회', '해외', '외국', '거주', '함께', '모두', '현재', '이상', '아이', '가족', '사진', '집사', '권사', '장로', '목사', '전도사', '성도', '안수집사', '서리집사', '권찰', '사모', '원로', '은퇴', '협동', '명예'];
   function nrm(s) { return String(s || '').replace(/\s+/g, ''); }
   function famWordOf(tok) {
     for (var i = 0; i < FAM_WORDS.length; i++) {
@@ -528,7 +528,7 @@ console.log('[gyojeok.js] v20260701di');
   }
   function parseFamilyNote(txt) {
     var out = [], word = '';
-    String(txt || '').split(/[\s,，·\/、:：()（）\[\]]+/).forEach(function (tok) {
+    String(txt || '').split(/[\s,，·\/、:：()（）\[\].;]+/).forEach(function (tok) {
       if (!tok) return;
       var w = famWordOf(tok);
       if (w) { word = w; return; }
@@ -555,15 +555,23 @@ console.log('[gyojeok.js] v20260701di');
     function add(x) { if (!x || has[x['매칭키']]) return false; has[x['매칭키']] = 1; set.push(x); return true; }
     function headName(x) { return nrm(x['세대주']) || nrm(x['이름']); }
     function spouses(a, b) {
-      return (a['배우자매칭키'] && a['배우자매칭키'] === b['매칭키']) || (b['배우자매칭키'] && b['배우자매칭키'] === a['매칭키']) ||
+      // 배우자매칭키는 배우자 이름과 맞을 때만 믿는다(잘못 걸린 키가 있으면 다른 가정이 통째로 섞인다 — 신동열/장한주 사례)
+      function keyOk(p, q) { return p['배우자매칭키'] && p['배우자매칭키'] === q['매칭키'] && (!nrm(p['배우자']) || nrm(p['배우자']) === nrm(q['이름'])); }
+      return keyOk(a, b) || keyOk(b, a) ||
         (nrm(a['배우자']) && nrm(a['배우자']) === nrm(b['이름']) && (!nrm(b['배우자']) || nrm(b['배우자']) === nrm(a['이름'])));
     }
     // 가족사항 글이 그 사람을 가리키는지(이름 그대로, 또는 성을 뺀 이름 + 같은 성)
     var notes = {};
     all.forEach(function (x) { if (x['가족사항']) notes[x['매칭키']] = parseFamilyNote(x['가족사항']); });
+    function surnamesOf(x) {
+      var out = [nrm(x['이름']).charAt(0)];
+      (notes[x['매칭키']] || []).forEach(function (p) { if (/배우자|남편|아내|부인|^처$/.test(p.word) && p.name.length >= 3) out.push(p.name.charAt(0)); });
+      if (nrm(x['배우자']).length >= 3) out.push(nrm(x['배우자']).charAt(0));
+      return out;
+    }
     function noteNames(x, y) {
-      var yn = nrm(y['이름']), xs = nrm(x['이름']).charAt(0);
-      return (notes[x['매칭키']] || []).some(function (p) { return p.name === yn || (yn.length === p.name.length + 1 && yn.slice(1) === p.name && yn.charAt(0) === xs); });
+      var yn = nrm(y['이름']), xs = surnamesOf(x);
+      return (notes[x['매칭키']] || []).some(function (p) { return p.name === yn || (yn.length === p.name.length + 1 && yn.slice(1) === p.name && xs.indexOf(yn.charAt(0)) >= 0); });
     }
     add(cur);
     for (var round = 0, changed = true; changed && round < 6; round++) {
@@ -578,7 +586,7 @@ console.log('[gyojeok.js] v20260701di');
       });
     }
     // 가족사항 글에 적힌 사람
-    var extra = [], extraSeen = {};
+    var extra = [];
     // 세대주: '관계'가 세대주인 사람 > 다른 가족이 세대주로 적은 사람 > 세대주 칸이 본인인 사람
     var headM = cur, best = -1;
     set.forEach(function (x) {
@@ -590,7 +598,7 @@ console.log('[gyojeok.js] v20260701di');
       parseFamilyNote(x['가족사항']).forEach(function (p) {
         var cand = (byName[p.name] || []).slice();
         if (!cand.length && p.name.length <= 3) {
-          var sn = [nrm(x['이름']).charAt(0), nrm(headM['이름']).charAt(0)];
+          var sn = surnamesOf(x).concat(surnamesOf(headM));
           all.forEach(function (y) { var yn = nrm(y['이름']); if (yn.length === p.name.length + 1 && yn.slice(1) === p.name && sn.indexOf(yn.charAt(0)) >= 0) cand.push(y); });
         }
         if (cand.length === 1) {
@@ -600,9 +608,13 @@ console.log('[gyojeok.js] v20260701di');
           return;
         }
         var already = set.some(function (s) { var n = nrm(s['이름']); return n === p.name || n.slice(1) === p.name; });
-        if (already || extraSeen[p.name]) return;
-        extraSeen[p.name] = 1;
-        extra.push({ name: p.name, rel: relFromWord(p.word, null) });
+        if (already) return;
+        // 같은 사람이 두 번 적힌 경우(최주희 / 주희) 하나로, 관계는 더 자세한 쪽(장녀 > 자녀)
+        var rel = relFromWord(p.word, null);
+        if (x !== headM && !spouses(x, headM)) rel = x['이름'] + '의 ' + rel;   // 세대주가 아닌 분의 가족사항이면 누구의 가족인지 밝힌다
+        var dup = extra.filter(function (e) { return e.name === p.name || e.name.slice(1) === p.name || p.name.slice(1) === e.name; })[0];
+        if (dup) { if (/자녀$/.test(dup.rel) && !/자녀$/.test(rel)) dup.rel = rel; if (p.name.length > dup.name.length) dup.name = p.name; return; }
+        extra.push({ name: p.name, rel: rel });
       });
     });
     // 관계: 교적의 '관계' 칸이 있으면 그대로, 없으면 세대주·배우자·가족사항으로 채운다
