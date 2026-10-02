@@ -3643,11 +3643,24 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
 .sv-panel-list .servant-subgroup.sv-first { margin-top: 0; }
 @media (max-width: 760px) { .sv-tabs { gap: 14px; } .sv-tab { font-size: .9rem; } }
 
-/* 예배 순서의 교독문 줄 — 누르면 교독문 전체가 아래에서 올라온다(js/gyodok-view.js) */
-li.is-gyodok { cursor: pointer; }
-li.is-gyodok:hover span, li.is-gyodok:hover { color: var(--accent); }
-li.is-gyodok .gd-more { font-style: normal; font-size: .82em; font-weight: 700; color: var(--gold-logo, #BFA06C);
-  margin-left: 6px; white-space: nowrap; }
+/* 예배 순서의 교독문·사도신경·성경봉독 줄 — 누르면 전문이 아래에서 올라온다(js/worship-view.js).
+   '보기 ›'는 눈에 띄게 주황색(목사님 요청) */
+li.is-wv { cursor: pointer; }
+li.is-wv:hover { color: var(--accent); }
+li.is-wv .wv-more { display: inline-block; font-style: normal; font-size: .8em; font-weight: 700; color: #fff;
+  background: #E8731A; border-radius: 999px; padding: 1px 8px 2px; margin-left: 6px; white-space: nowrap; vertical-align: 1px; }
+li.is-wv:hover .wv-more { background: #C95F0E; }
+/* 글 속 성경 장절(롬 8:17 등) — 누르면 그 아래에 본문이 펼쳐진다 */
+button.vref { font: inherit; color: #C95F0E; font-weight: 700; background: none; border: 0; padding: 0;
+  cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+button.vref[aria-expanded="true"] { text-decoration-style: solid; }
+.vref-box { margin: 6px 0 14px; padding: 12px 14px; background: #FFF6EC; border-left: 3px solid #E8731A; border-radius: 0 8px 8px 0; }
+.vref-box .vref-head { margin: 0 0 6px; font-weight: 700; color: #C95F0E; font-size: .92rem; }
+.vref-box .vref-head small { font-weight: 400; color: var(--muted); margin-left: 4px; }
+.vref-box .sv-lines { margin: 0; padding: 0; background: none; border: 0; border-radius: 0; }
+.vref-box .sv-line { font-size: 1.02rem; line-height: 1.7; }
+.vref-box .sv-line + .sv-line { margin-top: 4px; }
+.cr-body p { margin: 0 0 8px; font-family: "Gowun Batang", serif; font-size: 1.1rem; line-height: 1.75; color: var(--ink); }
 .gd-body { font-family: "Gowun Batang", serif; font-size: 1.08rem; line-height: 1.75; color: var(--ink); }
 .gd-line { display: flex; gap: 12px; margin: 0; padding: 7px 0; border-bottom: 1px dashed rgba(26,58,47,.12); }
 .gd-role { flex: 0 0 3.2em; padding-top: .15em; font-family: "IBM Plex Sans KR", sans-serif; font-size: .78rem;
