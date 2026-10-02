@@ -328,20 +328,31 @@ if (sermonDeck) {
     }
   }
 
-  // 섬기는 사람들: 설정값이 있으면 카드/행/기관부서 덮어쓰기(없으면 HTML 하드코딩 유지)
-  if (window.SiteSettings && document.getElementById("servantCards")) {
+  // 섬기는 사람들 세 칸(원로목사 · 담임목사 · 시무장로) 바꾸기
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest(".sv-tab");
+    if (!t) return;
+    const box = t.closest(".servants");
+    box.querySelectorAll(".sv-tab").forEach((b) => { const on = b === t; b.classList.toggle("is-on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
+    box.querySelectorAll(".sv-panel").forEach((p) => { p.hidden = p.id !== t.getAttribute("data-sv"); });
+  });
+
+  // 섬기는 사람들: 설정값이 있으면 이름/행/기관부서 덮어쓰기(없으면 HTML 하드코딩 유지)
+  //   설정의 카드(직분·이름)와 '시무장로' 행은 같은 직분 칸의 이름에 넣는다.
+  if (window.SiteSettings && document.getElementById("servantRows")) {
     const rowsHtml = (arr) => arr
       .filter((r) => r && (r.label || r.names))
       .map((r) => `<div class="servant-row"><span class="row-label">${escH(r.label)}</span><span class="row-names">${escH(r.names)}</span></div>`)
       .join("");
+    const setName = (role, name) => {
+      const n = name && document.querySelector(`.sv-panel[data-role="${String(role).replace(/"/g, "")}"] .sv-n`);
+      if (n) n.textContent = String(name).trim();
+    };
     window.SiteSettings.homepage().then((hp) => {
       const s = hp && hp.servants;
       if (!s) return;
-      if (Array.isArray(s.cards) && s.cards.length) {
-        document.getElementById("servantCards").innerHTML = s.cards
-          .map((c) => `<div class="servant-card${c.highlight ? " highlight" : ""}"><span class="role">${escH(c.role)}</span><span class="name">${escH(c.name) || "○○○"}</span></div>`)
-          .join("");
-      }
+      if (Array.isArray(s.cards)) s.cards.forEach((c) => c && setName(c.role, c.name));
+      if (Array.isArray(s.rows)) s.rows.forEach((r) => r && r.label === "시무장로" && setName("시무장로", r.names));
       if (Array.isArray(s.rows)) { const el = document.getElementById("servantRows"); if (el) el.innerHTML = rowsHtml(s.rows); }
       if (Array.isArray(s.org)) { const el = document.getElementById("servantOrg"); if (el) el.innerHTML = rowsHtml(s.org); }
     });
