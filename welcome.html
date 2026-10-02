@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="js/page-slide.js?v=20261001"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261002servants" />
+  <link rel="stylesheet" href="css/style.css?v=20261002servants2" />
 </head>
 <body>
 
@@ -184,6 +184,7 @@
             <button type="button" class="sv-tab is-on" role="tab" aria-selected="true" data-sv="sv-elder">원로목사</button>
             <button type="button" class="sv-tab" role="tab" aria-selected="false" data-sv="sv-senior">담임목사</button>
             <button type="button" class="sv-tab" role="tab" aria-selected="false" data-sv="sv-elders">시무장로</button>
+            <button type="button" class="sv-tab" role="tab" aria-selected="false" data-sv="sv-all">함께 섬기는 분들</button>
           </div>
 
           <article class="sv-panel" id="sv-elder" role="tabpanel" data-role="원로목사">
@@ -217,7 +218,9 @@
             </div>
           </article>
 
-          <h4 class="servant-subgroup">함께 섬기는 분들</h4>
+          <!-- 넷째 칸: 함께 섬기는 분들(직분자 · 기관 부서 봉사자 명단) -->
+          <div class="sv-panel sv-panel-list" id="sv-all" role="tabpanel" hidden>
+          <h4 class="servant-subgroup sv-first">직분자</h4>
           <div class="servant-rows" id="servantRows">
             <div class="servant-row"><span class="row-label">시무장로</span><span class="row-names">문명수</span></div>
             <div class="servant-row"><span class="row-label">안수집사</span><span class="row-names">김종학 · 최명철 · 신성찬</span></div>
@@ -236,6 +239,7 @@
             <div class="servant-row"><span class="row-label">식당</span><span class="row-names">총책임 오성자 · 부책임 최지연</span></div>
             <div class="servant-row"><span class="row-label">차량 운행</span><span class="row-names">김종학 · 임희순</span></div>
             <div class="servant-row"><span class="row-label">꽃꽂이</span><span class="row-names">김교선</span></div>
+          </div>
           </div>
         </div>
     </div>

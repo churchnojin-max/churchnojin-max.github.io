@@ -3637,3 +3637,8 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
   .sv-photo { width: 100%; max-width: 320px; margin: 0 auto; }
   .sv-name b { font-size: 1.75rem; }
 }
+/* 넷째 칸 '함께 섬기는 분들'은 명단이라 한 단으로 */
+.sv-panel.sv-panel-list { display: block; }
+.sv-panel.sv-panel-list[hidden] { display: none; }
+.sv-panel-list .servant-subgroup.sv-first { margin-top: 0; }
+@media (max-width: 760px) { .sv-tabs { gap: 14px; } .sv-tab { font-size: .9rem; } }
