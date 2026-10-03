@@ -1,6 +1,7 @@
 /* 예배 순서·설교 요약·칼럼에서 '눌러서 보기'
    ① 예배 순서(.hbb-order / .hb-order)의 교독문·사도신경·성경봉독 줄 → 아래에서 올라오는 창(SlideSheet)에 전문
-      찬송가 줄(예: 찬송가 28장 / 복의 근원 강림하사, 봉헌 445장 / …)은 새찬송가 악보 — 저작권 때문에 로그인한 정회원만
+      찬송가 줄(예: 찬송가 28장 / 복의 근원 강림하사, 봉헌 445장 / …)은 새찬송가 악보 — 저작권 문의 중이라 최고 관리자와
+      '악보' 권한을 받은 사람에게만 단추가 보인다(교적관리 ▸ 권한 관리, supabase/score_access.sql 의 can_score()). 그 밖의 분께는 아무것도 안 보인다.
       (Supabase 비공개 보관함 'hymns' 의 001~645.webp, supabase/hymns_bucket.sql 의 is_full_member() 규칙).
       입례송·찬양 줄의 곡 제목이 찬양집 「모두의 찬양」(js/praise-index.js, 684곡)에 있으면 그 악보(hymns/ccm/NNN.webp)도 같은 방식으로.
    ② 설교 요약·칼럼·신앙 상담 글 속 성경 장절(예: 롬 8:17, 창세기 15장 7절) → 누르면 그 자리 아래에 본문이 펼쳐짐
@@ -145,14 +146,14 @@
   }
   function showScore(head, key) {
     var sb = window.__sb;
-    if (!sb) { sheet(head, hymnMsg("로그인한 정회원만 사용할 수 있습니다.", false)); return; }
+    if (!sb) { sheet(head, hymnMsg("볼 수 있는 권한이 없습니다.", false)); return; }
     sheet(head, '<p class="gd-note">악보를 불러오는 중…</p>');
     var body = document.getElementById("slideSheetBody");
     var token = {};
     if (body) body.__hy = token;
     function put(html) { if (body && body.__hy === token) body.innerHTML = html; }
     sb.auth.getSession().then(function (r) {
-      if (!(r && r.data && r.data.session)) { put(hymnMsg("<b>로그인한 정회원</b>만 사용할 수 있습니다.", true)); return; }
+      if (!(r && r.data && r.data.session)) { put(hymnMsg("볼 수 있는 권한이 없습니다.", false)); return; }
       var hit = hymnUrls[key];
       var p = hit && hit.until > Date.now() ? Promise.resolve(hit.url)
         : sb.storage.from("hymns").createSignedUrl(key, 3600).then(function (res) {
@@ -162,13 +163,44 @@
           });
       return p.then(function (url) {
         put('<figure class="hy-fig"><img class="hy-img" src="' + esc(url) + '" alt="' + esc(head) + ' 악보" /></figure>' +
-          '<p class="gd-note">정회원 전용</p>');
+'');
       }, function () {
-        put(hymnMsg("<b>정회원</b>만 사용할 수 있습니다.<br>정회원 승인을 받으시면 바로 보입니다.", false));
+        put(hymnMsg("볼 수 있는 권한이 없습니다.", false));
       });
     }).catch(function () { put(hymnMsg("악보를 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요.", false)); });
   }
   window.HymnView = { open: openHymn, openPraise: openPraise };
+
+  // ── 악보 권한 확인(로그인할 때·로그아웃할 때 다시). 권한이 생기면 아직 표시 안 한 줄을 다시 살핀다
+  var scoreOK = false;
+  function setScore(ok) {
+    if (ok === scoreOK) return;
+    scoreOK = ok;
+    document.querySelectorAll(".hbb-order li, .hb-order li").forEach(function (li) {
+      var k = ORDER_KINDS[+li.dataset.wv];
+      if (li.dataset.wv === "-" || (!ok && k && (k[0] === "hymn" || k[0] === "praise"))) {
+        delete li.dataset.wv;
+        li.classList.remove("is-wv", "is-hymn");
+        li.removeAttribute("role"); li.removeAttribute("tabindex");
+        var bt = li.querySelector(".wv-btns"); if (bt) bt.remove();
+      }
+    });
+    scan();
+  }
+  function checkScore() {
+    var sb = window.__sb;
+    if (!sb) return;
+    sb.auth.getSession().then(function (r) {
+      if (!(r && r.data && r.data.session)) { setScore(false); return; }
+      return sb.rpc("can_score").then(function (res) { setScore(!!(res && res.data === true)); });
+    }).catch(function () { setScore(false); });
+  }
+  function watchAuth() {
+    checkScore();
+    try { window.__sb.auth.onAuthStateChange(function () { setTimeout(checkScore, 0); }); } catch (e) {}
+  }
+  if (window.__sb) setTimeout(watchAuth, 0);
+  else window.addEventListener("sb-ready", watchAuth, { once: true });
 
   // ── 찬양집 「모두의 찬양」 제목 찾기(목록은 처음 필요할 때 한 번만 불러온다)
   function nz(t) { return String(t || "").replace(/[\s,.!?·~\-–—()“”"'’‘「」『』<>]/g, ""); }
@@ -260,13 +292,13 @@
     if (name === "교독문" && (m = rest.match(/(\d{1,3})\s*번/)) && +m[1] >= 1 && +m[1] <= 137) return ["gyodok", +m[1]];
     if (/사도신경/.test(name + rest)) return ["creed"];
     // 찬송가: 이름이 찬송(가)이고 'NNN장'이 있거나, 'NNN장 / 제목' 꼴(봉헌 찬송 등). 성경 장절(창세기 15장 7절)과 헷갈리지 않게 책 이름이 앞에 오면 뺀다
-    var hm = rest.match(/(^|[^가-힣\d])(\d{1,3})\s*장(?!\s*\d)(?:\s*[\/·]\s*([^\/]+))?/);
+    var hm = scoreOK && rest.match(/(^|[^가-힣\d])(\d{1,3})\s*장(?!\s*\d)(?:\s*[\/·]\s*([^\/]+))?/);
     if (hm && +hm[2] >= 1 && +hm[2] <= 645 && (/찬송/.test(name) || hm[3]) && !parseRef(rest)) {
       return ["hymn", [+hm[2], (hm[3] || "").replace(/\s+/g, " ").trim()]];
     }
     if (/성경봉독|성경말씀|봉독/.test(name)) { var r = parseRef(rest); if (r) return ["bible", r]; }
     // 입례송·찬양 등: 내용이 찬양집 곡 제목과 같으면 악보
-    if (!/기도|말씀|소식|축도|봉독|광고|선포/.test(name) && nz(rest).length >= 3) {
+    if (scoreOK && !/기도|말씀|소식|축도|봉독|광고|선포/.test(name) && nz(rest).length >= 3) {
       if (!praiseMap) { loadPraise(); return null; }
       var pr = findPraise(rest.replace(/^[\s—\-–:]+/, ""));
       if (pr) return ["praise", [pr[0], pr[1], pr[2], b.textContent.replace(/\s+/g, "")]];

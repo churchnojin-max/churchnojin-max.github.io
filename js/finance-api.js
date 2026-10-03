@@ -293,6 +293,13 @@ window.WPF = (function () {
           return r;
         });
       }
+      case 'listScoreAccess':   // 악보 권한을 받은 사람 uid 목록(관리자만)
+        return rpc('list_score_access').then(function (arr) { return { ok: true, uids: arr || [] }; });
+      case 'setScoreAccess':
+        return rpc('set_score_access', { p_uid: params.targetUid, p_on: !!params.on }).then(function (r) {
+          if (r && r.ok === false) throw new Error(r.error || '저장하지 못했습니다.');
+          return r;
+        });
       case 'myPerms':
         return rpc('my_perms').then(function (p) { return { ok: true, perms: p || {} }; });
       case 'gyojeokSignups':

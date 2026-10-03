@@ -233,12 +233,16 @@ console.log('[gyojeok.js] v20260701di');
     ['canAffairs', '목회행정', '심방·상담·설교관리'],
     ['canBoard', '게시판', '공지·앨범·나눔터 관리'],
     ['canDistrict', '교구사역', '구역장 사역보고 작성 · 자기 보고 열람 · 말씀 나눔지 받기'],
-    ['canDistrictAll', '교구사역<br>전체', '전 구역 보고 열람 · 말씀 나눔지 올리기(교구장)']
+    ['canDistrictAll', '교구사역<br>전체', '전 구역 보고 열람 · 말씀 나눔지 올리기(교구장)'],
+    ['canScore', '악보', '예배 순서의 찬송가·찬양 악보 보기(저작권 문의 중이라 꼭 필요한 분만)']
   ];
 
   function renderAccess(panel) {
     loading(panel);
-    Promise.all([WPF.call('listAccess'), WPF.call('listGyojeok')]).then(function (res) {
+    Promise.all([WPF.call('listAccess'), WPF.call('listGyojeok'),
+      WPF.call('listScoreAccess').catch(function () { return { uids: [] }; })]).then(function (res) {
+      var scoreUids = res[2].uids || [];
+      (res[0].users || []).forEach(function (u) { u.canScore = scoreUids.indexOf(u.uid) >= 0; });
       var users = (res[0].users || []).sort(function (a, b) { return (b.isAdmin - a.isAdmin) || (b.canFinance - a.canFinance) || String(a.name).localeCompare(String(b.name), 'ko'); });
       var gj = (res[1].members || []).filter(function (m) { return m['이름']; });
       panel.innerHTML = '<div class="fin-card">' +
@@ -278,7 +282,8 @@ console.log('[gyojeok.js] v20260701di');
         function saveAccess(field, val, revert) {
           var body = { targetUid: uid }; body[field] = val;
           msg.style.color = 'var(--ink-soft)'; msg.textContent = '저장 중…';
-          WPF.call('setAccess', body).then(function () { flash(true, '✓ 저장됨'); }).catch(function (e) { flash(false, '오류: ' + e.message); if (revert) revert(); });
+          // 악보 권한은 따로 저장한다(supabase/score_access.sql)
+          (field === 'canScore' ? WPF.call('setScoreAccess', { targetUid: uid, on: val }) : WPF.call('setAccess', body)).then(function () { flash(true, '✓ 저장됨'); }).catch(function (e) { flash(false, '오류: ' + e.message); if (revert) revert(); });
         }
         ckA.addEventListener('change', function () {
           if (ckA.checked && !confirm('「' + (u.name || u.email) + '」님을 관리자로 지정하면 재정·교적을 포함한 모든 영역을 볼 수 있게 됩니다.\n특정 일만 맡기실 거라면 취소하고 영역 권한만 체크해 주세요.\n\n관리자로 지정할까요?')) {
