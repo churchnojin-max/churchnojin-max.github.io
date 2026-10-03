@@ -139,14 +139,14 @@
   function openHymn(no, title) {
     var head = "찬송가 " + no + "장" + (title ? " · " + title : "");
     var sb = window.__sb;
-    if (!sb) { sheet(head, hymnMsg("악보는 로그인한 정회원만 볼 수 있습니다.", false)); return; }
+    if (!sb) { sheet(head, hymnMsg("로그인한 정회원만 사용할 수 있습니다.", false)); return; }
     sheet(head, '<p class="gd-note">악보를 불러오는 중…</p>');
     var body = document.getElementById("slideSheetBody");
     var token = {};
     if (body) body.__hy = token;
     function put(html) { if (body && body.__hy === token) body.innerHTML = html; }
     sb.auth.getSession().then(function (r) {
-      if (!(r && r.data && r.data.session)) { put(hymnMsg("새찬송가 악보는 저작권 때문에 <b>로그인한 정회원</b>만 볼 수 있습니다.", true)); return; }
+      if (!(r && r.data && r.data.session)) { put(hymnMsg("<b>로그인한 정회원</b>만 사용할 수 있습니다.", true)); return; }
       var key = ("00" + no).slice(-3) + ".webp";
       var hit = hymnUrls[key];
       var p = hit && hit.until > Date.now() ? Promise.resolve(hit.url)
@@ -157,9 +157,9 @@
           });
       return p.then(function (url) {
         put('<figure class="hy-fig"><img class="hy-img" src="' + esc(url) + '" alt="' + esc(head) + ' 악보" /></figure>' +
-          '<p class="gd-note">새찬송가 · 교회 안에서만 보아 주세요(정회원 전용)</p>');
+          '<p class="gd-note">정회원 전용</p>');
       }, function () {
-        put(hymnMsg("악보는 <b>정회원</b>만 볼 수 있습니다. 정회원 승인을 받으시면 바로 보입니다.", false));
+        put(hymnMsg("<b>정회원</b>만 사용할 수 있습니다.<br>정회원 승인을 받으시면 바로 보입니다.", false));
       });
     }).catch(function () { put(hymnMsg("악보를 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요.", false)); });
   }
