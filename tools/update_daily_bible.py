@@ -48,11 +48,17 @@ def fetch_day(date):
     if b and a.split(":")[0] == b.split(":")[0]:
         b = b.split(":")[1]
     ref = f"{book_ko} {a}" + (f"-{b}" if b else "")
+    # 장·절·찬송 번호는 숫자로만 받는다(그쪽 사이트 값이 그대로 화면에 들어가지 않게)
+    def num(x):
+        try:
+            return int(str(x).strip())
+        except (TypeError, ValueError):
+            return 0
     return {
         "title": (info.get("Qt_sj") or "").strip(),
         "ref": ref,
-        "hymn": info.get("New_song") or 0,
-        "verses": [[v.get("Chapter"), v.get("Verse"), (v.get("Bible_Cn") or "").strip()] for v in verses],
+        "hymn": num(info.get("New_song")),
+        "verses": [[num(v.get("Chapter")), num(v.get("Verse")), (v.get("Bible_Cn") or "").strip()] for v in verses],
     }
 
 

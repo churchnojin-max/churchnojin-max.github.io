@@ -2,12 +2,12 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 rem ── ○○교회 QT 음성 업로더 ──────────────────────────────────────
-rem  1) 아래 따옴표 안에 Supabase service_role 키를 한 번만 붙여넣으세요.
-rem     (Supabase → Project Settings → API → service_role)
-rem  2) 이 파일과 같은 폴더의 "qt음성" 폴더에 WAV(파일명에 날짜 2026-07-06 포함)를 넣으세요.
-rem  3) 이 파일을 더블클릭하면 업로드됩니다.
+rem  ※ 열쇠(service_role)를 이 파일에 적지 마세요. 이 폴더는 인터넷에 공개되는 저장소입니다.
+rem     열쇠는 "설교올리기_열쇠넣기.bat" 으로 한 번 넣어 두면(내 컴퓨터 개인 폴더에 저장)
+rem     이 프로그램이 알아서 읽습니다.
+rem  1) 이 파일과 같은 폴더의 "qt음성" 폴더에 WAV(파일명에 날짜 2026-07-06 포함)를 넣으세요.
+rem  2) 이 파일을 더블클릭하면 업로드됩니다.
 rem ─────────────────────────────────────────────────────────────
-set "SUPABASE_SERVICE_ROLE_KEY=여기에_service_role_키_붙여넣기"
 
 if not exist "qt음성" mkdir "qt음성"
 echo QT 음성 업로드를 시작합니다...

@@ -18,10 +18,9 @@
 - 한 폴더(예: `C:\qt음성`)에 모아 두세요
 
 ## 저장소에 올리기 (업로드)
-명령 프롬프트(cmd)에서 (한 번만 키 설정 후, 이후엔 마지막 줄만):
+열쇠는 **파일에 적지 않습니다**(이 폴더는 인터넷에 공개되는 저장소). `tools\설교올리기_열쇠넣기.bat` 으로 한 번 넣어 두면 내 컴퓨터 개인 폴더에 저장되고, 아래 프로그램이 알아서 읽습니다.
 ```bat
-set SUPABASE_SERVICE_ROLE_KEY=여기에_service_role_키
-python "C:\...\woonpyung-church\tools\tts_local.py" --from-folder "C:\qt음성"
+python "tools\tts_local.py" --from-folder "C:\qt음성"
 ```
 - 폴더 안의 WAV들을 날짜별로 `tts-cache/qt-<날짜>.wav` 로 올립니다. 이미 있으면 건너뜁니다(`--force`로 덮어쓰기).
 - 끝나면 홈페이지 새로고침 → 그 날짜 QT의 **🔊 오늘의 말씀 듣기**가 이 음성으로 재생됩니다.

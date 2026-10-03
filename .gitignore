@@ -11,3 +11,20 @@ offerings_full_*.sql
 *-동석이네집.html
 __pycache__/
 찬양악보/
+
+# 원본 사진·악보 — 홈페이지에 올리지 않는다(아이들 사진 등 개인정보·저작권)
+images/노진교회주일학교/
+images/20260726/
+images/pastor_backup_*
+이달의 찬양/
+
+# 비밀값·작업 기록·상태 파일
+.env
+*.key
+*.log
+tools/*_state.json
+
+# 두 PC 동기화(Syncthing) 흔적
+.stfolder/
+.stignore
+*.sync-conflict*

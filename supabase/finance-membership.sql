@@ -70,7 +70,7 @@ $$;
 --
 -- 2) 생년월일 미입력 교인(영유아 등) 수동 정회원 승인:
 --    update public.member_links
---      set member_status = '정회원', member_id = 82, member_name = '김준상',
+--      set member_status = '정회원', member_id = 0, member_name = '홍길동',
 --          matched_at = now(), note = '생년월일 미입력 수동승인'
 --      where user_id = '여기에-UID';
 --

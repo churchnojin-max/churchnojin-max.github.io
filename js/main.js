@@ -888,9 +888,11 @@ window.WPCTts = WPCTts;
     if (html == null) return "";
     const s = String(html);
     if (!/<[a-z!][\s\S]*>/i.test(s)) return s;
-    const d = document.createElement("div");
-    d.innerHTML = s.replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, "$&\n").replace(/<br\s*\/?>/gi, "\n");
-    return (d.textContent || "").replace(/\n{3,}/g, "\n\n").replace(/[ \t]+\n/g, "\n").trim();
+    // DOMParser 로 만든 문서는 화면과 떨어져 있어 그림을 받거나 스크립트(onerror 등)를 돌리지 않는다.
+    // (div.innerHTML 로 풀면 화면에 붙이지 않아도 <img onerror> 가 실행된다)
+    const doc = new DOMParser().parseFromString(
+      s.replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, "$&\n").replace(/<br\s*\/?>/gi, "\n"), "text/html");
+    return ((doc.body && doc.body.textContent) || "").replace(/\n{3,}/g, "\n\n").replace(/[ \t]+\n/g, "\n").trim();
   }
   function rowToQtContent(r) {
     const dateStr = fmtKakaoDateFromIso(r.sermon_date);
@@ -996,12 +998,12 @@ window.WPCTts = WPCTts;
     return days ? days[todayStr().replace(/\./g, "-")] || null : null;
   }
   function openDailyBible(db) {
-    const verses = (db.verses || []).map((v) => `<p class="sv-line"><sup>${v[1]}</sup>${escQt(v[2])}</p>`).join("");
+    const verses = (db.verses || []).map((v) => `<p class="sv-line"><sup>${escQt(v[1])}</sup>${escQt(v[2])}</p>`).join("");
     window.SlideSheet.open("오늘의 매일성경", `
       <div class="ws-pop">
         <span class="ws-date">${todayStr()} · 매일성경</span>
         ${db.title ? `<h3 class="ws-title">${escQt(db.title)}</h3>` : ""}
-        <p class="ws-ref">${escQt(db.ref)}${db.hymn ? ` · 찬송가 ${db.hymn}장` : ""}</p>
+        <p class="ws-ref">${escQt(db.ref)}${db.hymn ? ` · 찬송가 ${escQt(db.hymn)}장` : ""}</p>
         <div class="sv-lines">${verses}</div>
         <p class="db-copy">본문: 성경전서 개역개정판(저작권 재단법인 대한성서공회) · 본문 선정: 매일성경(성서유니온선교회)</p>
         <p class="db-links"><a class="ws-more" href="https://sum.su.or.kr:8888/bible/today" target="_blank" rel="noopener">📖 매일성경 해설 보기 →</a></p>
@@ -1020,13 +1022,13 @@ window.WPCTts = WPCTts;
     const isToday = !!todayEntry;
     let html = "";
     if (db) {
-      const first = (db.verses || []).slice(0, 2).map((v) => `<sup>${v[1]}</sup>${escQt(v[2])}`).join(" ");
+      const first = (db.verses || []).slice(0, 2).map((v) => `<sup>${escQt(v[1])}</sup>${escQt(v[2])}`).join(" ");
       html += `
       <button class="qt-card-today db-card" id="dbOpen">
         <span class="qt-badge">오늘의 매일성경 · ${ts}</span>
         ${db.title ? `<h3 class="qt-card-title">${escQt(db.title)}</h3>` : ""}
         <p class="qt-card-ref">${escQt(db.ref)}</p>
-        ${db.hymn ? `<span class="db-hymn">찬송가 ${db.hymn}장</span>` : ""}
+        ${db.hymn ? `<span class="db-hymn">찬송가 ${escQt(db.hymn)}장</span>` : ""}
         <p class="db-preview">${first}</p>
         <span class="qt-card-more">눌러서 본문 전체 읽기 ↑</span>
       </button>`;
@@ -1036,9 +1038,9 @@ window.WPCTts = WPCTts;
         ? `<button class="qt-church-link" id="qtOpen">✍️ ${isToday ? "오늘의 교회 QT 묵상" : "최근 교회 QT 묵상"} · ${entry.date} — ${escQt(entry.title || "")} →</button>`
         : `
       <button class="qt-card-today" id="qtOpen">
-        <span class="qt-badge">${isToday ? "오늘의 QT" : "최근 QT"} · ${entry.date}</span>
-        <h3 class="qt-card-title">${entry.title}</h3>
-        ${entry.ref ? `<p class="qt-card-ref">${entry.ref}</p>` : ""}
+        <span class="qt-badge">${isToday ? "오늘의 QT" : "최근 QT"} · ${escQt(entry.date)}</span>
+        <h3 class="qt-card-title">${escQt(entry.title || "")}</h3>
+        ${entry.ref ? `<p class="qt-card-ref">${escQt(entry.ref)}</p>` : ""}
         <span class="qt-card-more">묵상 전문 읽기 →</span>
       </button>`;
     }

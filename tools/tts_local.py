@@ -21,6 +21,14 @@ import os, sys, json, re, argparse, tempfile, urllib.request, urllib.error
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://YOUR-PROJECT.supabase.co").rstrip("/")
 SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+if not SERVICE_KEY:
+    # 열쇠는 저장소(공개) 안 파일에 적지 않는다 — 설교 올리기와 같은 개인 폴더의 열쇠 파일을 읽는다
+    # (넣는 법: tools\설교올리기_열쇠넣기.bat)
+    try:
+        with open(os.path.join(os.environ.get("APPDATA", ""), "nojin", "supabase_service.key"), encoding="utf-8") as _f:
+            SERVICE_KEY = _f.read().strip()
+    except OSError:
+        SERVICE_KEY = ""
 ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 BUCKET = "tts-cache"
 
