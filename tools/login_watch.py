@@ -89,9 +89,19 @@ def api(method, path, body=None, prefer=None):
 
 
 # ── 텔레그램 ──
-def telegram(text):
+# 해외 로그인 알림에 붙이는 비상 단추 — 누르면 사무실 PC 의 봇(D:\클코저장소\텔레그램봇\security_actions.py)이 처리
+ALERT_BUTTONS = {"inline_keyboard": [
+    [{"text": "✅ 제가 한 거예요", "callback_data": "sec:ok"}],
+    [{"text": "🔒 모든 사람 로그아웃", "callback_data": "sec:logout_all"}],
+    [{"text": "🔑 내 비밀번호 재설정 + 내 로그인 끊기", "callback_data": "sec:reset_me"}],
+    [{"text": "📋 지금 상태 보기", "callback_data": "sec:status"}],
+]}
+
+
+def telegram(text, buttons=None):
     if PREVIEW:
-        print("\n[텔레그램으로 보낼 글]\n" + text + "\n", flush=True)
+        print("\n[텔레그램으로 보낼 글]\n" + text + "\n" +
+              ("[단추] " + " | ".join(b["text"] for row in buttons["inline_keyboard"] for b in row) + "\n" if buttons else ""), flush=True)
         return True
     try:
         env = {}
@@ -102,8 +112,11 @@ def telegram(text):
         token = env["TELEGRAM_BOT_TOKEN"]
         ok = False
         for uid in [x.strip() for x in env.get("ALLOWED_USER_IDS", "").split(",") if x.strip()]:
+            body = {"chat_id": int(uid), "text": text}
+            if buttons:
+                body["reply_markup"] = buttons
             req = urllib.request.Request("https://api.telegram.org/bot" + token + "/sendMessage",
-                                         data=json.dumps({"chat_id": int(uid), "text": text}).encode("utf-8"),
+                                         data=json.dumps(body).encode("utf-8"),
                                          headers={"Content-Type": "application/json"}, method="POST")
             with urllib.request.urlopen(req, timeout=15) as r:
                 ok = ok or r.status == 200
@@ -288,9 +301,9 @@ def check_new_logins(state):
                     "언제: " + when(r["at"]) + "\n"
                     "어디: " + country_name(cc) + "\n"
                     "기기: " + device(r.get("user_agent")) + "\n\n"
-                    "목사님이 모르는 일이면 사무실 PC 바탕화면 「홈페이지 비상복구」에서\n"
-                    "[3] 비밀번호 털림 또는 [4] 모든 사람 로그아웃을 골라 주세요.")
-            if telegram(text) and not PREVIEW:
+                    "목사님이 모르는 일이면 아래 단추로 바로 막을 수 있습니다(누르면 한 번 더 묻습니다).\n"
+                    "단추가 대답이 없으면 사무실 PC가 꺼진 것 → 고정해 둔 '비상 카드' ②번")
+            if telegram(text, ALERT_BUTTONS) and not PREVIEW:
                 api("PATCH", "/rest/v1/login_log?id=eq." + str(r["id"]), {"alerted": True}, "return=minimal")
             log("해외 로그인 알림 1건 (" + str(cc) + ")")          # 이 PC 기록에는 이름을 남기지 않는다
         state["last_id"] = max(state.get("last_id", 0), r["id"])
@@ -361,6 +374,7 @@ def summary_text(since):
         lines.append("   " + act_line(a))
     if not logins and not perm and not other:
         lines.append("오늘은 조용한 하루였습니다 ✓")
+    lines.append("\n비상 메뉴: 이 봇에 '비상'이라고 보내세요.")
     return "\n".join(lines)
 
 
