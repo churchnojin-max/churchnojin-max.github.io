@@ -103,7 +103,7 @@
     if (!gyodokReady) {
       gyodokReady = new Promise(function (ok, fail) {
         var s = document.createElement("script");
-        s.src = "js/gyodok-data.js?v=20261002kjv";
+        s.src = "js/gyodok-data.js?v=20261003chk";
         s.onload = function () { window.GYODOK ? ok(window.GYODOK) : fail(new Error("no data")); };
         s.onerror = function () { gyodokReady = null; fail(new Error("load")); };
         document.head.appendChild(s);
