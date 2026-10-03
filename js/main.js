@@ -1632,6 +1632,7 @@ if (homeBulletin) {
         }
         const d = b.data || {};
         const dl = String(b.bdate || "").slice(0, 10).replace(/-/g, ". ");
+        window.BULLETIN_XREFS = d.summary || "";   // 성경봉독 줄의 '인용구절 보기'(js/worship-view.js)에 쓴다
 
         // 한 주의 소식은 모두, 본문 말씀 대신 예배 순서를 보여 준다(2026-10-01 목사님 요청)
         const briefNews = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 10);
@@ -1665,7 +1666,7 @@ if (homeBulletin) {
           : "";
         const offerKeys = Object.keys(d.offering || {}).filter((k) => d.offering[k]);
         const offerHtml = offerKeys.length
-          ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><ul class="hb-extra">${offerKeys.map((k) => `<li><b>${escB(k)}</b> ${escB(d.offering[k])}</li>`).join("")}</ul></div>`
+          ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><ul class="hb-extra hb-offer">${offerKeys.map((k) => `<li><b>${escB(k)}</b><span>${escB(d.offering[k])}</span></li>`).join("")}</ul></div>`
           : "";
         const noticeLines = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean);
         const noticeHtml = noticeLines.length

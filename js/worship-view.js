@@ -145,6 +145,41 @@
     }
   }
 
+  // 주보 설교 요약의 인용구절(●장절 + 본문) — main.js 가 window.BULLETIN_XREFS 에 넣어 둔다.
+  // '[함께 나누는 질문]' 같은 질문 칸은 빼고, ● 줄마다 그 아래 줄들을 본문으로 묶는다.
+  function parseXrefs(text) {
+    var out = [], cur = null, skip = false;
+    String(text || "").split(/\r?\n/).forEach(function (raw) {
+      var l = raw.trim();
+      if (!l) return;
+      if (/^\[.*\]$/.test(l)) { skip = /질문/.test(l); cur = null; return; }
+      if (skip) return;
+      var m = l.match(/^●\s*(.+)$/);
+      if (m) { cur = { label: m[1].trim(), text: [] }; out.push(cur); return; }
+      if (cur) cur.text.push(l);
+    });
+    return out;
+  }
+  function openXrefs() {
+    var list = parseXrefs(window.BULLETIN_XREFS);
+    if (!list.length) return;
+    var html = '<div class="xr-list">' + list.map(function (x, i) {
+      return '<div class="xr-item"><p class="vref-head">' + esc(x.label) + '</p>' +
+        (x.text.length ? '<p class="sv-line">' + esc(x.text.join(" ")) + '</p>' : '<p class="sv-line xr-fill" data-i="' + i + '">불러오는 중…</p>') + '</div>';
+    }).join("") + '</div><p class="gd-note">설교에 인용된 말씀 ' + list.length + '곳 · 개역개정</p>';
+    sheet("설교 인용구절", html);
+    // 본문 없이 장절만 적힌 줄은 찾아서 채운다
+    list.forEach(function (x, i) {
+      if (x.text.length) return;
+      var r = parseRef(x.label);
+      var el = document.querySelector('.xr-fill[data-i="' + i + '"]');
+      if (!el) return;
+      if (!r) { el.textContent = ""; return; }
+      getVerses(r).then(function (vs) { el.textContent = vs.map(function (v) { return v.t; }).join(" "); })
+        .catch(function () { el.textContent = "본문을 불러오지 못했습니다."; });
+    });
+  }
+
   // ① 예배 순서 줄 표시
   function orderKind(li) {
     var b = li.querySelector("b");
@@ -168,7 +203,10 @@
       li.classList.add("is-wv");
       li.setAttribute("role", "button");
       li.setAttribute("tabindex", "0");
-      li.insertAdjacentHTML("beforeend", '<em class="wv-more">보기 ›</em>');
+      // 성경봉독 줄에는 설교 인용구절이 있으면 '인용구절 보기'도 함께(휴대폰에서는 '보기' 밑으로)
+      var xr = k[0] === "bible" && parseXrefs(window.BULLETIN_XREFS).length
+        ? '<em class="wv-more wv-xref" role="button" tabindex="0">인용구절 보기 ›</em>' : "";
+      li.insertAdjacentHTML("beforeend", '<em class="wv-btns"><em class="wv-more">보기 ›</em>' + xr + '</em>');
     });
   }
 
@@ -247,6 +285,13 @@
 
   // 누르기
   document.addEventListener("click", function (e) {
+    var xb = e.target.closest && e.target.closest(".wv-xref");
+    if (xb) {
+      e.preventDefault();
+      e.stopPropagation();
+      openXrefs();
+      return;
+    }
     var li = e.target.closest && e.target.closest("li.is-wv");
     if (li) {
       e.preventDefault();
@@ -264,6 +309,7 @@
   }, true);
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Enter" && e.key !== " ") return;
+    if (e.target.closest && e.target.closest(".wv-xref")) { e.preventDefault(); openXrefs(); return; }
     var li = e.target.closest && e.target.closest("li.is-wv");
     if (!li) return;
     e.preventDefault();

@@ -232,6 +232,11 @@ ul { list-style: none; }
 .hb-order { margin: 0; padding-left: 22px; font-size: 1.12rem; line-height: 2.15; color: var(--ink); word-break: keep-all; }
 .hb-extra { margin: 0 0 14px; padding-left: 0; list-style: none; font-size: .83rem; line-height: 1.85; color: var(--ink-soft); word-break: keep-all; }
 .hb-extra li::before { content: "▸ "; color: var(--accent); font-size: .8rem; }
+/* 향기로운 예물: 명단이 길어 줄이 넘어가도 헌금 이름 앞으로 나오지 않게 — 이름 칸 뒤에 명단 칸을 따로 둔다 */
+.hb-offer li { display: flex; align-items: baseline; gap: 6px; }
+.hb-offer li::before { flex: none; }
+.hb-offer li b { flex: none; white-space: nowrap; }
+.hb-offer li span { flex: 1; min-width: 0; }
 .hb-news { margin: 0; padding-left: 0; list-style: none; font-size: .82rem; line-height: 1.75; }
 .hb-news li { padding: 3px 0; border-bottom: 1px dashed #eef1f5; }
 .hb-news li:last-child { border-bottom: none; }
@@ -3677,6 +3682,18 @@ li.is-wv:hover { color: var(--accent); }
 li.is-wv .wv-more { display: inline-block; font-style: normal; font-size: .8em; font-weight: 700; color: #fff;
   background: #E8731A; border-radius: 999px; padding: 1px 8px 2px; margin-left: 6px; white-space: nowrap; vertical-align: 1px; }
 li.is-wv:hover .wv-more { background: #C95F0E; }
+/* 성경봉독 줄: '보기'와 '인용구절 보기' 두 단추 — 휴대폰에서는 위아래로 */
+li.is-wv .wv-btns { display: inline-flex; flex-wrap: wrap; gap: 5px; font-style: normal; flex: none; }
+li.is-wv .wv-btns .wv-more { margin-left: 0; }
+li.is-wv .wv-btns { margin-left: 6px; }
+li.is-wv .wv-xref { background: var(--accent); }
+li.is-wv .wv-xref:hover { background: #10241D; }
+@media (max-width: 760px) {
+  li.is-wv .wv-btns { flex-direction: column; align-items: flex-start; }
+}
+.xr-item { padding: 10px 0; border-bottom: 1px dashed rgba(26,58,47,.15); }
+.xr-item .vref-head { margin: 0 0 4px; font-weight: 700; color: #C95F0E; font-size: .95rem; }
+.xr-item .sv-line { margin: 0; font-family: "Gowun Batang", serif; font-size: 1.05rem; line-height: 1.75; color: var(--ink); }
 /* 글 속 성경 장절(롬 8:17 등) — 누르면 그 아래에 본문이 펼쳐진다 */
 button.vref { font: inherit; color: #C95F0E; font-weight: 700; background: none; border: 0; padding: 0;
   cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
