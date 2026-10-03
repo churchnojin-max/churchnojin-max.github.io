@@ -10,6 +10,7 @@
 --     카카오로 가입하면 이름 자리에 카카오 별명이 들어가므로, 첫 로그인 때 실명을 받아 여기로 저장한다.
 -- ============================================================
 
+-- ※ 2026-10-03: 이 함수는 security_fix_20261003.sql 에서 더 안전하게 다시 정의했다. 이 파일을 다시 실행했다면 security_fix_20261003.sql 도 반드시 다시 실행할 것.
 create or replace function public.list_access()
 returns json language sql security definer set search_path = public as $$
   select coalesce(json_agg(row), '[]'::json) from (

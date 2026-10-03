@@ -563,6 +563,7 @@ end $$;
 -- ============================================================
 
 -- 교적 인증(이름+생년월일 → 정/준회원 기록). actionMatch_ 대체.
+-- ※ 2026-10-03: 이 함수는 security_fix_20261003.sql 에서 더 안전하게 다시 정의했다. 이 파일을 다시 실행했다면 security_fix_20261003.sql 도 반드시 다시 실행할 것.
 create or replace function public.match_member(p_name text, p_birth text)
 returns json language plpgsql security definer set search_path = public as $$
 declare v_key text; v_g public.gyojeok%rowtype; v_found boolean := false;
@@ -1123,6 +1124,9 @@ create view public.bulletins_public as
          updated_at
   from public.bulletins
   where published = true;
+-- 공개 뷰는 '읽기만'. Supabase 는 새 뷰에 쓰기 권한까지 기본으로 주고, 뷰는 주인 권한으로 돌아 원본 표의 잠금(RLS)을 건너뛰므로
+-- 반드시 먼저 모든 권한을 거둔 뒤 읽기만 다시 준다.
+revoke all on public.bulletins_public from anon, authenticated;
 grant select on public.bulletins_public to anon, authenticated;
 
 
@@ -1721,6 +1725,9 @@ create view public.qt_published as
     and sermon_date is not null
     and sermon_date <= (now() at time zone 'Asia/Seoul')::date
   order by sermon_date desc;
+-- 공개 뷰는 '읽기만'. Supabase 는 새 뷰에 쓰기 권한까지 기본으로 주고, 뷰는 주인 권한으로 돌아 원본 표의 잠금(RLS)을 건너뛰므로
+-- 반드시 먼저 모든 권한을 거둔 뒤 읽기만 다시 준다.
+revoke all on public.qt_published from anon, authenticated;
 grant select on public.qt_published to anon, authenticated;
 
 

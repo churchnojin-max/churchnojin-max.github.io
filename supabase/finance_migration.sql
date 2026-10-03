@@ -73,6 +73,7 @@ end $$;
 -- ============================================================
 
 -- 교적 인증(이름+생년월일 → 정/준회원 기록). actionMatch_ 대체.
+-- ※ 2026-10-03: 이 함수는 security_fix_20261003.sql 에서 더 안전하게 다시 정의했다. 이 파일을 다시 실행했다면 security_fix_20261003.sql 도 반드시 다시 실행할 것.
 create or replace function public.match_member(p_name text, p_birth text)
 returns json language plpgsql security definer set search_path = public as $$
 declare v_key text; v_g public.gyojeok%rowtype; v_found boolean := false;

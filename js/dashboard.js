@@ -172,6 +172,9 @@ console.log('[dashboard.js] v20260705qtfallback');
             joinBadges(u) +
             '<span style="color:#7b8794;font-size:.85rem;flex:1;min-width:150px">' + esc(u.email) + '</span>' +
             '<span style="color:#9aa5b1;font-size:.78rem">' + esc(fmtJoin(u.joinedAt)) + '</span>' +
+            // 본인이 넣은 교적 인증 신청(이름·생년월일)과 교적 일치 여부 — 승인 판단용
+            (u.claimName ? '<span style="flex-basis:100%;color:#7b8794;font-size:.8rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
+              (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '') +
             '</div>';
         }).join('') +
         '</div>' +

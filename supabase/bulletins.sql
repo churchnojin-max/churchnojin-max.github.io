@@ -31,4 +31,7 @@ create view public.bulletins_public as
          updated_at
   from public.bulletins
   where published = true;
+-- 공개 뷰는 '읽기만'. Supabase 는 새 뷰에 쓰기 권한까지 기본으로 주고, 뷰는 주인 권한으로 돌아 원본 표의 잠금(RLS)을 건너뛰므로
+-- 반드시 먼저 모든 권한을 거둔 뒤 읽기만 다시 준다.
+revoke all on public.bulletins_public from anon, authenticated;
 grant select on public.bulletins_public to anon, authenticated;

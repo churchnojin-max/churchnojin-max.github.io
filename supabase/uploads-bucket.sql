@@ -16,9 +16,15 @@ drop policy if exists "uploads auth insert"    on storage.objects;
 drop policy if exists "uploads owner delete"   on storage.objects;
 drop policy if exists "uploads owner update"   on storage.objects;
 
-create policy "uploads public read"
-  on storage.objects for select
-  using (bucket_id = 'uploads');
+-- 2026-10-03: '누구나 읽기' 규칙은 로그인 안 한 사람도 파일 목록을 통째로 받을 수 있게 하므로 없앴다.
+-- 공개 주소(/object/public/uploads/…)로 보는 것은 이 규칙 없이도 된다. 목록·관리용 읽기는 본인과 권한자만.
+drop policy if exists "uploads read own or staff" on storage.objects;
+create policy "uploads read own or staff"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'uploads' and (owner = auth.uid() or owner_id = auth.uid()::text
+         or exists (select 1 from public.admins a where a.uid = auth.uid())
+         or exists (select 1 from public.member_links m where m.user_id = auth.uid()
+                    and (m.can_finance or m.can_gyojeok or m.can_affairs or m.can_worship or m.can_homepage))));
 
 create policy "uploads auth insert"
   on storage.objects for insert to authenticated

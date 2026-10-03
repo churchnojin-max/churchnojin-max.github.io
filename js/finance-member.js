@@ -45,7 +45,7 @@ console.log('[finance-member.js] v20260701dj');
   function renderMatchForm(me) {
     var pending = me.status === '준회원' && me.memberName;
     body.innerHTML =
-      (pending ? '<p style="color:var(--accent-soft);font-size:.92rem;margin-bottom:12px;">현재 <b>준회원</b>입니다. 교적에서 자동 인증되지 않아 관리자 승인을 기다리고 있거나, 아래에서 다시 인증할 수 있습니다.</p>' : '') +
+      (pending ? '<p style="color:var(--accent-soft);font-size:.92rem;margin-bottom:12px;">현재 <b>준회원</b>입니다. 신청이 접수되어 운영진의 승인을 기다리고 있습니다. 이름이나 생년월일을 잘못 적으셨다면 아래에서 다시 신청할 수 있습니다.</p>' : '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:12px;">교적에 등록된 이름과 생년월일을 적어 신청하시면, 운영진이 확인한 뒤 정회원으로 승인해 드립니다.</p>') +
       '<div class="form-grid">' +
       '  <div class="form-field"><label>이름</label><input type="text" id="mm_name" maxlength="40" placeholder="교적에 등록된 이름" /></div>' +
       '  <div class="form-field"><label>생년월일</label><input type="text" id="mm_birth" maxlength="10" placeholder="예: 1981-08-19" inputmode="numeric" /></div>' +

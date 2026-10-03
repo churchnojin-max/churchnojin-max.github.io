@@ -24,6 +24,7 @@ create index if not exists offerings_date_idx       on public.offerings(offer_da
 alter table public.member_links add column if not exists spouse_key text;
 
 -- 내 매칭키 집합(본인+배우자). security definer 로 안전하게 조회.
+-- ※ 2026-10-03: 이 함수는 security_fix_20261003.sql 에서 더 안전하게 다시 정의했다. 이 파일을 다시 실행했다면 security_fix_20261003.sql 도 반드시 다시 실행할 것.
 create or replace function public.my_member_keys()
 returns setof text language sql security definer stable
 set search_path = public as $$
