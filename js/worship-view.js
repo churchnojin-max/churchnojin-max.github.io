@@ -2,6 +2,7 @@
    ① 예배 순서(.hbb-order / .hb-order)의 교독문·사도신경·성경봉독 줄 → 아래에서 올라오는 창(SlideSheet)에 전문
       찬송가 줄(예: 찬송가 28장 / 복의 근원 강림하사, 봉헌 445장 / …)은 새찬송가 악보 — 저작권 때문에 로그인한 정회원만
       (Supabase 비공개 보관함 'hymns' 의 001~645.webp, supabase/hymns_bucket.sql 의 is_full_member() 규칙).
+      입례송·찬양 줄의 곡 제목이 찬양집 「모두의 찬양」(js/praise-index.js, 684곡)에 있으면 그 악보(hymns/ccm/NNN.webp)도 같은 방식으로.
    ② 설교 요약·칼럼·신앙 상담 글 속 성경 장절(예: 롬 8:17, 창세기 15장 7절) → 누르면 그 자리 아래에 본문이 펼쳐짐
    성경 본문은 개역개정(data/gyr/01~66.json, data/bible-gyr.json 을 책별로 나눈 것), 교독문은 js/gyodok-data.js.
    예배 순서·요약은 main.js 가 주보를 불러온 뒤 그리므로, 그려질 때마다 다시 찾아 표시한다. */
@@ -137,7 +138,12 @@
       (login ? '<p class="hy-msg"><button type="button" class="wv-more hy-login">로그인하기 ›</button></p>' : "");
   }
   function openHymn(no, title) {
-    var head = "찬송가 " + no + "장" + (title ? " · " + title : "");
+    showScore("찬송가 " + no + "장" + (title ? " · " + title : ""), ("00" + no).slice(-3) + ".webp");
+  }
+  function openPraise(no, title, keyName, label) {
+    showScore((label || "찬양") + " · " + title + (keyName ? " (" + keyName + ")" : ""), "ccm/" + ("00" + no).slice(-3) + ".webp");
+  }
+  function showScore(head, key) {
     var sb = window.__sb;
     if (!sb) { sheet(head, hymnMsg("로그인한 정회원만 사용할 수 있습니다.", false)); return; }
     sheet(head, '<p class="gd-note">악보를 불러오는 중…</p>');
@@ -147,7 +153,6 @@
     function put(html) { if (body && body.__hy === token) body.innerHTML = html; }
     sb.auth.getSession().then(function (r) {
       if (!(r && r.data && r.data.session)) { put(hymnMsg("<b>로그인한 정회원</b>만 사용할 수 있습니다.", true)); return; }
-      var key = ("00" + no).slice(-3) + ".webp";
       var hit = hymnUrls[key];
       var p = hit && hit.until > Date.now() ? Promise.resolve(hit.url)
         : sb.storage.from("hymns").createSignedUrl(key, 3600).then(function (res) {
@@ -163,7 +168,31 @@
       });
     }).catch(function () { put(hymnMsg("악보를 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요.", false)); });
   }
-  window.HymnView = { open: openHymn };
+  window.HymnView = { open: openHymn, openPraise: openPraise };
+
+  // ── 찬양집 「모두의 찬양」 제목 찾기(목록은 처음 필요할 때 한 번만 불러온다)
+  function nz(t) { return String(t || "").replace(/[\s,.!?·~\-–—()“”"'’‘「」『』<>]/g, ""); }
+  var praiseMap = null, praiseLoading = false;
+  function findPraise(rest) {
+    if (!praiseMap) return null;
+    var a = nz(rest), b = nz(String(rest || "").replace(/\([^)]*\)/g, ""));
+    return praiseMap[a] || praiseMap[b] || null;
+  }
+  function loadPraise() {
+    if (praiseMap || praiseLoading) return;
+    praiseLoading = true;
+    var s = document.createElement("script");
+    s.src = "js/praise-index.js?v=20261003";
+    s.onload = function () {
+      praiseMap = {};
+      (window.PRAISE || []).forEach(function (x) { var k = nz(x[1]); if (k && !praiseMap[k]) praiseMap[k] = x; });
+      // 아직 표시하지 않은 줄을 다시 살핀다
+      document.querySelectorAll('.hbb-order li[data-wv="-"], .hb-order li[data-wv="-"]').forEach(function (li) { delete li.dataset.wv; });
+      scan();
+    };
+    s.onerror = function () { praiseLoading = false; };
+    document.head.appendChild(s);
+  }
   function openOrder(kind, arg) {
     if (kind === "gyodok") {
       loadGyodok().then(function (all) {
@@ -173,6 +202,8 @@
       }).catch(function () { sheet("교독문 " + arg + "번", '<p class="gd-note">교독문을 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요.</p>'); });
     } else if (kind === "hymn") {
       openHymn(arg[0], arg[1]);
+    } else if (kind === "praise") {
+      openPraise(arg[0], arg[1], arg[2], arg[3]);
     } else if (kind === "creed") {
       sheet("사도신경", prayerHtml(CREED) + '<p class="gd-note">함께 고백합니다.</p>');
     } else if (kind === "bible") {
@@ -234,6 +265,12 @@
       return ["hymn", [+hm[2], (hm[3] || "").replace(/\s+/g, " ").trim()]];
     }
     if (/성경봉독|성경말씀|봉독/.test(name)) { var r = parseRef(rest); if (r) return ["bible", r]; }
+    // 입례송·찬양 등: 내용이 찬양집 곡 제목과 같으면 악보
+    if (!/기도|말씀|소식|축도|봉독|광고|선포/.test(name) && nz(rest).length >= 3) {
+      if (!praiseMap) { loadPraise(); return null; }
+      var pr = findPraise(rest.replace(/^[\s—\-–:]+/, ""));
+      if (pr) return ["praise", [pr[0], pr[1], pr[2], b.textContent.replace(/\s+/g, "")]];
+    }
     return null;
   }
   var ORDER_KINDS = [];
@@ -251,8 +288,9 @@
       var xr = k[0] === "bible" && parseXrefs(window.BULLETIN_XREFS).length
         ? '<em class="wv-more wv-xref" role="button" tabindex="0">인용구절 ›</em>' : "";
       // 찬송가 줄은 주황 '보기'와 헷갈리지 않게 파란 '♪ 악보'(2026-10-03 목사님 요청)
-      if (k[0] === "hymn") li.classList.add("is-hymn");
-      var label = k[0] === "hymn" ? "♪ 악보 ›" : "보기 ›";
+      var score = k[0] === "hymn" || k[0] === "praise";
+      if (score) li.classList.add("is-hymn");
+      var label = score ? "♪ 악보 ›" : "보기 ›";
       li.insertAdjacentHTML("beforeend", '<em class="wv-btns"><em class="wv-more">' + label + '</em>' + xr + '</em>');
     });
   }

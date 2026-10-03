@@ -10,3 +10,4 @@ offerings_full_*.sql
 # 개인 실험본(배포 제외)
 *-동석이네집.html
 __pycache__/
+찬양악보/
