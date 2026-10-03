@@ -255,6 +255,8 @@ console.log('[gyojeok.js] v20260701di');
           return (label[k] || k) + ' ' + (k === 'member_status' ? val(a[0]) + '→' + val(a[1]) : val(a[1]));
         }).join(', ');
       } else if (l.detail && l.detail.note) det = '사유: ' + l.detail.note;
+      else if (l.detail && l.detail.table) det = l.detail.table + ' 표 ' + l.detail.rows + '줄';      // 백업에서 되살림
+      else if (l.detail && l.detail.sessions != null) det = '로그인 ' + l.detail.sessions + '개';      // 강제 로그아웃
       return '<li><span style="color:#7b8794">' + esc(when(l.at)) + '</span> · <b>' + esc(l.actor_name) + '</b> → ' + esc(l.target_name) +
         ' : ' + esc(l.what === '권한' ? '' : l.what + (det ? ' · ' : '')) + esc(det) + '</li>';
     }).join('');
