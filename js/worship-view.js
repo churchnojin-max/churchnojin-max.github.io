@@ -1,5 +1,7 @@
 /* 예배 순서·설교 요약·칼럼에서 '눌러서 보기'
    ① 예배 순서(.hbb-order / .hb-order)의 교독문·사도신경·성경봉독 줄 → 아래에서 올라오는 창(SlideSheet)에 전문
+      찬송가 줄(예: 찬송가 28장 / 복의 근원 강림하사, 봉헌 445장 / …)은 새찬송가 악보 — 저작권 때문에 로그인한 정회원만
+      (Supabase 비공개 보관함 'hymns' 의 001~645.webp, supabase/hymns_bucket.sql 의 is_full_member() 규칙).
    ② 설교 요약·칼럼·신앙 상담 글 속 성경 장절(예: 롬 8:17, 창세기 15장 7절) → 누르면 그 자리 아래에 본문이 펼쳐짐
    성경 본문은 개역개정(data/gyr/01~66.json, data/bible-gyr.json 을 책별로 나눈 것), 교독문은 js/gyodok-data.js.
    예배 순서·요약은 main.js 가 주보를 불러온 뒤 그리므로, 그려질 때마다 다시 찾아 표시한다. */
@@ -127,6 +129,41 @@
   function prayerHtml(lines) { return '<div class="cr-body">' + lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("") + "</div>"; }
 
   function sheet(title, html) { if (window.SlideSheet) window.SlideSheet.open(title, html); }
+
+  // ── 새찬송가 악보(정회원만). 서명된 주소는 1시간짜리라 같은 장은 그동안 다시 받지 않는다.
+  var hymnUrls = {};
+  function hymnMsg(text, login) {
+    return '<p class="hy-msg">' + text + '</p>' +
+      (login ? '<p class="hy-msg"><button type="button" class="wv-more hy-login">로그인하기 ›</button></p>' : "");
+  }
+  function openHymn(no, title) {
+    var head = "찬송가 " + no + "장" + (title ? " · " + title : "");
+    var sb = window.__sb;
+    if (!sb) { sheet(head, hymnMsg("악보는 로그인한 정회원만 볼 수 있습니다.", false)); return; }
+    sheet(head, '<p class="gd-note">악보를 불러오는 중…</p>');
+    var body = document.getElementById("slideSheetBody");
+    var token = {};
+    if (body) body.__hy = token;
+    function put(html) { if (body && body.__hy === token) body.innerHTML = html; }
+    sb.auth.getSession().then(function (r) {
+      if (!(r && r.data && r.data.session)) { put(hymnMsg("새찬송가 악보는 저작권 때문에 <b>로그인한 정회원</b>만 볼 수 있습니다.", true)); return; }
+      var key = ("00" + no).slice(-3) + ".webp";
+      var hit = hymnUrls[key];
+      var p = hit && hit.until > Date.now() ? Promise.resolve(hit.url)
+        : sb.storage.from("hymns").createSignedUrl(key, 3600).then(function (res) {
+            if (res.error || !res.data) throw res.error || new Error("no url");
+            hymnUrls[key] = { url: res.data.signedUrl, until: Date.now() + 50 * 60 * 1000 };
+            return res.data.signedUrl;
+          });
+      return p.then(function (url) {
+        put('<figure class="hy-fig"><img class="hy-img" src="' + esc(url) + '" alt="' + esc(head) + ' 악보" /></figure>' +
+          '<p class="gd-note">새찬송가 · 교회 안에서만 보아 주세요(정회원 전용)</p>');
+      }, function () {
+        put(hymnMsg("악보는 <b>정회원</b>만 볼 수 있습니다. 정회원 승인을 받으시면 바로 보입니다.", false));
+      });
+    }).catch(function () { put(hymnMsg("악보를 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요.", false)); });
+  }
+  window.HymnView = { open: openHymn };
   function openOrder(kind, arg) {
     if (kind === "gyodok") {
       loadGyodok().then(function (all) {
@@ -134,6 +171,8 @@
         if (g) sheet("교독문 " + g.no + "번 · " + g.title, gyodokHtml(g.body) +
           '<p class="gd-note">새찬송가 교독문 (개역개정) · 굵은 글씨는 회중이 함께 읽습니다.</p>');
       }).catch(function () { sheet("교독문 " + arg + "번", '<p class="gd-note">교독문을 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요.</p>'); });
+    } else if (kind === "hymn") {
+      openHymn(arg[0], arg[1]);
     } else if (kind === "creed") {
       sheet("사도신경", prayerHtml(CREED) + '<p class="gd-note">함께 고백합니다.</p>');
     } else if (kind === "bible") {
@@ -189,6 +228,11 @@
     var m;
     if (name === "교독문" && (m = rest.match(/(\d{1,3})\s*번/)) && +m[1] >= 1 && +m[1] <= 137) return ["gyodok", +m[1]];
     if (/사도신경/.test(name + rest)) return ["creed"];
+    // 찬송가: 이름이 찬송(가)이고 'NNN장'이 있거나, 'NNN장 / 제목' 꼴(봉헌 찬송 등). 성경 장절(창세기 15장 7절)과 헷갈리지 않게 책 이름이 앞에 오면 뺀다
+    var hm = rest.match(/(^|[^가-힣\d])(\d{1,3})\s*장(?!\s*\d)(?:\s*[\/·]\s*([^\/]+))?/);
+    if (hm && +hm[2] >= 1 && +hm[2] <= 645 && (/찬송/.test(name) || hm[3]) && !parseRef(rest)) {
+      return ["hymn", [+hm[2], (hm[3] || "").replace(/\s+/g, " ").trim()]];
+    }
     if (/성경봉독|성경말씀|봉독/.test(name)) { var r = parseRef(rest); if (r) return ["bible", r]; }
     return null;
   }
@@ -285,6 +329,17 @@
 
   // 누르기
   document.addEventListener("click", function (e) {
+    var lb = e.target.closest && e.target.closest(".hy-login");
+    if (lb) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.SlideSheet && window.SlideSheet.close) window.SlideSheet.close();
+      var b = document.getElementById("loginBtn");
+      if (b) setTimeout(function () { b.click(); }, 250);
+      return;
+    }
+    var hi = e.target.closest && e.target.closest(".hy-img");
+    if (hi) { e.stopPropagation(); return; }   // 악보를 눌러도 창이 닫히지 않게(손가락으로 확대해 보기)
     var xb = e.target.closest && e.target.closest(".wv-xref");
     if (xb) {
       e.preventDefault();

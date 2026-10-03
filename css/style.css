@@ -3701,6 +3701,11 @@ button.vref[aria-expanded="true"] { text-decoration-style: solid; }
 .vref-box { margin: 6px 0 14px; padding: 12px 14px; background: #FFF6EC; border-left: 3px solid #E8731A; border-radius: 0 8px 8px 0; }
 .vref-box .vref-head { margin: 0 0 6px; font-weight: 700; color: #C95F0E; font-size: .92rem; }
 .vref-box .vref-head small { font-weight: 400; color: var(--muted); margin-left: 4px; }
+/* 새찬송가 악보(정회원 전용, js/worship-view.js) */
+.hy-fig { margin: 0 auto 10px; max-width: 640px; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.hy-img { display: block; width: 100%; height: auto; }
+.hy-msg { text-align: center; color: var(--ink-soft); line-height: 1.8; margin: 18px 0 6px; word-break: keep-all; }
+.hy-msg .hy-login { font: inherit; font-size: .95rem; font-weight: 700; padding: 8px 20px; cursor: pointer; border: 0; border-radius: 999px; background: #E8731A; color: #fff; }
 .vref-box .sv-lines { margin: 0; padding: 0; background: none; border: 0; border-radius: 0; }
 .vref-box .sv-line { font-size: 1.02rem; line-height: 1.7; }
 .vref-box .sv-line + .sv-line { margin-top: 4px; }
