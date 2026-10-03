@@ -18,6 +18,19 @@
     return parts.weekday === "Sun" && m >= 690 && m < 960;
   }
 
+  // 영상 이름(2026-10-03 목사님 요청): 설교한 주일 당일은 '이번 주', 월요일부터는 '지난 주 · 9월 27일'
+  //   날짜(date)는 tools/update_youtube.py 가 영상 페이지의 방송 날짜로 적는다(한국 날짜). 없으면 '최근 설교 영상'
+  function videoLabel(v) {
+    const ymd = (v && v.date) || "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return "최근 설교 영상";
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());   // 2026-10-03
+    const days = Math.round((Date.parse(today + "T00:00:00Z") - Date.parse(ymd + "T00:00:00Z")) / 86400000);
+    const md = parseInt(ymd.slice(5, 7), 10) + "월 " + parseInt(ymd.slice(8, 10), 10) + "일";
+    if (days <= 0) return "이번 주 설교 영상";
+    if (days <= 7) return "지난 주 설교 영상 · " + md;
+    return "지난 설교 영상 · " + md;
+  }
+
   function player(src) {
     return `<iframe src="${src}" title="설교 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
   }
@@ -39,7 +52,7 @@
         <span class="pv-live-txt">주일 예배<br />실시간 방송</span><span class="pv-play" aria-hidden="true"></span></button>`;
       info = main ? `<p class="pv-sub">지난 설교: <button type="button" class="pv-link" data-id="${main.id}">${esc(main.title)} ▶</button></p>` : "";
     } else if (main) {
-      label = `<span class="pv-label">이번 주 설교 영상</span>`;
+      label = `<span class="pv-label">${esc(videoLabel(main))}</span>`;
       screen = `<button type="button" class="pv-screen" data-src="https://www.youtube.com/embed/${main.id}?autoplay=1&rel=0" aria-label="${esc(main.title)} 영상 보기">
         ${thumb(main)}<span class="pv-play" aria-hidden="true"></span></button>`;
       info = `<p class="pv-title">${esc(main.title)}</p>

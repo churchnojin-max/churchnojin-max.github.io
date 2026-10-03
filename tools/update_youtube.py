@@ -9,6 +9,10 @@
 API 열쇠 없이 동작한다: 채널의 '라이브'·'동영상' 화면에서 영상 번호를 순서대로 읽고,
 제목은 유튜브 공식 oEmbed 로 가져온다. (유튜브 RSS 주소는 2026-10 현재 404 라 쓰지 않음)
 아직 시작 안 한 예약 방송·지금 방송 중인 영상(썸네일이 *_live.jpg)은 '지난 설교'에서 뺀다.
+
+영상마다 "date"(한국 날짜, 예: 2026-09-27)도 적는다(2026-10-03 목사님 요청: 주일 당일은 '이번 주', 월요일부터 '지난 주').
+영상 페이지의 방송 시작 시각(liveBroadcastDetails.startTimestamp, 없으면 publishDate)을 한국 시각으로 바꾼 날이고,
+'주일…' 예배 영상이 주일이 아닌 날 올라왔으면 그 앞 주일로 맞춘다. 한 번 찾은 날짜는 다음에 다시 찾지 않는다.
 """
 import json
 import os
@@ -46,6 +50,29 @@ def title_of(vid):
     return json.loads(get(u)).get("title", "")
 
 
+KST = timezone(timedelta(hours=9))
+
+
+def date_of(vid, service=""):
+    """영상의 한국 날짜 'YYYY-MM-DD'. 못 찾으면 ''"""
+    try:
+        html = get(f"https://www.youtube.com/watch?v={vid}")
+    except Exception:
+        return ""
+    m = (re.search(r'"liveBroadcastDetails":\{[^}]*?"startTimestamp":"([^"]+)"', html)
+         or re.search(r'"publishDate":"([^"]+)"', html)
+         or re.search(r'"uploadDate":"([^"]+)"', html))
+    if not m:
+        return ""
+    try:
+        d = datetime.fromisoformat(m.group(1).replace("Z", "+00:00")).astimezone(KST).date()
+    except ValueError:
+        return ""
+    if "주일" in service and d.weekday() != 6:          # 주일 예배 영상을 다른 날 올렸으면 그 앞 주일로
+        d = d - timedelta(days=(d.weekday() + 1) % 7)
+    return d.isoformat()
+
+
 def split_title(t):
     # "하나님이 나의 상급이십니다 | 창 15:1-6 | 주일낮예배 | 손병민 목사"
     parts = [p.strip() for p in t.split("|")]
@@ -58,6 +85,14 @@ def split_title(t):
 
 
 def main():
+    old = None
+    if os.path.exists(OUT):
+        try:
+            with open(OUT, encoding="utf-8") as f:
+                old = json.load(f)
+        except Exception:
+            old = None
+    known_dates = {r["id"]: r.get("date") for r in ((old or {}).get("recent") or []) if r.get("date")}
     ids, live = [], set()
     for tab in ("streams", "videos"):
         try:
@@ -79,7 +114,8 @@ def main():
             continue  # 비공개·삭제 등
         if not t:
             continue
-        recent.append(dict(id=vid, full=t, **split_title(t)))
+        parts = split_title(t)
+        recent.append(dict(id=vid, full=t, date=known_dates.get(vid) or date_of(vid, parts["service"]), **parts))
         if len(recent) >= 6:
             break
     if not recent:
@@ -90,15 +126,8 @@ def main():
         "channelId": CHANNEL_ID,
         "sermon": main_one,
         "recent": recent,
-        "updated": datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M"),
+        "updated": datetime.now(KST).strftime("%Y-%m-%d %H:%M"),
     }
-    old = None
-    if os.path.exists(OUT):
-        try:
-            with open(OUT, encoding="utf-8") as f:
-                old = json.load(f)
-        except Exception:
-            old = None
     if old and old.get("sermon") == data["sermon"] and old.get("recent") == data["recent"]:
         print("바뀐 것 없음:", main_one["title"])
         return 0
