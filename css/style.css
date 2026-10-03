@@ -3694,6 +3694,13 @@ li.is-wv.is-hymn:hover .wv-more { background: #1F4677; }
 li.is-wv.is-hymn:hover { color: #1F4677; }
 @media (max-width: 760px) {
   li.is-wv .wv-btns { flex-direction: column; align-items: flex-start; }
+  /* 폰: 단추는 순서 이름 아래에 두고, 내용은 오른쪽 넓은 칸에 가운데 맞춤 — 줄도 조금 넉넉하게(2026-10-03) */
+  .hbb-order li { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); grid-template-areas: "b s" "k s";
+    column-gap: 12px; row-gap: 6px; align-items: start; padding: 11px 0; line-height: 1.55; }
+  .hbb-order li b { grid-area: b; min-width: 0; }
+  .hbb-order li span { grid-area: s; align-self: center; }
+  .hbb-order li .wv-btns { grid-area: k; margin: 0; gap: 5px; }
+  .hbb-order li .wv-more { margin: 0; }
 }
 .xr-item { padding: 10px 0; border-bottom: 1px dashed rgba(26,58,47,.15); }
 .xr-item .vref-head { margin: 0 0 4px; font-weight: 700; color: #C95F0E; font-size: .95rem; }
