@@ -115,7 +115,15 @@ def main():
         if not t:
             continue
         parts = split_title(t)
-        recent.append(dict(id=vid, full=t, date=known_dates.get(vid) or date_of(vid, parts["service"]), **parts))
+        d = known_dates.get(vid) or date_of(vid, parts["service"])
+        if not d:
+            # 영상 페이지를 못 읽었으면(유튜브가 서버 접속을 막는 때) 처음 발견한 날로 — 주일 예배는 그 앞 주일로.
+            # GitHub 가 주일에는 30분마다 돌아서, 주일에 올라온 영상은 그날 바로 발견된다.
+            today = datetime.now(KST).date()
+            if "주일" in parts["service"]:
+                today = today - timedelta(days=(today.weekday() + 1) % 7)
+            d = today.isoformat()
+        recent.append(dict(id=vid, full=t, date=d, **parts))
         if len(recent) >= 6:
             break
     if not recent:
