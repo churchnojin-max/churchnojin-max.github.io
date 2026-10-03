@@ -273,7 +273,8 @@ console.log('[gyojeok.js] v20260701di');
             '</tr>';
         }).join('') + '</tbody></table></div>' +
         '<p class="help" style="margin-top:10px;line-height:1.8">' +
-        GJ_PERMS.map(function (p) { return '<b>' + esc(p[1]) + '</b> ' + esc(p[2]); }).join(' &nbsp;·&nbsp; ') + '</p>' +
+        // 표 머리의 줄바꿈(<br>)은 설명 글에서는 띄어쓰기로
+        GJ_PERMS.map(function (p) { return '<b>' + esc(p[1].replace(/<br>/g, ' ')) + '</b> ' + esc(p[2]); }).join(' &nbsp;·&nbsp; ') + '</p>' +
         '<p class="help" id="gj_msg" style="margin-top:6px"></p></div>';
       var msg = panel.querySelector('#gj_msg');
       function flash(ok, txt) { msg.style.color = ok ? 'green' : '#c0392b'; msg.textContent = txt; }
