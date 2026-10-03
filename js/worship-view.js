@@ -214,10 +214,15 @@
     if (praiseMap || praiseLoading) return;
     praiseLoading = true;
     var s = document.createElement("script");
-    s.src = "js/praise-index.js?v=20261003";
+    s.src = "js/praise-index.js?v=20261003sub";
     s.onload = function () {
       praiseMap = {};
       (window.PRAISE || []).forEach(function (x) { var k = nz(x[1]); if (k && !praiseMap[k]) praiseMap[k] = x; });
+      // 부제목('모든 열방 주 볼 때까지' = 130번 '내 눈 주의 영광을 보네')으로 적어도 찾는다. 제목이 먼저
+      (window.PRAISE || []).forEach(function (x) {
+        var k = nz(x[3]);
+        if (k && !praiseMap[k]) praiseMap[k] = [x[0], x[1] + " · " + x[3], x[2]];
+      });
       // 아직 표시하지 않은 줄을 다시 살핀다
       document.querySelectorAll('.hbb-order li[data-wv="-"], .hb-order li[data-wv="-"]').forEach(function (li) { delete li.dataset.wv; });
       scan();
