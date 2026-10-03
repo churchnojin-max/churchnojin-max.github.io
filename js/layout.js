@@ -935,3 +935,37 @@ window.SitePopup = (function () {
   window.addEventListener("hashchange", openFromHash);
   return { open: open, close: close };
 })();
+
+/* 다른 화면에서 '#자리' 주소로 들어올 때(바로가기·메뉴의 세부 항목) 그 자리를 정확히 찾아가게 한다.
+   휴대폰에서는 사진·글꼴·불러온 내용이 늦게 자리를 차지해 위쪽이 길어지면 목적지가 아래로 밀려나
+   한 칸 위(예: 새가족 안내 → 찾아오시는 길)에 멈추곤 했다(2026-10-03 목사님 말씀).
+   들어온 뒤 몇 초 동안은 목적지가 밀릴 때마다 다시 맞추고, 손가락·휠·키보드를 쓰면 바로 그만둔다. */
+(function () {
+  var h = "";
+  try { h = decodeURIComponent((location.hash || "").slice(1)); } catch (e) { return; }
+  if (!h || /^(pop-|qt-open)/.test(h)) return;
+  var stop = false, end = Date.now() + 6000;
+  function quit() { stop = true; }
+  ["touchstart", "wheel", "keydown", "mousedown"].forEach(function (ev) { window.addEventListener(ev, quit, { passive: true, once: true }); });
+  window.addEventListener("hashchange", quit);
+  function fix() {
+    if (stop || Date.now() > end || document.documentElement.classList.contains("pop-open")) return;
+    var el = document.getElementById(h);
+    if (!el || el.closest(".pop-src") || el.offsetParent === null) return;
+    var cs = getComputedStyle(document.documentElement);
+    var want = (parseFloat(cs.scrollPaddingTop) || 0) + (parseFloat(getComputedStyle(el).scrollMarginTop) || 0);
+    var top = el.getBoundingClientRect().top;
+    var maxY = document.documentElement.scrollHeight - window.innerHeight;
+    if (Math.abs(top - want) > 3 && !(top > want && window.scrollY >= maxY - 2)) {
+      window.scrollTo({ top: Math.max(0, window.scrollY + top - want), behavior: "instant" });
+    }
+  }
+  [60, 250, 600, 1000, 1600, 2400, 3500, 5000].forEach(function (ms) { setTimeout(fix, ms); });
+  window.addEventListener("load", function () { setTimeout(fix, 30); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { setTimeout(fix, 30); });
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(function () { if (stop || Date.now() > end) { ro.disconnect(); return; } fix(); });
+    var watch = function () { if (document.body) ro.observe(document.body); };
+    if (document.body) watch(); else document.addEventListener("DOMContentLoaded", watch);
+  }
+})();

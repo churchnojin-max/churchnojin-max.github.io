@@ -2664,7 +2664,9 @@ html.snap-page .section-head .eyebrow { display: block; }
 }
 .qc-title { font-family: "Gowun Batang", serif; font-size: 1.16rem; font-weight: 700; color: var(--accent); word-break: keep-all; }
 .qc-sub { font-size: .9rem; color: var(--ink-soft); word-break: keep-all; }
-@media (max-width: 900px) { .quick-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } .quick-card { min-height: 140px; padding: 20px 12px; } }
+.qc-icon.qc-yt svg { display: block; width: 26px; height: 26px; margin-left: 3px; }   /* 유튜브처럼 빨간 세모 */
+.quick-card { min-height: 150px; }   /* 아래 설명 글을 빼서(2026-10-03) 조금 낮게 */
+@media (max-width: 900px) { .quick-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } .quick-card { min-height: 120px; padding: 18px 12px; } }
 
 /* 이번 주 주보 요약 카드 (전체는 팝업) */
 .hbb { max-width: 880px; margin: 0 auto; }
@@ -3235,6 +3237,21 @@ html:active-view-transition-type(slide-next)::view-transition-old(root) { animat
 html:active-view-transition-type(slide-next)::view-transition-new(root) { animation: vtInRight .6s cubic-bezier(.65,0,.35,1) both; }
 html:active-view-transition-type(slide-prev)::view-transition-old(root) { animation: vtOutRight .6s cubic-bezier(.65,0,.35,1) both; }
 html:active-view-transition-type(slide-prev)::view-transition-new(root) { animation: vtInLeft .6s cubic-bezier(.65,0,.35,1) both; }
+/* 휴대폰: 옆으로 밀어 다음/이전 메뉴로(js/page-slide.js) — 미는 쪽 가장자리에 갈 곳 이름 */
+.swipe-pill { position: fixed; top: 50%; z-index: 1200; pointer-events: none; opacity: 0; transition: opacity .18s, background .18s, color .18s;
+  padding: 12px 18px; border-radius: 999px; background: rgba(255,255,255,.96); color: var(--accent); border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(26,58,47,.18); font-family: "Gowun Batang", serif; font-weight: 700; font-size: 1rem; white-space: nowrap; }
+.swipe-pill.is-right { right: 12px; }
+.swipe-pill.is-left { left: 12px; }
+.swipe-pill.is-ready, .swipe-pill.is-go { background: var(--accent); color: #fff; border-color: var(--accent); }
+.swipe-tip { position: fixed; left: 50%; bottom: 96px; z-index: 1200; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  transition: opacity .4s, transform .4s; width: max-content; max-width: calc(100vw - 32px);
+  padding: 12px 18px; border-radius: 14px; background: rgba(26,58,47,.94); color: #fff; font-size: .92rem; line-height: 1.5;
+  box-shadow: 0 10px 28px rgba(0,0,0,.22); text-align: center; word-break: keep-all; }
+.swipe-tip.is-on { opacity: 1; transform: translate(-50%, 0); }
+.swipe-tip-hand { display: inline-block; animation: swipeTipHand 1.4s ease-in-out infinite; }
+@keyframes swipeTipHand { 0%, 100% { transform: translateX(6px); } 50% { transform: translateX(-6px); } }
+@media (prefers-reduced-motion: reduce) { .swipe-tip-hand { animation: none; } }
 
 /* ============================================================
    선교사님 카드(오른쪽 대표 사진) + 상세 창(js/missions.js)
