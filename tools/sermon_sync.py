@@ -655,6 +655,24 @@ def main():
     a = ap.parse_args()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    # 잠금: 예약 작업과 손으로 누른 것이 겹쳐 돌면 같은 설교가 두 번 올라가므로, 하나가 도는 동안은 바로 끝낸다
+    lock = DATA_DIR / "running.lock"
+    if lock.exists() and (dt.datetime.now().timestamp() - lock.stat().st_mtime) < 40 * 60 and not (a.dry_run or a.dump):
+        log("다른 설교 올리기가 아직 돌고 있어 이번에는 건너뜁니다.")
+        return
+    if not (a.dry_run or a.dump):
+        lock.write_text(str(os.getpid()), encoding="utf-8")
+    try:
+        _main(a, lock)
+    finally:
+        if not (a.dry_run or a.dump):
+            try:
+                lock.unlink()
+            except Exception:
+                pass
+
+
+def _main(a, lock):
     state = {}
     if STATE_PATH.exists() and not a.all:
         try:
@@ -713,6 +731,7 @@ def main():
     for key, e in todo:
         label = f"{e['date']:%m/%d} {e['service']} '{e['title'][:20]}'"
         try:
+            lock.touch()                               # 오래 걸려도 잠금이 살아 있게
             err = finish_entry(e)
             if err:
                 failed.append(f"{label}: {err}")
