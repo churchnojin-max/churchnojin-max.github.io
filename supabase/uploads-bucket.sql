@@ -26,9 +26,15 @@ create policy "uploads read own or staff"
          or exists (select 1 from public.member_links m where m.user_id = auth.uid()
                     and (m.can_finance or m.can_gyojeok or m.can_affairs or m.can_worship or m.can_homepage))));
 
+-- 2026-10-03: 민감한 폴더(성도 문서·심방/상담 첨부·교적 사진·직인·설교 원고·자료실)는 비공개 보관함
+-- 'private_files'(supabase/private_files_bucket.sql)에 올린다. 공개 보관함에는 그 폴더 이름으로 올릴 수 없다.
 create policy "uploads auth insert"
   on storage.objects for insert to authenticated
-  with check (bucket_id = 'uploads');
+  with check (
+    bucket_id = 'uploads'
+    and (name like 'sermons/img/%'
+         or split_part(name, '/', 1) not in ('archive', 'affairs', 'gyojeok', 'finance', 'sermons', 'resources'))
+  );
 
 create policy "uploads owner update"
   on storage.objects for update to authenticated

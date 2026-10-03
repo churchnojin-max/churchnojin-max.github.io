@@ -13,6 +13,13 @@
 --      gyojeok/   교적 사진        : 교적 담당(읽기는 재정 담당도)
 --      finance/   직인·고유번호증  : 재정 담당
 --      resources/ 자료실           : 올리기는 목회행정·예배 담당, 받기는 정회원
+--
+--  2026-10-03 실제 DB 에 실행함. 같은 날 공개 보관함에 있던 설교 원고 81개·자료실 1개를 이 보관함의
+--  같은 경로로 옮기고(Storage API move), sermons.file_url 80건의 주소를 아래처럼 바꿨다:
+--    update public.sermons set file_url = replace(file_url,
+--      '/storage/v1/object/public/uploads/sermons/', '/storage/v1/object/authenticated/private_files/sermons/')
+--     where file_url like '%/storage/v1/object/public/uploads/sermons/%' and file_url not like '%/uploads/sermons/img/%';
+--  같은 날 쓸모없던 DB 예약 일 tts-prewarm 도 지웠다: select cron.unschedule('tts-prewarm');
 -- ============================================================
 begin;
 
