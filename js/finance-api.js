@@ -38,7 +38,11 @@ window.WPF = (function () {
   function rpc(fn, params) {
     return fetch(SB() + '/rest/v1/rpc/' + fn, { method: 'POST', headers: headers(), body: JSON.stringify(params || {}) })
       .then(function (r) {
-        if (!r.ok) return r.text().then(function (t) { throw new Error(t || ('HTTP ' + r.status)); });
+        if (!r.ok) return r.text().then(function (t) {
+          // DB가 직접 낸 오류(raise exception, P0001)는 문장만 보여 준다. 그 밖에는 원래대로(오류 번호로 판단하는 곳이 있어서)
+          var j = null; try { j = JSON.parse(t); } catch (e) {}
+          throw new Error(j && j.code === 'P0001' && j.message ? j.message : (t || ('HTTP ' + r.status)));
+        });
         return r.text().then(function (t) { return t ? JSON.parse(t) : null; });
       });
   }
@@ -300,6 +304,10 @@ window.WPF = (function () {
           if (r && r.ok === false) throw new Error(r.error || '저장하지 못했습니다.');
           return r;
         });
+      case 'amOwner':          // 내가 최고 운영자인지(supabase/owner_guard_20261003.sql)
+        return rpc('am_owner').then(function (v) { return { ok: true, owner: v === true }; });
+      case 'listAccessLog':    // 권한 변경 기록(관리자만)
+        return rpc('list_access_log', { p_limit: params.limit || 50 }).then(function (arr) { return { ok: true, log: arr || [] }; });
       case 'myPerms':
         return rpc('my_perms').then(function (p) { return { ok: true, perms: p || {} }; });
       case 'gyojeokSignups':

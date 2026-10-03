@@ -237,17 +237,50 @@ console.log('[gyojeok.js] v20260701di');
     ['canScore', '악보', '예배 순서의 찬송가·찬양 악보 보기(저작권 문의 중이라 꼭 필요한 분만)']
   ];
 
+  // 권한 변경 기록(누가 언제 누구의 권한을 바꿨는지) — DB 트리거가 남기고, 관리자만 본다
+  function accessLogHtml(log) {
+    if (!log) return '';
+    var label = { member_status: '회원' };
+    GJ_PERMS.forEach(function (p) { label[p[0].replace(/[A-Z]/g, function (c) { return '_' + c.toLowerCase(); })] = p[1].replace(/<br>/g, ' '); });
+    function val(v) { return v === true ? '켬' : v === false ? '끔' : (v == null || v === '') ? '없음' : String(v); }
+    function when(t) {
+      var d = new Date(t);
+      return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+    var rows = log.map(function (l) {
+      var det = '';
+      if (l.what === '권한' && l.detail) {
+        det = Object.keys(l.detail).map(function (k) {
+          var a = l.detail[k] || [];
+          return (label[k] || k) + ' ' + (k === 'member_status' ? val(a[0]) + '→' + val(a[1]) : val(a[1]));
+        }).join(', ');
+      } else if (l.detail && l.detail.note) det = '사유: ' + l.detail.note;
+      return '<li><span style="color:#7b8794">' + esc(when(l.at)) + '</span> · <b>' + esc(l.actor_name) + '</b> → ' + esc(l.target_name) +
+        ' : ' + esc(l.what === '권한' ? '' : l.what + (det ? ' · ' : '')) + esc(det) + '</li>';
+    }).join('');
+    return '<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;color:var(--ink-soft)">권한 변경 기록 (최근 ' + log.length + '개)</summary>' +
+      (log.length ? '<ul style="margin:8px 0 0;padding-left:18px;line-height:1.8;font-size:.86rem">' + rows + '</ul>'
+        : '<p class="help" style="margin-top:8px">아직 기록이 없습니다. 관리자 지정·해제, 영역 권한, 회원 상태, 계정 정지를 바꾸면 여기에 남습니다.</p>') +
+      '</details>';
+  }
+
   function renderAccess(panel) {
     loading(panel);
     Promise.all([WPF.call('listAccess'), WPF.call('listGyojeok'),
-      WPF.call('listScoreAccess').catch(function () { return { uids: [] }; })]).then(function (res) {
+      WPF.call('listScoreAccess').catch(function () { return { uids: [] }; }),
+      // 최고 운영자·권한 변경 기록(supabase/owner_guard_20261003.sql). 아직 없으면 예전처럼
+      WPF.call('amOwner').catch(function () { return { owner: null }; }),
+      WPF.call('listAccessLog', { limit: 50 }).catch(function () { return { log: null }; })]).then(function (res) {
       var scoreUids = res[2].uids || [];
+      var owner = res[3].owner, accessLog = res[4].log;
+      var adminLock = owner === false;   // 관리자 지정·해제는 최고 운영자만
       (res[0].users || []).forEach(function (u) { u.canScore = scoreUids.indexOf(u.uid) >= 0; });
       var users = (res[0].users || []).sort(function (a, b) { return (b.isAdmin - a.isAdmin) || (b.canFinance - a.canFinance) || String(a.name).localeCompare(String(b.name), 'ko'); });
       var gj = (res[1].members || []).filter(function (m) { return m['이름']; });
       panel.innerHTML = '<div class="fin-card">' +
         '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:6px">홈페이지에 가입한 회원입니다. <b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동).</p>' +
-        '<p style="color:#b8860b;font-size:.85rem;margin-bottom:12px;line-height:1.6">⚠ <b>관리자</b>는 <u>모든 영역</u>에 접근하는 최고 권한입니다. 특정 일만 맡기실 때는 관리자를 주지 마시고 <b>아래 영역 권한만</b> 체크해 주세요.</p>' +
+        '<p style="color:#b8860b;font-size:.85rem;margin-bottom:12px;line-height:1.6">⚠ <b>관리자</b>는 <u>모든 영역</u>에 접근하는 최고 권한입니다. 특정 일만 맡기실 때는 관리자를 주지 마시고 <b>아래 영역 권한만</b> 체크해 주세요.' +
+          (adminLock ? '<br>관리자 지정·해제는 최고 운영자만 할 수 있습니다.' : '') + '</p>' +
         '<div style="overflow:auto"><table class="fin-table" style="font-size:.86rem"><thead><tr>' +
         '<th>이름</th><th>이메일</th><th>회원</th>' +
         '<th style="text-align:center;background:#7a3b3b">관리자<br><span style="font-weight:400;font-size:.72rem">(전권)</span></th>' +
@@ -264,7 +297,8 @@ console.log('[gyojeok.js] v20260701di');
             '<td><span class="st-pill" style="margin-right:8px;display:inline-block;min-width:48px">' + stPill(u.status) + '</span><select class="ck-status" style="padding:5px 8px;border:1px solid #cdd7e3;border-radius:7px;font:inherit;background:#fff">' +
               '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
               '<option value="정회원"' + (u.status === '정회원' ? ' selected' : '') + '>정회원</option></select></td>' +
-            '<td style="text-align:center;background:#fdf6f6"><input type="checkbox" class="ck-admin" ' + (u.isAdmin ? 'checked' : '') + '></td>' +
+            '<td style="text-align:center;background:#fdf6f6"><input type="checkbox" class="ck-admin" ' + (u.isAdmin ? 'checked' : '') +
+              (adminLock ? ' disabled title="관리자 지정·해제는 최고 운영자만 할 수 있습니다"' : '') + '></td>' +
             GJ_PERMS.map(function (p) {
               // 관리자는 어차피 전부 통과하므로, 관리자일 때는 체크된 것처럼 흐리게 보여 준다
               return '<td style="text-align:center"><input type="checkbox" class="ck-perm" data-k="' + p[0] + '"' +
@@ -275,7 +309,7 @@ console.log('[gyojeok.js] v20260701di');
         '<p class="help" style="margin-top:10px;line-height:1.8">' +
         // 표 머리의 줄바꿈(<br>)은 설명 글에서는 띄어쓰기로
         GJ_PERMS.map(function (p) { return '<b>' + esc(p[1].replace(/<br>/g, ' ')) + '</b> ' + esc(p[2]); }).join(' &nbsp;·&nbsp; ') + '</p>' +
-        '<p class="help" id="gj_msg" style="margin-top:6px"></p></div>';
+        '<p class="help" id="gj_msg" style="margin-top:6px"></p>' + accessLogHtml(accessLog) + '</div>';
       var msg = panel.querySelector('#gj_msg');
       function flash(ok, txt) { msg.style.color = ok ? 'green' : '#c0392b'; msg.textContent = txt; }
       Array.prototype.forEach.call(panel.querySelectorAll('tr[data-uid]'), function (tr) {
@@ -293,12 +327,16 @@ console.log('[gyojeok.js] v20260701di');
           if (ckA.checked && !confirm('「' + (u.name || u.email) + '」님을 관리자로 지정하면 재정·교적을 포함한 모든 영역을 볼 수 있게 됩니다.\n특정 일만 맡기실 거라면 취소하고 영역 권한만 체크해 주세요.\n\n관리자로 지정할까요?')) {
             ckA.checked = false; return;
           }
-          saveAccess('isAdmin', ckA.checked, function () { ckA.checked = !ckA.checked; });
           // 관리자면 영역 체크박스는 의미가 없으므로 잠그고, 해제하면 다시 풀어 준다
-          Array.prototype.forEach.call(tr.querySelectorAll('.ck-perm'), function (c) {
-            c.disabled = ckA.checked;
-            c.title = ckA.checked ? '관리자는 모든 영역이 열려 있습니다' : '';
-          });
+          function syncPerms() {
+            Array.prototype.forEach.call(tr.querySelectorAll('.ck-perm'), function (c) {
+              c.disabled = ckA.checked;
+              c.title = ckA.checked ? '관리자는 모든 영역이 열려 있습니다' : '';
+            });
+          }
+          // 안 되면(예: 최고 운영자의 관리자 해제) 체크와 영역 칸을 되돌린다
+          saveAccess('isAdmin', ckA.checked, function () { ckA.checked = !ckA.checked; syncPerms(); });
+          syncPerms();
         });
         Array.prototype.forEach.call(tr.querySelectorAll('.ck-perm'), function (ck) {
           ck.addEventListener('change', function () {
