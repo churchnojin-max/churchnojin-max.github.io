@@ -67,7 +67,8 @@ window.Sahoean = (function () {
     var html = '<p class="gd-t">교독문 ' + g.no + '번 · ' + esc(g.title) + '</p><p class="gap">&nbsp;</p>';
     var n = 0, lead = true;
     g.body.forEach(function (raw) {
-      var line = String(raw).replace(/\s*\(\d+(?:[-~]\d+)?\)\s*$/, '').trim();
+      // 줄 끝 장절 표시 (1-10)·(시 102:25-27)·(사 9:6, 7상) 는 사회안에 쓰지 않는다
+      var line = String(raw).replace(/\s*\((?:[가-힣]+\s*)?\d+(?::\d+)?[상하]?(?:\s*[-~,]\s*(?:\d+:)?\d+[상하]?)*\)\s*$/, '').trim();
       if (/다같이/.test(line.slice(0, 8))) {
         html += '<p class="gd-all"><b>(다같이) ' + esc(line.replace(/^\(?다같이\)?\s*/, '')) + '</b></p>';
         lead = true;
