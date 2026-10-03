@@ -66,7 +66,7 @@ BIBLE_JS = Path(r"C:\Users\PC\.claude\skills\bible-verse\scripts\bible.js")
 TELEGRAM_ENV_PATH = Path(r"D:\클코저장소\텔레그램봇\.env")
 
 SUPABASE_URL = "https://vwuzmklacdwiqyqjrxyt.supabase.co"   # js/config.js 와 같은 값(공개)
-BUCKET = "uploads"
+BUCKET = "private_files"   # 설교 원고는 비공개 보관함에 둔다(2026-10-03, supabase/private_files_bucket.sql)
 PREACHER = "손병민 담임목사"
 
 SKIP_NAME = re.compile(r"^\[준비메모\]|찬양|^~\$")
@@ -579,7 +579,8 @@ class Store:
             r = self.rq.post(f"{SUPABASE_URL}/storage/v1/object/{BUCKET}/{key}", headers={**self.h, "Content-Type": ctype, "x-upsert": "true"}, data=f, timeout=120)
         if r.status_code >= 300:
             raise RuntimeError(f"파일 올리기 실패 {r.status_code}: {r.text[:200]}")
-        return f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET}/{key}"
+        # 그대로는 열리지 않는 주소 — 화면(js/upload.js)이 로그인한 담당자의 권한으로 '1시간짜리 주소'를 받아 연다
+        return f"{SUPABASE_URL}/storage/v1/object/authenticated/{BUCKET}/{key}"
 
 
 def notify_telegram(text):

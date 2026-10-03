@@ -70,6 +70,18 @@ console.log('[finance.js] v20260701di');
   }
   function msgCard(t, x) { return '<div class="fin-card" style="text-align:center;padding:40px 18px;"><h3 style="margin:0 0 8px;color:var(--accent,#1A3A2F);">' + esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);">' + esc(x) + '</p></div>'; }
 
+  // 인쇄 창에 그려 넣기 — 직인·고유번호증·로고처럼 비공개 보관함에 있는 그림은
+  // 인쇄 창이 스스로 열 수 없으므로, '1시간짜리 주소'로 바꾼 뒤에 그린다(js/upload.js ChurchUpload.resolve).
+  function writePrint(w, html) {
+    var U = window.ChurchUpload;
+    var found = (U && U.resolve) ? (html.match(/https?:\/\/[^"'\s<>]+\/storage\/v1\/object\/authenticated\/private_files\/[^"'\s<>?#]+/g) || []) : [];
+    var urls = found.filter(function (u, i) { return found.indexOf(u) === i; });
+    Promise.all(urls.map(function (u) { return U.resolve(u).catch(function () { return u; }); })).then(function (signed) {
+      urls.forEach(function (u, i) { html = html.split(u).join(esc(signed[i])); });
+      w.document.write(html); w.document.close(); w.focus();
+    });
+  }
+
   // ── 보고서 인쇄/PDF (회의 배포용 전문 양식) ──
   function printDoc(title, inner, sub) {
     var r = fyRange(M.fy);
@@ -127,7 +139,7 @@ console.log('[finance.js] v20260701di');
       '<div class="noprint" style="text-align:center;margin-top:22px"><button onclick="window.print()" style="padding:9px 24px;font-size:14px;cursor:pointer;border:0;background:#1f3a5f;color:#fff;border-radius:8px">🖨 인쇄 / PDF 저장</button></div>' +
       '<scr' + 'ipt>window.addEventListener("load",function(){setTimeout(function(){try{window.print()}catch(e){}},450)});</scr' + 'ipt>' +
       '</div></body></html>';
-    w.document.write(html); w.document.close(); w.focus();
+    writePrint(w, html);
   }
   // 선택 일괄 삭제
   function bulkDelete(ids, after) {
@@ -1568,7 +1580,7 @@ console.log('[finance.js] v20260701di');
       '<div class="noprint" style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:9px 24px;font-size:14px;cursor:pointer;border:0;background:#1f3a5f;color:#fff;border-radius:8px">🖨 인쇄 / PDF 저장</button></div>' +
       '<scr' + 'ipt>window.addEventListener("load",function(){setTimeout(function(){try{window.print()}catch(e){}},500)});</scr' + 'ipt>' +
       '</div></body></html>';
-    w.document.write(html); w.document.close(); w.focus();
+    writePrint(w, html);
   }
 
   /* ── 기부금영수증 발급대장 ── */

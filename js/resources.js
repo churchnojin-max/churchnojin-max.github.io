@@ -122,6 +122,8 @@
   }
   // R2에 저장된 파일을 원본 파일명으로 내려받기(인라인 표시 대신 다운로드)
   async function downloadR2(url, title) {
+    // 비공개 보관함 파일은 로그인한 사람의 권한으로 '1시간짜리 주소'를 받아서 내려받는다(js/upload.js)
+    if (window.ChurchUpload && window.ChurchUpload.resolve) url = await window.ChurchUpload.resolve(url);
     const res = await withTimeout(fetch(url), 30000);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const blob = await res.blob();
@@ -135,7 +137,8 @@
   async function deleteRow(row) {
     if (isR2Path(row.path)) {
       // Cloudflare R2: 키를 뽑아 삭제(best-effort)
-      try { const m = String(row.path).match(/\/f\/(.+)$/); if (m && window.ChurchUpload) await window.ChurchUpload.remove(decodeURIComponent(m[1])); } catch (e) {}
+      // 비공개·공개 보관함(Supabase) 주소면 경로를, R2 주소면 키를 뽑아 삭제(best-effort)
+      try { const m = String(row.path).match(/\/storage\/v1\/object\/(?:authenticated\/private_files|public\/uploads)\/([^?#]+)$/) || String(row.path).match(/\/f\/(.+)$/); if (m && window.ChurchUpload) await window.ChurchUpload.remove(decodeURIComponent(m[1])); } catch (e) {}
     } else {
       try { await withTimeout(fetch(window.SUPABASE_URL + "/storage/v1/object/" + BUCKET + "/" + encPath(row.path), { method: "DELETE", headers: authHeaders() }), 10000); } catch (e) {}
     }
