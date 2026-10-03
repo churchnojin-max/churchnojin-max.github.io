@@ -1612,11 +1612,12 @@ if (homeBulletin) {
     homeBulletin.innerHTML = `<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`;
     setBrief(`<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`);
   } else {
-    const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=*&order=bdate.desc&limit=1";
+    const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=*&order=bdate.desc&limit=2";
     fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + window.SUPABASE_ANON_KEY } })
       .then((r) => (r.ok ? r.json() : []))
       .then((rows) => {
         const b = rows && rows[0];
+        const prevB = rows && rows[1];
         const sermonBanner = document.getElementById("heroSermonBanner");
         if (sermonBanner && b && b.title) {
           const t = sermonBanner.querySelector(".hsb-title"), r = sermonBanner.querySelector(".hsb-ref");
@@ -1654,6 +1655,11 @@ if (homeBulletin) {
             </div>
           </div>`);
 
+        // 팝업 속 전체 주보 — 이번 주(b) 또는 지난 주(prevB)를 그린다
+        const renderFull = (b) => {
+        const d = b.data || {};
+        const dl = String(b.bdate || "").slice(0, 10).replace(/-/g, ". ");
+        window.BULLETIN_XREFS = d.summary || "";
         const scriptureHtml = d.headline
           ? `<div class="hb-sec"><p class="hb-col-title">오늘의 본문 말씀 <span style="font-weight:400;color:var(--ink-soft)">(개역개정)</span></p><p class="hb-scripture">${escB(d.headline)}</p></div>`
           : "";
@@ -1695,6 +1701,36 @@ if (homeBulletin) {
           </div>`;
         const hbBtn = document.getElementById("homeBulletinBtn");
         if (hbBtn) hbBtn.onclick = () => openPublicBulletinView(b);
+        };
+        const popSrc = document.getElementById("pop-bulletin");
+        let showing = null;
+        const showBulletin = (which) => {
+          const bb = which === "prev" && prevB ? prevB : b;
+          if (showing !== bb) { renderFull(bb); showing = bb; }
+          if (popSrc) popSrc.setAttribute("data-pop-title", bb === b ? "이번 주 주보" : "지난 주보 · " + mdOf(bb.bdate));
+        };
+        const mdOf = (s) => { const m = String(s || "").match(/^\d{4}-(\d{2})-(\d{2})/); return m ? `${+m[1]}월 ${+m[2]}일` : ""; };
+        showBulletin("cur");
+        // 다른 곳의 '주보 전체 보기'(data-pop)는 언제나 이번 주 주보
+        document.addEventListener("click", (e) => {
+          if (e.target.closest && e.target.closest('[data-pop="pop-bulletin"]')) showBulletin("cur");
+        }, true);
+        // 첫 화면 단추: 왼쪽 지난 주보, 오른쪽 이번 주 주보
+        const bar = document.getElementById("heroBulletinBar");
+        if (bar) {
+          const cur = bar.querySelector(".hbul-cur"), prv = bar.querySelector(".hbul-prev");
+          const when = sermonWhen(b.bdate).short;
+          cur.querySelector("b").textContent = when === "지난" || !when ? "주보 보기" : "이번 주 주보 보기";
+          cur.querySelector("small").textContent = mdOf(b.bdate) + " 주일";
+          if (prevB && prv) { prv.querySelector("small").textContent = mdOf(prevB.bdate); prv.hidden = false; }
+          bar.addEventListener("click", (e) => {
+            const t = e.target.closest("[data-bul]");
+            if (!t || !window.SitePopup) return;
+            showBulletin(t.getAttribute("data-bul"));
+            window.SitePopup.open("pop-bulletin");
+          });
+          bar.hidden = false;
+        }
       })
       .catch(() => {
         homeBulletin.innerHTML = `<p class="qt-loading">주보를 불러오지 못했습니다.</p>`;

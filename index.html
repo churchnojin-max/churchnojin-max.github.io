@@ -36,7 +36,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700;900&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="js/page-slide.js?v=20261003swipe"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261003hymn3" />
+  <link rel="stylesheet" href="css/style.css?v=20261003bul" />
   <!-- 구조화 데이터(교회 정보) — 구글 검색 이해도 향상 -->
   <style>
     .hb-card{max-width:860px;margin:0 auto;border:1px solid var(--line,#e3e7ee);border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(26,58,47,.07)}
@@ -101,6 +101,11 @@
         <span class="hsb-ref"></span>
         <span class="hsb-arrow" aria-hidden="true">설교 보러가기 →</span>
       </a>
+      <!-- 2026-10-03 목사님 요청: 첫 화면에서 주보로 바로 — 왼쪽 지난 주보(작게), 오른쪽 이번 주 주보(크게). 내용은 main.js 가 채운다 -->
+      <div class="hero-bul" id="heroBulletinBar" hidden>
+        <button type="button" class="hbul-prev" data-bul="prev" hidden><span class="hbul-ar" aria-hidden="true">‹</span><span class="hbul-tx"><b>지난 주보</b><small></small></span></button>
+        <button type="button" class="hbul-cur" data-bul="cur"><span class="hbul-ic" aria-hidden="true">📖</span><span class="hbul-tx"><b>이번 주 주보 보기</b><small></small></span><span class="hbul-ar" aria-hidden="true">›</span></button>
+      </div>
     </div>
   </section>
 
@@ -163,7 +168,7 @@
   <script src="js/layout.js?v=20261003swipe"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
   <script src="js/bulletin-render.js?v=20260709nojin"></script>
-  <script src="js/main.js?v=20261003xref"></script>
+  <script src="js/main.js?v=20261003bul"></script>
   <script src="js/worship-view.js?v=20261003score"></script>
   <script src="js/upload.js?v=20260709sb"></script>
   <script src="js/categories.js?v=20260730news2"></script>
