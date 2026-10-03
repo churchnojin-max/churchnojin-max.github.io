@@ -233,6 +233,17 @@ window.Sahoean = (function () {
     });
   }
 
+  // 설교 원고 맨 앞(제목·본문 줄 다음)의 절 목록 "1 이 후에 …" → 성경봉독 칸에 쓸 줄들
+  function leadVerses(paras) {
+    var out = [];
+    for (var i = 0; i < paras.length; i++) {
+      var text = paras[i].map(function (r) { return r.t; }).join('').trim();
+      if (!text || /^(제목|본문)\s*[:：]/.test(text)) continue;
+      if (/^\d{1,3}\s+\S/.test(text)) { out.push(text); continue; }
+      break;
+    }
+    return out;
+  }
   function runsHtml(runs) {
     return runs.map(function (r) { return r.b ? '<b>' + esc(r.t) + '</b>' : esc(r.t); }).join('');
   }
@@ -381,11 +392,14 @@ window.Sahoean = (function () {
       '<hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="COLUMN" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/>' +
       '<hp:outMargin left="0" right="0" top="0" bottom="0"/><hp:shapeComment>그림입니다.</hp:shapeComment></hp:pic><hp:t/></hp:run></hp:p>';
   }
-  // 악보 그림(webp)을 한글이 읽는 JPG로
+  // 악보 그림을 한글이 읽는 JPG로(이미 JPG면 그대로 두고 크기만 잰다)
   function toJpeg(url) {
     return fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
-      .then(function (b) { return createImageBitmap(b); })
-      .then(function (bmp) {
+      .then(function (b) {
+        if (/jpe?g/i.test(b.type)) {
+          return Promise.all([createImageBitmap(b), b.arrayBuffer()]).then(function (x) { return { buf: x[1], w: x[0].width, h: x[0].height }; });
+        }
+        return createImageBitmap(b).then(function (bmp) {
         var c = document.createElement('canvas');
         c.width = bmp.width; c.height = bmp.height;
         var g = c.getContext('2d');
@@ -393,22 +407,24 @@ window.Sahoean = (function () {
         return new Promise(function (ok) { c.toBlob(ok, 'image/jpeg', 0.92); })
           .then(function (blob) { return blob.arrayBuffer(); })
           .then(function (buf) { return { buf: buf, w: bmp.width, h: bmp.height }; });
+        });
       });
   }
-  function buildHwpx(doc) {
-    if (!window.JSZip) return Promise.reject(new Error('압축 모듈(JSZip)이 없습니다. 주보 화면을 새로고침해 주세요.'));
-    var sheet = doc.getElementById('sa_doc');
+  // sheet: 제목(.title)과 차례(section.blk)가 든 요소. o.template: 틀 hwpx(ArrayBuffer) — 없으면 홈페이지에서 받는다
+  function buildHwpx(sheet, o) {
+    o = o || {};
+    if (!window.JSZip) return Promise.reject(new Error('압축 모듈(JSZip)이 없습니다. 화면을 새로고침해 주세요.'));
     var blks = Array.prototype.slice.call(sheet.querySelectorAll('section.blk'));
     // 악보 그림을 먼저 받아 둔다(실패한 장은 빈 칸)
     var imgs = blks.map(function (b) {
       var im = b.querySelector('.score img');
       return im && im.src ? toJpeg(im.src).catch(function () { return null; }) : Promise.resolve(null);
     });
-    var tplUrl = new URL('../data/sahoean-template.hwpx?v=20261003', SCRIPT_SRC || location.href).href;
-    return Promise.all([fetch(tplUrl).then(function (r) {
+    var tpl = o.template ? Promise.resolve(o.template) : fetch(new URL('../data/sahoean-template.hwpx?v=20261003', SCRIPT_SRC || location.href).href).then(function (r) {
       if (!r.ok) throw new Error('사회안 틀 파일을 받지 못했습니다(HTTP ' + r.status + ')');
       return r.arrayBuffer();
-    }).then(function (buf) { return window.JSZip.loadAsync(buf); }), Promise.all(imgs)]).then(function (res) {
+    });
+    return Promise.all([tpl.then(function (buf) { return window.JSZip.loadAsync(buf); }), Promise.all(imgs)]).then(function (res) {
       var zip = res[0], pics = res[1];
       return Promise.all([zip.file('Contents/section0.xml').async('string'), zip.file('Contents/content.hpf').async('string')])
         .then(function (xs) {
@@ -473,6 +489,47 @@ window.Sahoean = (function () {
     });
   }
 
+  function docHtml(p) {
+    var dp = dateParts(p.bdate);
+    return '<p class="title">' + dp.m + '월 ' + dp.d + '일 주일 예배 사회안</p>' + buildBlocks(p);
+  }
+
+  // 창 없이 바로 hwpx 만들기(바탕화면 '주보 제작' 프로그램이 씀)
+  // p: {bdate, title, scripture, data:{order:[{name,detail}], notices, headline}}
+  // o: { sermon: 설교 원고 File(없으면 null), hymnUrl(no) → 악보 그림 주소(없으면 null), template: 틀 ArrayBuffer }
+  // → { blob, images, scores, sermon: 원고를 넣었는지, warn: [알릴 말] }
+  function makeHwpx(p, o) {
+    o = o || {};
+    var warn = [];
+    if (!dateParts(p.bdate)) return Promise.reject(new Error('주일 날짜가 없습니다.'));
+    var sp = o.sermon ? parseSermonHwpx(o.sermon).catch(function (e) {
+      warn.push('설교 원고를 읽지 못했습니다(' + ((e && e.message) || e) + '). 말씀선포 칸에는 제목·본문만 넣었습니다.');
+      return null;
+    }) : Promise.resolve(null);
+    return sp.then(function (paras) {
+      var q = JSON.parse(JSON.stringify(p));
+      q.data = q.data || {};
+      if (paras && !String(q.data.headline || '').trim()) q.data.headline = leadVerses(paras).join('\n');
+      var root = document.createElement('div');
+      root.innerHTML = docHtml(q);
+      if (!root.querySelector('section.blk')) throw new Error('예배 순서가 비어 있습니다.');
+      var box = root.querySelector('#sa_sermon');
+      if (paras && box) box.innerHTML = sermonHtml(paras, q, !!String(q.data.headline || '').trim());
+      var scores = Array.prototype.slice.call(root.querySelectorAll('.score[data-hymn]'));
+      return Promise.all(scores.map(function (b) {
+        var no = +b.getAttribute('data-hymn');
+        return Promise.resolve(o.hymnUrl ? o.hymnUrl(no) : null).catch(function () { return null; }).then(function (url) {
+          if (url) b.innerHTML = '<img alt="" src="' + esc(url) + '">';
+          else warn.push('찬송가 ' + no + '장 악보를 찾지 못해 빈 칸으로 두었습니다.');
+        });
+      })).then(function () { return buildHwpx(root, { template: o.template }); }).then(function (r) {
+        if (r.images < scores.length && !warn.some(function (w) { return /악보/.test(w); })) warn.push('악보 ' + (scores.length - r.images) + '장을 넣지 못해 빈 칸으로 두었습니다.');
+        r.scores = scores.length; r.sermon = !!paras; r.warn = warn;
+        return r;
+      });
+    });
+  }
+
   // w: 클릭하자마자 연 새 창, p: 주보 제작 화면의 gather() 결과,
   // o: { sb, ak, getToken(), refresh() } — 악보 주소 받을 때 씀
   function open(w, p, o) {
@@ -504,7 +561,7 @@ window.Sahoean = (function () {
     hwpxBtn.onclick = function () {
       hwpxBtn.disabled = true;
       msg.textContent = '한글 파일을 만드는 중… (악보 그림을 넣느라 몇 초 걸립니다)';
-      buildHwpx(doc).then(function (r) {
+      buildHwpx(doc.getElementById('sa_doc')).then(function (r) {
         var url = URL.createObjectURL(r.blob);
         var a = doc.createElement('a');
         a.href = url; a.download = fileName + '.hwpx';
@@ -535,5 +592,5 @@ window.Sahoean = (function () {
     w.focus();
   }
 
-  return { open: open, parseSermonHwpx: parseSermonHwpx, sermonHtml: sermonHtml, buildBlocks: buildBlocks, buildHwpx: buildHwpx };
+  return { open: open, makeHwpx: makeHwpx, parseSermonHwpx: parseSermonHwpx, sermonHtml: sermonHtml, buildBlocks: buildBlocks, buildHwpx: buildHwpx };
 })();
