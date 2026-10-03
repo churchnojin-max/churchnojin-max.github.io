@@ -514,15 +514,30 @@ def ensure_pdf(paths, allow_convert=True):
     if out.exists() and out.stat().st_mtime >= s.stat().st_mtime:
         return out
     log(f"한글 → PDF 변환: {s.name}")
+    started = dt.datetime.now()
     try:
         r = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HWP2PDF),
                             "-SrcPath", str(s), "-PdfPath", str(out)], capture_output=True, timeout=180)
         if out.exists() and out.stat().st_size > 1000:
             return out
         log(f"PDF 변환 실패({r.returncode}): {r.stderr.decode('utf-8', 'replace')[:200]}")
+    except subprocess.TimeoutExpired:
+        # 대개 한글의 '파일 접근 허용' 보안 창이 떠서 대답을 기다리는 경우. 변환용으로 뒤에서 연 한글만 정리한다
+        # (변환 시작 뒤에 생긴 Hwp 프로세스만 — 목사님이 쓰고 계신 한글 창은 그보다 먼저 떠 있으므로 건드리지 않음).
+        log(f"PDF 변환 시간 초과: {s.name} — 한글 '접근 허용' 창이 떠 있었을 가능성이 큽니다")
+        CONVERT_FAILED.append(s.name)
+        try:
+            subprocess.run(["powershell", "-NoProfile", "-Command",
+                            f"Get-Process Hwp -ErrorAction SilentlyContinue | Where-Object {{ $_.StartTime -ge [datetime]'{started:%Y-%m-%dT%H:%M:%S}' }} | Stop-Process -Force"],
+                           capture_output=True, timeout=30)
+        except Exception:
+            pass
     except Exception as e:
         log(f"PDF 변환 오류: {e}")
     return pdfs[0] if pdfs else None
+
+
+CONVERT_FAILED = []   # 이번 실행에서 변환 못 한 한글 파일 이름
 
 
 # ── 창고(Supabase) ────────────────────────────────────────────
@@ -652,6 +667,7 @@ def main():
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--no-pdf", action="store_true")
     ap.add_argument("--dump", help="날짜(YYYY-MM-DD)의 읽은 결과 보기")
+    ap.add_argument("--retry-files", action="store_true", help="PDF 가 빠진 설교의 한글 변환을 지금 바로 다시 시도")
     a = ap.parse_args()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -697,7 +713,10 @@ def _main(a, lock):
         sig = sig_of(e["paths"]) + ("" if e["part"] is None else f"#{e['part']}")
         st = state.get(key)
         if st and st.get("sig") == sig and not a.dry_run:
-            continue
+            # 한글 변환이 안 돼 PDF 가 빠진 것은 6시간 뒤(또는 --retry-files 로 바로) 한 번 더 해 본다
+            retry = st.get("pdf_missing") and (a.retry_files or str(st.get("retry_after", "")) <= dt.datetime.now().isoformat())
+            if not retry:
+                continue
         e["sig"] = sig
         todo.append((key, e))
 
@@ -771,6 +790,10 @@ def _main(a, lock):
                         raise
                 row_id, how = row["id"], "새로 올림"
             state[key] = dict(sig=e["sig"], row_id=row_id, file_url=file_url, src=e["text_src"].name, at=dt.datetime.now().isoformat(timespec="seconds"))
+            if not file_url and any(p.suffix.lower() == ".hwpx" for p in e["paths"]) and not a.no_pdf:
+                state[key]["pdf_missing"] = True
+                state[key]["retry_after"] = (dt.datetime.now() + dt.timedelta(hours=6)).isoformat()
+                how += " (PDF 못 붙임 — 다음에 다시 시도)"
             STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
             done.append(f"{label} — {how}")
             log(f"{label} — {how}")
@@ -787,6 +810,9 @@ def _main(a, lock):
     if failed:
         msg.append(f"\n⚠️ 올리지 못한 것 {len(failed)}건")
         msg += ["· " + x for x in failed[:8]]
+    if CONVERT_FAILED:
+        msg.append(f"\n📄 PDF 를 못 붙인 한글 파일 {len(CONVERT_FAILED)}개: " + ", ".join(CONVERT_FAILED[:5]))
+        msg.append("한글의 '접근 허용' 창이 떠서 멈춘 것입니다. 컴퓨터 앞에서 '설교_지금올리기'를 누르고 창이 뜨면 '모두 허용'을 눌러 주세요.")
     new_problems = [p for p in problems if p not in state.get("_problems", [])]
     if new_problems:
         msg.append(f"\n🔎 확인 필요 {len(new_problems)}건 (등록하지 않음)")
