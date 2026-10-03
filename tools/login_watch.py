@@ -390,6 +390,38 @@ def maybe_summary(state, force=False):
         log("하루 요약 보냄")
 
 
+def maybe_card(state):
+    """비상 카드(PC 꺼졌을 때 휴대폰으로 하는 법)를 3주마다 다시 보내 텔레그램 맨 위에 고정한다.
+    대화방에 '자동 삭제 1개월'을 켜도 카드가 늘 남게 하려는 것. 글은 텔레그램봇\\security_actions.py 의 CARD."""
+    if PREVIEW:
+        return
+    last = state.get("card_at")
+    if last and datetime.fromisoformat(last) > datetime.now(KST) - timedelta(days=21):
+        return
+    try:
+        sys.path.insert(0, str(TELEGRAM_ENV.parent))
+        import security_actions
+        card = security_actions.CARD
+        env = {}
+        for line in TELEGRAM_ENV.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                env[k.strip()] = v.strip()
+        base = "https://api.telegram.org/bot" + env["TELEGRAM_BOT_TOKEN"] + "/"
+        for uid in [x.strip() for x in env.get("ALLOWED_USER_IDS", "").split(",") if x.strip()]:
+            req = urllib.request.Request(base + "sendMessage", data=json.dumps({"chat_id": int(uid), "text": card}).encode("utf-8"),
+                                         headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=15) as r:
+                mid = json.loads(r.read().decode("utf-8"))["result"]["message_id"]
+            req = urllib.request.Request(base + "pinChatMessage", data=json.dumps({"chat_id": int(uid), "message_id": mid, "disable_notification": True}).encode("utf-8"),
+                                         headers={"Content-Type": "application/json"}, method="POST")
+            urllib.request.urlopen(req, timeout=15).read()
+        state["card_at"] = datetime.now(KST).isoformat()
+        log("비상 카드 다시 보내 고정함")
+    except Exception as e:
+        log("[비상 카드 실패] " + type(e).__name__)      # 주소에 토큰이 들어 있어 오류 글은 남기지 않는다
+
+
 def cleanup(state):
     today = datetime.now(KST).strftime("%Y-%m-%d")
     if state.get("cleanup_date") == today or PREVIEW:
@@ -417,6 +449,7 @@ def main():
         ensure_geo(state)
         check_new_logins(state)
         maybe_summary(state, force="--summary-now" in sys.argv)
+        maybe_card(state)
         cleanup(state)
     except urllib.error.URLError as e:
         log("연결 실패(다음에 다시): " + str(getattr(e, "reason", e))[:120])
