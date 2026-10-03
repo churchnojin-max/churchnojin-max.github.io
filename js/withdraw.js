@@ -61,7 +61,8 @@
         <div class="withdraw-warn">
           <strong>${name}</strong>님, 탈퇴 시 아래 정보가 삭제됩니다.<br>
           · 내 프로필(직분·연락처·생년월일·주소 등)<br>
-          · 내가 신청한 연말정산 내역<br><br>
+          · 내가 신청한 연말정산 내역<br>
+          · 내 로그인 기록(시각·IP·기기)<br><br>
           삭제된 정보는 복구할 수 없습니다. 게시판에 쓰신 글은 남을 수 있습니다.
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">

@@ -33,6 +33,7 @@ TELEGRAM_ENV_PATH = Path(r"D:\클코저장소\텔레그램봇\.env")
 SUPABASE_URL = "https://vwuzmklacdwiqyqjrxyt.supabase.co"   # js/config.js 와 같은 값(공개)
 VIEWS = {"bulletins_public", "qt_published", "album_feed"}   # 원본 표에서 다시 만들 수 있는 공개용 창
 SKIP_FILE_BUCKETS = {"hymns", "tts-cache"}                   # 악보는 원본이 PC 에 있고, 음성은 다시 만들 수 있다
+SKIP_TABLES = {"login_log"}   # 로그인 기록은 1년만 보관(개인정보처리방침 제4조) — 백업(최대 12달 더 보관)에 넣으면 그보다 오래 남으므로 뺀다
 KEEP_RECENT, KEEP_MONTHS = 30, 12
 PAGE = 1000
 
@@ -83,7 +84,7 @@ class Api:
         spec = self._get("/rest/v1/").json()
         out = {}
         for name, d in (spec.get("definitions") or {}).items():
-            if name in VIEWS:
+            if name in VIEWS or name in SKIP_TABLES:
                 continue
             props = d.get("properties") or {}
             pk = [c for c, p in props.items() if "<pk/>" in (p.get("description") or "")]

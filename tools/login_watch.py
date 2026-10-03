@@ -3,11 +3,17 @@
 """
 노진교회 홈페이지 — 로그인 보안 알림 (2026-10-03, 사무실 PC 에서 5분마다)
 
-목사님 요청: "하루 요약으로 하되, 해외 접속만 실시간으로 알림"
+목사님 요청: "하루 요약으로 하되, 해외 접속만 실시간으로 알림" + "처리방침 알리기·보안 목적으로만·정해진 기간만·다른 사람에게 알리지 않기, 최대한 안전하게"
   · 해외에서 로그인하면 → 바로 텔레그램 알림(한 번만)
-  · 밤 9시가 지나면 하루 한 번 요약 → 로그인한 사람·횟수, 해외 로그인, 새 가입, 권한 변경·계정 정지·강제 로그아웃·되살림
+  · 밤 9시가 지나면 하루 한 번 요약 → 로그인 횟수, 해외 로그인, 새 가입, 권한 변경·계정 정지·강제 로그아웃·되살림
     (아무 일이 없어도 '조용한 하루'로 보내서 알림 도구가 살아 있는지도 알 수 있게)
-  · 로그인 기록은 1년 지나면 지운다(개인정보처리방침 제4조)
+  · 로그인 기록은 1년 지나면 지운다(개인정보처리방침 제4조). DB 예약 작업(pg_cron login_log_retention)이 매일 지우고, 이 도구도 한 번 더.
+
+로그인 기록 이용 원칙(D:\\클코저장소\\홈페이지_비상복구\\로그인기록_이용원칙.txt):
+  · 보안 목적으로만: 요약에 이름이 나오는 것은 관리자·권한자(교적·재정 등을 다루는 계정)와 해외 로그인·새 가입뿐.
+    일반 교인은 '몇 명이 몇 번' 숫자만 보낸다(교인 생활을 살피지 않도록).
+  · 다른 사람에게 알리지 않기: 텔레그램은 개인정보 보호책임자(목사님) 한 사람에게만. IP 는 보내지 않는다.
+  · 이 PC 의 기록 파일(log.txt)에도 이름을 남기지 않고, 1년 지난 줄은 지운다.
 
 자료:  public.login_log — 누가 로그인하면 DB 트리거가 시각·사람·IP·기기를 남긴다(supabase/login_log_20261003.sql)
 나라:  DB-IP 'IP to Country Lite'(CC BY 4.0, https://db-ip.com) — PC 안에서만 찾는다(교인 IP 를 바깥에 보내지 않음).
@@ -286,7 +292,7 @@ def check_new_logins(state):
                     "[3] 비밀번호 털림 또는 [4] 모든 사람 로그아웃을 골라 주세요.")
             if telegram(text) and not PREVIEW:
                 api("PATCH", "/rest/v1/login_log?id=eq." + str(r["id"]), {"alerted": True}, "return=minimal")
-            log("해외 로그인 알림: " + who(r.get("user_id"), False) + " " + str(cc))
+            log("해외 로그인 알림 1건 (" + str(cc) + ")")          # 이 PC 기록에는 이름을 남기지 않는다
         state["last_id"] = max(state.get("last_id", 0), r["id"])
     if first:
         state["initialized"] = True
@@ -308,7 +314,14 @@ def summary_text(since):
             cnt[l["user_id"]] = cnt.get(l["user_id"], 0) + 1
         top = sorted(cnt.items(), key=lambda x: -x[1])
         lines.append("· 로그인 " + str(len(logins)) + "번, " + str(len(cnt)) + "명")
-        lines.append("   " + " · ".join(who(u) + " " + str(n) + "번" for u, n in top[:25]) + (" 외" if len(top) > 25 else ""))
+        # 보안 목적으로만: 이름은 관리자·권한자(교적·재정 등을 다루는 계정)만, 일반 교인은 숫자만
+        names, admins, owners, perms = people()
+        staff = [(u, n) for u, n in top if u in owners or u in admins or perms.get(u)]
+        members = [(u, n) for u, n in top if (u, n) not in staff]
+        if staff:
+            lines.append("   관리자·권한자: " + " · ".join(who(u) + " " + str(n) + "번" for u, n in staff))
+        if members:
+            lines.append("   교인: " + str(len(members)) + "명이 " + str(sum(n for _, n in members)) + "번")
         abroad = [l for l in logins if (l.get("country") or "?") not in (HOME_COUNTRY, "LOCAL")]
         lines.append("· 해외 로그인: " + ("없음 ✓" if not abroad else
                      str(len(abroad)) + "번 ⚠️ " + ", ".join(who(l["user_id"], False) + "(" + country_name(None if l.get("country") == "?" else l.get("country")) + ")" for l in abroad[:10])))
@@ -369,6 +382,14 @@ def cleanup(state):
         return
     cut = (datetime.now(timezone.utc) - timedelta(days=KEEP_DAYS)).isoformat()
     api("DELETE", "/rest/v1/login_log?at=lt." + urllib.parse.quote(cut, safe=""), prefer="return=minimal")
+    # 이 PC 의 기록 파일도 1년 지난 줄은 지운다
+    p = DATA_DIR / "log.txt"
+    if p.exists():
+        old = (datetime.now(KST) - timedelta(days=KEEP_DAYS)).strftime("%Y-%m-%d")
+        lines = p.read_text(encoding="utf-8").splitlines()
+        keep = [l for l in lines if l[:10] >= old]
+        if len(keep) != len(lines):
+            p.write_text("\n".join(keep) + ("\n" if keep else ""), encoding="utf-8")
     state["cleanup_date"] = today
 
 

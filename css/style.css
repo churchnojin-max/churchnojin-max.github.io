@@ -1506,6 +1506,9 @@ ul { list-style: none; }
 .auth-msg.ok { color: var(--accent); }
 .auth-switch { margin-top: 18px; font-size: .88rem; color: var(--ink-soft); }
 .auth-switch button { background: none; border: 0; color: var(--accent); font-weight: 700; cursor: pointer; font-family: inherit; }
+/* 로그인 기록 안내(개인정보처리방침 제2조 4·제4조 ③, 2026-10-03) */
+.auth-privacy { margin-top: 10px; font-size: .74rem; line-height: 1.5; color: var(--ink-soft); word-break: keep-all; }
+.auth-privacy a { color: inherit; text-decoration: underline; }
 .auth-options { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: -2px; font-size: .85rem; }
 .auth-remember { display: flex; align-items: center; gap: 6px; color: var(--ink-soft); cursor: pointer; user-select: none; }
 .auth-remember input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }

@@ -378,6 +378,7 @@
           <button type="submit" class="btn btn-solid auth-submit" id="authSubmit">로그인</button>
         </form>
         <p class="auth-switch">처음이신가요? <button type="button" id="authToggle">회원가입</button></p>
+        <p class="auth-privacy">로그인하면 계정 보안을 위해 로그인 기록(시각·IP·기기)이 1년간 보관됩니다. <a href="privacy.html">개인정보처리방침</a></p>
       </div>
     </div>
 
