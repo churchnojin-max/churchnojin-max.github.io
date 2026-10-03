@@ -3624,6 +3624,11 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
 .sv-name { font-family: "Gowun Batang", serif; font-size: 1.5rem; font-weight: 400; color: var(--ink); margin: 0 0 28px;
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .sv-name b { font-size: 2.1rem; font-weight: 700; margin-right: -6px; }
+/* 원로목사 칸: 두 분 이름을 한 줄에(신동열 원로목사 · 최장자 원로사모). 사람마다 끊기지 않게 */
+.sv-pp { white-space: nowrap; }
+.sv-name:has(.sv-pp) { font-size: 1.22rem; gap: 6px 12px; flex-wrap: nowrap; }
+.sv-pp b { margin-right: 0; font-size: 1.75rem; }
+.sv-dot { color: var(--gold); font-weight: 700; }
 .sv-link { font: inherit; font-family: "IBM Plex Sans KR", sans-serif; font-size: .85rem; color: var(--accent); background: #fff;
   border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; transition: background .2s, color .2s; }
 .sv-link:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -3638,6 +3643,9 @@ html.big-text #newfamily .welcome-step p { font-size: 1.12rem; }
   .sv-panel { grid-template-columns: 1fr; gap: 26px; padding: 26px 18px; }
   .sv-photo { width: 100%; max-width: 320px; margin: 0 auto; }
   .sv-name b { font-size: 1.75rem; }
+  .sv-name:has(.sv-pp) { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 1.3rem; }
+  .sv-pp b { font-size: 1.75rem; }  /* 폰: 두 분을 위아래 두 줄로 */
+  .sv-dot { display: none; }
 }
 /* 넷째 칸 '함께 섬기는 분들'은 명단이라 한 단으로 */
 .sv-panel.sv-panel-list { display: block; }
