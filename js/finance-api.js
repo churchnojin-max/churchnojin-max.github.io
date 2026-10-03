@@ -27,24 +27,46 @@ window.WPF = (function () {
     if (prefer) h.Prefer = prefer;
     return h;
   }
+  // 로그인 열쇠(access token)는 1시간이면 끝난다. 오래 열어 둔 창에서 지난 열쇠로 부르면 'JWT expired'(PGRST303) 오류
+  // → 끝났거나 1분 안에 끝나면 supabase-js(window.__sb, auth.js)에게 새로 받아 오게 한 뒤 부른다
+  function fresh() {
+    try {
+      var raw = sessionStorage.getItem('sb-' + ref() + '-auth-token');
+      var s = raw && JSON.parse(raw);
+      var exp = s && (s.expires_at || (s.currentSession && s.currentSession.expires_at));
+      if (!exp || exp * 1000 > Date.now() + 60000) return Promise.resolve();
+    } catch (e) { return Promise.resolve(); }
+    // auth.js는 layout.js가 나중에 불러오므로, 아직 없으면 'sb-ready'를 잠깐(최대 5초) 기다린다
+    var ready = window.__sb ? Promise.resolve() : new Promise(function (res) {
+      var t = setTimeout(res, 5000);
+      window.addEventListener('sb-ready', function () { clearTimeout(t); res(); }, { once: true });
+    });
+    return ready.then(function () {
+      var sb = window.__sb;
+      return (sb && sb.auth) ? sb.auth.getSession().then(function () {}, function () {}) : null;
+    });
+  }
   function rest(method, path, body, prefer) {
-    var opt = { method: method, headers: headers(prefer) };
-    if (body != null) opt.body = JSON.stringify(body);
-    return fetch(SB() + '/rest/v1/' + path, opt).then(function (r) {
+    return fresh().then(function () {
+      var opt = { method: method, headers: headers(prefer) };
+      if (body != null) opt.body = JSON.stringify(body);
+      return fetch(SB() + '/rest/v1/' + path, opt);
+    }).then(function (r) {
       if (!r.ok) return r.text().then(function (t) { throw new Error(t || ('HTTP ' + r.status)); });
       return (r.status === 204) ? null : r.text().then(function (t) { return t ? JSON.parse(t) : null; });
     });
   }
   function rpc(fn, params) {
-    return fetch(SB() + '/rest/v1/rpc/' + fn, { method: 'POST', headers: headers(), body: JSON.stringify(params || {}) })
-      .then(function (r) {
-        if (!r.ok) return r.text().then(function (t) {
-          // DB가 직접 낸 오류(raise exception, P0001)는 문장만 보여 준다. 그 밖에는 원래대로(오류 번호로 판단하는 곳이 있어서)
-          var j = null; try { j = JSON.parse(t); } catch (e) {}
-          throw new Error(j && j.code === 'P0001' && j.message ? j.message : (t || ('HTTP ' + r.status)));
-        });
-        return r.text().then(function (t) { return t ? JSON.parse(t) : null; });
+    return fresh().then(function () {
+      return fetch(SB() + '/rest/v1/rpc/' + fn, { method: 'POST', headers: headers(), body: JSON.stringify(params || {}) });
+    }).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) {
+        // DB가 직접 낸 오류(raise exception, P0001)는 문장만 보여 준다. 그 밖에는 원래대로(오류 번호로 판단하는 곳이 있어서)
+        var j = null; try { j = JSON.parse(t); } catch (e) {}
+        throw new Error(j && j.code === 'P0001' && j.message ? j.message : (t || ('HTTP ' + r.status)));
       });
+      return r.text().then(function (t) { return t ? JSON.parse(t) : null; });
+    });
   }
   // PostgREST는 요청당 최대 1000행 → offset 으로 전부 가져옴(안정 정렬: order=id 필요)
   function restAll(path) {
