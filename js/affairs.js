@@ -5649,6 +5649,7 @@ console.log('[affairs.js] v20260712memo2');
       '<button class="btn btn-line" id="bt_ai" style="padding:8px 13px;border-radius:9px;background:#f3eefc;border-color:#c4a8ee">✨ AI 검수</button>' +
       '<button class="btn btn-line" id="bt_save" style="padding:8px 13px;border-radius:9px">💾 임시저장</button>' +
       '<button class="btn btn-line" id="bt_printbtn" style="padding:8px 13px;border-radius:9px">🖨 3단 인쇄(PDF)</button>' +
+      '<button class="btn btn-line" id="bt_sahoean" style="padding:8px 13px;border-radius:9px;background:#f6f1e6;border-color:#BFA06C">📋 사회안 만들기</button>' +
       '<button class="btn btn-solid" id="bt_publish" style="padding:8px 16px;border-radius:9px;font-weight:700">🌐 게시</button>' +
       '<div id="bt_msg" class="fin-msg" style="flex-basis:100%;text-align:right;margin-top:-2px"></div>' +
       '</div></header>' +
@@ -6122,6 +6123,21 @@ console.log('[affairs.js] v20260712memo2');
       } catch (e) {
         try { w.document.write('<pre style="white-space:pre-wrap;padding:16px;font-size:14px">인쇄 생성 오류:\n' + (e && e.message) + '</pre>'); w.document.close(); } catch (_) { }
         bmsg('인쇄 생성 오류: ' + (e && e.message), '#c0392b');
+      }
+    };
+    ov.querySelector('#bt_sahoean').onclick = function () {
+      var w = window.open('', '_blank');
+      if (!w) { bmsg('팝업이 차단되었습니다. 브라우저에서 팝업을 허용해 주세요.', '#c0392b'); return; }
+      try {
+        if (!window.Sahoean) throw new Error('사회안 모듈(sahoean.js)이 로드되지 않았습니다. 새로고침 후 다시 시도해 주세요.');
+        window.Sahoean.open(w, gather(), {
+          sb: SB, ak: AK,
+          getToken: function () { var s = sess(); return s && s.token; },
+          refresh: refreshToken
+        });
+      } catch (e) {
+        try { w.document.write('<pre style="white-space:pre-wrap;padding:16px;font-size:15px">사회안을 만들지 못했습니다:\n' + (e && e.message) + '</pre>'); w.document.close(); } catch (_) { }
+        bmsg('사회안 오류: ' + (e && e.message), '#c0392b');
       }
     };
 
