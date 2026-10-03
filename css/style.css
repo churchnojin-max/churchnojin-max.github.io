@@ -3688,6 +3688,10 @@ li.is-wv .wv-btns .wv-more { margin-left: 0; }
 li.is-wv .wv-btns { margin-left: 6px; }
 li.is-wv .wv-xref { background: var(--accent); }
 li.is-wv .wv-xref:hover { background: #10241D; }
+/* 찬송가 줄: 깊은 파랑 '♪ 악보' (주황 '보기'와 구분) */
+li.is-wv.is-hymn .wv-more { background: #2B5C9E; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); letter-spacing: .02em; }
+li.is-wv.is-hymn:hover .wv-more { background: #1F4677; }
+li.is-wv.is-hymn:hover { color: #1F4677; }
 @media (max-width: 760px) {
   li.is-wv .wv-btns { flex-direction: column; align-items: flex-start; }
 }

@@ -250,7 +250,10 @@
       // 성경봉독 줄에는 설교 인용구절이 있으면 '인용구절 보기'도 함께(휴대폰에서는 '보기' 밑으로)
       var xr = k[0] === "bible" && parseXrefs(window.BULLETIN_XREFS).length
         ? '<em class="wv-more wv-xref" role="button" tabindex="0">인용구절 보기 ›</em>' : "";
-      li.insertAdjacentHTML("beforeend", '<em class="wv-btns"><em class="wv-more">보기 ›</em>' + xr + '</em>');
+      // 찬송가 줄은 주황 '보기'와 헷갈리지 않게 파란 '♪ 악보'(2026-10-03 목사님 요청)
+      if (k[0] === "hymn") li.classList.add("is-hymn");
+      var label = k[0] === "hymn" ? "♪ 악보 ›" : "보기 ›";
+      li.insertAdjacentHTML("beforeend", '<em class="wv-btns"><em class="wv-more">' + label + '</em>' + xr + '</em>');
     });
   }
 
