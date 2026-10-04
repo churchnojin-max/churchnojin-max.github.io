@@ -15,7 +15,7 @@
     new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false })
       .formatToParts(new Date()).forEach((p) => { parts[p.type] = p.value; });
     const m = (parseInt(parts.hour, 10) % 24) * 60 + parseInt(parts.minute, 10);
-    return parts.weekday === "Sun" && m >= 690 && m < 960;
+    return parts.weekday === "Sun" && m >= 630 && m < 960;   // 10:30 ~ 16:00
   }
 
   // 영상 이름(2026-10-03 목사님 요청): 설교한 주일 당일은 '이번 주', 월요일부터는 '지난 주 · 9월 27일'

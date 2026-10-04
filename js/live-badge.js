@@ -4,7 +4,7 @@
 (function () {
   const btn = document.querySelector(".live-float");
   if (!btn) return;
-  const START = 11 * 60 + 30, END = 16 * 60;
+  const START = 10 * 60 + 30, END = 16 * 60;
   const fmt = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
   function update() {
     const parts = {};
