@@ -104,6 +104,8 @@
   async function load() {
     if (window.ChurchCategories) { try { await window.ChurchCategories.load(); } catch (e) {} }
     loadError = false;
+    // 우리들 소식 사진에는 성도님 얼굴이 담겨 있어 가입하고 로그인한 분께만(2026-10-05 목사님, supabase/member_only_20261005.sql)
+    if (!currentUser()) { photos = []; renderLocked(); renderActions(); return; }
     try {
       photos = await apiRetry("GET", "album_feed?select=*&order=created_at.desc&limit=40") || [];
       social = true;
@@ -128,6 +130,11 @@
 
   /* ===================== 캐러셀 ===================== */
   let slides = [], curSlide = 0, timer = null;
+  function renderLocked() {
+    stop();
+    carEl.classList.remove("hn-days");
+    carEl.innerHTML = `<div class="hn-empty hn-locked"><span>🔒</span><p>우리들 소식 사진에는 성도님들의 얼굴이 담겨 있어<br />가입하고 로그인하신 분께만 보여 드립니다.</p><div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div></div>`;
+  }
   function renderCarousel() {
     if (loadError) {   // 불러오기 실패 → '소식 없음'과 헷갈리지 않게 오류+다시 시도 안내
       stop();
@@ -185,6 +192,8 @@
 
   /* ===================== 액션 버튼(＋) ===================== */
   function renderActions() {
+    const more = document.getElementById("hnMore");
+    if (more) more.hidden = !currentUser();               // 로그인하지 않은 분께는 '소식 더 보기'도 숨김
     const addBtn = document.getElementById("hnAdd");
     if (!addBtn) return;
     const show = !!currentUser() && uploadReady();

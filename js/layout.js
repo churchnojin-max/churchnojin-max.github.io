@@ -285,8 +285,22 @@
     }
   }
 
+  // ===== 지금 로그인돼 있나 — 로그인한 분께만 보이는 칸(사진·봉사위원 등)을 그릴 때 쓴다(2026-10-05) =====
+  function sessionToken() {
+    try {
+      const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
+      const raw = sessionStorage.getItem(`sb-${ref}-auth-token`);
+      if (!raw) return "";
+      const s0 = JSON.parse(raw);
+      const s = s0 && s0.currentSession ? s0.currentSession : s0;
+      return (s && s.user && s.access_token) || "";
+    } catch (e) { return ""; }
+  }
+  window.ChurchSignedIn = () => !!sessionToken();
+
   // ===== 홈페이지 설정(공개 읽기) — 로고 · 섬기는 사람들 · 월별 봉사위원 =====
-  // church_settings 의 공개 키를 익명 anon 키로 1회씩 읽어 캐시한다.
+  // church_settings 의 공개 키를 1회씩 읽어 캐시한다. 봉사위원('committees')은 이름이 들어 있어
+  // 로그인한 분만 읽을 수 있으므로(supabase/member_only_20261005.sql) 로그인돼 있으면 그 열쇠로 읽는다.
   // (쓰기는 관리자 전용. 공개 읽기 정책은 supabase/homepage-settings.sql 참고)
   window.SiteSettings = (function () {
     const cache = {};
@@ -297,7 +311,10 @@
         return cache[key];
       }
       const url = window.SUPABASE_URL + "/rest/v1/church_settings?key=eq." + key + "&select=data";
-      cache[key] = fetch(url, { headers: { apikey: window.SUPABASE_ANON_KEY } })
+      const headers = { apikey: window.SUPABASE_ANON_KEY };
+      const tok = sessionToken();
+      if (tok) headers.Authorization = "Bearer " + tok;
+      cache[key] = fetch(url, { headers })
         .then((r) => (r.ok ? r.json() : null))
         .then((rows) => (rows && rows[0] && rows[0].data) || null)
         .catch(() => null);
@@ -832,6 +849,18 @@
    사이트 밖으로 나가지 않고 '최상단 모달만' 닫도록 한다.
    사용: 열 때 ModalNav.open(닫는함수) / 닫기버튼·ESC·백드롭은 ModalNav.close()
    ============================================================ */
+// 로그인한 분께만 보이는 칸의 '가입하기'·'로그인' 단추(data-mo="join"|"login", 2026-10-05) — 어느 화면에서나 같은 창을 연다
+document.addEventListener("click", function (e) {
+  var b = e.target && e.target.closest ? e.target.closest("[data-mo]") : null;
+  if (!b) return;
+  var act = b.getAttribute("data-mo");
+  if (act === "join" && window.__openJoinGuide) { window.__openJoinGuide(); return; }   // 카카오 먼저 권하는 가입 안내
+  var mode = act === "join" ? "signup" : "login";
+  if (window.__authSetMode) window.__authSetMode(mode); else window.__authPendingMode = mode;
+  var m = document.getElementById("authModal");
+  if (m) { m.hidden = false; document.body.style.overflow = "hidden"; }
+});
+
 window.ModalNav = (function () {
   var stack = [];
   window.addEventListener("popstate", function () {

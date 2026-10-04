@@ -311,10 +311,28 @@ if (sermonDeck) {
       </div>`;
   }
 
+  // 봉사위원 명단에는 성도님 이름이 있어 가입하고 로그인한 분께만 보여 준다(2026-10-05 목사님).
+  // DB(church_settings 'committees')도 로그인한 분만 읽을 수 있다(supabase/member_only_20261005.sql).
+  function renderCommitteeLocked() {
+    const box = document.getElementById("committee");
+    if (!box) return;
+    box.innerHTML = `
+      <div class="committee-head">
+        <span class="w-en light">SERVICE TEAM</span>
+        <h4>이 달의 봉사위원</h4>
+      </div>
+      <div class="member-only">
+        <p>봉사위원 명단에는 성도님들의 이름이 있어<br />가입하고 로그인하신 분께만 보여 드립니다.</p>
+        <div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div>
+      </div>`;
+  }
+
   // 봉사위원: DB(교회행정 통합) 우선, 없으면 하드코딩 COMMITTEES 폴백
   const hardcoded = (typeof COMMITTEES !== "undefined" && COMMITTEES.length) ? COMMITTEES : null;
   if (document.getElementById("committee")) {
-    if (window.SiteSettings) {
+    if (window.ChurchSignedIn && !window.ChurchSignedIn()) {
+      renderCommitteeLocked();
+    } else if (window.SiteSettings) {
       window.SiteSettings.committees()
         .then((data) => {
           const months = data && data.months;
@@ -1673,9 +1691,12 @@ if (homeBulletin) {
           ? `<div class="hb-sec"><p class="hb-col-title">예배 순서</p><ol class="hb-order">${orderList.map((o) => `<li><b>${escB(o.name || "")}</b>${o.detail ? " — " + escB(o.detail) : ""}</li>`).join("")}</ol></div>`
           : "";
         const offerKeys = Object.keys(d.offering || {}).filter((k) => d.offering[k]);
+        // 로그인하지 않은 분께는 서버가 예물 명단을 빼고 보낸다(supabase/member_only_20261005.sql) → 자리만 안내
         const offerHtml = offerKeys.length
           ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><ul class="hb-extra hb-offer">${offerKeys.map((k) => `<li><b>${escB(k)}</b><span>${escB(d.offering[k])}</span></li>`).join("")}</ul></div>`
-          : "";
+          : (window.ChurchSignedIn && !window.ChurchSignedIn()
+            ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><p class="member-only-line">예물 명단은 가입하고 로그인하신 분께만 보여 드립니다. <button type="button" data-mo="login">로그인</button></p></div>`
+            : "");
         const noticeLines = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean);
         const noticeHtml = noticeLines.length
           ? `<div class="hb-sec"><p class="hb-col-title">한 주의 소식</p><ul class="hb-news">${noticeLines.map((l) => `<li>${escB(l)}</li>`).join("")}</ul></div>`
