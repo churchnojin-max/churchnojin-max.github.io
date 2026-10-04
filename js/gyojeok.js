@@ -257,6 +257,10 @@ console.log('[gyojeok.js] v20260701di');
       } else if (l.detail && l.detail.note) det = '사유: ' + l.detail.note;
       else if (l.detail && l.detail.table) det = l.detail.table + ' 표 ' + l.detail.rows + '줄';      // 백업에서 되살림
       else if (l.detail && l.detail.sessions != null) det = '로그인 ' + l.detail.sessions + '개';      // 강제 로그아웃
+      if (l.what === '로그인 기록 열람') {      // 최고 운영자가 로그인·접속 기록을 열어 봄(대상 사람 없음)
+        return '<li><span style="color:#7b8794">' + esc(when(l.at)) + '</span> · <b>' + esc(l.actor_name) + '</b> : 로그인·접속 기록 열람' +
+          (l.detail && l.detail.days ? ' (최근 ' + esc(l.detail.days) + '일)' : '') + '</li>';
+      }
       return '<li><span style="color:#7b8794">' + esc(when(l.at)) + '</span> · <b>' + esc(l.actor_name) + '</b> → ' + esc(l.target_name) +
         ' : ' + esc(l.what === '권한' ? '' : l.what + (det ? ' · ' : '')) + esc(det) + '</li>';
     }).join('');
@@ -264,6 +268,39 @@ console.log('[gyojeok.js] v20260701di');
       (log.length ? '<ul style="margin:8px 0 0;padding-left:18px;line-height:1.8;font-size:.86rem">' + rows + '</ul>'
         : '<p class="help" style="margin-top:8px">아직 기록이 없습니다. 관리자 지정·해제, 영역 권한, 회원 상태, 계정 정지를 바꾸면 여기에 남습니다.</p>') +
       '</details>';
+  }
+
+  // 로그인·접속 기록(최고 운영자만, 2026-10-05) — 열 때만 불러오고, 열람은 권한 변경 기록에 남는다(supabase/login_log_view_20261005.sql)
+  function deviceOf(ua) {
+    ua = String(ua || '');
+    var os = /iPad/.test(ua) ? '아이패드' : /iPhone|iPod/.test(ua) ? '아이폰' : /Android/.test(ua) ? (/Mobile/.test(ua) ? '안드로이드 폰' : '안드로이드 패드') :
+      /Windows/.test(ua) ? '윈도우 PC' : /Macintosh|Mac OS X/.test(ua) ? '맥' : /Linux/.test(ua) ? '리눅스' : (ua ? '기타 기기' : '알 수 없음');
+    var br = /KAKAOTALK/i.test(ua) ? '카카오톡' : /SamsungBrowser/.test(ua) ? '삼성 인터넷' : /NAVER\(inapp/.test(ua) ? '네이버 앱' : /Edg\//.test(ua) ? '엣지' :
+      /CriOS|Chrome\//.test(ua) ? '크롬' : /Firefox|FxiOS/.test(ua) ? '파이어폭스' : /Safari/.test(ua) ? '사파리' : '';
+    return os + (br ? ' · ' + br : '');
+  }
+  function placeOf(cc) { return !cc ? '<span style="color:#9aa5b1">확인 중</span>' : cc === 'KR' ? '국내' : '<b style="color:#c0392b">해외(' + esc(cc) + ')</b>'; }
+  function whenL(t) { var d = new Date(t); if (isNaN(d.getTime())) return ''; return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function provL(p) { return p === 'kakao' ? '카카오' : '이메일'; }
+  function loginLogBoxHtml() {
+    return '<details class="ll-box" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;color:var(--ink-soft)">🔒 로그인·접속 기록 (최고 운영자만)</summary>' +
+      '<div style="margin-top:8px"><p class="help" style="line-height:1.7">누가 언제·어디서·어떤 기기로 로그인했는지 봅니다. 보안 점검 목적으로만 보시고, 열어 볼 때마다 위 \'권한 변경 기록\'에 열람이 남습니다(1년 지난 기록은 저절로 지워짐).</p>' +
+      '<button type="button" class="btn btn-line" id="ll_open" style="margin-top:8px;padding:7px 16px;font-size:.88rem">최근 30일 기록 열기</button><div id="ll_out"></div></div></details>';
+  }
+  function renderLoginLog(out, r) {
+    var ses = r.sessions || [], logs = r.logins || [];
+    var th = 'style="text-align:left;white-space:nowrap"';
+    function who(x) { return '<b>' + esc(x.name) + '</b> <span style="color:#9aa5b1;font-size:.76rem">' + provL(x.provider) + '</span>'; }
+    function ipCell(x) { return '<td style="color:#9aa5b1;font-size:.78rem">' + esc(x.ip || '') + '</td>'; }
+    out.innerHTML =
+      '<h4 style="margin:16px 0 6px;font-size:.95rem">최근 접속 중인 기기 <span style="font-weight:400;color:var(--ink-soft);font-size:.82rem">(로그인이 유지된 기기 · 마지막 사용 순)</span></h4>' +
+      (ses.length ? '<div style="overflow:auto"><table class="fin-table" style="font-size:.84rem"><thead><tr><th ' + th + '>이름</th><th ' + th + '>기기</th><th ' + th + '>마지막 사용</th><th ' + th + '>로그인한 때</th><th ' + th + '>장소</th><th ' + th + '>IP</th></tr></thead><tbody>' +
+        ses.map(function (s) { return '<tr><td>' + who(s) + '</td><td>' + esc(deviceOf(s.ua)) + '</td><td style="white-space:nowrap">' + esc(whenL(s.last_at)) + '</td><td style="white-space:nowrap">' + esc(whenL(s.login_at)) + '</td><td>' + placeOf(s.country) + '</td>' + ipCell(s) + '</tr>'; }).join('') +
+        '</tbody></table></div>' : '<p class="help">지금 로그인돼 있는 기기가 없습니다.</p>') +
+      '<h4 style="margin:18px 0 6px;font-size:.95rem">로그인 기록 <span style="font-weight:400;color:var(--ink-soft);font-size:.82rem">(최근 30일 · ' + logs.length + '번)</span></h4>' +
+      (logs.length ? '<div style="overflow:auto"><table class="fin-table" style="font-size:.84rem"><thead><tr><th ' + th + '>때</th><th ' + th + '>이름</th><th ' + th + '>기기</th><th ' + th + '>장소</th><th ' + th + '>IP</th></tr></thead><tbody>' +
+        logs.map(function (l) { return '<tr><td style="white-space:nowrap">' + esc(whenL(l.at)) + '</td><td>' + who(l) + '</td><td>' + esc(deviceOf(l.ua)) + '</td><td>' + placeOf(l.country) + '</td>' + ipCell(l) + '</tr>'; }).join('') +
+        '</tbody></table></div>' : '<p class="help">최근 30일 로그인 기록이 없습니다.</p>');
   }
 
   function renderAccess(panel) {
@@ -311,7 +348,14 @@ console.log('[gyojeok.js] v20260701di');
         '<p class="help" style="margin-top:10px;line-height:1.8">' +
         // 표 머리의 줄바꿈(<br>)은 설명 글에서는 띄어쓰기로
         GJ_PERMS.map(function (p) { return '<b>' + esc(p[1].replace(/<br>/g, ' ')) + '</b> ' + esc(p[2]); }).join(' &nbsp;·&nbsp; ') + '</p>' +
-        '<p class="help" id="gj_msg" style="margin-top:6px"></p>' + accessLogHtml(accessLog) + '</div>';
+        '<p class="help" id="gj_msg" style="margin-top:6px"></p>' + accessLogHtml(accessLog) + (owner === true ? loginLogBoxHtml() : '') + '</div>';
+      var llBtn = panel.querySelector('#ll_open');
+      if (llBtn) llBtn.addEventListener('click', function () {
+        var out = panel.querySelector('#ll_out');
+        llBtn.disabled = true; out.innerHTML = '<p class="qt-loading">불러오는 중…</p>';
+        WPF.call('listLoginLog', { days: 30 }).then(function (r) { renderLoginLog(out, r); llBtn.textContent = '다시 불러오기'; llBtn.disabled = false; })
+          .catch(function (e) { out.innerHTML = '<p class="help" style="color:#c0392b">불러오지 못했습니다: ' + esc(e.message) + '</p>'; llBtn.disabled = false; });
+      });
       var msg = panel.querySelector('#gj_msg');
       function flash(ok, txt) { msg.style.color = ok ? 'green' : '#c0392b'; msg.textContent = txt; }
       Array.prototype.forEach.call(panel.querySelectorAll('tr[data-uid]'), function (tr) {

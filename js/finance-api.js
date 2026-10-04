@@ -330,6 +330,8 @@ window.WPF = (function () {
         return rpc('am_owner').then(function (v) { return { ok: true, owner: v === true }; });
       case 'listAccessLog':    // 권한 변경 기록(관리자만)
         return rpc('list_access_log', { p_limit: params.limit || 50 }).then(function (arr) { return { ok: true, log: arr || [] }; });
+      case 'listLoginLog':     // 로그인·접속 기록(최고 운영자만, 열람이 권한 변경 기록에 남음 — supabase/login_log_view_20261005.sql)
+        return rpc('list_login_log', { p_days: params.days || 30 }).then(function (r) { r = r || {}; return { ok: true, sessions: r.sessions || [], logins: r.logins || [] }; });
       case 'myPerms':
         return rpc('my_perms').then(function (p) { return { ok: true, perms: p || {} }; });
       case 'gyojeokSignups':
