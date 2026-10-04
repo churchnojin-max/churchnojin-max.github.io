@@ -3909,3 +3909,53 @@ button.vref[aria-expanded="true"] { text-decoration-style: solid; }
 @media (max-width: 1024px) {
   .ph-pen { right: -26vw; width: 90vw; height: calc(100% - var(--hdr) - 10px); opacity: .3; }
 }
+
+/* ============================================================
+   글씨 크기 '가+' · 홈페이지 사용법 (2026-10-05 목사님: 어르신들이 휴대폰으로 처음 들어오셨을 때)
+   ============================================================ */
+html.big-text.ts-l { font-size: 125%; }
+html.big-text.ts-xl { font-size: 137.5%; }
+.ts-btn { flex: none; display: inline-flex; align-items: center; justify-content: center; height: 36px; min-width: 46px; padding: 0 10px;
+  border-radius: 18px; border: 1px solid var(--accent-soft); background: #fff; color: var(--accent);
+  font-family: "Gowun Batang", serif; font-weight: 700; font-size: 17px; line-height: 1; cursor: pointer; }
+.ts-btn span { font-size: 14px; margin-left: 1px; }
+.ts-btn:hover { background: var(--paper-alt); }
+.nav-help { display: none; }
+@media (max-width: 760px) {
+  .nav-right { gap: 12px; }
+  .nav-help { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line);
+    padding: 16px 0; font: inherit; font-size: 1.05rem; font-weight: 700; color: var(--accent); cursor: pointer; }
+}
+.modal.site-guide { z-index: 3250; }
+.modal-box.sg-box { max-width: 420px; text-align: center; padding: 34px 24px 24px; }
+.sg-eyebrow { font-size: .85rem; font-weight: 700; color: var(--gold); letter-spacing: .04em; }
+.sg-eyebrow span { color: var(--muted); font-weight: 600; margin-left: 6px; }
+.sg-ill { height: 150px; display: flex; align-items: center; justify-content: center; margin: 12px 0 8px; }
+.sg-title { font-family: "Gowun Batang", serif; font-size: 1.5rem; color: var(--accent); margin: 4px 0 10px; word-break: keep-all; }
+.sg-desc { font-size: 1.08rem; line-height: 1.75; color: var(--ink); word-break: keep-all; }
+.sg-sub { margin-top: 10px; font-size: .95rem; line-height: 1.7; color: var(--ink-soft); background: var(--paper-alt); border-radius: 10px; padding: 9px 12px; word-break: keep-all; }
+.sg-sub:empty { display: none; }
+.sg-dots { display: flex; gap: 8px; justify-content: center; margin: 18px 0 14px; }
+.sg-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+.sg-dots i.on { background: var(--accent); }
+.sg-nav { display: flex; gap: 10px; }
+.sg-nav .btn { flex: 1; padding: 13px 10px; font-size: 1.02rem; }
+.sg-nav .btn[hidden] { display: none; }
+.sg-again { margin-top: 12px; font-size: .86rem; line-height: 1.6; color: var(--ink-soft); word-break: keep-all; }
+.sg-again[hidden] { display: none; }
+/* 그림: 옆으로 밀기 · 메뉴 · 뒤로 · 가+ */
+.sg-swipe { position: relative; width: 120px; height: 140px; border: 3px solid var(--accent); border-radius: 18px; background: #fff; }
+.sg-swipe::before, .sg-swipe::after { content: "‹"; position: absolute; top: 50%; transform: translateY(-50%); font-size: 2rem; color: var(--gold); }
+.sg-swipe::before { left: 8px; }
+.sg-swipe::after { content: "›"; right: 8px; }
+.sg-hand { position: absolute; top: 46px; left: 62px; font-size: 2.6rem; line-height: 1; animation: sgSwipe 1.8s ease-in-out infinite; }
+@keyframes sgSwipe { 0% { transform: translateX(10px); opacity: 0; } 15% { opacity: 1; } 70% { transform: translateX(-46px); opacity: 1; } 100% { transform: translateX(-46px); opacity: 0; } }
+.sg-bar { display: flex; align-items: center; gap: 10px; width: min(260px, 100%); padding: 12px 14px; border-radius: 14px; background: #fff; border: 1px solid var(--line); box-shadow: 0 6px 18px rgba(26,58,47,.12); }
+.sg-bar b { flex: 1; text-align: left; font-family: "Gowun Batang", serif; color: var(--accent); letter-spacing: .2em; white-space: nowrap; }
+.sg-bar i { font-style: normal; font-weight: 700; color: var(--accent); border: 1px solid var(--accent-soft); border-radius: 16px; padding: 3px 8px; }
+.sg-bar em { font-style: normal; font-size: 1.7rem; line-height: 1; color: var(--ink); animation: sgPulse 1.4s ease-in-out infinite; }
+.sg-back { font-size: 3.4rem; line-height: 1; color: var(--accent); animation: sgPulse 1.4s ease-in-out infinite; }
+.sg-ts { font-family: "Gowun Batang", serif; font-weight: 700; font-size: 3.6rem; line-height: 1; color: var(--accent); animation: sgPulse 1.6s ease-in-out infinite; }
+.sg-ts sup { font-size: .5em; }
+@keyframes sgPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { .sg-hand, .sg-bar em, .sg-back, .sg-ts { animation: none; } }

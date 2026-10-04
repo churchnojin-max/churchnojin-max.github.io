@@ -233,6 +233,8 @@
             </div></div>
           </div>` : "";
 
+  // 성도님들이 보는 공개 화면(<html class="big-text">)에만 글씨 크기 '가+' 단추와 '홈페이지 사용법'을 둔다(관리 화면은 그대로)
+  const IS_PUBLIC = document.documentElement.classList.contains("big-text");
   const headerHTML = `
     <header id="header">
       <div class="nav-inner">
@@ -243,9 +245,10 @@
           </a>
           <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
         </div>
-        <nav class="nav-menu" id="navMenu">${navLinks}</nav>
+        <nav class="nav-menu" id="navMenu">${navLinks}${IS_PUBLIC ? `<button type="button" class="nav-help" data-guide>❓ 홈페이지 사용법</button>` : ""}</nav>
         <div class="nav-right">${workMenuHTML}
           <div class="auth-slot" id="authSlot"></div>
+          ${IS_PUBLIC ? `<button type="button" class="ts-btn" id="tsBtn" aria-label="글씨 크기 바꾸기" title="글씨 크기 바꾸기">가<span aria-hidden="true">+</span></button>` : ""}
           <button class="nav-toggle" id="navToggle" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
         </div>
       </div>
@@ -347,7 +350,7 @@
             ${CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}
           </span>
         </a>
-        <nav class="footer-nav">${NAV.filter((n) => !n.adminOnly && !n.memberOnly).map((n) => `<a href="${n.href}">${n.label}</a>`).join("")}<a href="bylaws.html">정관</a><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a><a href="withdraw.html">회원탈퇴</a></nav>
+        <nav class="footer-nav">${NAV.filter((n) => !n.adminOnly && !n.memberOnly).map((n) => `<a href="${n.href}">${n.label}</a>`).join("")}${IS_PUBLIC ? `<a href="#" data-guide>홈페이지 사용법</a>` : ""}<a href="bylaws.html">정관</a><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a><a href="withdraw.html">회원탈퇴</a></nav>
         <div class="footer-actions">
           ${KAKAO_ON ? `<a class="kakao-channel-btn" href="${C.kakaoChannel}" target="_blank" rel="noopener">💬 카카오톡 채널 추가</a>` : ""}
           ${GIVE_ON ? `<a class="give-btn" id="giveOnlineBtn" href="javascript:void(0)">💝 온라인헌금</a>` : ""}
@@ -509,6 +512,141 @@
       }
     })
   );
+
+  // ===== 글씨 크기 '가+'(2026-10-05 목사님): 누를 때마다 보통 → 크게 → 아주 크게 → 보통, 이 기기에 기억 =====
+  // (그림을 그리기 전에 page-slide.js 가 <head> 에서 먼저 입혀 깜빡이지 않게 한다)
+  const TS_KEY = "nojin_text_size", TS_STEPS = ["", "ts-l", "ts-xl"], TS_NAMES = ["보통", "크게", "아주 크게"];
+  let tsCur = "";
+  try { tsCur = localStorage.getItem(TS_KEY) || ""; } catch (e) {}
+  if (TS_STEPS.indexOf(tsCur) < 0) tsCur = "";
+  function tsApply(v) {
+    const r = document.documentElement;
+    r.classList.remove("ts-l", "ts-xl");
+    if (v && IS_PUBLIC) r.classList.add(v);
+  }
+  tsApply(tsCur);
+  const tsBtn = document.getElementById("tsBtn");
+  if (tsBtn) tsBtn.addEventListener("click", () => {
+    const i = (TS_STEPS.indexOf(tsCur) + 1) % TS_STEPS.length;
+    tsCur = TS_STEPS[i];
+    try { if (tsCur) localStorage.setItem(TS_KEY, tsCur); else localStorage.removeItem(TS_KEY); } catch (e) {}
+    tsApply(tsCur);
+    showFlash("글씨 크기: " + TS_NAMES[i] + (i === 0 ? " (처음 크기로)" : " — 한 번 더 누르면 " + TS_NAMES[(i + 1) % 3]));
+  });
+
+  // ===== 홈페이지 사용법(2026-10-05 목사님: 어르신들이 처음 들어오셨을 때 기능을 다 쓰실 수 있게) =====
+  //  · 휴대폰·패드로 처음 들어오면(이 기기에서 한 번) 저절로 한 번 뜨고, 메뉴(☰)·맨 아래 '홈페이지 사용법'으로 언제든 다시 본다.
+  //  · 첫 화면 환영 안내·로그인 창 등이 떠 있으면 닫힐 때까지 기다렸다가 띄운다.
+  const GUIDE_KEY = "nojin_guide_seen";
+  const GUIDE = [
+    { ic: '<span class="sg-swipe"><span class="sg-hand">👆</span></span>', t: "옆으로 밀면 다음 화면",
+      d: "손가락으로 화면을 <b>왼쪽으로 밀면 다음 메뉴</b>, <b>오른쪽으로 밀면 앞 메뉴</b>로 넘어갑니다.",
+      s: "첫 화면 → 예배와 말씀 → 공동체와 양육 → 선교와 사역 → 교회 안내" },
+    { ic: `<span class="sg-bar"><b>${CH_NAME}</b><i>가+</i><em>☰</em></span>`, t: "메뉴로 바로가기",
+      d: "오른쪽 위 <b>☰ 단추</b>를 누르면 메뉴가 열립니다. 가고 싶은 곳을 누르면 바로 갑니다.", s: "" },
+    { ic: '<span class="sg-back">◁</span>', t: "돌아가기",
+      d: "휴대폰의 <b>뒤로 단추</b>(안드로이드는 아래쪽 ◁, 아이폰은 화면 아래 ‹)를 누르면 열린 창이 닫히거나 앞 화면으로 돌아갑니다.",
+      s: `왼쪽 위 <b>'${CH_NAME}'</b>를 누르면 언제든 첫 화면으로 갑니다.` },
+    { ic: '<span class="sg-ts">가<sup>+</sup></span>', t: "글씨 크게 · 실시간 예배",
+      d: "글씨가 작으면 위쪽 <b>'가+' 단추</b>를 누르세요. 누를 때마다 더 커지고, 세 번째에는 처음 크기로 돌아옵니다.",
+      s: "주일 예배 때 화면 아래 <b>'실시간 예배'</b> 단추에 빨간 불이 켜지면 눌러서 바로 보세요." },
+  ];
+  let sgEl = null, sgI = 0;
+  function sgRender() {
+    const g = GUIDE[sgI], last = sgI === GUIDE.length - 1;
+    sgEl.querySelector("#sgStep").textContent = (sgI + 1) + " / " + GUIDE.length;
+    sgEl.querySelector("#sgIll").innerHTML = g.ic;
+    sgEl.querySelector("#sgTitle").textContent = g.t;
+    sgEl.querySelector("#sgDesc").innerHTML = g.d;
+    sgEl.querySelector("#sgSub").innerHTML = g.s || "";
+    sgEl.querySelector("#sgDots").innerHTML = GUIDE.map((_, i) => `<i class="${i === sgI ? "on" : ""}"></i>`).join("");
+    sgEl.querySelector('[data-sg="prev"]').hidden = sgI === 0;
+    sgEl.querySelector('[data-sg="next"]').textContent = last ? "시작하기" : "다음 ›";
+    sgEl.querySelector("#sgAgain").hidden = !last;
+  }
+  function sgGo(d) {
+    const n = sgI + d;
+    if (n >= GUIDE.length) { sgClose(); return; }
+    if (n < 0) return;
+    sgI = n; sgRender();
+  }
+  function sgBuild() {
+    sgEl = document.createElement("div");
+    sgEl.className = "modal site-guide";
+    sgEl.hidden = true;
+    sgEl.innerHTML = `<div class="modal-backdrop" data-sg="close"></div>
+      <div class="modal-box sg-box" role="dialog" aria-modal="true" aria-labelledby="sgTitle">
+        <button class="modal-close" data-sg="close" aria-label="닫기">&times;</button>
+        <p class="sg-eyebrow">홈페이지 사용법 <span id="sgStep"></span></p>
+        <div class="sg-ill" id="sgIll"></div>
+        <h3 class="sg-title" id="sgTitle"></h3>
+        <p class="sg-desc" id="sgDesc"></p>
+        <p class="sg-sub" id="sgSub"></p>
+        <div class="sg-dots" id="sgDots"></div>
+        <div class="sg-nav"><button type="button" class="btn btn-line" data-sg="prev">‹ 이전</button><button type="button" class="btn btn-solid" data-sg="next">다음 ›</button></div>
+        <p class="sg-again" id="sgAgain" hidden>이 안내는 메뉴(☰)의 <b>'홈페이지 사용법'</b>에서 언제든 다시 볼 수 있어요.</p>
+      </div>`;
+    document.body.appendChild(sgEl);
+    sgEl.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-sg]");
+      if (!b) return;
+      const act = b.getAttribute("data-sg");
+      if (act === "close") sgClose(); else if (act === "next") sgGo(1); else if (act === "prev") sgGo(-1);
+    });
+    // 안내 안에서도 옆으로 밀어 넘길 수 있게
+    let tx = null;
+    const box = sgEl.querySelector(".sg-box");
+    box.addEventListener("touchstart", (e) => { tx = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+    box.addEventListener("touchend", (e) => { if (tx == null) return; const dx = e.changedTouches[0].clientX - tx; tx = null; if (Math.abs(dx) > 50) sgGo(dx < 0 ? 1 : -1); });
+    document.addEventListener("keydown", (e) => {
+      if (!sgEl || sgEl.hidden) return;
+      if (e.key === "Escape") sgClose(); else if (e.key === "ArrowRight") sgGo(1); else if (e.key === "ArrowLeft") sgGo(-1);
+    });
+  }
+  function sgCloseDom() {
+    if (!sgEl || sgEl.hidden) return;
+    sgEl.hidden = true;
+    document.body.style.overflow = "";
+    if (!document.querySelector(".pop-modal:not([hidden])")) document.documentElement.classList.remove("pop-open");
+  }
+  function sgClose() { if (window.ModalNav && window.ModalNav.close()) return; sgCloseDom(); }
+  function sgOpen() {
+    if (!sgEl) sgBuild();
+    closeMenu();
+    try { localStorage.setItem(GUIDE_KEY, "1"); localStorage.setItem("swipeNavHint1", "1"); } catch (e) {}   // 따로 뜨던 '옆으로 밀기' 안내는 이 안내가 대신한다
+    sgI = 0; sgRender();
+    sgEl.hidden = false;
+    document.body.style.overflow = "hidden";
+    document.documentElement.classList.add("pop-open");   // 뒤 화면이 옆으로 넘어가지 않게
+    if (window.ModalNav) window.ModalNav.open(sgCloseDom);   // 휴대폰 '뒤로'로 이 안내만 닫히게
+  }
+  window.SiteGuide = { open: sgOpen };
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-guide]");
+    if (!b) return;
+    e.preventDefault();
+    sgOpen();
+  });
+  // 처음 들어온 휴대폰·패드에서 한 번 저절로
+  if (IS_PUBLIC && window.matchMedia && matchMedia("(pointer: coarse)").matches && window.innerWidth <= 1024) {
+    const seen = () => { try { return localStorage.getItem(GUIDE_KEY) === "1"; } catch (e) { return true; } };
+    // 첫 화면 환영 안내(auth.js)가 곧 뜰 수 있으면 그것을 먼저 보여 준다
+    const welcomePending = () => {
+      try {
+        return /(^|\/)(index\.html)?$/.test(location.pathname) && !window.ChurchSignedIn() &&
+          !localStorage.getItem("nojin_known_member") && !sessionStorage.getItem("nojin_welcome_shown");
+      } catch (e) { return false; }
+    };
+    let tries = 0;
+    const tryAuto = () => {
+      if (seen()) return;
+      const busy = document.querySelector(".modal:not([hidden]), .pop-modal:not([hidden]), .ig-viewer:not([hidden])") ||
+        document.documentElement.classList.contains("pop-open") || document.body.classList.contains("menu-lock");
+      if (busy || (welcomePending() && tries < 8)) { if (tries++ < 120) setTimeout(tryAuto, 1000); return; }
+      sgOpen();
+    };
+    if (!seen()) window.addEventListener("load", () => setTimeout(tryAuto, 2200));
+  }
 
   // ===== 알림 설정 버튼(🔔) — 클릭 시 휴대폰/브라우저 알림 권한 요청 =====
   const notifyBtn = document.getElementById("notifyBtn");

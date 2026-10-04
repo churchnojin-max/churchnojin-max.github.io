@@ -3,6 +3,15 @@
    브라우저의 '화면 전환(View Transitions)' 기능을 쓴다 — 크롬·엣지·삼성인터넷·최신 사파리에서 동작하고,
    지원하지 않는 브라우저에서는 지금처럼 바로 바뀔 뿐이라 문제 없다. 페이지를 더 무겁게 하지 않는다.
    ※ 첫 화면이 그려지기 전에 동작해야 해서 <head> 안에서 불러온다. 움직임은 css 끝 '화면 옆으로 넘기기' 부분. */
+
+// 글씨 크기('가+' 단추, js/layout.js)를 그림을 그리기 전에 먼저 입힌다 — 큰 글씨로 고른 분이 깜빡임 없이 보시게(2026-10-05)
+(function () {
+  try {
+    var v = localStorage.getItem("nojin_text_size");
+    if ((v === "ts-l" || v === "ts-xl") && document.documentElement.classList.contains("big-text")) document.documentElement.classList.add(v);
+  } catch (e) {}
+})();
+
 (function () {
   var ORDER = ["index.html", "word.html", "story.html", "world.html", "welcome.html", "office.html"];
   function idx(u) {
