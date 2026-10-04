@@ -78,7 +78,8 @@
     if (error) { if (joinGuide) joinGuide.hidden = true; setMode("login"); openModal(); showMsg("카카오 로그인 오류: " + error.message, false); }
   }
 
-  // 가입 안내(2026-10-04 목사님): 한 분은 계정 하나만 — 되도록 카카오로, 카카오가 안 되면 이메일로.
+  // 가입 안내(2026-10-04 목사님): 한 분은 계정 하나만 — 되도록 카카오로, 카카오톡을 쓰지 않으면 이메일(일반 가입)로.
+  // 두 가지로 가입하면 카카오 계정 하나로 합친다는 것도 미리 알린다(2026-10-05 목사님).
   // '가입하기'를 누르면 이 창이 먼저 뜬다(헤더·QR 가입·로그인 창의 '회원가입' 모두).
   let joinGuide = null;
   function openJoinGuide() {
@@ -96,11 +97,14 @@
           </div>
           <div class="jg-kakao">
             <button type="button" class="kakao-btn" data-jg="kakao">💬 카카오로 가입하기 <span class="jg-rec">추천</span></button>
-            <p class="jg-note">카카오톡이 있으면 버튼 한 번으로 끝납니다. 비밀번호를 외우실 필요가 없어요.</p>
-            <div class="auth-divider">카카오톡이 없거나 안 될 때</div>
+            <p class="jg-note"><b>카카오톡을 쓰시면 카카오로 가입해 주세요.</b><br />버튼 한 번이면 끝나고, 비밀번호도 필요 없어요.</p>
+            <div class="auth-divider">카카오톡을 쓰지 않으시면</div>
           </div>
-          <button type="button" class="btn btn-line jg-email" data-jg="email">✉️ 이메일로 가입하기</button>
-          <p class="jg-warn">이미 가입하셨나요? 다시 가입하지 마시고 <button type="button" data-jg="login">로그인</button>해 주세요.<br />같은 분이 계정을 두 개 만들면 교인 확인(정회원 승인)이 되지 않습니다.</p>
+          <button type="button" class="btn btn-line jg-email" data-jg="email">✉️ 이메일로 가입하기 (일반 가입)</button>
+          <ul class="jg-warn">
+            <li>카카오와 이메일로 <b>두 번 가입하시면 카카오 계정 하나로 합쳐 드립니다.</b> 그 뒤에는 이메일 계정으로 로그인할 수 없어요.</li>
+            <li>이미 가입하셨다면 다시 가입하지 마시고 <button type="button" data-jg="login">로그인</button>해 주세요.</li>
+          </ul>
         </div>`;
       document.body.appendChild(joinGuide);
       joinGuide.addEventListener("click", (e) => {
@@ -130,7 +134,7 @@
     mode = m;
     const isReset = m === "reset";
     titleEl.textContent = isReset ? "새 비밀번호 설정" : m === "login" ? "로그인" : "회원가입";
-    if (subEl) subEl.textContent = m === "signup" ? "카카오톡이 없거나 안 될 때 이메일로 가입합니다. 한 분은 계정 하나만 만들어 주세요." : SUB0;
+    if (subEl) subEl.textContent = m === "signup" ? "카카오톡을 쓰지 않으시는 분의 일반 가입입니다. 카카오로도 가입하시면 카카오 계정 하나로 합쳐집니다." : SUB0;
     submitBtn.textContent = isReset ? "비밀번호 변경" : m === "login" ? "로그인" : "회원가입";
     nameField.hidden = m !== "signup";
     if (channelField) channelField.hidden = m !== "signup";
