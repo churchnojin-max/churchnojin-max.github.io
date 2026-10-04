@@ -124,6 +124,65 @@
     joinGuide.hidden = false; document.body.style.overflow = "hidden";
   }
   window.__openJoinGuide = openJoinGuide;
+
+  // 첫 화면 환영 안내(2026-10-05 목사님): 가입하지 않은 분께 '가입 후 이용' 안내와 가입하기 단추.
+  //  · 첫 화면(index)에서, 로그인하지 않았을 때만, 브라우저를 열 때마다 한 번.
+  //  · 이 기기에서 한 번이라도 로그인한 분(이미 회원)에게는 띄우지 않는다(KNOWN_KEY).
+  //  · 처음 오신 분은 '먼저 둘러볼게요'로 바로 닫고 볼 수 있다.
+  const KNOWN_KEY = "nojin_known_member";
+  let signedIn = false, welcomeChecked = false, welcomePop = null;
+  function maybeWelcome() {
+    if (welcomeChecked) return;
+    welcomeChecked = true;
+    if (!/(^|\/)(index\.html)?$/.test(location.pathname)) return;
+    try { if (localStorage.getItem(KNOWN_KEY) || sessionStorage.getItem("nojin_welcome_shown")) return; } catch (_) { return; }
+    setTimeout(() => {
+      // 그사이 로그인했거나 다른 창(로그인·주보 등)이 떠 있으면 띄우지 않는다
+      if (signedIn || document.querySelector(".modal:not([hidden]), .pop-modal:not([hidden])") || document.documentElement.classList.contains("pop-open")) return;
+      try { sessionStorage.setItem("nojin_welcome_shown", "1"); } catch (_) {}
+      openWelcome();
+    }, 1200);
+  }
+  function closeWelcome() {
+    if (!welcomePop || welcomePop.hidden) return;
+    welcomePop.hidden = true;
+    document.documentElement.classList.remove("pop-open");
+    document.body.style.overflow = "";
+  }
+  function openWelcome() {
+    if (!welcomePop) {
+      const church = (window.CHURCH && window.CHURCH.name) || "우리 교회";
+      welcomePop = document.createElement("div");
+      welcomePop.className = "modal welcome-pop";
+      welcomePop.hidden = true;
+      welcomePop.innerHTML = `<div class="modal-backdrop" data-wp="close"></div>
+        <div class="modal-box modal-box-auth" role="dialog" aria-modal="true" aria-labelledby="wpTitle">
+          <button class="modal-close" data-wp="close" aria-label="닫기">&times;</button>
+          <div class="auth-head">
+            <img src="images/icon-192.png?v=20260926icon2" alt="" class="auth-logo" />
+            <h3 id="wpTitle">환영합니다</h3>
+          </div>
+          <p class="wp-text">홈페이지를 원활하게 이용하시기 위해서는<br />가입 절차가 필요합니다.</p>
+          <p class="wp-text wp-strong">${church} 성도님들께서는<br />회원가입 후 이용해 주세요.</p>
+          <button type="button" class="btn btn-solid wp-join" data-wp="join">가입하기</button>
+          <button type="button" class="btn btn-line wp-later" data-wp="close">먼저 둘러볼게요</button>
+          <p class="wp-login">이미 가입하셨나요? <button type="button" data-wp="login">로그인</button></p>
+        </div>`;
+      document.body.appendChild(welcomePop);
+      welcomePop.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-wp]");
+        if (!b) return;
+        const act = b.getAttribute("data-wp");
+        closeWelcome();
+        if (act === "join") openJoinGuide();
+        else if (act === "login") { setMode("login"); openModal(); }
+      });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeWelcome(); });
+    }
+    welcomePop.hidden = false;
+    document.documentElement.classList.add("pop-open");   // 옆으로 밀기·밀기 안내가 이 창과 겹치지 않게
+    document.body.style.overflow = "hidden";
+  }
   // layout.js 가 먼저 그린 헤더 버튼은 auth.js 로드 전에도 눌릴 수 있다.
   // 그때 '가입하기'를 눌렀으면 __authPendingMode 에 남겨 두고, 여기서 이어받는다.
   window.__authSetMode = function (m) { setMode(m); };
@@ -213,9 +272,14 @@
       });
       // 직분이 지정돼 있으면 이름 옆에 붙여 표시(레이아웃의 헬퍼 재사용)
       if (window.__enhanceHeaderRole) window.__enhanceHeaderRole(user.id, name);
+      signedIn = true;
+      try { localStorage.setItem(KNOWN_KEY, "1"); } catch (_) {}   // 이 기기는 회원이 쓰는 기기 — 첫 화면 환영 안내를 띄우지 않는다
+      closeWelcome();
       afterLogin(user);
     } else {
+      signedIn = false;
       if (window.__joinFromQR) { window.__joinFromQR = false; setTimeout(openJoinGuide, 300); }
+      else maybeWelcome();
       // 로그인 + 가입하기를 나란히 — 처음 오신 분이 '로그인'만 보고 막히지 않도록
       slot.innerHTML = `<span class="auth-wrap-out"><button class="auth-btn" id="loginBtn">로그인</button><button class="auth-btn auth-btn-join" id="joinBtn">가입하기</button></span>`;
       document.getElementById("loginBtn").addEventListener("click", () => { setMode("login"); openModal(); });
