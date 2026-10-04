@@ -1077,8 +1077,9 @@ ul { list-style: none; }
 
 /* 폼 */
 .form-card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:36px; max-width:680px; }
-.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-.form-field { display:flex; flex-direction:column; gap:6px; }
+/* 칸 폭은 상자에 맞춘다(minmax 0) — 패드에서 글자를 크게 해 두면 입력칸이 제 폭만큼 넓어져 상자 밖으로 삐져나왔다(2026-10-04) */
+.form-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px; }
+.form-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
 .form-field[hidden] { display:none; }
 .form-field.full { grid-column:1 / -1; }
 .form-field label { font-size:.85rem; color:var(--ink-soft); font-weight:500; }
@@ -1388,11 +1389,31 @@ ul { list-style: none; }
 .up-f input, .up-f select, .up-f textarea { width: 100%; font-family: inherit; font-size: .95rem; color: var(--ink); padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; outline: none; }
 .up-f input:focus, .up-f select:focus, .up-f textarea:focus { border-color: var(--accent); }
 .up-f textarea { resize: vertical; }
-.up-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.up-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .up-go { width: 100%; margin-top: 18px; }
 .up-go:disabled { opacity: .5; cursor: default; }
 .up-status { margin-top: 12px; text-align: center; font-size: .9rem; color: var(--accent); font-weight: 600; }
-@media (max-width: 680px) { .up-row { grid-template-columns: 1fr; } }
+@media (max-width: 680px) { .up-row { grid-template-columns: minmax(0, 1fr); } }
+/* 사진 올리기·고치기 한 창(2026-10-04): 그 날 이미 올린 사진(× 로 지우기) · 새로 올릴 사진 · 안내 */
+.modal.up-modal { z-index: 3200; }   /* 소식 더 보기·사진 크게 보기 위에 뜬다 */
+.up-sub { font-size: .9rem; color: var(--ink-soft); margin: 0 0 4px; word-break: keep-all; }
+.up-old { margin-top: 12px; }
+.up-old-h { font-size: .86rem; color: var(--ink-soft); margin: 14px 0 8px; word-break: keep-all; }
+.up-old .up-old-h { margin-top: 0; }
+.up-old-h b { color: var(--ink); }
+.up-old-h[hidden] { display: none; }
+.up-old .up-thumbs, .up-new-h + .up-thumbs { margin-top: 0; }
+.up-th-x { width: 26px; height: 26px; top: -8px; right: -8px; font-size: 1.05rem; }   /* 패드·휴대폰에서 누르기 쉽게 */
+.up-th-lock img { opacity: .55; }
+.up-th-busy { opacity: .35; pointer-events: none; }
+.up-th-focus img { outline: 3px solid var(--gold, #BFA06C); outline-offset: 2px; }
+.up-th-new::after { content: "새"; position: absolute; left: 5px; bottom: 5px; font-size: .7rem; font-weight: 700; color: #fff; background: var(--accent); padding: 1px 7px; border-radius: 999px; }
+.up-note { font-size: .82rem; color: #8a5a00; background: #fbf4e4; border-radius: 8px; padding: 7px 10px; margin: -4px 0 0; word-break: keep-all; }
+.up-note[hidden] { display: none; }
+/* 날짜 상자 → 크게 보기의 '사진 수정하기' */
+.igv-edit { position: absolute; top: 14px; left: 16px; z-index: 2; height: 42px; padding: 0 18px; border: 0; border-radius: 999px; background: rgba(255,255,255,.16); color: #fff; font-family: inherit; font-size: .95rem; font-weight: 700; cursor: pointer; }
+.igv-edit:hover { background: rgba(255,255,255,.28); }
+.igv-edit[hidden] { display: none; }
 
 /* 카테고리 관리 버튼(업로드 모달·community) */
 .up-catmgr { border: 0; background: none; color: var(--accent); font-size: .78rem; font-weight: 600; cursor: pointer; margin-left: 6px; padding: 0; }
@@ -1467,7 +1488,7 @@ ul { list-style: none; }
   .cta-flow, .home-sermon { padding: 36px 24px; }
 }
 @media (max-width: 600px) {
-  .form-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: minmax(0, 1fr); }
   .page-hero { padding: 128px 20px 54px; }
   .block { padding: 60px 0; }
 }
@@ -1496,6 +1517,13 @@ ul { list-style: none; }
 .auth-head p { font-size: .88rem; color: var(--ink-soft); }
 .kakao-btn { width: 100%; background: #FEE500; color: #3A1D1D; border: 0; border-radius: 12px; padding: 13px; font-family: inherit; font-size: .98rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: .2s; }
 .kakao-btn:hover { filter: brightness(.96); }
+/* 가입 안내(2026-10-04): 카카오 먼저, 안 되면 이메일 — 한 분은 계정 하나만 */
+.jg-rec { font-size: .72rem; font-weight: 800; color: #fff; background: #3A1D1D; padding: 2px 8px; border-radius: 999px; }
+.jg-note { font-size: .84rem; color: var(--ink-soft); margin: 8px 0 0; line-height: 1.6; word-break: keep-all; }
+.jg-kakao[hidden] { display: none; }
+.jg-email { width: 100%; padding: 12px; font-size: .95rem; }
+.jg-warn { margin-top: 18px; font-size: .84rem; line-height: 1.7; color: #8a5a00; background: #fbf4e4; border-radius: 10px; padding: 10px 12px; text-align: left; word-break: keep-all; }
+.jg-warn button { border: 0; background: none; padding: 0; font: inherit; font-weight: 800; color: var(--accent); text-decoration: underline; cursor: pointer; }
 .auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--muted); font-size: .8rem; }
 .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .auth-form { text-align: left; display: flex; flex-direction: column; gap: 14px; }

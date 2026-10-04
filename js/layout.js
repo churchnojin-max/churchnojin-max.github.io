@@ -747,14 +747,15 @@
           if (m) { m.hidden = false; document.body.style.overflow = "hidden"; }
         };
         document.getElementById("loginBtnInit").addEventListener("click", () => openAuth("login"));
-        document.getElementById("joinBtnInit").addEventListener("click", () => openAuth("signup"));
+        // 가입하기 → 가입 안내 창(카카오 먼저, 안 되면 이메일 — auth.js). auth.js 가 아직이면 가입 화면을 열어 두면 이어받는다.
+        document.getElementById("joinBtnInit").addEventListener("click", () => { if (window.__openJoinGuide) window.__openJoinGuide(); else openAuth("signup"); });
       }
     }
     const sdk = document.createElement("script");
     sdk.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     sdk.onload = function () {
       const auth = document.createElement("script");
-      auth.src = "js/auth.js?v=20261001pending";
+      auth.src = "js/auth.js?v=20261004join";
       document.body.appendChild(auth);
     };
     // SDK 로드 실패 시에도 버튼은 유지(클릭 시 모달은 위 핸들러가 처리)

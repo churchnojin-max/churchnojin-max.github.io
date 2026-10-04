@@ -42,12 +42,16 @@ window.ChurchCategories = (function () {
   let cache = null;
   let _admin = null;
 
+  // 카테고리 관리: 관리자이거나 '게시판' 권한(공지·앨범·나눔터 관리)이 있는 분(2026-10-04)
   async function isAdmin() {
     if (_admin !== null) return _admin;
     const me = currentUser();
     if (!me || !me.id || !ready()) { _admin = false; return false; }
-    try { const r = await api("GET", `admins?uid=eq.${me.id}&select=uid`); _admin = Array.isArray(r) && r.length > 0; }
-    catch (e) { _admin = false; }
+    try { const p = await api("POST", "rpc/my_perms", {}); _admin = !!(p && (p.isAdmin || p.canBoard)); }
+    catch (e) {
+      try { const r = await api("GET", `admins?uid=eq.${me.id}&select=uid`); _admin = Array.isArray(r) && r.length > 0; }
+      catch (e2) { _admin = false; }
+    }
     return _admin;
   }
 

@@ -3,7 +3,7 @@
    - 최신 사진 자동 슬라이드 캐러셀(박스)
    - '소식 더 보기' → 통합 최신 인스타 피드 + 전체화면 뷰어
    - '＋ 사진 올리기' → 업로드 모달(데스크톱 드래그&드롭 / 모바일 파일·카메라),
-     제목·날짜 지정 가능(미지정 시 오늘 날짜)
+     제목·날짜 지정 가능(미지정 시 오늘 날짜). 날짜 상자의 '사진 수정하기'도 같은 창(더하기·지우기·고치기)
    - 데이터: album_feed(뷰)/album_photos, 좋아요 album_likes, 댓글 album_comments
    ============================================================ */
 (function () {
@@ -73,14 +73,23 @@
   // 제목 앞에 붙은 날짜('5월31일 …', '2026.5.31 …')는 날짜 칸에 이미 나오므로 떼고 보여 준다
   const noDate = (t) => String(t || "").trim().replace(/^(?:(?:\d{4}\s*년\s*)?\d{1,2}\s*월\s*\d{1,2}\s*일|(?:\d{4}\s*[.\-/]\s*)?\d{1,2}\s*[.\-/]\s*\d{1,2}\.?(?=\s))\s*/, "").trim();
   const titleOf = (p) => noDate(p.title) || noDate(p.caption) || p.category || "우리들 소식";
+  // 날짜 상자와 '사진 수정하기' 창이 같은 날을 가리키게: 정한 날짜(event_date), 없으면 올린 날
+  const dayOf = (p) => String(p.event_date || p.created_at || "").slice(0, 10);
+  const dayLabel = (d) => { const m = String(d || "").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${+m[2]}월 ${+m[3]}일` : String(d || ""); };
 
+  // 남의 사진도 고치고 지울 수 있는 분: 관리자, 또는 '게시판' 권한(공지·앨범·나눔터 관리)이 있는 분(2026-10-04)
   let _isAdmin = null;
   async function isAdminUser() {
     if (_isAdmin !== null) return _isAdmin;
     const me = currentUser();
     if (!me || !me.id) { _isAdmin = false; return false; }
-    try { const rows = await api("GET", `admins?uid=eq.${me.id}&select=uid`); _isAdmin = Array.isArray(rows) && rows.length > 0; }
-    catch (e) { _isAdmin = false; }
+    try {
+      const p = await api("POST", "rpc/my_perms", {});
+      _isAdmin = !!(p && (p.isAdmin || p.canBoard));
+    } catch (e) {
+      try { const rows = await api("GET", `admins?uid=eq.${me.id}&select=uid`); _isAdmin = Array.isArray(rows) && rows.length > 0; }
+      catch (e2) { _isAdmin = false; }
+    }
     return _isAdmin;
   }
 
@@ -160,7 +169,10 @@
           </span>
         </button>`;
     }).join("");
-    carEl.querySelectorAll(".hn-day").forEach((el) => el.addEventListener("click", () => openViewer(slides[Number(el.dataset.g)].list, 0)));
+    carEl.querySelectorAll(".hn-day").forEach((el) => el.addEventListener("click", () => {
+      const g = slides[Number(el.dataset.g)];
+      openViewer(g.list, 0, /^\d{4}\.\d{2}\.\d{2}$/.test(g.key) ? g.key.replace(/\./g, "-") : null);
+    }));
   }
   function go(n) {
     if (!slides.length) return;
@@ -268,13 +280,12 @@
   function cardHtml(p, i) {
     const liked = myLikes.has(String(p.id));
     const me = currentUser();
-    const mine = !!(me && p.user_id && me.id === p.user_id);
-    const canDel = mine || feedAdmin;
+    const canEdit = !!(me && p.user_id && me.id === p.user_id) || feedAdmin;   // 올린 본인·관리자·게시판 담당
     return `<article class="ig-card" data-id="${p.id}" data-idx="${i}">
       <header class="ig-head">
         <span class="ig-avatar">${esc(initial(p.author_name))}</span>
         <div class="ig-who"><b>${esc(p.author_name || "성도")}</b><span>${esc(fmtDate(p))} · ${esc(timeAgo(p.created_at))}</span></div>
-        ${(mine || canDel) ? `<span style="margin-left:auto;display:inline-flex;gap:2px">${mine ? `<button type="button" class="ig-menu" data-act="editphoto" title="수정" style="margin-left:0;color:var(--accent,#1A3A2F)">수정</button>` : ""}${canDel ? `<button type="button" class="ig-menu" data-act="delphoto" title="삭제" style="margin-left:0">삭제</button>` : ""}</span>` : ""}
+        ${canEdit ? `<span style="margin-left:auto;display:inline-flex;gap:2px"><button type="button" class="ig-menu" data-act="editphoto" title="이 날 사진 수정하기" style="margin-left:0;color:var(--accent,#1A3A2F)">수정</button><button type="button" class="ig-menu" data-act="delphoto" title="삭제" style="margin-left:0">삭제</button></span>` : ""}
       </header>
       <div class="ig-media" data-act="open" data-idx="${i}" role="button" tabindex="0" aria-label="사진 크게 보기">
         <img src="${esc(p.url)}" alt="${esc(titleOf(p))}" loading="lazy" draggable="false" />
@@ -329,7 +340,7 @@
       const delPhoto = card.querySelector('[data-act="delphoto"]');
       if (delPhoto) delPhoto.addEventListener("click", () => removePhoto(p));
       const editPhoto = card.querySelector('[data-act="editphoto"]');
-      if (editPhoto) editPhoto.addEventListener("click", () => openEdit(p));
+      if (editPhoto) editPhoto.addEventListener("click", () => openDay(dayOf(p), p.id));   // 그 날 사진을 고치는 창(사진 올리기와 같은 창)
       const form = card.querySelector('[data-role="addcmt"]');
       if (form) form.addEventListener("submit", async (e) => { e.preventDefault(); const inp = form.querySelector("input"); const v = inp.value; inp.value = ""; if (await addComment(id, v)) refreshComments(id); });
       const cbox = card.querySelector('[data-role="comments"]');
@@ -343,76 +354,11 @@
   async function removePhoto(p) {
     if (!confirm("이 사진을 삭제할까요?")) return;
     try {
-      await api("DELETE", `album_photos?id=eq.${p.id}`, null, { Prefer: "return=minimal" });
+      // 허락이 없으면 오류 없이 0장이 지워지므로, 지워진 줄을 돌려받아 확인한다
+      const gone = await api("DELETE", `album_photos?id=eq.${p.id}`, null, { Prefer: "return=representation" });
+      if (!Array.isArray(gone) || !gone.length) throw new Error("지울 권한이 없습니다. (올린 분·관리자·게시판 담당만 지울 수 있어요)");
       if (p.key && window.ChurchUpload) window.ChurchUpload.remove(p.key);
     } catch (e) { alert("삭제 오류: " + e.message); return; }
-    await load();
-    if (feedModal && !feedModal.hidden) openFeed();
-  }
-
-  /* ===================== 소식 수정 모달 (본인 글만) ===================== */
-  let editModal = null, editingPhoto = null;
-  function buildEditModal() {
-    editModal = document.createElement("div");
-    editModal.className = "modal"; editModal.hidden = true;
-    editModal.innerHTML = `
-      <div class="modal-backdrop" data-edclose></div>
-      <div class="modal-box modal-box-upload" role="dialog" aria-modal="true" aria-label="소식 수정">
-        <button class="modal-close" data-edclose aria-label="닫기">&times;</button>
-        <h3 class="m-title">소식 수정</h3>
-        <div class="up-fields">
-          <label class="up-f"><span>제목 <em>(선택)</em></span><input type="text" id="edTitle" maxlength="60" placeholder="예: 여름성경학교 첫째 날" /></label>
-          <div class="up-row">
-            <label class="up-f"><span>날짜</span><input type="date" id="edDate" /></label>
-            <label class="up-f"><span>카테고리</span><select id="edCat"></select></label>
-          </div>
-          <label class="up-f"><span>한 줄 소식 <em>(선택)</em></span><textarea id="edCap" rows="2" maxlength="300" placeholder="어떤 순간인가요?"></textarea></label>
-        </div>
-        <button type="button" class="btn btn-solid up-go" id="edGo">저장</button>
-        <div class="up-status" id="edStatus" hidden></div>
-      </div>`;
-    document.body.appendChild(editModal);
-    editModal.addEventListener("click", (e) => { if (e.target.hasAttribute("data-edclose")) closeEdit(); });
-    editModal.querySelector("#edGo").addEventListener("click", saveEdit);
-  }
-  function closeEdit() { if (editModal) editModal.hidden = true; document.body.style.overflow = ""; editingPhoto = null; }
-  function openEdit(p) {
-    const me = currentUser();
-    if (!me || me.id !== p.user_id) { alert("본인이 올린 소식만 수정할 수 있어요."); return; }
-    if (!editModal) buildEditModal();
-    editingPhoto = p;
-    const catSel = editModal.querySelector("#edCat"), list = cats();
-    catSel.innerHTML = list.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-    if (p.category && list.indexOf(p.category) < 0) catSel.insertAdjacentHTML("afterbegin", `<option value="${esc(p.category)}">${esc(p.category)}</option>`);
-    catSel.value = p.category || list[0] || "";
-    editModal.querySelector("#edTitle").value = p.title || "";
-    editModal.querySelector("#edCap").value = p.caption || "";
-    editModal.querySelector("#edDate").value = String(p.event_date || "").slice(0, 10) || todayISO();
-    const st = editModal.querySelector("#edStatus"); st.hidden = true; st.textContent = "";
-    editModal.querySelector("#edGo").disabled = false;
-    editModal.hidden = false; document.body.style.overflow = "hidden";
-  }
-  async function saveEdit() {
-    if (!editingPhoto) return;
-    const p = editingPhoto;
-    const title = (editModal.querySelector("#edTitle").value || "").trim();
-    const cap = (editModal.querySelector("#edCap").value || "").trim();
-    const cat = editModal.querySelector("#edCat").value;
-    const date = editModal.querySelector("#edDate").value || null;
-    const go = editModal.querySelector("#edGo"), st = editModal.querySelector("#edStatus");
-    go.disabled = true; st.hidden = false; st.textContent = "저장 중…";
-    const patch = (payload) => api("PATCH", `album_photos?id=eq.${p.id}`, payload, { Prefer: "return=representation" });
-    try {
-      let rows;
-      try { rows = await patch({ title: title || null, caption: cap || null, category: cat || null, event_date: date }); }
-      catch (colErr) { if (/column|event_date|title|schema cache/i.test(colErr.message)) rows = await patch({ caption: cap || null, category: cat || null }); else throw colErr; }
-      if (!rows || !rows.length) {
-        st.textContent = ""; go.disabled = false;
-        alert("수정이 저장되지 않았습니다.\n관리자는 Supabase ▸ SQL Editor 에서 supabase/album_edit.sql 을 1회 실행해 '본인 글 수정' 권한을 켜 주세요.");
-        return;
-      }
-    } catch (e) { st.textContent = ""; go.disabled = false; alert("수정 오류: " + e.message); return; }
-    closeEdit();
     await load();
     if (feedModal && !feedModal.hidden) openFeed();
   }
@@ -422,6 +368,7 @@
   viewer.className = "ig-viewer"; viewer.hidden = true;
   viewer.innerHTML = `
     <button type="button" class="igv-close" aria-label="닫기">&times;</button>
+    <button type="button" class="igv-edit" hidden>✎ 사진 수정하기</button>
     <button type="button" class="igv-nav igv-prev" aria-label="이전">‹</button>
     <button type="button" class="igv-nav igv-next" aria-label="다음">›</button>
     <div class="igv-stage" data-role="stage"></div>
@@ -432,8 +379,25 @@
     </div>`;
   document.body.appendChild(viewer);
   const vStage = viewer.querySelector('[data-role="stage"]');
-  let vList = [], vIdx = 0;
-  function openViewer(list, idx) { vList = list; vIdx = idx || 0; renderViewer(); viewer.hidden = false; document.body.style.overflow = "hidden"; if (window.ModalNav) window.ModalNav.open(closeViewerDom); }
+  let vList = [], vIdx = 0, vDay = null;
+  // day: 날짜 상자에서 열었으면 그 날(YYYY-MM-DD) — 올린 본인·관리자·게시판 담당에게 '사진 수정하기'를 보여 준다
+  function openViewer(list, idx, day) {
+    vList = list; vIdx = idx || 0; vDay = day || null;
+    renderViewer(); viewer.hidden = false; document.body.style.overflow = "hidden";
+    if (window.ModalNav) window.ModalNav.open(closeViewerDom);
+    const eb = viewer.querySelector(".igv-edit"), me = currentUser();
+    eb.hidden = true;
+    if (vDay && me) isAdminUser().then((mgr) => { if (!viewer.hidden && vDay === day) eb.hidden = !(mgr || list.some((p) => p.user_id === me.id)); });
+  }
+  // 크게 보기를 닫고 '뒤로 가기' 기록까지 정리된 뒤에 다음 창을 연다(바로 열면 뒤로 가기가 새 창을 닫아 버린다)
+  function afterViewerClosed(fn) {
+    if (!(window.ModalNav && window.ModalNav.count && window.ModalNav.count())) { closeViewerDom(); fn(); return; }
+    let done = false;
+    const go = () => { if (done) return; done = true; window.removeEventListener("popstate", go); if (!viewer.hidden) closeViewerDom(); setTimeout(fn, 0); };
+    window.addEventListener("popstate", go);
+    setTimeout(go, 700);
+    closeViewer();
+  }
   function closeViewerDom() { viewer.hidden = true; if (!feedModal || feedModal.hidden) document.body.style.overflow = ""; else document.body.style.overflow = "hidden"; }
   function closeViewer() { if (window.ModalNav && window.ModalNav.close()) return; closeViewerDom(); }
   function renderViewer() {
@@ -456,6 +420,7 @@
   }
   function heartBurst() { const b = vStage.querySelector(".igv-heartburst"); if (!b) return; b.classList.remove("go"); void b.offsetWidth; b.classList.add("go"); }
   viewer.querySelector(".igv-close").addEventListener("click", closeViewer);
+  viewer.querySelector(".igv-edit").addEventListener("click", () => { const d = vDay; if (d) afterViewerClosed(() => openDay(d)); });
   viewer.querySelector(".igv-prev").addEventListener("click", () => vGo(-1));
   viewer.querySelector(".igv-next").addEventListener("click", () => vGo(1));
   viewer.querySelector('[data-act="like"]').addEventListener("click", vLike);
@@ -467,21 +432,58 @@
   vStage.addEventListener("touchmove", (e) => { if (!drag) return; const dx = e.touches[0].clientX - tX, dy = e.touches[0].clientY - tY; if (Math.abs(dx) > Math.abs(dy)) { const img = vStage.querySelector("img"); if (img) img.style.transform = `translateX(${dx}px)`; } }, { passive: true });
   vStage.addEventListener("touchend", (e) => { if (!drag) return; drag = false; const dx = e.changedTouches[0].clientX - tX; const img = vStage.querySelector("img"); if (img) img.style.transform = ""; if (Math.abs(dx) > 60) vGo(dx < 0 ? 1 : -1); tX = tY = null; });
 
-  /* ===================== 업로드 모달(＋) ===================== */
+  /* ===================== 사진 올리기 · 고치기 (한 창) =====================
+     2026-10-04 목사님: "소식 더 보기에 있던 수정·삭제를 올리기 쪽으로 통합"
+     · '＋ 사진 올리기' — 새 사진을 올린다. 고른 날에 이미 올린 사진이 있으면 함께 보여 주고, 빨간 × 로 지울 수 있다.
+     · 날짜 상자를 열어 '사진 수정하기'(소식 더 보기의 '수정'도 같은 창) — 그 날 사진을 고친다:
+         × 로 지우기 · 사진 더하기 · 제목/카테고리/한 줄 소식(바꾼 칸만 그 날 사진 모두에) ·
+         날짜를 바꾸면 그 날 사진이 모두 그 날짜로 옮겨진다.
+     · 남의 사진을 지우고 고치는 것은 관리자·'게시판' 담당만(album_photos RLS, supabase/board_and_one_account_20261004.sql).
+  ===================== */
   let upModal = null;
+  let upMode = "new";        // "new" = 새 사진 올리기, "day" = 그 날 사진 고치기
+  let upDay0 = "";           // 고치러 들어온 날(날짜를 바꾸면 그 날 사진을 옮긴다)
+  let upOld = [];            // 고른 날에 이미 올린 사진
+  let upInit = { title: "", caption: "", category: "" };   // 처음 채운 값 — 바꾼 칸만 고친다
+  let upAuto = {};           // 새 사진 올리기: 그 날 소식에서 자동으로 채운 칸
+  let upCatTouched = false;
+  let upFocus = null;        // 소식 더 보기에서 '수정'을 누른 사진
+  let upChanged = false;     // 지우거나 올렸으면 창을 닫을 때 소식을 새로 읽는다
+  let upSeq = 0;             // 날짜를 빨리 바꿀 때 늦게 온 응답은 버린다
+  let picked = [];           // 새로 올릴 사진(File)
+  let pickedUrls = [];
+  const upQ = (id) => upModal.querySelector("#" + id);
+  const canEditPhoto = (p) => { const me = currentUser(); return !!(me && (me.id === p.user_id || _isAdmin === true)); };
   function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+  function nextDay(d) { const t = new Date(d + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); }
+  // 그 날 사진 모두(첫 화면이 읽는 최신 40장 밖의 사진까지). 날짜를 안 정한 옛 사진은 올린 날로 본다(dayOf 와 같게).
+  async function fetchDay(d) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) return [];
+    const q = `?select=*&or=(event_date.eq.${d},and(event_date.is.null,created_at.gte.${d},created_at.lt.${nextDay(d)}))&order=created_at.desc`;
+    try { return (await api("GET", "album_feed" + q)) || []; }
+    catch (e) {
+      try { return (await api("GET", "album_photos" + q)) || []; }
+      catch (e2) { return photos.filter((p) => dayOf(p) === d); }
+    }
+  }
+
   function buildUpModal() {
     upModal = document.createElement("div");
-    upModal.className = "modal"; upModal.hidden = true;
+    upModal.className = "modal up-modal"; upModal.hidden = true;
     upModal.innerHTML = `
       <div class="modal-backdrop" data-upclose></div>
-      <div class="modal-box modal-box-upload" role="dialog" aria-modal="true" aria-label="사진 올리기">
+      <div class="modal-box modal-box-upload" role="dialog" aria-modal="true" aria-labelledby="upHead">
         <button class="modal-close" data-upclose aria-label="닫기">&times;</button>
-        <h3 class="m-title">사진 올리기</h3>
+        <h3 class="m-title" id="upHead">사진 올리기</h3>
+        <p class="up-sub" id="upSub" hidden></p>
+        <div class="up-old" id="upOldBox" hidden>
+          <p class="up-old-h" id="upOldH"></p>
+          <div class="up-thumbs" id="upOld"></div>
+        </div>
         <div class="up-drop" id="upDrop">
           <div class="up-drop-in">
             <span class="up-drop-ic">🖼️</span>
-            <p class="up-drop-t">여기로 사진을 끌어다 놓거나</p>
+            <p class="up-drop-t" id="upDropT">여기로 사진을 끌어다 놓거나</p>
             <button type="button" class="btn btn-solid up-pick" id="upPick">사진 선택</button>
             <button type="button" class="btn btn-line up-cam" id="upCam" style="margin-top:8px">📷 카메라로 찍기</button>
             <p class="up-drop-s">여러 장을 한 번에 올릴 수 있어요</p>
@@ -489,13 +491,16 @@
           <input type="file" id="upInput" accept="image/*" multiple hidden />
           <input type="file" id="upCamera" accept="image/*" capture="environment" hidden />
         </div>
+        <p class="up-old-h up-new-h" id="upNewH" hidden></p>
         <div class="up-thumbs" id="upThumbs"></div>
         <div class="up-fields">
           <label class="up-f"><span>제목 <em>(선택)</em></span><input type="text" id="upTitle" maxlength="60" placeholder="예: 여름성경학교 첫째 날" /></label>
+          <p class="up-note" id="upTitleNote" hidden>이 날 사진들의 제목이 서로 달라요. 제목을 고치면 모두 같은 제목이 됩니다.</p>
           <div class="up-row">
             <label class="up-f"><span>날짜</span><input type="date" id="upDate" /></label>
-            <label class="up-f"><span>카테고리 <button type="button" class="up-catmgr" id="upCatManage" hidden>＋ 카테고리 관리</button></span><select id="upCat">${cats().map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("")}</select></label>
+            <label class="up-f"><span>카테고리 <button type="button" class="up-catmgr" id="upCatManage" hidden>＋ 카테고리 관리</button></span><select id="upCat"></select></label>
           </div>
+          <p class="up-note" id="upDateNote" hidden></p>
           <label class="up-f"><span>한 줄 소식 <em>(선택)</em></span><textarea id="upCap" rows="2" maxlength="300" placeholder="어떤 순간인가요?"></textarea></label>
         </div>
         <button type="button" class="btn btn-solid up-go" id="upGo" disabled>올리기</button>
@@ -504,48 +509,36 @@
     document.body.appendChild(upModal);
     upModal.addEventListener("click", (e) => { if (e.target.hasAttribute("data-upclose")) closeUp(); });
 
-    // 관리자용 카테고리 관리 버튼 + 카테고리 변경 시 select 갱신
-    const catMgrBtn = upModal.querySelector("#upCatManage");
+    // 관리자·게시판 담당용 카테고리 관리 버튼 + 카테고리 변경 시 select 갱신
+    const catMgrBtn = upQ("upCatManage");
     if (catMgrBtn && window.ChurchCategories) {
       window.ChurchCategories.isAdmin().then((ok) => { if (ok) catMgrBtn.hidden = false; });
       catMgrBtn.addEventListener("click", () => window.ChurchCategories.openManager());
     }
-    function rebuildCatSelect() {
-      const sel = upModal.querySelector("#upCat"); if (!sel) return;
-      const cur = sel.value;
+    window.addEventListener("church:categories-changed", () => {
+      const sel = upQ("upCat"), cur = sel.value;
       sel.innerHTML = cats().map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-      if (cats().indexOf(cur) >= 0) sel.value = cur;
-    }
-    window.addEventListener("church:categories-changed", rebuildCatSelect);
+      if (cur) setCat(cur);
+    });
 
-    const drop = upModal.querySelector("#upDrop");
-    const input = upModal.querySelector("#upInput");
-    const thumbs = upModal.querySelector("#upThumbs");
-    const goBtn = upModal.querySelector("#upGo");
-    let picked = [];
-
-    function refreshThumbs() {
-      thumbs.innerHTML = picked.map((f, i) => `<div class="up-th"><img src="${URL.createObjectURL(f)}" alt="" /><button type="button" class="up-th-x" data-i="${i}" aria-label="제거">×</button></div>`).join("");
-      thumbs.querySelectorAll(".up-th-x").forEach((b) => b.addEventListener("click", () => { picked.splice(Number(b.dataset.i), 1); refreshThumbs(); }));
-      goBtn.disabled = picked.length === 0;
-    }
+    const drop = upQ("upDrop");
+    const input = upQ("upInput");
     function addFiles(fl) {
       const imgs = Array.from(fl || []).filter((f) => /^image\//.test(f.type));
       if (!imgs.length) { if (fl && fl.length) alert("이미지 파일만 올릴 수 있습니다."); return; }
       picked = picked.concat(imgs); refreshThumbs();
     }
-    upModal._reset = function () { picked = []; thumbs.innerHTML = ""; goBtn.disabled = true; upModal.querySelector("#upTitle").value = ""; upModal.querySelector("#upCap").value = ""; upModal.querySelector("#upDate").value = todayISO(); upModal.querySelector("#upStatus").hidden = true; upModal.querySelector("#upStatus").textContent = ""; goBtn.disabled = true; };
-
-    upModal.querySelector("#upPick").addEventListener("click", () => input.click());
+    upQ("upPick").addEventListener("click", () => input.click());
     drop.addEventListener("click", (e) => { if (e.target === drop || e.target.closest(".up-drop-in") && !e.target.closest("button")) input.click(); });
     input.addEventListener("change", () => { addFiles(input.files); input.value = ""; });
     // 📷 카메라로 찍기 — 기기가 capture를 무시하고 갤러리로 새는 문제 대응:
     // 웹 자체 카메라(getUserMedia)를 팝업으로 띄워 실제 촬영. (미지원 기기는 capture 입력으로 폴백)
-    const camInput = upModal.querySelector("#upCamera");
+    const camInput = upQ("upCamera");
     camInput.addEventListener("change", () => { addFiles(camInput.files); camInput.value = ""; });
     let camStream = null, camFacing = "environment", camPop = null, camVideo = null;
     function stopCamStream() { if (camStream) { camStream.getTracks().forEach((t) => t.stop()); camStream = null; } }
     function closeCamera() { stopCamStream(); if (camPop) camPop.style.display = "none"; }
+    upModal._closeCamera = closeCamera;
     async function startCam() {
       stopCamStream();
       try {
@@ -582,49 +575,211 @@
       camPop.style.display = "flex";
       startCam();
     }
-    upModal.querySelector("#upCam").addEventListener("click", openCamera);
+    upQ("upCam").addEventListener("click", openCamera);
     ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("drag"); }));
     ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); if (ev === "dragleave" && drop.contains(e.relatedTarget)) return; drop.classList.remove("drag"); }));
     drop.addEventListener("drop", (e) => { if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files); });
 
-    goBtn.addEventListener("click", async () => {
-      const me = currentUser();
-      if (!me) { alert("사진을 올리려면 로그인해 주세요."); openLogin(); return; }
-      if (!uploadReady()) { alert("업로드 서버가 아직 설정되지 않았습니다."); return; }
-      if (!picked.length) return;
-      const title = (upModal.querySelector("#upTitle").value || "").trim();
-      const cap = (upModal.querySelector("#upCap").value || "").trim();
-      const cat = upModal.querySelector("#upCat").value;
-      const date = upModal.querySelector("#upDate").value || todayISO();
-      const status = upModal.querySelector("#upStatus");
-      goBtn.disabled = true; status.hidden = false;
-      for (let i = 0; i < picked.length; i++) {
-        status.textContent = `올리는 중… ${i + 1}/${picked.length}`;
-        try {
-          const r = await window.ChurchUpload.upload(picked[i], { folder: "album" });
-          const base = { category: cat, url: r.url, key: r.key, caption: cap || null, user_id: me.id, author_name: displayName(me) };
-          try {
-            await api("POST", "album_photos", Object.assign({ title: title || null, event_date: date }, base), { Prefer: "return=minimal" });
-          } catch (colErr) {
-            // title/event_date 컬럼 미생성(album-social.sql 미실행) 시 제목·날짜 없이 업로드
-            if (/column|event_date|title|schema cache/i.test(colErr.message)) await api("POST", "album_photos", base, { Prefer: "return=minimal" });
-            else throw colErr;
-          }
-        } catch (e) { status.textContent = ""; goBtn.disabled = false; alert("업로드 오류: " + e.message); return; }
-      }
-      closeUp();
-      await load();
-    });
+    upQ("upOld").addEventListener("click", (e) => { const b = e.target.closest("[data-del]"); if (b) delOld(b.getAttribute("data-del")); });
+    upQ("upThumbs").addEventListener("click", (e) => { const b = e.target.closest("[data-i]"); if (b) { picked.splice(Number(b.getAttribute("data-i")), 1); refreshThumbs(); } });
+    // 새 사진 올리기: 날짜를 고르면 그 날 이미 올린 사진을 보여 준다 / 그 날 사진 고치기: 날짜를 바꾸면 저장할 때 옮긴다
+    upQ("upDate").addEventListener("change", () => { if (upMode === "day") refreshGo(); else loadOld(upQ("upDate").value, false); });
+    upQ("upTitle").addEventListener("input", () => { upAuto.upTitle = false; });
+    upQ("upCap").addEventListener("input", () => { upAuto.upCap = false; });
+    upQ("upCat").addEventListener("change", () => { upCatTouched = true; });
+    upQ("upGo").addEventListener("click", saveUp);
   }
-  function openUp() {
+
+  function setCat(c) {
+    const sel = upQ("upCat");
+    if (c && !Array.from(sel.options).some((o) => o.value === c)) sel.insertAdjacentHTML("afterbegin", `<option value="${esc(c)}">${esc(c)}</option>`);
+    sel.value = c || "";
+  }
+  // 새 사진 올리기: 그 날 소식의 제목·한 줄 소식·카테고리를 빈 칸에 채워 둔다(손으로 쓴 칸은 그대로)
+  function autofill(src) {
+    [["upTitle", "title"], ["upCap", "caption"]].forEach(([id, k]) => {
+      const el = upQ(id);
+      if (el.value.trim() && !upAuto[id]) return;
+      el.value = (src && src[k]) || "";
+      upAuto[id] = !!el.value;
+    });
+    if (!upCatTouched) setCat((src && src.category) || cats()[0] || "");
+  }
+  function oldThumb(p) {
+    const ok = canEditPhoto(p);
+    const focus = upFocus && String(p.id) === String(upFocus);
+    return `<div class="up-th${ok ? "" : " up-th-lock"}${focus ? " up-th-focus" : ""}" data-id="${p.id}">
+      <img src="${esc(p.url)}" alt="" loading="lazy" />
+      ${ok ? `<button type="button" class="up-th-x" data-del="${p.id}" aria-label="이 사진 지우기" title="지우기">×</button>` : ""}
+    </div>`;
+  }
+  function renderOld() {
+    const box = upQ("upOldBox"), grid = upQ("upOld");
+    if (!upOld.length) { box.hidden = true; grid.innerHTML = ""; return; }
+    box.hidden = false;
+    const nDel = upOld.filter(canEditPhoto).length;
+    const lead = upMode === "day" ? `이 날 올린 사진 ${upOld.length}장` : `${dayLabel(upQ("upDate").value)}에 이미 올린 사진 ${upOld.length}장`;
+    const tail = upMode === "day" ? (nDel ? " — 지울 사진은 빨간 × 를 누르세요" : "") : " — 새 사진은 여기에 더해져요" + (nDel ? " · 지우려면 ×" : "");
+    upQ("upOldH").innerHTML = `<b>${esc(lead)}</b>${esc(tail)}`;
+    grid.innerHTML = upOld.map(oldThumb).join("");
+    const f = grid.querySelector(".up-th-focus");
+    if (f) setTimeout(() => { try { f.scrollIntoView({ block: "nearest" }); } catch (e) {} }, 80);
+  }
+  function refreshThumbs() {
+    pickedUrls.forEach((u) => URL.revokeObjectURL(u));
+    pickedUrls = picked.map((f) => URL.createObjectURL(f));
+    upQ("upThumbs").innerHTML = picked.map((f, i) => `<div class="up-th up-th-new"><img src="${pickedUrls[i]}" alt="" /><button type="button" class="up-th-x" data-i="${i}" aria-label="빼기" title="빼기">×</button></div>`).join("");
+    const h = upQ("upNewH");
+    h.hidden = !picked.length;
+    h.innerHTML = picked.length ? `<b>새로 올릴 사진 ${picked.length}장</b>` : "";
+    refreshGo();
+  }
+  function refreshGo() {
+    const go = upQ("upGo"), n = picked.length;
+    if (upMode === "day") { go.disabled = false; go.textContent = n ? `저장하기 (새 사진 ${n}장 올리기)` : "저장하기"; }
+    else { go.disabled = n === 0; go.textContent = n ? `사진 ${n}장 올리기` : "올리기"; }
+    const note = upQ("upDateNote"), d = upQ("upDate").value, mv = upOld.filter(canEditPhoto).length;
+    if (upMode === "day" && d && d !== upDay0 && mv) {
+      const stay = upOld.length - mv;
+      note.hidden = false;
+      note.textContent = `저장하면 이 날 사진 ${mv}장이 ${dayLabel(d)}로 옮겨집니다.` + (stay ? ` (다른 분이 올린 ${stay}장은 그대로 남아요)` : "");
+    } else note.hidden = true;
+  }
+  async function loadOld(d, editing) {
+    const seq = ++upSeq;
+    if (editing) { upQ("upOldBox").hidden = false; upQ("upOldH").textContent = "사진을 불러오는 중…"; upQ("upOld").innerHTML = ""; upQ("upGo").disabled = true; }
+    const list = await fetchDay(d);
+    if (seq !== upSeq || !upModal || upModal.hidden) return;
+    upOld = list;
+    const cover = list[0] || null;
+    if (editing) {
+      upQ("upTitle").value = (cover && cover.title) || "";
+      upQ("upCap").value = (cover && cover.caption) || "";
+      setCat((cover && cover.category) || cats()[0] || "");
+      upInit = { title: upQ("upTitle").value.trim(), caption: upQ("upCap").value.trim(), category: upQ("upCat").value };
+      upQ("upTitleNote").hidden = new Set(list.map((p) => String(p.title || "").trim())).size < 2;
+    } else autofill(cover);
+    renderOld(); refreshGo();
+  }
+  async function delOld(id) {
+    const p = upOld.find((x) => String(x.id) === String(id));
+    if (!p || !canEditPhoto(p)) return;
+    if (!confirm("이 사진을 지울까요?\n지우면 되돌릴 수 없어요.")) return;
+    const th = upQ("upOld").querySelector(`.up-th[data-id="${p.id}"]`);
+    if (th) th.classList.add("up-th-busy");
+    try {
+      const gone = await api("DELETE", `album_photos?id=eq.${p.id}`, null, { Prefer: "return=representation" });
+      if (!Array.isArray(gone) || !gone.length) throw new Error("지울 권한이 없어요. (올린 분·관리자·게시판 담당만 지울 수 있어요)");
+    } catch (e) { if (th) th.classList.remove("up-th-busy"); alert("지우기 오류: " + e.message); return; }
+    if (p.key && window.ChurchUpload) window.ChurchUpload.remove(p.key);
+    upOld = upOld.filter((x) => x !== p);
+    upChanged = true;
+    renderOld(); refreshGo();
+  }
+  async function saveUp() {
+    const me = currentUser();
+    if (!me) { alert("로그인해 주세요."); openLogin(); return; }
+    if (upMode === "new" && !picked.length) return;
+    if (picked.length && !uploadReady()) { alert("업로드 서버가 아직 설정되지 않았습니다."); return; }
+    const title = upQ("upTitle").value.trim(), cap = upQ("upCap").value.trim(), cat = upQ("upCat").value;
+    const date = upQ("upDate").value || todayISO();
+    const go = upQ("upGo"), st = upQ("upStatus");
+    go.disabled = true; st.hidden = false;
+    // 1) 새 사진 올리기
+    for (let i = 0; i < picked.length; i++) {
+      st.textContent = `올리는 중… ${i + 1}/${picked.length}`;
+      try {
+        const r = await window.ChurchUpload.upload(picked[i], { folder: "album" });
+        const base = { category: cat, url: r.url, key: r.key, caption: cap || null, user_id: me.id, author_name: displayName(me) };
+        try {
+          await api("POST", "album_photos", Object.assign({ title: title || null, event_date: date }, base), { Prefer: "return=minimal" });
+        } catch (colErr) {
+          // title/event_date 컬럼 미생성(album-social.sql 미실행) 시 제목·날짜 없이 업로드
+          if (/column|event_date|title|schema cache/i.test(colErr.message)) await api("POST", "album_photos", base, { Prefer: "return=minimal" });
+          else throw colErr;
+        }
+        upChanged = true;
+      } catch (e) {
+        picked = picked.slice(i); refreshThumbs();         // 올라간 사진은 빼고 남은 것만 다시 올리게
+        st.textContent = ""; st.hidden = true;
+        alert("업로드 오류: " + e.message + (i ? `\n(${i}장은 올라갔어요. 남은 사진은 다시 눌러 올려 주세요.)` : ""));
+        return;
+      }
+    }
+    // 2) 그 날 사진 고치기 — 바꾼 칸만, 고칠 수 있는 사진만
+    if (upMode === "day") {
+      const patch = {};
+      if (title !== upInit.title) patch.title = title || null;
+      if (cap !== upInit.caption) patch.caption = cap || null;
+      if (cat && cat !== upInit.category) patch.category = cat;
+      if (date !== upDay0) patch.event_date = date;
+      const ids = upOld.filter(canEditPhoto).map((p) => p.id);
+      if (ids.length && Object.keys(patch).length) {
+        st.textContent = "고치는 중…";
+        try {
+          const rows = await api("PATCH", `album_photos?id=in.(${ids.join(",")})`, patch, { Prefer: "return=representation" });
+          const n = Array.isArray(rows) ? rows.length : 0;
+          if (n) upChanged = true;
+          if (n < ids.length) alert(n ? `${ids.length}장 가운데 ${n}장만 고쳐졌어요. (고칠 권한이 없는 사진은 그대로예요)` : "고칠 권한이 없어 바뀌지 않았어요.");
+        } catch (e) { st.textContent = ""; st.hidden = true; refreshGo(); alert("고치기 오류: " + e.message); return; }
+      }
+    }
+    picked = []; refreshThumbs();
+    closeUp();
+  }
+
+  function resetUp() {
+    picked = []; refreshThumbs();
+    upOld = []; upInit = { title: "", caption: "", category: "" }; upAuto = {}; upCatTouched = false; upChanged = false; upSeq++;
+    const day = upMode === "day";
+    upQ("upTitle").value = ""; upQ("upCap").value = "";
+    upQ("upDate").value = day ? upDay0 : todayISO();
+    upQ("upCat").innerHTML = cats().map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    upQ("upCat").value = cats()[0] || "";
+    upQ("upStatus").hidden = true; upQ("upStatus").textContent = "";
+    upQ("upOldBox").hidden = true; upQ("upOld").innerHTML = "";
+    upQ("upTitleNote").hidden = true; upQ("upDateNote").hidden = true;
+    upQ("upHead").textContent = day ? `${dayLabel(upDay0)} 사진 수정하기` : "사진 올리기";
+    upQ("upSub").hidden = !day;
+    upQ("upSub").textContent = day ? "빨간 × 를 누르면 그 사진이 지워지고, 아래에서 사진을 더할 수 있어요." : "";
+    upQ("upDropT").textContent = day ? "더할 사진을 여기로 끌어다 놓거나" : "여기로 사진을 끌어다 놓거나";
+    upQ("upPick").textContent = day ? "사진 더하기" : "사진 선택";
+    refreshGo();
+  }
+  function showUp() {
+    upModal.hidden = false; document.body.style.overflow = "hidden";
+    if (window.ModalNav) window.ModalNav.open(closeUpDom);   // 휴대폰 '뒤로 가기'로 이 창만 닫히게
+  }
+  async function openUp() {
     const me = currentUser();
     if (!me) { alert("사진을 올리려면 로그인해 주세요."); openLogin(); return; }
     if (!uploadReady()) { alert("업로드 서버가 아직 설정되지 않았습니다."); return; }
+    await isAdminUser();
     if (!upModal) buildUpModal();
-    upModal._reset();
-    upModal.hidden = false; document.body.style.overflow = "hidden";
+    upMode = "new"; upDay0 = ""; upFocus = null;
+    resetUp(); showUp();
+    loadOld(upQ("upDate").value, false);      // 오늘 이미 올린 사진이 있으면 함께 보여 준다
   }
-  function closeUp() { if (upModal) { upModal.hidden = true; document.body.style.overflow = ""; } }
+  // 그 날(YYYY-MM-DD) 사진 고치기 — 날짜 상자의 '사진 수정하기', 소식 더 보기의 '수정'
+  async function openDay(d, focusId) {
+    const me = currentUser();
+    if (!me) { alert("사진을 고치려면 로그인해 주세요."); openLogin(); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) { alert("날짜를 알 수 없는 사진입니다. '소식 더 보기'에서 지워 주세요."); return; }
+    await isAdminUser();
+    if (!upModal) buildUpModal();
+    upMode = "day"; upDay0 = d; upFocus = focusId || null;
+    resetUp(); showUp();
+    loadOld(d, true);
+  }
+  function closeUpDom() {
+    if (!upModal || upModal.hidden) return;
+    upModal.hidden = true;
+    upSeq++;
+    if (upModal._closeCamera) upModal._closeCamera();
+    if ((!feedModal || feedModal.hidden) && viewer.hidden) document.body.style.overflow = "";
+    if (upChanged) { upChanged = false; load().then(() => { if (feedModal && !feedModal.hidden) openFeed(); }); }
+  }
+  function closeUp() { if (window.ModalNav && window.ModalNav.close()) return; closeUpDom(); }
 
   /* ===================== 배선 ===================== */
   document.getElementById("hnMore").addEventListener("click", openFeed);

@@ -34,12 +34,16 @@ window.ChurchNotices = (function () {
     return data;
   }
   let _admin = null;
+  // 공지 쓰기·고치기·지우기: 관리자이거나 '게시판' 권한(공지·앨범·나눔터 관리)이 있는 분(2026-10-04)
   async function isAdmin() {
     if (_admin !== null) return _admin;
     const me = currentUser();
     if (!me || !me.id || !ready()) { _admin = false; return false; }
-    try { const r = await api("GET", `admins?uid=eq.${me.id}&select=uid`); _admin = Array.isArray(r) && r.length > 0; }
-    catch (e) { _admin = false; }
+    try { const p = await api("POST", "rpc/my_perms", {}); _admin = !!(p && (p.isAdmin || p.canBoard)); }
+    catch (e) {
+      try { const r = await api("GET", `admins?uid=eq.${me.id}&select=uid`); _admin = Array.isArray(r) && r.length > 0; }
+      catch (e2) { _admin = false; }
+    }
     return _admin;
   }
   function fmtDate(iso) {
@@ -180,14 +184,14 @@ window.ChurchNotices = (function () {
     const st = composeM.querySelector("#ntStatus"); st.hidden = true; st.textContent = "";
   }
   async function openCompose() {
-    if (!(await isAdmin())) { alert("공지는 관리자만 작성할 수 있어요."); return; }
+    if (!(await isAdmin())) { alert("공지는 관리자·게시판 담당만 작성할 수 있어요."); return; }
     if (!composeM) buildCompose();
     editingId = null; fillCompose(null);
     composeM.hidden = false; document.body.style.overflow = "hidden";
     composeM.querySelector("#ntTitle").focus();
   }
   async function openEdit(n) {
-    if (!(await isAdmin())) { alert("공지는 관리자만 수정할 수 있어요."); return; }
+    if (!(await isAdmin())) { alert("공지는 관리자·게시판 담당만 수정할 수 있어요."); return; }
     if (!composeM) buildCompose();
     editingId = n.id; fillCompose(n);
     composeM.hidden = false; document.body.style.overflow = "hidden";

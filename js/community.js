@@ -71,16 +71,21 @@
     const m = document.getElementById("authModal");
     if (m) { m.hidden = false; document.body.style.overflow = "hidden"; }
   }
-  // 관리자 여부(1회 조회 후 캐시)
+  // 관리자 여부(1회 조회 후 캐시) — 관리자이거나 '게시판' 권한(공지·앨범·나눔터 관리)이 있으면 남의 글도 지울 수 있다(2026-10-04)
   let _isAdmin = null;
   async function isAdminUser() {
     if (_isAdmin !== null) return _isAdmin;
     const me = currentUser();
     if (!me || !me.id) { _isAdmin = false; return false; }
     try {
-      const rows = await api("GET", `admins?uid=eq.${me.id}&select=uid`);
-      _isAdmin = Array.isArray(rows) && rows.length > 0;
-    } catch (e) { _isAdmin = false; }
+      const p = await api("POST", "rpc/my_perms", {});
+      _isAdmin = !!(p && (p.isAdmin || p.canBoard));
+    } catch (e) {
+      try {
+        const rows = await api("GET", `admins?uid=eq.${me.id}&select=uid`);
+        _isAdmin = Array.isArray(rows) && rows.length > 0;
+      } catch (e2) { _isAdmin = false; }
+    }
     return _isAdmin;
   }
 

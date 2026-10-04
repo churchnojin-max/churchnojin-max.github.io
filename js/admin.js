@@ -246,10 +246,14 @@
     setupTaxForm(me, mineRow);
 
     // RLS: 관리자는 전체, 일반 회원은 본인 행만 반환됩니다.
-    const rows = (await api("GET", "profiles?select=*&order=created_at.desc")) || [];
+    // 카카오 계정으로 합쳐 잠근 옛 계정(merged_into)은 목록에서 뺀다(2026-10-04, supabase/board_and_one_account_20261004.sql)
+    const allRows = (await api("GET", "profiles?select=*&order=created_at.desc")) || [];
+    const rows = allRows.filter((r) => !r.merged_into);
+    const mergedN = allRows.length - rows.length;
 
     if (isAdmin) {
       renderAdminTable(rows, me.id);
+      if (mergedN) box.insertAdjacentHTML("beforeend", `<p class="member-role-note" style="margin-top:10px;">카카오 계정으로 합친 옛 계정 ${mergedN}개는 목록에서 숨겼습니다(그 계정으로는 로그인할 수 없습니다).</p>`);
       if (countEl) countEl.textContent = `(${rows.length}명)`;
       loadTaxAdmin();
     } else {

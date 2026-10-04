@@ -48,6 +48,7 @@
     .then((s) => {
       KAKAO_ON = !!(s && s.external && s.external.kakao);
       if (kakaoField) kakaoField.hidden = !KAKAO_ON || mode === "reset";
+      if (joinGuide) joinGuide.querySelector(".jg-kakao").hidden = !KAKAO_ON;
     })
     .catch(() => {});
 
@@ -68,15 +69,68 @@
   }
 
   function openModal() { modal.hidden = false; document.body.style.overflow = "hidden"; }
+
+  async function startKakao() {
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: "kakao",
+      options: { redirectTo: location.origin + location.pathname, scopes: "profile_nickname" },
+    });
+    if (error) { if (joinGuide) joinGuide.hidden = true; setMode("login"); openModal(); showMsg("카카오 로그인 오류: " + error.message, false); }
+  }
+
+  // 가입 안내(2026-10-04 목사님): 한 분은 계정 하나만 — 되도록 카카오로, 카카오가 안 되면 이메일로.
+  // '가입하기'를 누르면 이 창이 먼저 뜬다(헤더·QR 가입·로그인 창의 '회원가입' 모두).
+  let joinGuide = null;
+  function openJoinGuide() {
+    if (!joinGuide) {
+      joinGuide = document.createElement("div");
+      joinGuide.className = "modal join-guide";
+      joinGuide.hidden = true;
+      joinGuide.innerHTML = `<div class="modal-backdrop" data-jg="close"></div>
+        <div class="modal-box modal-box-auth" role="dialog" aria-modal="true" aria-labelledby="jgTitle">
+          <button class="modal-close" data-jg="close" aria-label="닫기">&times;</button>
+          <div class="auth-head">
+            <img src="images/icon-192.png?v=20260926icon2" alt="" class="auth-logo" />
+            <h3 id="jgTitle">가입 안내</h3>
+            <p>한 분은 <b>계정 하나만</b> 만들어 주세요.</p>
+          </div>
+          <div class="jg-kakao">
+            <button type="button" class="kakao-btn" data-jg="kakao">💬 카카오로 가입하기 <span class="jg-rec">추천</span></button>
+            <p class="jg-note">카카오톡이 있으면 버튼 한 번으로 끝납니다. 비밀번호를 외우실 필요가 없어요.</p>
+            <div class="auth-divider">카카오톡이 없거나 안 될 때</div>
+          </div>
+          <button type="button" class="btn btn-line jg-email" data-jg="email">✉️ 이메일로 가입하기</button>
+          <p class="jg-warn">이미 가입하셨나요? 다시 가입하지 마시고 <button type="button" data-jg="login">로그인</button>해 주세요.<br />같은 분이 계정을 두 개 만들면 교인 확인(정회원 승인)이 되지 않습니다.</p>
+        </div>`;
+      document.body.appendChild(joinGuide);
+      joinGuide.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-jg]");
+        if (!b) return;
+        const act = b.getAttribute("data-jg");
+        if (act === "kakao") { startKakao(); return; }
+        joinGuide.hidden = true;
+        if (act === "email") { setMode("signup"); openModal(); }
+        else if (act === "login") { setMode("login"); openModal(); }
+        else document.body.style.overflow = "";
+      });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !joinGuide.hidden) { joinGuide.hidden = true; document.body.style.overflow = ""; } });
+    }
+    joinGuide.querySelector(".jg-kakao").hidden = !KAKAO_ON;
+    if (modal) modal.hidden = true;
+    joinGuide.hidden = false; document.body.style.overflow = "hidden";
+  }
+  window.__openJoinGuide = openJoinGuide;
   // layout.js 가 먼저 그린 헤더 버튼은 auth.js 로드 전에도 눌릴 수 있다.
   // 그때 '가입하기'를 눌렀으면 __authPendingMode 에 남겨 두고, 여기서 이어받는다.
   window.__authSetMode = function (m) { setMode(m); };
   function closeModal() { modal.hidden = true; document.body.style.overflow = ""; if (msg) msg.hidden = true; }
 
+  const SUB0 = subEl ? subEl.textContent : "";
   function setMode(m) {
     mode = m;
     const isReset = m === "reset";
     titleEl.textContent = isReset ? "새 비밀번호 설정" : m === "login" ? "로그인" : "회원가입";
+    if (subEl) subEl.textContent = m === "signup" ? "카카오톡이 없거나 안 될 때 이메일로 가입합니다. 한 분은 계정 하나만 만들어 주세요." : SUB0;
     submitBtn.textContent = isReset ? "비밀번호 변경" : m === "login" ? "로그인" : "회원가입";
     nameField.hidden = m !== "signup";
     if (channelField) channelField.hidden = m !== "signup";
@@ -106,9 +160,11 @@
     const p = window.CHURCH && window.CHURCH.phone;
     return p && !/^010-0000/.test(p) ? ` (${p})` : "";
   }
+  // 로그인이 막힌 계정: 정지된 계정이거나, 카카오 계정으로 합쳐 잠근 옛 이메일 계정(2026-10-04)
+  const BLOCKED_TEXT = () => "이 계정으로는 지금 로그인할 수 없습니다(정지되었거나 다른 계정으로 합쳐진 계정). 카카오로 가입하신 분은 '카카오로 시작하기'를 눌러 주세요. 문의는 교회로 부탁드립니다" + contactSuffix() + ".";
   function friendlyError(err) {
     const m = (err && err.message) || "";
-    if (/banned/i.test(m)) return "이용약관 위반으로 계정이 정지되었습니다. 문의는 교회로 부탁드립니다" + contactSuffix() + ".";
+    if (/banned/i.test(m)) return BLOCKED_TEXT();
     if (/invalid login credentials/i.test(m)) return "이메일 또는 비밀번호가 올바르지 않습니다.";
     if (/email not confirmed/i.test(m)) return "이메일 인증이 완료되지 않았습니다. 가입 확인 메일을 확인해 주세요.";
     return "오류: " + (m || "다시 시도해 주세요.");
@@ -155,11 +211,11 @@
       if (window.__enhanceHeaderRole) window.__enhanceHeaderRole(user.id, name);
       afterLogin(user);
     } else {
-      if (window.__joinFromQR) { window.__joinFromQR = false; setTimeout(() => { setMode("signup"); openModal(); }, 300); }
+      if (window.__joinFromQR) { window.__joinFromQR = false; setTimeout(openJoinGuide, 300); }
       // 로그인 + 가입하기를 나란히 — 처음 오신 분이 '로그인'만 보고 막히지 않도록
       slot.innerHTML = `<span class="auth-wrap-out"><button class="auth-btn" id="loginBtn">로그인</button><button class="auth-btn auth-btn-join" id="joinBtn">가입하기</button></span>`;
       document.getElementById("loginBtn").addEventListener("click", () => { setMode("login"); openModal(); });
-      document.getElementById("joinBtn").addEventListener("click", () => { setMode("signup"); openModal(); });
+      document.getElementById("joinBtn").addEventListener("click", openJoinGuide);
     }
   }
 
@@ -266,9 +322,12 @@
   if (modal) {
     modal.addEventListener("click", (e) => { if (e.target.hasAttribute("data-close")) closeModal(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) closeModal(); });
-    toggleBtn.addEventListener("click", () => setMode(mode === "signup" ? "login" : "signup"));
-    // auth.js 로드 전에 '가입하기'를 눌러 모달이 열려 있으면 회원가입 화면으로 맞춰 준다
-    if (window.__authPendingMode) { setMode(window.__authPendingMode); window.__authPendingMode = null; }
+    toggleBtn.addEventListener("click", () => { if (mode === "signup") setMode("login"); else openJoinGuide(); });
+    // auth.js 로드 전에 '가입하기'를 눌러 모달이 열려 있으면 가입 안내 창으로 바꿔 준다
+    if (window.__authPendingMode) {
+      const pm = window.__authPendingMode; window.__authPendingMode = null;
+      if (pm === "signup") openJoinGuide(); else setMode(pm);
+    }
 
     // 비밀번호 찾기: 입력한 이메일로 재설정 메일 발송
     if (forgotBtn) {
@@ -290,15 +349,7 @@
       });
     }
 
-    if (kakaoBtn) {
-      kakaoBtn.addEventListener("click", async () => {
-        const { error } = await sb.auth.signInWithOAuth({
-          provider: "kakao",
-          options: { redirectTo: location.origin + location.pathname, scopes: "profile_nickname" },
-        });
-        if (error) showMsg("카카오 로그인 오류: " + error.message, false);
-      });
-    }
+    if (kakaoBtn) kakaoBtn.addEventListener("click", startKakao);
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -352,7 +403,7 @@
       const desc = (h.get("error_description") || "") + " " + (h.get("error_code") || "");
       if (h.get("error") && /banned/i.test(desc)) {
         history.replaceState(null, "", location.pathname + location.search);
-        const text = "이용약관 위반으로 계정이 정지되었습니다. 문의는 교회로 부탁드립니다" + contactSuffix() + ".";
+        const text = BLOCKED_TEXT();
         if (modal) { setMode("login"); openModal(); showMsg(text, false); }
         else alert(text);
       }
