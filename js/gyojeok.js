@@ -303,7 +303,7 @@ console.log('[gyojeok.js] v20260701di');
         '</tbody></table></div>' : '<p class="help">최근 30일 로그인 기록이 없습니다.</p>');
   }
 
-  function renderAccess(panel) {
+  function renderAccess(panel, note) {
     loading(panel);
     Promise.all([WPF.call('listAccess'), WPF.call('listGyojeok'),
       WPF.call('listScoreAccess').catch(function () { return { uids: [] }; }),
@@ -316,39 +316,76 @@ console.log('[gyojeok.js] v20260701di');
       (res[0].users || []).forEach(function (u) { u.canScore = scoreUids.indexOf(u.uid) >= 0; });
       var users = (res[0].users || []).sort(function (a, b) { return (b.isAdmin - a.isAdmin) || (b.canFinance - a.canFinance) || String(a.name).localeCompare(String(b.name), 'ko'); });
       var gj = (res[1].members || []).filter(function (m) { return m['이름']; });
-      panel.innerHTML = '<div class="fin-card">' +
-        '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:6px">홈페이지에 가입한 회원입니다. <b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동).</p>' +
-        '<p style="color:#b8860b;font-size:.85rem;margin-bottom:12px;line-height:1.6">⚠ <b>관리자</b>는 <u>모든 영역</u>에 접근하는 최고 권한입니다. 특정 일만 맡기실 때는 관리자를 주지 마시고 <b>아래 영역 권한만</b> 체크해 주세요.' +
+      // ── 2026-10-05 화면 다시 짬(목사님 요청): 휴대폰에서 체크 칸이 다닥다닥 붙어 실수로 누르기 쉬웠다 ──
+      //   · 세 상자로 나눔: 최고 권한(관리자) / 영역 권한을 받은 분 / 일반 회원
+      //   · 목록에는 체크 칸이 없다. '권한 바꾸기'를 눌러 그 사람만의 창을 열고, 저장할 때 한 번 더 확인한다.
+      function hasPerm(u) { return GJ_PERMS.some(function (p) { return u[p[0]]; }); }
+      function permName(p) { return p[1].replace(/<br>/g, ' '); }
+      var admins = users.filter(function (u) { return u.isAdmin; });
+      var granted = users.filter(function (u) { return !u.isAdmin && hasPerm(u); });
+      var plain = users.filter(function (u) { return !u.isAdmin && !hasPerm(u); });
+      var AC_CSS = '<style>' +
+        '.ac-box{border:1px solid #e3e8ef;border-radius:12px;margin:0 0 18px;overflow:hidden;background:#fff}' +
+        '.ac-head{padding:12px 16px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}' +
+        '.ac-head h4{margin:0;font-size:1rem}' +
+        '.ac-head span{font-size:.8rem;color:var(--ink-soft,#7b8794)}' +
+        '.ac-admin{border-color:#e2bcbc}.ac-admin .ac-head{background:#fbeeee}.ac-admin .ac-head h4{color:#7a3b3b}' +
+        '.ac-granted{border-color:#e6d6a8}.ac-granted .ac-head{background:#fbf6e4}.ac-granted .ac-head h4{color:#7a5c12}' +
+        '.ac-plain .ac-head{background:#f4f6f9}' +
+        '.ac-row{display:grid;grid-template-columns:minmax(150px,1.2fr) auto minmax(130px,1.6fr) auto;gap:10px 14px;align-items:center;padding:12px 16px;border-top:1px solid #eef1f5;font-size:.88rem}' +
+        '.ac-who b{font-size:.95rem}.ac-mail{display:block;color:var(--ink-soft,#7b8794);font-size:.78rem;word-break:break-all}' +
+        '.ac-status{display:flex;align-items:center;gap:8px;white-space:nowrap}' +
+        '.ac-status select{padding:6px 8px;border:1px solid #cdd7e3;border-radius:7px;font:inherit;background:#fff}' +
+        '.ac-chips{display:flex;flex-wrap:wrap;gap:5px}' +
+        '.ac-chip{background:#eef4ef;color:#1A3A2F;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700;white-space:nowrap}' +
+        '.ac-chip-all{background:#7a3b3b;color:#fff}.ac-none{color:#9aa5b1;font-size:.8rem}' +
+        '.ac-act .btn{padding:8px 14px;font-size:.84rem;white-space:nowrap;min-height:40px}' +
+        '.ac-empty{padding:14px 16px;border-top:1px solid #eef1f5;color:#9aa5b1;font-size:.86rem}' +
+        '.ac-search{margin:12px 16px 12px;width:calc(100% - 32px);padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit}' +
+        '.ac-opt{display:flex;gap:12px;align-items:flex-start;padding:12px 10px;border-bottom:1px solid #f0f2f5;cursor:pointer;min-height:48px}' +
+        '.ac-opt input{width:22px;height:22px;flex:0 0 auto;margin-top:2px}' +
+        '.ac-opt small{display:block;color:var(--ink-soft,#7b8794);font-size:.78rem;line-height:1.5}' +
+        '@media (max-width:720px){.ac-row{grid-template-columns:1fr auto;gap:8px 10px;padding:14px 14px}.ac-who{grid-column:1 / -1}.ac-chips{grid-column:1 / -1}.ac-act{grid-column:1 / -1}.ac-act .btn{width:100%;min-height:46px}.ac-act .ac-unadmin{width:auto;min-height:40px;float:right}}' +
+        '</style>';
+      function whoCell(u) {
+        var badges = (u.provider === 'kakao' ? ' <span style="background:#FEE500;color:#3c1e1e;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">카카오</span>' : '') +
+          (u.joinVia === 'qr' ? ' <span style="background:#1A3A2F;color:#fff;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">교회 QR</span>' : '') +
+          (u.realName && u.realName !== u.name ? '<span style="display:block;color:#9aa5b1;font-size:.76rem">본인이 적은 이름: ' + esc(u.realName) + '</span>' : '') +
+          // 교적 인증 신청(이름·생년월일) — 스스로 정회원이 되지 않고, 여기서 확인해 승인한다(supabase/security_fix_20261003.sql)
+          (u.claimName && u.status !== '정회원' ? '<span style="display:block;color:#7b8794;font-size:.76rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
+            (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '');
+        return '<div class="ac-who"><b class="ac-name">' + esc(u.name || '(이름없음)') + '</b>' + badges +
+          '<span class="ac-mail">' + esc(u.email || (u.provider === 'kakao' ? '(카카오 가입)' : '')) + '</span></div>';
+      }
+      function personRow(u, kind) {
+        var chips = kind === 'admin' ? '<span class="ac-chip ac-chip-all">모든 영역 열림</span>'
+          : (GJ_PERMS.filter(function (p) { return u[p[0]]; }).map(function (p) { return '<span class="ac-chip">' + esc(permName(p)) + '</span>'; }).join('') || '<span class="ac-none">받은 권한 없음</span>');
+        var btn = kind === 'admin'
+          ? (adminLock ? '' : '<button type="button" class="btn btn-line ac-unadmin" style="color:#7a3b3b">관리자 해제</button>')
+          : '<button type="button" class="btn btn-line ac-edit">' + (kind === 'plain' ? '권한 주기' : '권한 바꾸기') + '</button>';
+        return '<div class="ac-row" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '">' + whoCell(u) +
+          '<div class="ac-status"><span class="st-pill">' + stPill(u.status) + '</span><select class="ck-status" aria-label="회원 구분">' +
+            '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
+            '<option value="정회원"' + (u.status === '정회원' ? ' selected' : '') + '>정회원</option></select></div>' +
+          '<div class="ac-chips">' + chips + '</div><div class="ac-act">' + btn + '</div></div>';
+      }
+      function box(cls, title, sub, list, kind, extra) {
+        return '<div class="ac-box ' + cls + '"><div class="ac-head"><h4>' + title + ' <span>(' + list.length + '명)</span></h4><span>' + sub + '</span></div>' + (extra || '') +
+          (list.length ? list.map(function (u) { return personRow(u, kind); }).join('') : '<div class="ac-empty">해당하는 분이 없습니다.</div>') + '</div>';
+      }
+      panel.innerHTML = AC_CSS + '<div class="fin-card">' +
+        '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:6px">홈페이지에 가입한 회원입니다. 실수로 눌리지 않도록 <b>세 상자</b>로 나누었고, 권한은 <b>‘권한 바꾸기’</b>를 눌러 그 사람 창에서만 바꿀 수 있습니다(저장할 때 한 번 더 묻습니다).</p>' +
+        '<p style="color:var(--ink-soft);font-size:.85rem;margin-bottom:14px;line-height:1.6"><b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동).' +
           (adminLock ? '<br>관리자 지정·해제는 최고 운영자만 할 수 있습니다.' : '') + '</p>' +
-        '<div style="overflow:auto"><table class="fin-table" style="font-size:.86rem"><thead><tr>' +
-        '<th>이름</th><th>이메일</th><th>회원</th>' +
-        '<th style="text-align:center;background:#7a3b3b">관리자<br><span style="font-weight:400;font-size:.72rem">(전권)</span></th>' +
-        GJ_PERMS.map(function (p) { return '<th style="text-align:center" title="' + esc(p[2]) + '">' + p[1] + '</th>'; }).join('') +
-        '</tr></thead><tbody>' +
-        users.map(function (u) {
-          var badges = (u.provider === 'kakao' ? ' <span style="background:#FEE500;color:#3c1e1e;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">카카오</span>' : '') +
-            (u.joinVia === 'qr' ? ' <span style="background:#1A3A2F;color:#fff;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">교회 QR</span>' : '') +
-            (u.realName && u.realName !== u.name ? '<br><span style="color:#9aa5b1;font-size:.76rem">본인이 적은 이름: ' + esc(u.realName) + '</span>' : '') +
-            // 교적 인증 신청(이름·생년월일) — 이제 스스로 정회원이 되지 않고, 여기서 확인해 승인한다(supabase/security_fix_20261003.sql)
-            (u.claimName && u.status !== '정회원' ? '<br><span style="color:#7b8794;font-size:.76rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
-              (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '');
-          return '<tr data-uid="' + esc(u.uid) + '"><td><b>' + esc(u.name || '(이름없음)') + '</b>' + badges + '</td><td style="color:var(--ink-soft)">' + esc(u.email || (u.provider === 'kakao' ? '(카카오 가입)' : '')) + '</td>' +
-            '<td><span class="st-pill" style="margin-right:8px;display:inline-block;min-width:48px">' + stPill(u.status) + '</span><select class="ck-status" style="padding:5px 8px;border:1px solid #cdd7e3;border-radius:7px;font:inherit;background:#fff">' +
-              '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
-              '<option value="정회원"' + (u.status === '정회원' ? ' selected' : '') + '>정회원</option></select></td>' +
-            '<td style="text-align:center;background:#fdf6f6"><input type="checkbox" class="ck-admin" ' + (u.isAdmin ? 'checked' : '') +
-              (adminLock ? ' disabled title="관리자 지정·해제는 최고 운영자만 할 수 있습니다"' : '') + '></td>' +
-            GJ_PERMS.map(function (p) {
-              // 관리자는 어차피 전부 통과하므로, 관리자일 때는 체크된 것처럼 흐리게 보여 준다
-              return '<td style="text-align:center"><input type="checkbox" class="ck-perm" data-k="' + p[0] + '"' +
-                (u[p[0]] ? ' checked' : '') + (u.isAdmin ? ' disabled title="관리자는 모든 영역이 열려 있습니다"' : '') + '></td>';
-            }).join('') +
-            '</tr>';
-        }).join('') + '</tbody></table></div>' +
-        '<p class="help" style="margin-top:10px;line-height:1.8">' +
+        '<p class="help" id="gj_msg" style="margin:0 0 10px;min-height:1.2em;font-weight:700"></p>' +
+        box('ac-admin', '① 최고 권한 · 관리자', '모든 영역에 들어갈 수 있는 분입니다. 꼭 필요한 분만 두세요.', admins, 'admin') +
+        box('ac-granted', '② 영역 권한을 받은 분', '맡은 일에 해당하는 영역만 열려 있습니다.', granted, 'granted') +
+        box('ac-plain', '③ 일반 회원', '받은 권한이 없는 분입니다.', plain, 'plain',
+          plain.length > 6 ? '<input type="text" class="ac-search" id="ac_q" placeholder="🔍 이름으로 찾기">' : '') +
+        '<p class="help" style="margin-top:4px;line-height:1.8">' +
         // 표 머리의 줄바꿈(<br>)은 설명 글에서는 띄어쓰기로
-        GJ_PERMS.map(function (p) { return '<b>' + esc(p[1].replace(/<br>/g, ' ')) + '</b> ' + esc(p[2]); }).join(' &nbsp;·&nbsp; ') + '</p>' +
-        '<p class="help" id="gj_msg" style="margin-top:6px"></p>' + accessLogHtml(accessLog) + (owner === true ? loginLogBoxHtml() : '') + '</div>';
+        GJ_PERMS.map(function (p) { return '<b>' + esc(permName(p)) + '</b> ' + esc(p[2]); }).join(' &nbsp;·&nbsp; ') + '</p>' +
+        accessLogHtml(accessLog) + (owner === true ? loginLogBoxHtml() : '') + '</div>';
       var llBtn = panel.querySelector('#ll_open');
       if (llBtn) llBtn.addEventListener('click', function () {
         var out = panel.querySelector('#ll_out');
@@ -358,43 +395,89 @@ console.log('[gyojeok.js] v20260701di');
       });
       var msg = panel.querySelector('#gj_msg');
       function flash(ok, txt) { msg.style.color = ok ? 'green' : '#c0392b'; msg.textContent = txt; }
-      Array.prototype.forEach.call(panel.querySelectorAll('tr[data-uid]'), function (tr) {
+      if (note) flash(note.ok !== false, note.text);
+      var acq = panel.querySelector('#ac_q');
+      if (acq) acq.addEventListener('input', function () {
+        var s = acq.value.trim();
+        Array.prototype.forEach.call(panel.querySelectorAll('.ac-plain .ac-row'), function (r) { r.style.display = (!s || String(r.getAttribute('data-name')).indexOf(s) >= 0) ? '' : 'none'; });
+      });
+      function reload(ok, text) { renderAccess(panel, { ok: ok, text: text }); }
+
+      // 한 사람의 권한을 바꾸는 창 — 체크는 여기서만, 저장을 눌러야 바뀌고, 바뀌는 내용을 한 번 더 보여 주고 묻는다
+      function openPermEditor(u) {
+        var nm = u.name || u.email || '(이름없음)';
+        var ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:30px 14px;overflow:auto';
+        ov.innerHTML = '<div class="fin-card" style="max-width:480px;width:100%;background:#fff;margin:auto">' +
+          '<h3 style="margin:0 0 6px;color:var(--accent,#1A3A2F)">「' + esc(nm) + '」님 권한</h3>' +
+          '<p style="color:var(--ink-soft);font-size:.86rem;margin-bottom:8px;line-height:1.6">맡기실 일만 골라 주세요. <b>저장</b>을 눌러야 바뀝니다.</p>' +
+          '<div style="border:1px solid #eef1f5;border-radius:10px;overflow:hidden">' +
+          GJ_PERMS.map(function (p) {
+            return '<label class="ac-opt"><input type="checkbox" class="pe-ck" data-k="' + p[0] + '"' + (u[p[0]] ? ' checked' : '') + '>' +
+              '<span><b>' + esc(permName(p)) + '</b><small>' + esc(p[2]) + '</small></span></label>';
+          }).join('') + '</div>' +
+          (adminLock ? '' : '<details style="margin-top:14px;border:1px solid #e2bcbc;border-radius:10px;padding:10px 12px;background:#fdf6f6"><summary style="cursor:pointer;color:#7a3b3b;font-weight:700;font-size:.88rem">⚠ 관리자(전권)로 지정하려면</summary>' +
+            '<p style="font-size:.82rem;color:#7a3b3b;line-height:1.6;margin:8px 0">관리자는 재정·교적을 포함한 <b>모든 영역</b>을 볼 수 있습니다. 특정 일만 맡기실 때는 위 영역만 체크해 주세요.</p>' +
+            '<button type="button" class="btn btn-line" id="pe_admin" style="color:#7a3b3b;border-color:#c98f8f;padding:8px 14px;font-size:.84rem">이 분을 관리자로 지정</button></details>') +
+          '<p class="help" id="pe_msg" style="margin-top:10px;min-height:1.2em"></p>' +
+          '<div style="margin-top:6px;display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn btn-line" id="pe_cancel" style="min-height:44px;padding:8px 18px">취소</button>' +
+          '<button type="button" class="btn btn-solid" id="pe_save" style="min-height:44px;padding:8px 22px">저장</button></div></div>';
+        document.body.appendChild(ov);
+        function close() { ov.remove(); }
+        var pmsg = ov.querySelector('#pe_msg'), saveBtn = ov.querySelector('#pe_save');
+        ov.querySelector('#pe_cancel').onclick = close;
+        saveBtn.onclick = function () {
+          var give = [], take = [], body = { targetUid: u.uid }, any = false, score = null;
+          Array.prototype.forEach.call(ov.querySelectorAll('.pe-ck'), function (c) {
+            var k = c.dataset.k, was = !!u[k];
+            if (c.checked === was) return;
+            var p = GJ_PERMS.filter(function (x) { return x[0] === k; })[0];
+            (c.checked ? give : take).push(permName(p));
+            if (k === 'canScore') score = c.checked; else { body[k] = c.checked; any = true; }
+          });
+          if (!give.length && !take.length) { pmsg.style.color = 'var(--ink-soft)'; pmsg.textContent = '바뀐 것이 없습니다.'; return; }
+          if (!confirm('「' + nm + '」님의 권한을 이렇게 바꿉니다.\n\n' +
+            (give.length ? '주는 권한: ' + give.join(', ') + '\n' : '') +
+            (take.length ? '거두는 권한: ' + take.join(', ') + '\n' : '') + '\n바꿀까요?')) return;
+          saveBtn.disabled = true; pmsg.style.color = 'var(--ink-soft)'; pmsg.textContent = '저장 중…';
+          // 악보 권한은 따로 저장한다(supabase/score_access.sql)
+          (any ? WPF.call('setAccess', body) : Promise.resolve())
+            .then(function () { return score === null ? null : WPF.call('setScoreAccess', { targetUid: u.uid, on: score }); })
+            .then(function () { close(); reload(true, '✓ 「' + nm + '」님 권한 저장됨' + (give.length ? ' · 줌: ' + give.join(', ') : '') + (take.length ? ' · 거둠: ' + take.join(', ') : '')); })
+            .catch(function (e) { saveBtn.disabled = false; pmsg.style.color = '#c0392b'; pmsg.textContent = '오류: ' + e.message; });
+        };
+        var adminBtn = ov.querySelector('#pe_admin');
+        if (adminBtn) adminBtn.onclick = function () {
+          if (!confirm('「' + nm + '」님을 관리자로 지정하면 재정·교적을 포함한 모든 영역을 볼 수 있게 됩니다.\n특정 일만 맡기실 거라면 취소하고 영역 권한만 체크해 주세요.\n\n관리자로 지정할까요?')) return;
+          adminBtn.disabled = true; pmsg.style.color = 'var(--ink-soft)'; pmsg.textContent = '저장 중…';
+          WPF.call('setAccess', { targetUid: u.uid, isAdmin: true })
+            .then(function () { close(); reload(true, '✓ 「' + nm + '」님을 관리자로 지정했습니다'); })
+            .catch(function (e) { adminBtn.disabled = false; pmsg.style.color = '#c0392b'; pmsg.textContent = '오류: ' + e.message; });
+        };
+      }
+
+      Array.prototype.forEach.call(panel.querySelectorAll('.ac-row[data-uid]'), function (tr) {
         var uid = tr.getAttribute('data-uid');
         var u = users.filter(function (x) { return x.uid === uid; })[0] || {};
-        var ckA = tr.querySelector('.ck-admin'), sel = tr.querySelector('.ck-status');
+        var nm = u.name || u.email || '(이름없음)';
+        var sel = tr.querySelector('.ck-status');
         var prevStatus = u.status === '정회원' ? '정회원' : '준회원';
-        function saveAccess(field, val, revert) {
-          var body = { targetUid: uid }; body[field] = val;
+        var editBtn = tr.querySelector('.ac-edit'), unBtn = tr.querySelector('.ac-unadmin');
+        if (editBtn) editBtn.addEventListener('click', function () { openPermEditor(u); });
+        if (unBtn) unBtn.addEventListener('click', function () {
+          if (!confirm('「' + nm + '」님의 관리자(전권)를 해제할까요?\n\n해제하면 관리자 상자에서 내려가고, 필요한 영역 권한은 따로 주셔야 합니다.')) return;
           msg.style.color = 'var(--ink-soft)'; msg.textContent = '저장 중…';
-          // 악보 권한은 따로 저장한다(supabase/score_access.sql)
-          (field === 'canScore' ? WPF.call('setScoreAccess', { targetUid: uid, on: val }) : WPF.call('setAccess', body)).then(function () { flash(true, '✓ 저장됨'); }).catch(function (e) { flash(false, '오류: ' + e.message); if (revert) revert(); });
-        }
-        ckA.addEventListener('change', function () {
-          if (ckA.checked && !confirm('「' + (u.name || u.email) + '」님을 관리자로 지정하면 재정·교적을 포함한 모든 영역을 볼 수 있게 됩니다.\n특정 일만 맡기실 거라면 취소하고 영역 권한만 체크해 주세요.\n\n관리자로 지정할까요?')) {
-            ckA.checked = false; return;
-          }
-          // 관리자면 영역 체크박스는 의미가 없으므로 잠그고, 해제하면 다시 풀어 준다
-          function syncPerms() {
-            Array.prototype.forEach.call(tr.querySelectorAll('.ck-perm'), function (c) {
-              c.disabled = ckA.checked;
-              c.title = ckA.checked ? '관리자는 모든 영역이 열려 있습니다' : '';
-            });
-          }
-          // 안 되면(예: 최고 운영자의 관리자 해제) 체크와 영역 칸을 되돌린다
-          saveAccess('isAdmin', ckA.checked, function () { ckA.checked = !ckA.checked; syncPerms(); });
-          syncPerms();
-        });
-        Array.prototype.forEach.call(tr.querySelectorAll('.ck-perm'), function (ck) {
-          ck.addEventListener('change', function () {
-            saveAccess(ck.dataset.k, ck.checked, function () { ck.checked = !ck.checked; });
-          });
+          // 안 되면(예: 최고 운영자의 관리자 해제) 그대로 두고 까닭을 보여 준다
+          WPF.call('setAccess', { targetUid: uid, isAdmin: false })
+            .then(function () { reload(true, '✓ 「' + nm + '」님의 관리자를 해제했습니다'); })
+            .catch(function (e) { flash(false, '오류: ' + e.message); });
         });
         function setMember(status, key, name) {
           msg.style.color = 'var(--ink-soft)'; msg.textContent = '저장 중…';
           WPF.call('adminSetMember', { uid: uid, status: status, memberKey: key, memberName: name }).then(function () {
-            prevStatus = status; u.status = status; if (name) { u.name = name; tr.querySelector('td b').textContent = name; }
+            prevStatus = status; u.status = status; if (name) { u.name = name; tr.querySelector('.ac-name').textContent = name; tr.setAttribute('data-name', name); }
             var sp = tr.querySelector('.st-pill'); if (sp) sp.innerHTML = stPill(status);
-            flash(true, '✓ ' + (name ? esc(name) + ' · ' : '') + status + ' 저장됨');
+            flash(true, '✓ ' + (name ? name + ' · ' : '') + status + ' 저장됨');
           }).catch(function (e) { flash(false, '오류: ' + e.message); sel.value = prevStatus; });
         }
         sel.addEventListener('change', function () {
@@ -403,7 +486,11 @@ console.log('[gyojeok.js] v20260701di');
               if (!m) { sel.value = prevStatus; return; }
               setMember('정회원', m['매칭키'], m['이름']);
             });
-          } else { setMember('준회원', '', u.name || ''); }
+          } else {
+            // 준회원으로 내리는 것도 한 번 묻는다(실수로 고르면 교적 연결이 풀리므로)
+            if (!confirm('「' + nm + '」님을 준회원으로 바꿀까요?\n\n교적과의 연결이 풀립니다(헌금 조회·가정 합산 연동이 끊김).')) { sel.value = prevStatus; return; }
+            setMember('준회원', '', u.name || '');
+          }
         });
       });
     }).catch(function (e) {
