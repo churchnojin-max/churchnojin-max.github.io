@@ -1,14 +1,17 @@
-/* 수요기도회 말씀 — 인용 구절·설교 요약 (2026-10-05 목사님 요청)
-   "수요예배 때 성도들이 참고할 수 있도록 인용 구절과 설교 요약을 홈페이지에"
-   목사님 결정: 예배와 말씀(이번 주 말씀 아래) + 수요일 저녁 첫 화면 띠 / 저녁 8시에 한꺼번에 / 로그인한 회원만 / 목사님 확인 뒤 올림
-   ① 예배와 말씀 #wed : 로그인 안 했으면 🔒 안내, 했으면 가장 최근 수요 말씀 카드(큰 단추 두 개) + 지난 수요 말씀
-   ② 크게 읽는 창 : 오늘 본문 · 인용 구절(설교에서 읽는 순서대로 ①②③) · 말씀 중에 나온 구절 · 설교 요약 · 함께 드리는 기도
+/* 수요기도회 말씀 — 본문·제목·핵심 3가지·인용 구절 + 찬양 악보 (2026-10-05 목사님 요청·같은 날 밤 고침)
+   "수요예배 때 성도들이 참고할 수 있도록" → "내 설교를 밖으로 공개하지 않으려는 거야. 오는 사람들에게만 특권을 주는 거지.
+    아주 짧게 본문, 제목, 핵심 3가지와 인용 구절만. 콘티를 올리면 악보도 — 오후 10시 30분에는 사라지게."
+   목사님 결정: 예배와 말씀(이번 주 말씀 아래) + 수요일 저녁 첫 화면 띠 / 로그인한 회원만 / 목사님 확인 뒤 올림 /
+     말씀 자료는 그날 저녁 8시에 열리고 밤 10시 30분에 닫힌다('지난 수요 말씀' 모아 보기 없음) /
+     악보(콘티)는 목사님이 올리면 그날 보이고 밤 10시 30분에 사라진다(파일은 지우지 않고 숨김 — 목사님은 늘 봄).
+   ① 예배와 말씀 #wed : 로그인 안 했으면 🔒 안내. 했으면 — 예배 시간엔 말씀 카드(핵심 3가지 + 인용 구절·악보 단추),
+      그 전엔 악보만(올렸으면), 그 밖엔 '수요일 저녁 8시에 열립니다' 안내
+   ② 크게 읽는 창 : 핵심 3가지 · 오늘 본문 · 인용 구절(설교에서 읽는 순서 ①②③) · 찬양 악보
       휴대폰 '뒤로'로 닫히고, 열려 있는 동안은 옆으로 밀어도 다른 화면으로 넘어가지 않는다(page-slide.js 가 pop-open 을 봄).
-      글씨는 rem 이라 맨 위 '가+' 크기를 그대로 따른다.
-   ③ 관리자(목사님) : 확인 전 자료 미리보기 · [올리기]/[내리기] · [고치기](장절을 고치면 본문은 홈페이지 성경 자료에서 채움)
-   ④ 첫 화면 '이번 주 설교' 띠 : 수요일 저녁 8시 ~ 목요일 낮 12시에 열린 자료가 있으면 '오늘 수요기도회 말씀'으로 (rpc wed_note_now)
-   자료: Supabase sermon_notes(supabase/sermon_notes_20261005.sql). 만들기: tools/wed_notes.py(수요일 예약 작업) → 텔레그램 [올리기].
-   보이는 규칙(올린 것만·저녁 8시부터·로그인한 분만)은 데이터베이스가 지킨다 — 이 파일은 그리는 일만 한다. */
+   ③ 관리자(목사님) : 확인용 카드(미리보기·고치기·올리기·내리기) + 이번 수요일 콘티·악보 올리기/빼기(비공개 보관함 conti/)
+   ④ 첫 화면 '이번 주 설교' 띠 : 수요일 저녁 8시 ~ 밤 10시 30분, 열린 자료가 있으면 '오늘 수요기도회 말씀'
+   보이는 규칙은 데이터베이스가 지킨다(supabase/sermon_notes_20261005.sql, sermon_notes_short_conti_20261005.sql) — 이 파일은 그리는 일만.
+   만들기: tools/wed_notes.py(수요일 예약 작업) → 목사님 텔레그램 [올리기]. */
 (function () {
   "use strict";
   if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) return;
@@ -17,7 +20,7 @@
   if (!box && !banner) return;
 
   var SERVICE = "수요기도회";
-  var LIST_COLS = "id,note_date,title,scripture,preacher,series,status,publish_at,made_by";
+  var SB = window.SUPABASE_URL.replace(/\/$/, "");
   var esc = function (t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (m) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]; }); };
 
   function localSession() {
@@ -30,14 +33,17 @@
     } catch (e) { return null; }
   }
   function me() { var s = localSession(); return (s && s.user) || null; }
-  function api(method, path, body, extra) {
+  function headers(extra) {
     var sess = localSession();
-    var headers = { apikey: window.SUPABASE_ANON_KEY, "Content-Type": "application/json" };
-    if (sess && sess.access_token) headers.Authorization = "Bearer " + sess.access_token;
-    if (extra) Object.keys(extra).forEach(function (k) { headers[k] = extra[k]; });
+    var h = { apikey: window.SUPABASE_ANON_KEY, "Content-Type": "application/json" };
+    if (sess && sess.access_token) h.Authorization = "Bearer " + sess.access_token;
+    if (extra) Object.keys(extra).forEach(function (k) { h[k] = extra[k]; });
+    return h;
+  }
+  function api(method, path, body, extra) {
     var ctl = window.AbortController ? new AbortController() : null;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, 12000) : null;
-    return fetch(window.SUPABASE_URL + "/rest/v1/" + path, { method: method, headers: headers, body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined })
+    return fetch(SB + "/rest/v1/" + path, { method: method, headers: headers(extra), body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined })
       .then(function (res) {
         return res.text().then(function (txt) {
           var data = null; try { data = txt ? JSON.parse(txt) : null; } catch (e) { data = txt; }
@@ -47,45 +53,6 @@
       })
       .finally(function () { if (timer) clearTimeout(timer); });
   }
-
-  // ── 날짜(한국 시각)
-  function kst() { return new Date(Date.now() + 9 * 3600e3); }          // getUTC* 로 읽는다
-  function todayKST() { return kst().toISOString().slice(0, 10); }
-  function dayLabel(iso) {
-    var p = String(iso || "").split("-");
-    if (p.length < 3) return "";
-    var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
-    return (+p[1]) + "월 " + (+p[2]) + "일(" + "일월화수목금토"[d.getUTCDay()] + ")";
-  }
-  function isOpen(n) { return n && n.status === "approved" && Date.parse(n.publish_at) <= Date.now(); }
-  function wedEveningBefore8() { var k = kst(); return k.getUTCDay() === 3 && k.getUTCHours() < 20; }
-  function circ(i) { return i <= 20 ? String.fromCharCode(0x2460 + i - 1) : "(" + i + ")"; }
-
-  // ── 관리자(목사님)인지 — 확인 전 자료는 데이터베이스가 관리자에게만 준다(is_admin)
-  var _admin = null;
-  function isAdmin() {
-    if (_admin !== null) return Promise.resolve(_admin);
-    if (!me()) { _admin = false; return Promise.resolve(false); }
-    return api("POST", "rpc/my_perms", {}).then(function (p) { _admin = !!(p && p.isAdmin); return _admin; })
-      .catch(function () { _admin = false; return false; });
-  }
-
-  // ===== ① 예배와 말씀 #wed =====
-  var list = [], full = {}, admin = false;
-  function getFull(id) {
-    if (full[id]) return Promise.resolve(full[id]);
-    return api("GET", "sermon_notes?id=eq." + encodeURIComponent(id) + "&select=*").then(function (rows) {
-      if (!rows || !rows[0]) throw new Error("자료를 찾지 못했습니다");
-      full[id] = rows[0];
-      return rows[0];
-    });
-  }
-
-  function renderLocked() {
-    box.innerHTML = '<div class="member-only wed-locked"><p>🔒 인용 구절과 설교 요약은<br />가입하고 로그인하신 분께만 보여 드립니다.</p>' +
-      '<div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div></div>';
-  }
-
   // 휴대폰에서 창을 오래 열어 두면 로그인 열쇠가 낡아(1시간) 401 이 난다 → auth.js 가 열쇠를 새로 받을 때까지 기다렸다가 한 번 더
   function whenAuthReady() {
     return new Promise(function (res) {
@@ -97,76 +64,167 @@
   function freshSession() {
     return whenAuthReady().then(function (sb) { return sb ? sb.auth.getSession() : null; }).catch(function () { return null; });
   }
-  var shownUid = null, retried = false;
+
+  // ── 날짜(한국 시각)
+  function kst() { return new Date(Date.now() + 9 * 3600e3); }          // getUTC* 로 읽는다
+  function isoOf(d) { return d.toISOString().slice(0, 10); }
+  function todayKST() { return isoOf(kst()); }
+  function atKST(iso, hh, mm) { var p = String(iso).split("-"); return Date.UTC(+p[0], +p[1] - 1, +p[2], hh - 9, mm || 0); }
+  function dayLabel(iso) {
+    var p = String(iso || "").split("-");
+    if (p.length < 3) return "";
+    var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+    return (+p[1]) + "월 " + (+p[2]) + "일(" + "일월화수목금토"[d.getUTCDay()] + ")";
+  }
+  // 이번 수요일: 오늘이 수요일이고 밤 10시 30분 전이면 오늘, 아니면 다음 수요일
+  function targetWed() {
+    var k = kst(), dow = k.getUTCDay(), add = (3 - dow + 7) % 7;
+    var d = new Date(Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate() + add));
+    if (add === 0 && Date.now() >= atKST(isoOf(d), 22, 30)) d = new Date(d.getTime() + 7 * 864e5);
+    return isoOf(d);
+  }
+  function closeMs(n) { return n.close_at ? Date.parse(n.close_at) : atKST(n.note_date, 22, 30); }
+  function isOpen(n) { return !!(n && n.status === "approved" && Date.parse(n.publish_at) <= Date.now() && Date.now() < closeMs(n)); }
+  function contiOpen(c) { return !!(c && (c.files || []).length && Date.parse(c.open_at) <= Date.now() && Date.now() < Date.parse(c.close_at)); }
+  function circ(i) { return i <= 20 ? String.fromCharCode(0x2460 + i - 1) : "(" + i + ")"; }
+
+  // ── 관리자(목사님)인지 — 확인 전 자료·지난 악보는 데이터베이스가 관리자에게만 준다(is_admin)
+  var _admin = null;
+  function isAdmin() {
+    if (_admin !== null) return Promise.resolve(_admin);
+    if (!me()) { _admin = false; return Promise.resolve(false); }
+    return api("POST", "rpc/my_perms", {}).then(function (p) { _admin = !!(p && p.isAdmin); return _admin; })
+      .catch(function () { _admin = false; return false; });
+  }
+
+  // ===== ① 예배와 말씀 #wed =====
+  var notes = [], contis = [], admin = false, shownUid = null, retried = false;
+  function noteById(id) { return notes.filter(function (n) { return n.id === id; })[0]; }
+  function contiFor(iso) { return contis.filter(function (c) { return c.note_date === iso; })[0]; }
+
+  function renderLocked() {
+    box.innerHTML = '<div class="member-only wed-locked"><p>🔒 수요기도회 말씀 자료는<br />수요일 저녁 예배 때 로그인하신 분께만 보여 드립니다.</p>' +
+      '<div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div></div>';
+  }
+
   function load() {
     if (!box) return Promise.resolve();
     shownUid = (me() || {}).id || "";
     if (!me()) { renderLocked(); return Promise.resolve(); }
     box.innerHTML = '<p class="qt-loading">불러오는 중…</p>';
+    var svc = "&service=eq." + encodeURIComponent(SERVICE);
     return Promise.all([
-      api("GET", "sermon_notes?select=" + LIST_COLS + "&service=eq." + encodeURIComponent(SERVICE) + "&order=note_date.desc&limit=60"),
+      api("GET", "sermon_notes?select=*" + svc + "&order=note_date.desc&limit=6"),
+      api("GET", "sermon_conti?select=*" + svc + "&order=note_date.desc&limit=4"),
       isAdmin()
     ]).then(function (res) {
-      list = res[0] || [];
-      admin = res[1];
-      var latest = list.filter(isOpen)[0];
-      return latest ? getFull(latest.id).catch(function () { return null; }) : null;
-    }).then(function () { retried = false; render(); ensureAnchor(); })
-      .catch(function (e) {
-        if (e && e.status === 401 && !retried) { retried = true; _admin = null; return freshSession().then(load); }
-        box.innerHTML = '<div class="wed-empty">수요기도회 말씀을 불러오지 못했습니다.<br /><button type="button" class="btn btn-line" data-wretry>다시 불러오기</button></div>';
-      });
+      notes = res[0] || []; contis = res[1] || []; admin = res[2];
+      retried = false;
+      render();
+      ensureAnchor();
+      scheduleTick();
+    }).catch(function (e) {
+      if (e && e.status === 401 && !retried) { retried = true; _admin = null; return freshSession().then(load); }
+      box.innerHTML = '<div class="wed-empty">수요기도회 말씀을 불러오지 못했습니다.<br /><button type="button" class="btn btn-line" data-wretry>다시 불러오기</button></div>';
+    });
   }
 
-  function adminCard(n) {
-    var open = isOpen(n), st = n.status === "approved";
-    var state = st ? (open ? "올림 · 지금 보입니다" : "올림 · " + dayLabel(n.note_date) + " 저녁 8시에 열립니다") : "확인 전 · 성도님께는 아직 안 보입니다";
-    return '<div class="wed-admin">' +
-      '<p class="wed-admin-tag">목사님 확인용</p>' +
-      '<p class="wed-admin-t"><b>' + esc(dayLabel(n.note_date)) + '</b> 「' + esc(n.title) + '」</p>' +
-      '<p class="wed-admin-s">' + esc(state) + '</p>' +
-      '<div class="wed-admin-btns"><button type="button" class="btn btn-line" data-wopen="' + esc(n.id) + '">미리보기·고치기</button>' +
-      (st ? '<button type="button" class="btn btn-line" data-wstatus="draft" data-id="' + esc(n.id) + '">내리기</button>'
-          : '<button type="button" class="btn btn-solid" data-wstatus="approved" data-id="' + esc(n.id) + '">올리기</button>') +
-      '</div></div>';
+  function pointsHtml(n, cls) {
+    var pts = ((n.summary || {}).points || []).slice(0, 3);
+    if (!pts.length) return "";
+    return '<ol class="' + (cls || "wed-points") + '">' + pts.map(function (p) {
+      return '<li>' + (p.label ? '<span class="wr-pill">' + esc(p.label) + '</span>' : '') + '<span>' + esc(p.text) + '</span></li>';
+    }).join("") + '</ol>';
   }
 
   function mainCard(n) {
-    var f = full[n.id] || n;
-    var cnt = (f.verses || []).length;
+    var cnt = (n.verses || []).length, c = contiFor(n.note_date);
+    var showConti = c && (contiOpen(c) || (admin && (c.files || []).length));
     return '<article class="week-sermon wed-card">' +
       '<span class="ws-date">' + esc(String(n.note_date).replace(/-/g, ".")) + ' · 수요기도회</span>' +
       (n.series ? '<p class="wed-series">' + esc(n.series) + '</p>' : '') +
       '<h3 class="ws-title">' + esc(n.title) + '</h3>' +
       (n.scripture ? '<p class="ws-ref">' + esc(n.scripture) + '</p>' : '') +
-      (n.preacher ? '<p class="ws-preacher">설교 · ' + esc(n.preacher) + '</p>' : '') +
+      pointsHtml(n) +
       '<div class="wed-btns">' +
         '<button type="button" class="wed-btn" data-wopen="' + esc(n.id) + '" data-wsec="wrVerses"><span aria-hidden="true">📖</span> <span>인용 구절</span>' + (cnt ? ' <b>' + cnt + '</b>' : '') + '</button>' +
-        '<button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrSummary"><span aria-hidden="true">📝</span> <span>설교 요약</span></button>' +
+        (showConti ? '<button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrConti"><span aria-hidden="true">🎵</span> <span>찬양 악보</span></button>'
+                   : '<button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrPassage"><span aria-hidden="true">📜</span> <span>오늘 본문</span></button>') +
       '</div>' +
-      '<button type="button" class="wed-link" data-wopen="' + esc(n.id) + '" data-wsec="wrPassage">오늘 본문부터 차례로 보기 →</button>' +
+      '<p class="wed-close-note">밤 10시 30분에 닫힙니다</p>' +
       '</article>';
   }
 
-  function pastList(arr) {
-    return '<details class="wed-past"><summary>지난 수요 말씀 <span>' + arr.length + '편</span></summary><ul>' +
-      arr.map(function (n) {
-        var p = String(n.note_date).split("-");
-        return '<li><button type="button" data-wopen="' + esc(n.id) + '"><span class="wp-d">' + (+p[1]) + "." + (+p[2]) + '</span>' +
-          '<span class="wp-t"><b>' + esc(n.title) + '</b>' + (n.series ? '<small>' + esc(n.series) + '</small>' : '') + '</span></button></li>';
-      }).join("") + '</ul></details>';
+  function contiCard(c) {
+    var before8 = Date.now() < atKST(c.note_date, 20, 0);
+    return '<article class="week-sermon wed-card">' +
+      '<span class="ws-date">' + esc(String(c.note_date).replace(/-/g, ".")) + ' · 수요기도회</span>' +
+      '<h3 class="ws-title">오늘 찬양 악보</h3>' +
+      '<div class="wed-btns wed-btns-1"><button type="button" class="wed-btn" data-wconti="' + esc(c.note_date) + '"><span aria-hidden="true">🎵</span> <span>찬양 악보 보기</span> <b>' + (c.files || []).length + '</b></button></div>' +
+      '<p class="wed-close-note">' + (before8 ? "말씀 자료는 저녁 8시에 열립니다 · " : "") + '악보는 밤 10시 30분에 사라집니다</p>' +
+      '</article>';
+  }
+
+  function adminCard(n) {
+    var st = n.status === "approved", open = isOpen(n), closed = Date.now() >= closeMs(n);
+    var state = !st ? "확인 전 · 성도님께는 아직 안 보입니다"
+      : open ? "올림 · 지금 로그인한 성도님께 보입니다(밤 10시 30분까지)"
+      : closed ? "올림 · 예배가 끝나 닫혔습니다"
+      : "올림 · " + dayLabel(n.note_date) + " 저녁 8시에 열립니다";
+    return '<div class="wed-admin">' +
+      '<p class="wed-admin-tag">목사님 확인용</p>' +
+      '<p class="wed-admin-t"><b>' + esc(dayLabel(n.note_date)) + '</b> 「' + esc(n.title) + '」</p>' +
+      '<p class="wed-admin-s">' + esc(state) + '</p>' +
+      '<div class="wed-admin-btns"><button type="button" class="btn btn-line" data-wopen="' + esc(n.id) + '">미리보기·고치기</button>' +
+      (closed ? '' : st ? '<button type="button" class="btn btn-line" data-wstatus="draft" data-id="' + esc(n.id) + '">내리기</button>'
+                        : '<button type="button" class="btn btn-solid" data-wstatus="approved" data-id="' + esc(n.id) + '">올리기</button>') +
+      '</div></div>';
+  }
+
+  function contiAdminCard() {
+    var iso = targetWed(), c = contiFor(iso), files = (c && c.files) || [];
+    return '<div class="wed-admin wed-conti-admin">' +
+      '<p class="wed-admin-tag">목사님 확인용 · 콘티·악보</p>' +
+      '<p class="wed-admin-t"><b>' + esc(dayLabel(iso)) + '</b> 수요기도회 악보 ' + files.length + '장</p>' +
+      '<p class="wed-admin-s">그날 로그인한 성도님께 보이고, 밤 10시 30분에 사라집니다(목사님은 늘 보심).</p>' +
+      (files.length ? '<ul class="wca-files">' + files.map(function (f, i) {
+        return '<li><span>' + (i + 1) + '. ' + esc(f.name || "악보") + '</span><button type="button" class="wca-x" data-cremove="' + i + '" aria-label="' + esc(f.name || "악보") + ' 빼기">×</button></li>';
+      }).join("") + '</ul>' : '') +
+      '<div class="wed-admin-btns"><label class="btn btn-solid wca-up">사진·PDF 올리기<input type="file" accept="image/*,application/pdf" multiple hidden data-cupload="' + esc(iso) + '" /></label>' +
+      (files.length ? '<button type="button" class="btn btn-line" data-wconti="' + esc(iso) + '">악보 보기</button>' : '') + '</div>' +
+      '<p class="wca-msg" role="status"></p></div>';
   }
 
   function render() {
     if (!box) return;
-    var open = list.filter(isOpen);
-    var pending = admin ? list.filter(function (n) { return !isOpen(n); }) : [];
-    var latest = open[0];
-    var h = pending.map(adminCard).join("");
-    h += latest ? mainCard(latest) : '<div class="wed-empty">아직 올라온 수요기도회 말씀 자료가 없습니다.<br />수요일 저녁 8시 수요기도회 때 열립니다.</div>';
-    if (latest && wedEveningBefore8() && latest.note_date !== todayKST()) h += '<p class="wed-hint">이번 주 자료는 오늘 저녁 8시 수요기도회 때 열립니다.</p>';
-    if (open.length > 1) h += pastList(open.slice(1));
+    var h = "";
+    if (admin) {
+      var recent = atKST(todayKST(), 0, 0) - 6 * 864e5;
+      h += notes.filter(function (n) { return atKST(n.note_date, 0, 0) >= recent && !isOpen(n); }).map(adminCard).join("");
+      h += contiAdminCard();
+    }
+    var open = notes.filter(isOpen)[0];
+    var conti = contis.filter(contiOpen)[0];
+    if (open) h += mainCard(open);
+    else if (conti) h += contiCard(conti);
+    else h += '<div class="wed-empty">수요기도회 말씀 자료(본문·핵심 3가지·인용 구절)는<br />수요일 저녁 8시 예배 때 열리고, 밤 10시 30분에 닫힙니다.</div>';
     box.innerHTML = h;
+  }
+
+  // 저녁 8시·밤 10시 30분이 되면 저절로 다시 그린다(창을 열어 둔 채여도 열리고 닫히게)
+  var tick = null;
+  function scheduleTick() {
+    if (tick) clearTimeout(tick);
+    var now = Date.now(), t = todayKST();
+    var marks = [atKST(t, 0, 0) + 864e5, atKST(t, 20, 0), atKST(t, 22, 30)]
+      .concat(notes.map(function (n) { return Date.parse(n.publish_at); }), notes.map(closeMs))
+      .filter(function (m) { return m > now && m - now < 18 * 3600e3; });
+    if (!marks.length) return;
+    var next = Math.min.apply(null, marks);
+    tick = setTimeout(function () {
+      if (rdOpen && !admin && !(cur && isOpen(cur)) && !contiOpen(curConti)) closeReader();
+      load();
+    }, next - now + 3000);
   }
 
   // 주소가 #wed 이면, 위쪽 칸(이번 주 말씀)이 늦게 그려져 밀려도 이 자리로 다시 맞춘다(손가락을 대기 전까지만)
@@ -178,8 +236,54 @@
     go(); setTimeout(go, 700); setTimeout(go, 1600);
   }
 
+  // ── 악보 파일: 비공개 보관함에서 '닫히는 때까지만 쓰는 주소'를 받아 연다
+  var signCache = {};
+  function signed(path, until) {
+    var c = signCache[path];
+    if (c && c.exp > Date.now() + 30000) return Promise.resolve(c.url);
+    var ttl = Math.max(60, Math.min(3600, Math.floor(((until || Date.now() + 3600e3) - Date.now()) / 1000)));
+    return fetch(SB + "/storage/v1/object/sign/private_files/" + String(path).split("/").map(encodeURIComponent).join("/"), {
+      method: "POST", headers: headers(), body: JSON.stringify({ expiresIn: ttl })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        var u = d && (d.signedURL || d.signedUrl);
+        if (!r.ok || !u) throw new Error("악보를 열 수 없습니다(시간이 지났거나 권한이 없습니다)");
+        var full = SB + "/storage/v1" + u;
+        signCache[path] = { url: full, exp: Date.now() + ttl * 1000 };
+        return full;
+      });
+    });
+  }
+  function contiHtml(c) {
+    var files = (c && c.files) || [];
+    if (!files.length) return "";
+    return '<section class="wr-sec" id="wrConti"><h4 class="wr-h">찬양 악보 <small>누르면 크게 · 밤 10시 30분에 사라집니다</small></h4><div class="wr-conti">' +
+      files.map(function (f, i) {
+        var pdf = /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.path || "");
+        return pdf
+          ? '<p><a class="btn btn-line wr-conti-pdf" data-cpath="' + esc(f.path) + '" href="#" target="_blank" rel="noopener">📄 ' + esc(f.name || ("악보 " + (i + 1))) + ' 열기</a></p>'
+          : '<a class="wr-conti-img" data-cpath="' + esc(f.path) + '" href="#" target="_blank" rel="noopener"><img alt="' + esc(f.name || ("악보 " + (i + 1))) + '" data-cimg="' + esc(f.path) + '" /></a>';
+      }).join("") + '</div></section>';
+  }
+  function fillConti(c) {
+    if (!c || !rd) return;
+    var until = admin ? null : Date.parse(c.close_at);
+    rd.querySelectorAll("a[data-cpath]").forEach(function (a) {
+      var p = a.getAttribute("data-cpath"), img = a.querySelector("img[data-cimg]");
+      signed(p, until).then(function (u) {
+        a.href = u;
+        if (img) img.src = u;
+      }).catch(function (e) {
+        var msg = document.createElement("p");
+        msg.className = "wr-conti-err";
+        msg.textContent = e.message;
+        a.replaceWith(msg);
+      });
+    });
+  }
+
   // ===== ② 크게 읽는 창 =====
-  var rd = null, rdBody = null, rdTitle = null, rdDate = null, rdTabs = null, rdOpen = false, cur = null;
+  var rd = null, rdBody = null, rdTitle = null, rdDate = null, rdTabs = null, rdOpen = false, cur = null, curConti = null;
   function buildReader() {
     if (rd) return;
     document.body.insertAdjacentHTML("beforeend",
@@ -209,71 +313,58 @@
     }).join("") + "</div>";
   }
   function adminNotice(n) {
-    var open = isOpen(n), st = n.status === "approved";
-    var msg = st ? (open ? "올린 자료입니다 · 로그인한 성도님께 보이고 있습니다." : "올린 자료입니다 · " + dayLabel(n.note_date) + " 저녁 8시에 열립니다.")
-                 : "확인 전 자료입니다 · 성도님께는 아직 보이지 않습니다.";
+    var st = n.status === "approved", open = isOpen(n), closed = Date.now() >= closeMs(n);
+    var msg = !st ? "확인 전 자료입니다 · 성도님께는 아직 보이지 않습니다."
+      : open ? "올린 자료입니다 · 지금 로그인한 성도님께 보입니다(밤 10시 30분까지)."
+      : closed ? "올린 자료입니다 · 예배가 끝나 닫혔습니다."
+      : "올린 자료입니다 · " + dayLabel(n.note_date) + " 저녁 8시에 열립니다.";
     return '<div class="wr-admin"><p><b>목사님 확인용</b> ' + esc(msg) + '</p><div class="wr-admin-btns">' +
-      (st ? '<button type="button" class="btn btn-line" data-wstatus="draft" data-id="' + esc(n.id) + '">내리기</button>'
-          : '<button type="button" class="btn btn-solid" data-wstatus="approved" data-id="' + esc(n.id) + '">올리기</button>') +
+      (closed ? '' : st ? '<button type="button" class="btn btn-line" data-wstatus="draft" data-id="' + esc(n.id) + '">내리기</button>'
+                        : '<button type="button" class="btn btn-solid" data-wstatus="approved" data-id="' + esc(n.id) + '">올리기</button>') +
       '<button type="button" class="btn btn-line" data-wedit="' + esc(n.id) + '">고치기</button></div></div>';
   }
-  function readerHtml(n) {
-    var s = n.summary || {}, h = "";
-    if (admin) h += adminNotice(n);
-    h += '<header class="wr-head">' + (n.series ? '<p class="wr-series">' + esc(n.series) + '</p>' : '') +
-      '<h3 class="wr-title">' + esc(n.title) + '</h3>' +
-      '<p class="wr-ref">' + esc(n.scripture || "") + (n.preacher ? ' · ' + esc(n.preacher) : '') + '</p></header>';
-    if ((n.passage || []).length) {
-      h += '<section class="wr-sec" id="wrPassage"><h4 class="wr-h">오늘 본문 <small>' + esc(n.scripture || "") + '</small></h4>' + linesHtml(n.passage) + '</section>';
+  function readerHtml(n, c) {
+    var h = "";
+    if (n) {
+      if (admin) h += adminNotice(n);
+      h += '<header class="wr-head">' + (n.series ? '<p class="wr-series">' + esc(n.series) + '</p>' : '') +
+        '<h3 class="wr-title">' + esc(n.title) + '</h3>' +
+        '<p class="wr-ref">' + esc(n.scripture || "") + (n.preacher ? ' · ' + esc(n.preacher) : '') + '</p></header>';
+      var pts = pointsHtml(n, "wr-points");
+      if (pts) h += '<section class="wr-sec" id="wrPoints"><h4 class="wr-h">핵심 3가지</h4>' + pts + '</section>';
+      if ((n.passage || []).length) h += '<section class="wr-sec" id="wrPassage"><h4 class="wr-h">오늘 본문 <small>' + esc(n.scripture || "") + '</small></h4>' + linesHtml(n.passage) + '</section>';
+      var vs = n.verses || [];
+      if (vs.length) {
+        h += '<section class="wr-sec" id="wrVerses"><h4 class="wr-h">인용 구절 <small>설교에서 읽는 순서대로</small></h4><ol class="wr-verses">' +
+          vs.map(function (v, i) {
+            return '<li class="wr-v"><p class="wr-v-ref"><span class="wr-no" aria-hidden="true">' + circ(i + 1) + '</span>' + esc(v.ref) + '</p>' + linesHtml(v.lines, true) + '</li>';
+          }).join("") + '</ol></section>';
+      }
     }
-    var vs = n.verses || [];
-    if (vs.length) {
-      h += '<section class="wr-sec" id="wrVerses"><h4 class="wr-h">인용 구절 <small>설교에서 읽는 순서대로</small></h4><ol class="wr-verses">' +
-        vs.map(function (v, i) {
-          return '<li class="wr-v"><p class="wr-v-ref"><span class="wr-no" aria-hidden="true">' + circ(i + 1) + '</span>' + esc(v.ref) + '</p>' + linesHtml(v.lines, true) + '</li>';
-        }).join("") + '</ol></section>';
-    }
-    var ms = n.mentions || [];
-    if (ms.length) {
-      h += '<section class="wr-sec wr-ment"><h4 class="wr-h wr-h-s">말씀 중에 나온 구절 <small>누르면 본문이 보입니다</small></h4><div class="wr-chips">' +
-        ms.map(function (m, i) { return '<button type="button" class="wr-chip" data-ment="' + i + '" aria-expanded="false">' + esc(m.ref) + '</button>'; }).join("") +
-        '</div><div class="wr-ment-box" id="wrMentBox" hidden></div></section>';
-    }
-    if ((s.points || []).length) {
-      h += '<section class="wr-sec" id="wrSummary"><h4 class="wr-h">설교 요약</h4>';
-      if (s.question) h += '<p class="wr-q"><span>오늘의 질문</span>' + esc(s.question) + '</p>';
-      h += s.points.map(function (p) {
-        return '<div class="wr-pt"><p class="wr-pt-h">' + (p.label ? '<span class="wr-pill">' + esc(p.label) + '</span>' : '') + (p.title ? '<b>' + esc(p.title) + '</b>' : '') + '</p><p class="wr-pt-x">' + esc(p.text) + '</p></div>';
-      }).join("");
-      if (s.one_line) h += '<div class="wr-one"><span>오늘의 한 문장</span><p>' + esc(s.one_line) + '</p></div>';
-      h += '</section>';
-    }
-    if ((s.prayers || []).length) {
-      h += '<section class="wr-sec" id="wrPrayer"><h4 class="wr-h">함께 드리는 기도</h4>' +
-        s.prayers.map(function (p) { return '<p class="wr-pr">' + (p.label ? '<span class="wr-pill">' + esc(p.label) + '</span>' : '') + esc(p.text) + '</p>'; }).join("") + '</section>';
-    }
-    if (s.next) h += '<p class="wr-next"><b>다음 주</b>' + esc(s.next) + '</p>';
+    if (c && (contiOpen(c) || admin)) h += contiHtml(c);
     return h;
   }
-  function tabsHtml(n) {
+  function tabsHtml(n, c) {
     var t = [];
-    if ((n.passage || []).length) t.push(["wrPassage", "본문"]);
-    if ((n.verses || []).length) t.push(["wrVerses", "인용 구절"]);
-    if (((n.summary || {}).points || []).length) t.push(["wrSummary", "설교 요약"]);
-    if (((n.summary || {}).prayers || []).length) t.push(["wrPrayer", "기도"]);
-    return t.map(function (x) { return '<button type="button" data-go="' + x[0] + '">' + x[1] + '</button>'; }).join("");
+    if (n && ((n.summary || {}).points || []).length) t.push(["wrPoints", "핵심"]);
+    if (n && (n.passage || []).length) t.push(["wrPassage", "본문"]);
+    if (n && (n.verses || []).length) t.push(["wrVerses", "인용 구절"]);
+    if (c && (c.files || []).length && (contiOpen(c) || admin)) t.push(["wrConti", "악보"]);
+    return t.length > 1 ? t.map(function (x) { return '<button type="button" data-go="' + x[0] + '">' + x[1] + '</button>'; }).join("") : "";
   }
   function goSec(id) {
     var el = id && document.getElementById(id);
     if (el) rdBody.scrollTop += el.getBoundingClientRect().top - rdBody.getBoundingClientRect().top - 6;
   }
-  function paint(n, sec) {
-    cur = n;
-    rdDate.textContent = dayLabel(n.note_date) + " · 수요기도회";
-    rdTitle.textContent = n.title || "";
-    rdTabs.innerHTML = tabsHtml(n);
-    rdBody.innerHTML = readerHtml(n);
+  function paint(n, c, sec) {
+    cur = n; curConti = c || null;
+    var iso = n ? n.note_date : c.note_date;
+    rdDate.textContent = dayLabel(iso) + " · 수요기도회";
+    rdTitle.textContent = n ? (n.title || "") : "찬양 악보";
+    rdTabs.innerHTML = tabsHtml(n, c);
+    rdBody.innerHTML = readerHtml(n, c);
     rdBody.scrollTop = 0;
+    fillConti(c);
     if (sec) requestAnimationFrame(function () { goSec(sec); });
   }
   function hideDom() {
@@ -286,91 +377,77 @@
     if (!rdOpen) return;
     if (!(window.ModalNav && window.ModalNav.close())) hideDom();
   }
+  function showReader() {
+    if (rdOpen) return;
+    rd.hidden = false;
+    rdOpen = true;
+    document.documentElement.classList.add("pop-open");
+    if (window.ModalNav) window.ModalNav.open(hideDom);
+  }
   function openReader(id, sec) {
     buildReader();
-    return getFull(id).then(function (n) {
-      paint(n, sec);
-      if (!rdOpen) {
-        rd.hidden = false;
-        rdOpen = true;
-        document.documentElement.classList.add("pop-open");
-        if (window.ModalNav) window.ModalNav.open(hideDom);
-      }
-    }).catch(function () { alert("자료를 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요."); });
+    var n = noteById(id);
+    if (!n) return;
+    paint(n, contiFor(n.note_date), sec);
+    showReader();
+  }
+  function openConti(iso) {
+    buildReader();
+    var c = contiFor(iso);
+    if (!c) return;
+    var n = notes.filter(function (x) { return x.note_date === iso && isOpen(x); })[0] || null;
+    paint(n, c, "wrConti");
+    showReader();
   }
   function onReaderClick(e) {
     var t = e.target;
     if (t.closest("[data-wclose]")) { closeReader(); return; }
     var g = t.closest("[data-go]");
     if (g) { goSec(g.getAttribute("data-go")); return; }
-    var c = t.closest("[data-ment]");
-    if (c && cur) {
-      var i = +c.getAttribute("data-ment"), m = (cur.mentions || [])[i], mb = document.getElementById("wrMentBox");
-      var on = c.getAttribute("aria-expanded") === "true";
-      rd.querySelectorAll(".wr-chip").forEach(function (x) { x.setAttribute("aria-expanded", "false"); });
-      if (on || !m) { mb.hidden = true; return; }
-      c.setAttribute("aria-expanded", "true");
-      mb.innerHTML = '<p class="wr-ment-ref">' + esc(m.ref) + '</p>' + linesHtml(m.lines, true);
-      mb.hidden = false;
-      return;
-    }
+    var a = t.closest("a[data-cpath]");
+    if (a && a.getAttribute("href") === "#") { e.preventDefault(); return; }   // 아직 주소를 받기 전
     var st = t.closest("[data-wstatus]");
     if (st) { setStatus(st.getAttribute("data-id"), st.getAttribute("data-wstatus")); return; }
-    var ed = t.closest("[data-wedit]");
-    if (ed && cur) { openEdit(cur); return; }
+    if (t.closest("[data-wedit]") && cur) { openEdit(cur); return; }
     if (t.closest("[data-wsave]")) { saveEdit(); return; }
-    if (t.closest("[data-wcancel]")) { paint(cur); return; }
+    if (t.closest("[data-wcancel]")) { paint(cur, curConti); return; }
   }
 
   // ===== ③ 관리자: 올리기·내리기·고치기 =====
+  function replaceNote(r) { notes = notes.map(function (x) { return x.id === r.id ? r : x; }); }
   function setStatus(id, status) {
-    var n = full[id] || list.filter(function (x) { return x.id === id; })[0];
+    var n = noteById(id);
     if (!n) return;
-    var past = Date.parse(n.publish_at) <= Date.now();
+    var nowOpen = Date.parse(n.publish_at) <= Date.now();
     var ask = status === "approved"
-      ? "이 자료를 올릴까요?\n" + (past ? "로그인한 성도님께 바로 보입니다." : dayLabel(n.note_date) + " 저녁 8시에 로그인한 성도님께 열립니다.")
+      ? "이 자료를 올릴까요?\n" + (nowOpen ? "로그인한 성도님께 바로 보이고, 밤 10시 30분에 닫힙니다." : dayLabel(n.note_date) + " 저녁 8시에 로그인한 성도님께 열리고, 밤 10시 30분에 닫힙니다.")
       : "이 자료를 내릴까요?\n성도님께 보이지 않게 됩니다(지워지지는 않습니다).";
     if (!confirm(ask)) return;
     api("PATCH", "sermon_notes?id=eq." + encodeURIComponent(id), { status: status }, { Prefer: "return=representation" })
       .then(function (rows) {
         var r = rows && rows[0];
         if (!r) throw new Error("바뀐 것이 없습니다(관리자 권한을 확인해 주세요)");
-        full[id] = r;
-        list = list.map(function (x) { return x.id === id ? r : x; });
+        replaceNote(r);
         render();
-        if (rdOpen && cur && cur.id === id) paint(r);
+        if (rdOpen && cur && cur.id === id) paint(r, curConti);
         if (window.showFlash) window.showFlash(status === "approved" ? "올렸습니다" : "내렸습니다");
       })
       .catch(function (e) { alert("저장하지 못했습니다: " + e.message); });
   }
 
   function editHtml(n) {
-    var s = n.summary || {};
-    var pts = (s.points || []).slice();
-    while (pts.length < 4) pts.push({});
-    var prs = (s.prayers || []).slice();
-    while (prs.length < 3) prs.push({});
-    var refs = function (a) { return (a || []).map(function (v) { return v.ref; }).join("\n"); };
-    var ta = function (id, v, rows, ph) { return '<textarea id="' + id + '" rows="' + (rows || 3) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '>' + esc(v || "") + '</textarea>'; };
+    var pts = (((n.summary || {}).points) || []).slice(0, 3);
+    while (pts.length < 3) pts.push({});
+    var refs = (n.verses || []).map(function (v) { return v.ref; }).join("\n");
     var inp = function (id, v, ph) { return '<input id="' + id + '" type="text" value="' + esc(v || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + ' />'; };
     return '<div class="wr-edit">' +
-      '<p class="wr-edit-note">고친 뒤 [저장]을 누르세요. 장절은 한 줄에 하나씩 적으시면 본문은 홈페이지 성경(개역개정)에서 채웁니다.</p>' +
+      '<p class="wr-edit-note">고친 뒤 [저장]을 누르세요. 핵심은 한 줄씩 짧게, 인용 구절은 장절만 한 줄에 하나씩 적으시면 본문은 홈페이지 성경(개역개정)에서 채웁니다.</p>' +
       '<label>제목' + inp("we_title", n.title) + '</label>' +
-      '<label>시리즈' + inp("we_series", n.series, "예: 에베소서 강해 22강") + '</label>' +
-      '<label>인용 구절 <small>설교에서 읽는 순서대로, 한 줄에 하나</small>' + ta("we_verses", refs(n.verses), 6, "예: 에베소서 1:20") + '</label>' +
-      '<label>말씀 중에 나온 구절 <small>한 줄에 하나</small>' + ta("we_mentions", refs(n.mentions), 4) + '</label>' +
-      '<label>오늘의 질문' + ta("we_q", s.question, 2) + '</label>' +
       pts.map(function (p, i) {
-        return '<fieldset class="wr-edit-pt"><legend>요약 ' + (i + 1) + '</legend>' +
-          '<div class="wr-edit-row">' + inp("we_pl" + i, p.label, "예: 7절") + inp("we_pt" + i, p.title, "작은 제목") + '</div>' +
-          ta("we_px" + i, p.text, 4, "내용(비우면 빠집니다)") + '</fieldset>';
+        return '<fieldset class="wr-edit-pt"><legend>핵심 ' + (i + 1) + '</legend><div class="wr-edit-row">' +
+          inp("we_pl" + i, p.label, "예: 7절") + inp("we_px" + i, p.text, "한 줄로 짧게(비우면 빠짐)") + '</div></fieldset>';
       }).join("") +
-      '<label>오늘의 한 문장' + ta("we_one", s.one_line, 2) + '</label>' +
-      prs.map(function (p, i) {
-        return '<fieldset class="wr-edit-pt"><legend>기도 ' + (i + 1) + '</legend>' +
-          '<div class="wr-edit-row">' + inp("we_rl" + i, p.label, "예: 감사") + '</div>' + ta("we_rx" + i, p.text, 2, "기도(비우면 빠집니다)") + '</fieldset>';
-      }).join("") +
-      '<label>다음 주' + ta("we_next", s.next, 2) + '</label>' +
+      '<label>인용 구절 <small>설교에서 읽는 순서대로, 한 줄에 하나</small><textarea id="we_verses" rows="6" placeholder="예: 에베소서 1:20">' + esc(refs) + '</textarea></label>' +
       '<p class="wr-edit-msg" id="we_msg" role="status"></p>' +
       '<div class="wr-edit-btns"><button type="button" class="btn btn-solid" data-wsave>저장</button><button type="button" class="btn btn-line" data-wcancel>취소</button></div>' +
       '</div>';
@@ -409,34 +486,76 @@
     var n = cur, msg = document.getElementById("we_msg");
     if (!n) return;
     msg.textContent = "저장하는 중…";
-    var points = [], prayers = [];
-    for (var i = 0; i < 8; i++) {
-      if (!document.getElementById("we_px" + i)) break;
-      if (val("we_px" + i)) points.push({ label: val("we_pl" + i), title: val("we_pt" + i), text: val("we_px" + i) });
-    }
-    for (var j = 0; j < 6; j++) {
-      if (!document.getElementById("we_rx" + j)) break;
-      if (val("we_rx" + j)) prayers.push({ label: val("we_rl" + j), text: val("we_rx" + j) });
-    }
-    Promise.all([resolveRefs(val("we_verses"), n.verses), resolveRefs(val("we_mentions"), n.mentions)])
-      .then(function (res) {
-        var body = {
-          title: val("we_title") || n.title, series: val("we_series") || null,
-          verses: res[0], mentions: res[1], made_by: "pastor",
-          summary: { question: val("we_q"), points: points, one_line: val("we_one"), prayers: prayers, next: val("we_next") }
-        };
+    var points = [];
+    for (var i = 0; i < 3; i++) if (val("we_px" + i)) points.push({ label: val("we_pl" + i), text: val("we_px" + i) });
+    resolveRefs(val("we_verses"), n.verses)
+      .then(function (verses) {
+        var body = { title: val("we_title") || n.title, verses: verses, mentions: [], made_by: "pastor", summary: { points: points } };
         return api("PATCH", "sermon_notes?id=eq." + encodeURIComponent(n.id), body, { Prefer: "return=representation" });
       })
       .then(function (rows) {
         var r = rows && rows[0];
         if (!r) throw new Error("저장되지 않았습니다(관리자 권한을 확인해 주세요)");
-        full[r.id] = r;
-        list = list.map(function (x) { return x.id === r.id ? r : x; });
+        replaceNote(r);
         render();
-        paint(r);
+        paint(r, curConti);
         if (window.showFlash) window.showFlash("저장했습니다");
       })
       .catch(function (e) { msg.textContent = "⚠️ " + e.message; });
+  }
+
+  // ── 콘티·악보 올리기/빼기(관리자) — 비공개 보관함 private_files 의 conti/<날짜>/ (js/upload.js)
+  function contiSave(iso, files) {
+    var c = contiFor(iso);
+    var p = c ? api("PATCH", "sermon_conti?id=eq." + encodeURIComponent(c.id), { files: files }, { Prefer: "return=representation" })
+              : api("POST", "sermon_conti", { service: SERVICE, note_date: iso, files: files }, { Prefer: "return=representation" });
+    return p.then(function (rows) {
+      var r = rows && rows[0];
+      if (!r) throw new Error("저장되지 않았습니다(관리자 권한을 확인해 주세요)");
+      contis = contis.filter(function (x) { return x.note_date !== iso; }).concat([r]);
+      return r;
+    });
+  }
+  function contiMsg(t) { var m = box.querySelector(".wca-msg"); if (m) m.textContent = t; }
+  function uploadConti(iso, list) {
+    var U = window.ChurchUpload;
+    if (!U || !U.isReady()) { alert("올리기 기능을 불러오지 못했습니다. 화면을 새로 고친 뒤 다시 해 주세요."); return; }
+    var files = ((contiFor(iso) || {}).files || []).slice(), arr = Array.prototype.slice.call(list || []), done = 0;
+    var step = function () {
+      if (done >= arr.length) {
+        return contiSave(iso, files).then(function () { render(); if (window.showFlash) window.showFlash("악보를 올렸습니다"); });
+      }
+      var f = arr[done];
+      contiMsg("올리는 중… " + (done + 1) + " / " + arr.length);
+      var isImg = /^image\//.test(f.type || "");
+      var prep = isImg ? U.compressImage(f, 2400, 0.85).catch(function () { return f; }) : Promise.resolve(f);
+      return prep.then(function (g) { return U.upload(g, { folder: "conti/" + iso, compress: false }); })
+        .then(function (r) {
+          // 악보는 반드시 비공개 보관함(private_files)에 — 아니면(옛 화면 코드 등) 바로 지우고 멈춘다
+          if (!/^conti\//.test(r.key || "") || !/\/authenticated\/private_files\//.test(r.url || "")) {
+            if (r.key) U.remove(r.key);
+            throw new Error("악보가 비공개 보관함에 올라가지 않았습니다. 화면을 새로 고친 뒤 다시 해 주세요.");
+          }
+          files.push({ path: r.key, name: f.name || ("악보 " + (files.length + 1)), type: f.type || "" });
+          done++;
+          return step();
+        });
+    };
+    step().catch(function (e) {
+      contiMsg("⚠️ " + (e && e.message ? e.message : "올리지 못했습니다"));
+      if (files.length) contiSave(iso, files).then(render).catch(function () {});
+    });
+  }
+  function removeConti(i) {
+    var iso = targetWed(), c = contiFor(iso);
+    if (!c) return;
+    var f = (c.files || [])[i];
+    if (!f || !confirm("이 악보를 뺄까요?\n" + (f.name || "") + "\n(파일도 지워집니다)")) return;
+    var files = c.files.filter(function (_, k) { return k !== i; });
+    contiSave(iso, files).then(function () {
+      if (window.ChurchUpload) window.ChurchUpload.remove(f.path);
+      render();
+    }).catch(function (e) { alert("빼지 못했습니다: " + e.message); });
   }
 
   // 카드·목록의 단추
@@ -445,24 +564,32 @@
       if (e.target.closest("[data-wretry]")) { retried = false; _admin = null; freshSession().then(load); return; }
       var o = e.target.closest("[data-wopen]");
       if (o) { openReader(o.getAttribute("data-wopen"), o.getAttribute("data-wsec")); return; }
+      var cv = e.target.closest("[data-wconti]");
+      if (cv) { openConti(cv.getAttribute("data-wconti")); return; }
+      var rm = e.target.closest("[data-cremove]");
+      if (rm) { removeConti(+rm.getAttribute("data-cremove")); return; }
       var st = e.target.closest("[data-wstatus]");
       if (st) setStatus(st.getAttribute("data-id"), st.getAttribute("data-wstatus"));
     });
+    box.addEventListener("change", function (e) {
+      var inp = e.target.closest("[data-cupload]");
+      if (inp && inp.files && inp.files.length) uploadConti(inp.getAttribute("data-cupload"), inp.files);
+    });
   }
 
-  // ===== ④ 첫 화면 띠 — 수요일 저녁 8시 ~ 목요일 낮 12시 =====
+  // ===== ④ 첫 화면 띠 — 수요일 저녁 8시 ~ 밤 10시 30분 =====
   function paintBanner() {
     if (!banner) return;
-    var k = kst(), d = k.getUTCDay(), hr = k.getUTCHours();
-    if (!((d === 3 && hr >= 20) || (d === 4 && hr < 12))) return;
+    var k = kst(), mins = k.getUTCHours() * 60 + k.getUTCMinutes();
+    if (!(k.getUTCDay() === 3 && mins >= 20 * 60 && mins < 22 * 60 + 30)) return;
     api("POST", "rpc/wed_note_now", {}).then(function (r) {
       if (!r || !r.open) return;
       banner.dataset.wed = "1";
       var lb = banner.querySelector(".hsb-label"), t = banner.querySelector(".hsb-title"),
           rf = banner.querySelector(".hsb-ref"), ar = banner.querySelector(".hsb-arrow");
-      if (lb) lb.textContent = r.date === todayKST() ? "오늘 수요기도회 말씀" : "수요기도회 말씀";
-      if (t) t.textContent = r.title || "인용 구절과 설교 요약";
-      if (rf) rf.textContent = r.title ? (r.scripture || "") : "가입하고 로그인하신 분께 보여 드립니다";
+      if (lb) lb.textContent = "오늘 수요기도회 말씀";
+      if (t) t.textContent = r.title || "본문·핵심·인용 구절";
+      if (rf) rf.textContent = r.title ? (r.scripture || "") : "로그인하신 분께 보여 드립니다";
       if (ar) ar.textContent = "말씀 자료 보기 →";
       banner.setAttribute("href", "word.html#wed");
       banner.classList.add("is-wed");
@@ -471,14 +598,14 @@
 
   load();
   paintBanner();
-  window.addEventListener("church:auth", function () { _admin = null; full = {}; load(); paintBanner(); });
+  window.addEventListener("church:auth", function () { _admin = null; load(); paintBanner(); });
   // 이 화면에서 로그인·로그아웃하면(다시 불러오지 않는 경우에도) 바로 다시 그린다
   whenAuthReady().then(function (sb) {
     if (!sb) return;
     try {
       sb.auth.onAuthStateChange(function (ev, session) {
         var uid = (session && session.user && session.user.id) || "";
-        if (uid !== shownUid) { _admin = null; full = {}; load(); paintBanner(); }
+        if (uid !== shownUid) { _admin = null; load(); paintBanner(); }
       });
     } catch (e) {}
   });

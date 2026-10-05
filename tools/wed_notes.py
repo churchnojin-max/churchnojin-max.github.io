@@ -3,12 +3,14 @@
 수요기도회 말씀 자료(인용 구절·설교 요약) 만들기 — 2026-10-05 목사님 요청
   "수요예배 때 성도들이 참고할 수 있도록 인용 구절과 설교 요약을 홈페이지에"
   목사님 결정: 예배와 말씀 + 수요일 첫 화면 / 저녁 8시에 한꺼번에 / 로그인한 회원만 / 목사님 확인 뒤 올림
-  화면: js/wed-notes.js · 표: sermon_notes (supabase/sermon_notes_20261005.sql)
+  같은 날 밤 고침: "내 설교를 밖으로 공개하지 않으려는 거야. 오는 사람들에게만 특권" → 본문·제목·핵심 3가지(아주 짧게)·인용 구절만,
+  저녁 8시에 열리고 밤 10시 30분에 닫힘(지난 자료 모아 보기 없음). 악보(콘티)는 목사님이 홈페이지에서 올림(이 도구와 상관없음).
+  화면: js/wed-notes.js · 표: sermon_notes (supabase/sermon_notes_20261005.sql, sermon_notes_short_conti_20261005.sql)
 
 흐름 — 수요일 예약 작업(클로드 '수요 말씀 자료')이 차례로 부른다
-  1. check    이번 주 수요 원고가 설교관리(sermons)에 올라왔는지, 자료를 새로 만들 차례인지 (첫 줄 STATUS=…)
+  1. check    이번 주 수요 원고가 설교관리(sermons)에 올라왔는지, 자료를 새로 만들 차례인지 (첫 줄 STATUS=…, 밤 10시 30분이 지났으면 PAST)
   2. prepare  원고 + 구절 후보를 JSON 으로. 인용 블록·장절 표기를 bible.js(bible-verse 스킬)로 찾는다.
-              → 클로드가 원고를 읽고 note.json(장절 목록·요약·기도)을 쓴다
+              → 클로드가 원고를 읽고 note.json(인용 구절 장절 목록·핵심 3가지)을 쓴다
   3. save     note.json → 구절 본문은 bible-verse 자료(bible.js)에서만 가져와 '확인 전(draft)'으로 저장
               → 목사님 텔레그램에 미리보기 + [올리기] 단추(비서봇 sermon_note_actions.py 가 받는다)
   4. remind   저녁 7시 반이 넘도록 확인 전이면 한 번 더 알림(같은 자료로는 한 번만)
@@ -55,6 +57,7 @@ SITE_URL = "https://churchnojin-max.github.io/word.html#wed"
 SERVICE = "수요기도회"
 KST = dt.timezone(dt.timedelta(hours=9))
 OPEN_HOUR = 20          # 저녁 8시에 열림(supabase 트리거와 같은 값)
+CLOSE_AT = (22, 30)     # 밤 10시 30분에 닫힘(supabase 트리거와 같은 값)
 REMIND_AFTER = (19, 30)  # 이 시각이 넘도록 확인 전이면 한 번 더 알림
 
 
@@ -98,6 +101,10 @@ def md(d):
 
 def opens_at(d):
     return dt.datetime.combine(dt.date.fromisoformat(str(d)), dt.time(OPEN_HOUR), KST)
+
+
+def closes_at(d):
+    return dt.datetime.combine(dt.date.fromisoformat(str(d)), dt.time(*CLOSE_AT), KST)
 
 
 # ── 창고(Supabase, service_role) ──────────────────────────────
@@ -324,6 +331,9 @@ def guess_series(s, passage_book):
 
 # ── 명령 ─────────────────────────────────────────────────────
 def cmd_check(date):
+    if now_kst() >= closes_at(date):
+        print(f"STATUS=PAST\n{md(date)} 수요기도회 시간(밤 10시 30분)이 지나 자료를 만들지 않습니다.")
+        return "PAST"
     st = Store()
     s = get_sermon(st, date)
     if not s or not (s.get("content") or "").strip():
@@ -430,14 +440,18 @@ def _clean_text(v, limit):
     return v[:limit]
 
 
+POINT_MAX = 60   # 핵심 한 줄 글자 수 상한(목사님: "최대한 짧게" — 클로드에게는 30자 안팎으로 쓰라고 함)
+
+
 def _clean_summary(sm):
+    """핵심 3가지만 남긴다(목사님 2026-10-05: 설교를 밖에 내지 않도록 아주 짧게)."""
     sm = sm or {}
-    pts = [{"label": _clean_text(p.get("label"), 20), "title": _clean_text(p.get("title"), 60), "text": _clean_text(p.get("text"), 600)}
-           for p in (sm.get("points") or []) if _clean_text(p.get("text"), 600)]
-    prs = [{"label": _clean_text(p.get("label"), 12), "text": _clean_text(p.get("text"), 300)}
-           for p in (sm.get("prayers") or []) if _clean_text(p.get("text"), 300)]
-    return {"question": _clean_text(sm.get("question"), 300), "points": pts[:6],
-            "one_line": _clean_text(sm.get("one_line"), 200), "prayers": prs[:4], "next": _clean_text(sm.get("next"), 300)}
+    pts = []
+    for p in (sm.get("points") or []):
+        t = _clean_text(p.get("text") or p.get("title"), 300)
+        if t:
+            pts.append({"label": _clean_text(p.get("label"), 12), "text": t})
+    return {"points": pts[:3]}
 
 
 def resolve(refs, passage, skip):
@@ -465,13 +479,17 @@ def cmd_save(path, no_tg=False, force=False, head=None):
     passage, passage_lines = lookup(s.get("scripture"))
     skip = set()
     verses, bad1 = resolve(note.get("verses"), passage, skip)
-    mentions, bad2 = resolve(note.get("mentions"), passage, skip)
-    if bad1 or bad2:
-        print("이 장절을 성경 자료에서 찾지 못해 저장하지 않았습니다: " + ", ".join(bad1 + bad2))
+    mentions = []        # 말로만 언급한 구절은 싣지 않는다(목사님 2026-10-05: 인용 구절만)
+    if bad1:
+        print("이 장절을 성경 자료에서 찾지 못해 저장하지 않았습니다: " + ", ".join(bad1))
         return 2
     summary = _clean_summary(note.get("summary"))
-    if not summary["points"]:
-        print("요약(points)이 비어 있어 저장하지 않았습니다.")
+    if len(summary["points"]) != 3:
+        print(f"핵심이 {len(summary['points'])}개입니다. 꼭 3가지로 써 주세요(저장하지 않았습니다).")
+        return 2
+    long_ = [p["text"] for p in summary["points"] if len(p["text"]) > POINT_MAX]
+    if long_:
+        print(f"핵심이 너무 깁니다({POINT_MAX}자 넘음) — 더 짧게 고쳐 주세요(저장하지 않았습니다): " + " / ".join(long_))
         return 2
     pb = parse_canon(passage)[0] if passage else None
     clean_title, series = guess_series(s, pb)
@@ -491,52 +509,43 @@ def cmd_save(path, no_tg=False, force=False, head=None):
         print(f"{md(date)} 자료는 목사님이 홈페이지에서 고치신 것이라 덮어쓰지 않았습니다(목사님께 여쭌 뒤 --force).")
         return 3
     saved = st.patch("sermon_notes", f"id=eq.{old['id']}", row)[0] if old else st.post("sermon_notes", row)
-    log(f"저장(확인 전) {date} {row['title']} — 구절 {len(verses)} · 나온 구절 {len(mentions)} · 요점 {len(summary['points'])}")
+    log(f"저장(확인 전) {date} {row['title']} — 인용 구절 {len(verses)} · 핵심 {len(summary['points'])}")
     if not no_tg:
         ok = telegram(preview_text(saved, head) if head else preview_text(saved), keyboard(saved["id"], date))
         log("텔레그램 미리보기 " + ("보냄" if ok else "실패"))
         stt = load_state()
         stt[str(date)] = {"hash": row["source_hash"], "sent": now_kst().isoformat(timespec="minutes")}
         save_state(stt)
-    print(f"저장했습니다(확인 전): {md(date)} {row['title']} · 구절 {len(verses)} · 나온 구절 {len(mentions)}")
+    print(f"저장했습니다(확인 전): {md(date)} {row['title']} · 인용 구절 {len(verses)} · 핵심 {len(summary['points'])}")
     return 0
 
 
 def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주세요"):
     d = n["note_date"]
     lines = [head, f"{md(d)} · {n.get('series') or SERVICE}", f"「{n.get('title')}」 {n.get('scripture') or ''}".strip(), ""]
+    lines.append("[핵심 3가지]")
+    for i, p in enumerate((n.get("summary") or {}).get("points") or [], 1):
+        lines.append(f"{i}. {(p.get('label') + ' — ') if p.get('label') else ''}{p.get('text')}")
     vs = n.get("verses") or []
-    lines.append(f"[인용 구절 {len(vs)}]")
-    for i, v in enumerate(vs, 1):
-        first = (v.get("lines") or [{}])[0].get("t", "")
-        lines.append(f"{i}. {v['ref']} — {first[:38]}{'…' if len(first) > 38 else ''}")
-    ms = n.get("mentions") or []
-    if ms:
-        lines.append("[말씀 중에 나온 구절] " + " · ".join(m["ref"] for m in ms))
-    sm = n.get("summary") or {}
-    lines += ["", "[설교 요약]"]
-    if sm.get("question"):
-        lines.append("오늘의 질문: " + sm["question"])
-    for p in sm.get("points") or []:
-        lines.append(f"• {p.get('label') or ''} {('— ' + p['title'] + ' — ') if p.get('title') else '— '}{p['text']}")
-    if sm.get("one_line"):
-        lines.append("한 문장: " + sm["one_line"])
-    if sm.get("prayers"):
-        lines += ["", "[함께 드리는 기도]"] + [f"{p['label']} — {p['text']}" for p in sm["prayers"]]
-    if sm.get("next"):
-        lines += ["", "다음 주: " + sm["next"]]
-    later = now_kst() < opens_at(d)
-    lines += ["", ("[올리기]를 누르시면 " + md(d) + " 저녁 8시에 로그인한 성도님께 열립니다." if later
-                   else "[올리기]를 누르시면 로그인한 성도님께 바로 열립니다(저녁 8시가 지났습니다)."),
-              "고칠 곳은 홈페이지 '예배와 말씀 ▸ 수요기도회 말씀'에서 고치시거나 클로드에게 말씀해 주세요."]
+    lines += ["", f"[인용 구절 {len(vs)}] " + (" · ".join(v["ref"] for v in vs) or "없음")]
+    now = now_kst()
+    if now < opens_at(d):
+        tail = "[올리기]를 누르시면 " + md(d) + " 저녁 8시에 로그인한 성도님께 열리고, 밤 10시 30분에 닫힙니다."
+    elif now < closes_at(d):
+        tail = "[올리기]를 누르시면 로그인한 성도님께 바로 보이고, 밤 10시 30분에 닫힙니다."
+    else:
+        tail = "예배 시간(밤 10시 30분)이 지나 올려도 성도님께는 보이지 않습니다."
+    lines += ["", tail, "고칠 곳은 홈페이지 '예배와 말씀 ▸ 수요기도회 말씀'(목사님 확인용)에서 고치시거나 클로드에게 말씀해 주세요."]
     text = "\n".join(lines)
     return text if len(text) <= 3900 else text[:3880] + "\n…(길어서 줄였습니다)"
 
 
 def keyboard(note_id, date):
-    later = now_kst() < opens_at(date)
+    now = now_kst()
+    label = ("✅ 올리기 (저녁 8시에 열림)" if now < opens_at(date)
+             else "✅ 올리기 (바로 열림 · 10시 30분 닫힘)" if now < closes_at(date) else "✅ 올리기 (예배가 끝나 보이지 않음)")
     return {"inline_keyboard": [
-        [{"text": "✅ 올리기 (저녁 8시에 열림)" if later else "✅ 올리기 (바로 열림)", "callback_data": f"wed:ok:{note_id}"}],
+        [{"text": label, "callback_data": f"wed:ok:{note_id}"}],
         [{"text": "🔍 홈페이지에서 보기·고치기", "url": SITE_URL}],
     ]}
 
@@ -571,6 +580,9 @@ def cmd_remind(date):
         return 0
     if now_kst() < dt.datetime.combine(date, dt.time(*REMIND_AFTER), KST):
         print("아직 알릴 시각이 아닙니다(저녁 7시 반 뒤).")
+        return 0
+    if now_kst() >= closes_at(date):
+        print("예배 시간이 지나 알리지 않습니다.")
         return 0
     stt = load_state()
     key = f"remind:{date}:{n.get('source_hash')}"

@@ -17,7 +17,7 @@
 window.ChurchUpload = (function () {
   var SB_BUCKET = "uploads"; // Supabase Storage 공개 버킷 (supabase/uploads-bucket.sql 참고)
   var PRIVATE_BUCKET = "private_files"; // 비공개 버킷 (supabase/private_files_bucket.sql 참고)
-  var PRIVATE_TOP = { archive: 1, affairs: 1, gyojeok: 1, finance: 1, sermons: 1, resources: 1 };
+  var PRIVATE_TOP = { archive: 1, affairs: 1, gyojeok: 1, finance: 1, sermons: 1, resources: 1, conti: 1 };   // conti: 수요기도회 악보(js/wed-notes.js, 2026-10-05)
   var PRIV_MARK = "/storage/v1/object/authenticated/" + PRIVATE_BUCKET + "/";
   // 이 폴더(경로)는 비공개 버킷에 두는가. sermons/img 는 설교 글 속 그림(QT 화면에 그대로 나옴)이라 공개.
   function isPrivateFolder(folder) {

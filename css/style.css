@@ -4057,3 +4057,22 @@ html.big-text.ts-xl { font-size: 137.5%; }
   .wed-btns { grid-template-columns: minmax(0, 1fr); }   /* 휴대폰: 큰 단추를 위아래로 */
   .wr-title { font-size: 1.35rem; }
 }
+
+/* 수요기도회 말씀 — 짧게(핵심 3가지) + 찬양 악보 (2026-10-05 밤 목사님 고침, js/wed-notes.js) */
+.wed-points, .wr-points { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; }
+.wed-points li, .wr-points li { display: flex; align-items: baseline; gap: 10px; font-size: 1.06rem; line-height: 1.7; color: var(--ink); word-break: keep-all; }
+.wed-points li .wr-pill, .wr-points li .wr-pill { flex: none; margin: 0; }
+.wr-points { margin-top: 4px; }
+.wr-points li { font-size: 1.1rem; }
+.wed-btns-1 { grid-template-columns: minmax(0, 1fr); }
+.wed-close-note { margin-top: 12px; font-size: .86rem; color: var(--ink-soft); text-align: right; }
+.wr-conti { display: grid; gap: 14px; }
+.wr-conti-img { display: block; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; min-height: 80px; }
+.wr-conti-img img { display: block; width: 100%; height: auto; }
+.wr-conti-pdf { display: inline-block; }
+.wr-conti-err { padding: 12px 14px; border: 1px dashed var(--line); border-radius: 10px; color: var(--ink-soft); font-size: .92rem; }
+.wca-files { list-style: none; margin: 10px 0 0; padding: 0; border-top: 1px solid #EADFB0; }
+.wca-files li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #EADFB0; font-size: .92rem; color: var(--ink); word-break: break-all; }
+.wca-x { flex: none; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #F3E7B8; color: #7A5F00; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+.wca-up { cursor: pointer; }
+.wca-msg { margin-top: 6px; min-height: 1.2em; font-size: .88rem; color: #7A5F00; }
