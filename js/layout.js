@@ -7,6 +7,7 @@
   const NAV = [
     { href: "word.html", label: "예배와 말씀", sub: [
       { href: "word.html#sermon", label: "이번 주 말씀" },
+      { href: "word.html#wed", label: "수요기도회 말씀" },
       { href: "word.html#qt", label: "매일 말씀 묵상" },
       { href: "word.html#believe", label: "우리가 믿는 것" },
       { href: "word.html#song", label: "이달의 찬양" },

@@ -1,0 +1,623 @@
+# -*- coding: utf-8 -*-
+"""
+수요기도회 말씀 자료(인용 구절·설교 요약) 만들기 — 2026-10-05 목사님 요청
+  "수요예배 때 성도들이 참고할 수 있도록 인용 구절과 설교 요약을 홈페이지에"
+  목사님 결정: 예배와 말씀 + 수요일 첫 화면 / 저녁 8시에 한꺼번에 / 로그인한 회원만 / 목사님 확인 뒤 올림
+  화면: js/wed-notes.js · 표: sermon_notes (supabase/sermon_notes_20261005.sql)
+
+흐름 — 수요일 예약 작업(클로드 '수요 말씀 자료')이 차례로 부른다
+  1. check    이번 주 수요 원고가 설교관리(sermons)에 올라왔는지, 자료를 새로 만들 차례인지 (첫 줄 STATUS=…)
+  2. prepare  원고 + 구절 후보를 JSON 으로. 인용 블록·장절 표기를 bible.js(bible-verse 스킬)로 찾는다.
+              → 클로드가 원고를 읽고 note.json(장절 목록·요약·기도)을 쓴다
+  3. save     note.json → 구절 본문은 bible-verse 자료(bible.js)에서만 가져와 '확인 전(draft)'으로 저장
+              → 목사님 텔레그램에 미리보기 + [올리기] 단추(비서봇 sermon_note_actions.py 가 받는다)
+  4. remind   저녁 7시 반이 넘도록 확인 전이면 한 번 더 알림(같은 자료로는 한 번만)
+  올린 자료는 그날 저녁 8시(트리거가 정함)부터 로그인한 성도님께 보인다. 목사님(관리자)은 홈페이지에서 미리 보고 고칠 수 있다.
+
+  python tools/wed_notes.py check   [--date 2026-10-07]
+  python tools/wed_notes.py prepare [--date …] [--out 파일]
+  python tools/wed_notes.py save    note.json [--no-telegram] [--force]
+  python tools/wed_notes.py remind  [--date …]
+  python tools/wed_notes.py show    [--date …]
+날짜를 안 주면 오늘이 수요일이면 오늘, 아니면 지난 수요일.
+열쇠: %APPDATA%\\nojin\\supabase_service.key (화면·기록·텔레그램에 내보내지 않음). 기록: %APPDATA%\\nojin\\wed_notes\\log.txt
+"""
+import argparse
+import datetime as dt
+import difflib
+import hashlib
+import html
+import json
+import os
+import re
+import subprocess
+import sys
+import urllib.parse
+from pathlib import Path
+
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+APPDATA = Path(os.environ.get("APPDATA", str(Path.home())))
+DATA_DIR = APPDATA / "nojin" / "wed_notes"
+KEY_FILE = APPDATA / "nojin" / "supabase_service.key"
+LOG_PATH = DATA_DIR / "log.txt"
+STATE_PATH = DATA_DIR / "state.json"
+BIBLE_JS = next((p for p in (Path.home() / ".claude/skills/bible-verse/scripts/bible.js",
+                             Path(r"C:\Users\PC\.claude\skills\bible-verse\scripts\bible.js")) if p.exists()),
+                Path(r"C:\Users\PC\.claude\skills\bible-verse\scripts\bible.js"))
+TELEGRAM_ENV_PATH = Path(r"D:\클코저장소\텔레그램봇\.env")
+SUPABASE_URL = "https://vwuzmklacdwiqyqjrxyt.supabase.co"   # js/config.js 와 같은 값(공개)
+SITE_URL = "https://churchnojin-max.github.io/word.html#wed"
+SERVICE = "수요기도회"
+KST = dt.timezone(dt.timedelta(hours=9))
+OPEN_HOUR = 20          # 저녁 8시에 열림(supabase 트리거와 같은 값)
+REMIND_AFTER = (19, 30)  # 이 시각이 넘도록 확인 전이면 한 번 더 알림
+
+
+def log(msg):
+    line = f"[{dt.datetime.now(KST):%Y-%m-%d %H:%M:%S}] {msg}"
+    print(line, flush=True)
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        with LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+
+
+def load_state():
+    try:
+        return json.loads(STATE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def save_state(s):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    STATE_PATH.write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+# ── 날짜 ─────────────────────────────────────────────────────
+def now_kst():
+    return dt.datetime.now(KST)
+
+
+def default_date():
+    t = now_kst().date()
+    return t - dt.timedelta(days=(t.weekday() - 2) % 7)     # 월=0 … 수=2
+
+
+def md(d):
+    d = dt.date.fromisoformat(str(d))
+    return f"{d.month}월 {d.day}일({'월화수목금토일'[d.weekday()]})"
+
+
+def opens_at(d):
+    return dt.datetime.combine(dt.date.fromisoformat(str(d)), dt.time(OPEN_HOUR), KST)
+
+
+# ── 창고(Supabase, service_role) ──────────────────────────────
+class Store:
+    def __init__(self):
+        import requests
+        self.rq = requests
+        key = KEY_FILE.read_text(encoding="utf-8").strip()
+        self.h = {"apikey": key, "Authorization": "Bearer " + key}
+
+    def get(self, q):
+        r = self.rq.get(f"{SUPABASE_URL}/rest/v1/{q}", headers=self.h, timeout=30)
+        if r.status_code >= 300:
+            raise RuntimeError(f"조회 실패 {r.status_code}: {r.text[:200]}")
+        return r.json()
+
+    def post(self, table, data):
+        r = self.rq.post(f"{SUPABASE_URL}/rest/v1/{table}", headers={**self.h, "Content-Type": "application/json", "Prefer": "return=representation"}, json=data, timeout=30)
+        if r.status_code >= 300:
+            raise RuntimeError(f"저장 실패 {r.status_code}: {r.text[:200]}")
+        return r.json()[0]
+
+    def patch(self, table, q, data):
+        r = self.rq.patch(f"{SUPABASE_URL}/rest/v1/{table}?{q}", headers={**self.h, "Content-Type": "application/json", "Prefer": "return=representation"}, json=data, timeout=30)
+        if r.status_code >= 300:
+            raise RuntimeError(f"고치기 실패 {r.status_code}: {r.text[:200]}")
+        return r.json()
+
+
+def q(v):
+    return urllib.parse.quote(str(v), safe="")
+
+
+def get_sermon(st, date):
+    rows = st.get(f"sermons?select=id,sermon_date,title,scripture,preacher,series,content,bible_text"
+                  f"&service=eq.{q(SERVICE)}&sermon_date=eq.{date}&order=created_at.desc&limit=1")
+    return rows[0] if rows else None
+
+
+def get_note(st, date):
+    rows = st.get(f"sermon_notes?select=*&service=eq.{q(SERVICE)}&note_date=eq.{date}")
+    return rows[0] if rows else None
+
+
+def source_hash(s):
+    raw = "\n".join([s.get("title") or "", s.get("scripture") or "", s.get("content") or ""])
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+# ── 성경(bible-verse 스킬의 bible.js — 구절은 기억으로 쓰지 않는다) ──
+BOOKS = [
+    ("창세기", "창"), ("출애굽기", "출"), ("레위기", "레"), ("민수기", "민"), ("신명기", "신"), ("여호수아", "수"),
+    ("사사기", "삿"), ("룻기", "룻"), ("사무엘상", "삼상"), ("사무엘하", "삼하"), ("열왕기상", "왕상"), ("열왕기하", "왕하"),
+    ("역대상", "대상"), ("역대하", "대하"), ("에스라", "스"), ("느헤미야", "느"), ("에스더", "에"), ("욥기", "욥"),
+    ("시편", "시"), ("잠언", "잠"), ("전도서", "전"), ("아가", "아"), ("이사야", "사"), ("예레미야", "렘"),
+    ("예레미야애가", "애"), ("에스겔", "겔"), ("다니엘", "단"), ("호세아", "호"), ("요엘", "욜"), ("아모스", "암"),
+    ("오바댜", "옵"), ("요나", "욘"), ("미가", "미"), ("나훔", "나"), ("하박국", "합"), ("스바냐", "습"),
+    ("학개", "학"), ("스가랴", "슥"), ("말라기", "말"), ("마태복음", "마"), ("마가복음", "막"), ("누가복음", "눅"),
+    ("요한복음", "요"), ("사도행전", "행"), ("로마서", "롬"), ("고린도전서", "고전"), ("고린도후서", "고후"),
+    ("갈라디아서", "갈"), ("에베소서", "엡"), ("빌립보서", "빌"), ("골로새서", "골"), ("데살로니가전서", "살전"),
+    ("데살로니가후서", "살후"), ("디모데전서", "딤전"), ("디모데후서", "딤후"), ("디도서", "딛"), ("빌레몬서", "몬"),
+    ("히브리서", "히"), ("야고보서", "약"), ("베드로전서", "벧전"), ("베드로후서", "벧후"), ("요한일서", "요일"),
+    ("요한이서", "요이"), ("요한삼서", "요삼"), ("유다서", "유"), ("요한계시록", "계"),
+]
+ABBR2FULL = {a: f for f, a in BOOKS}
+_names = sorted([f for f, _ in BOOKS] + [a for _, a in BOOKS], key=len, reverse=True)
+BOOK_RE = "|".join(_names)
+# 에베소서 3:6 / 엡 3:7~9 / 요한계시록 21장 3절 / 창세기 50장 20절 / 빌립보서 1:12-14
+REF_RE = re.compile(r"(?<![가-힣])(" + BOOK_RE + r")\s?(\d{1,3})\s*(?:(?:장|편)\s*(\d{1,3})\s*절?|[:：]\s*(\d{1,3}))"
+                    r"(?:\s*[-~–]\s*(?:(\d{1,3})\s*[:：]\s*)?(\d{1,3})\s*절?)?")
+CHAP_RE = re.compile(r"(?<![가-힣])(" + BOOK_RE + r")\s?(\d{1,3})\s*(?:장|편)(?!\s*\d)")
+BARE_RE = re.compile(r"(?<![가-힣\d:])(\d{1,3})\s*장\s*(\d{1,3})\s*절")    # 책 이름 없이 '1장 20절' → 본문 책
+
+_lookup_cache = {}
+
+
+def _node(args):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = DATA_DIR / "_q.txt"
+    tmp.write_text(args[-1], encoding="utf-8")
+    r = subprocess.run(["node", str(BIBLE_JS)] + args[:-1] + ["--파일", str(tmp)], capture_output=True, timeout=90)
+    return r.stdout.decode("utf-8", "replace")
+
+
+def lookup(ref):
+    """장절 → (정식 장절, [{"v":절,"t":본문}] 또는 장이 넘어가면 {"c","v","t"}) / 못 읽으면 (None, None)"""
+    ref = re.sub(r"[–—－]", "~", str(ref or "")).strip()
+    ref = re.sub(r"(\d+)\s*장\s*(\d+)\s*절\s*(?:~|에서)\s*(\d+)\s*장\s*(\d+)\s*절", r"\1:\2~\3:\4", ref)
+    ref = re.sub(r"(\d+)\s*장\s*(\d+)\s*절\s*(?:~|에서)\s*(\d+)\s*절", r"\1:\2~\3", ref)
+    ref = re.sub(r"(\d+)\s*(?:장|편)\s*(\d+)\s*절?", r"\1:\2", ref)
+    ref = re.sub(r"\s+", " ", ref).strip(" []()")
+    if not ref:
+        return None, None
+    if ref in _lookup_cache:
+        return _lookup_cache[ref]
+    out = _node(["찾기", ref])
+    m = re.search(r"^◎\s*(.+?)\s*$", out, re.M)
+    if not m or "(없음)" in out or "읽지 못했습니다" in out:
+        _lookup_cache[ref] = (None, None)
+        return None, None
+    lines = []
+    for l in out.split("\n"):
+        mm = re.match(r"^\s+(?:(\d+):)?(\d+)\s+(.+?)\s*$", l)
+        if mm and not l.startswith("◎"):
+            item = {"v": int(mm.group(2)), "t": mm.group(3)}
+            if mm.group(1):
+                item["c"] = int(mm.group(1))
+            lines.append(item)
+    _lookup_cache[ref] = (m.group(1).strip(), lines) if lines else (None, None)
+    return _lookup_cache[ref]
+
+
+def search_words(words, maxn=8):
+    """낱말로 찾기 → [(약칭, 장, 절, 본문)]"""
+    out = _node(["낱말", "--최대", str(maxn), words])
+    return [(a, int(c), int(v), t) for a, c, v, t in re.findall(r"^\s+(\S+)\s(\d+):(\d+)\s(.+?)\s*$", out, re.M)]
+
+
+def _norm(t):
+    return re.sub(r"[^가-힣0-9A-Za-z]", "", t or "")
+
+
+def coverage(verse, quote):
+    """절 본문이 인용 글 안에 얼마나 들어 있나(0~1)"""
+    a, b = _norm(verse), _norm(quote)
+    if not a or not b:
+        return 0.0
+    sm = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    return sum(x.size for x in sm.get_matching_blocks()) / len(a)
+
+
+def parse_canon(canon):
+    """'에베소서 3:7~9' → (책, 장1, 절1, 장2, 절2)"""
+    m = re.match(r"^(\S+)\s(\d+):(\d+)(?:~(?:(\d+):)?(\d+))?$", canon or "")
+    if not m:
+        return None
+    b, c1, v1 = m.group(1), int(m.group(2)), int(m.group(3))
+    c2 = int(m.group(4)) if m.group(4) else c1
+    v2 = int(m.group(5)) if m.group(5) else v1
+    return b, c1, v1, c2, v2
+
+
+def inside(canon, passage):
+    a, p = parse_canon(canon), parse_canon(passage)
+    if not a or not p or a[0] != p[0]:
+        return False
+    return (p[1], p[2]) <= (a[1], a[2]) and (a[3], a[4]) <= (p[3], p[4])
+
+
+def ref_text(m):
+    """REF_RE 결과를 bible.js 가 읽는 글로"""
+    book, c, v1, v1b, c2, v2 = m.group(1), m.group(2), m.group(3), m.group(4), m.group(5), m.group(6)
+    v = v1 or v1b
+    s = f"{book} {c}:{v}"
+    if v2:
+        s += f"~{c2}:{v2}" if c2 else f"~{v2}"
+    return s
+
+
+def find_quote(quote, passage_book=None):
+    """인용 블록 글 → 정식 장절(가장 잘 맞는 절) / 못 찾으면 None. (장절, 방법, 맞음 정도)"""
+    m = REF_RE.search(quote)
+    if m:
+        canon, _ = lookup(ref_text(m))
+        if canon:
+            return canon, "장절 표기", 1.0
+    num = re.match(r"^\s*(\d{1,3})\s*[.)]?\s+", quote)
+    t = re.sub(r"^\s*\d{1,3}\s*[.)]?\s+", "", quote)
+    t = re.sub(r"\([^)]*\)\s*$", "", t).strip()
+    words = [w for w in re.sub(r"[\"“”‘’'.,?!·…]", " ", t).split() if w]
+    if len(words) < 2:
+        return None
+    best = None
+    for ws in (words[:5], words[1:6], words[-5:], words[:3]):
+        qtxt = " ".join(ws)
+        if len(qtxt) < 6:
+            continue
+        for a, c, v, vt in search_words(qtxt):
+            cov = coverage(vt, t)
+            if num and int(num.group(1)) == v:
+                cov += 0.05
+            if passage_book and ABBR2FULL.get(a) == passage_book:
+                cov += 0.02
+            if not best or cov > best[0]:
+                best = (cov, a, c, v)
+        if best and best[0] >= 0.9:
+            break
+    if best and best[0] >= 0.7:
+        canon, _ = lookup(f"{best[1]} {best[2]}:{best[3]}")
+        if canon:
+            return canon, "글로 찾음", round(min(best[0], 1.0), 2)
+    return None
+
+
+# ── 원고(HTML) → 순서대로 (글/인용) ───────────────────────────
+def _lines(h):
+    h = re.sub(r"<(?:/p|br\s*/?|/h\d|/li|/div)>", "\n", h, flags=re.I)
+    t = html.unescape(re.sub(r"<[^>]+>", "", h))
+    return [re.sub(r"\s+", " ", l).strip() for l in t.split("\n") if l.strip()]
+
+
+def segments(content):
+    segs, pos = [], 0
+    for m in re.finditer(r"<blockquote[^>]*>(.*?)</blockquote>", content or "", re.S | re.I):
+        segs += [("글", l) for l in _lines(content[pos:m.start()])]
+        qt = " ".join(_lines(m.group(1)))
+        if qt:
+            segs.append(("인용", qt))
+        pos = m.end()
+    segs += [("글", l) for l in _lines((content or "")[pos:])]
+    return segs
+
+
+def guess_series(s, passage_book):
+    title = (s.get("title") or "").strip()
+    m = re.search(r"\s*\((\d+)\s*강\)\s*$", title)
+    n = m.group(1) if m else None
+    clean = title[:m.start()].strip() if m else title
+    series = (s.get("series") or "").strip() or (f"{passage_book} 강해" if passage_book else "")
+    if n and series and not re.search(r"\d+\s*강", series):
+        series = f"{series} {n}강"
+    return clean, series
+
+
+# ── 명령 ─────────────────────────────────────────────────────
+def cmd_check(date):
+    st = Store()
+    s = get_sermon(st, date)
+    if not s or not (s.get("content") or "").strip():
+        print(f"STATUS=NO_SERMON\n{md(date)} 수요 원고가 아직 설교관리에 없습니다(바탕화면 '수요 설교' 폴더에 저장하시면 10분 안에 올라옵니다).")
+        return "NO_SERMON"
+    n = get_note(st, date)
+    h = source_hash(s)
+    if n and n.get("status") == "approved":
+        changed = (n.get("source_hash") or "") != h
+        print(f"STATUS=APPROVED\n{md(date)} 자료는 이미 올렸습니다." + (" (그 뒤에 원고가 바뀌었습니다 — 다시 만들려면 목사님께 여쭌 뒤 save --force)" if changed else ""))
+        return "APPROVED"
+    if n and n.get("made_by") == "pastor":
+        print(f"STATUS=WAITING\n{md(date)} 자료는 목사님이 홈페이지에서 고치신 것이라 새로 만들지 않습니다(목사님 확인을 기다립니다).")
+        return "WAITING"
+    if n and n.get("summary") and (n.get("source_hash") or "") == h:
+        print(f"STATUS=WAITING\n{md(date)} 자료를 만들어 두었고 목사님 확인을 기다립니다(원고 그대로).")
+        return "WAITING"
+    why = "자료가 아직 없습니다" if not n else ("원고가 바뀌었습니다" if (n.get("source_hash") or "") != h else "요약이 비어 있습니다")
+    print(f"STATUS=NEEDS\n{md(date)} 새로 만들 차례입니다 — {why}. 제목: {s.get('title')} / {s.get('scripture')} / 원고 {len(s.get('content') or '')}자")
+    return "NEEDS"
+
+
+def cmd_prepare(date, out=None):
+    st = Store()
+    s = get_sermon(st, date)
+    if not s:
+        print(f"{md(date)} 수요 원고가 없습니다.")
+        return 1
+    passage, passage_lines = lookup(s.get("scripture"))
+    pb = parse_canon(passage)[0] if passage else None
+    segs = segments(s.get("content"))
+    cands, seen = [], set()
+    for kind, t in segs:
+        if kind != "인용":
+            continue
+        hit = find_quote(t, pb)
+        item = {"quote": t[:120], "ref": hit[0] if hit else None, "how": hit[1] if hit else "못 찾음",
+                "match": hit[2] if hit else 0, "in_passage": bool(hit and passage and inside(hit[0], passage))}
+        if hit and hit[0] in seen:
+            continue
+        if hit:
+            seen.add(hit[0])
+        cands.append(item)
+    mentions, chapters = [], []
+    for kind, t in segs:
+        if kind != "글":
+            continue
+        spans = []
+        for m in REF_RE.finditer(t):
+            spans.append(m.span())
+            canon, _ = lookup(ref_text(m))
+            if canon and canon not in seen and not (passage and inside(canon, passage)):
+                seen.add(canon)
+                mentions.append({"ref": canon, "context": t[max(0, m.start() - 25): m.end() + 25]})
+        if pb:
+            for m in BARE_RE.finditer(t):
+                if any(a <= m.start() < b for a, b in spans):
+                    continue
+                canon, _ = lookup(f"{pb} {m.group(1)}:{m.group(2)}")
+                if canon and canon not in seen and not (passage and inside(canon, passage)):
+                    seen.add(canon)
+                    mentions.append({"ref": canon, "context": t[max(0, m.start() - 25): m.end() + 25], "how": "책 이름 없이(본문 책으로 봄)"})
+        for m in CHAP_RE.finditer(t):
+            ctx = t[m.start(): m.end() + 70]
+            phrase = re.search(r"[\"“]([^\"”]{4,40})[\"”]", ctx)
+            found = None
+            if phrase:
+                full = ABBR2FULL.get(m.group(1), m.group(1))
+                for a, c, v, vt in search_words(phrase.group(1)):
+                    if ABBR2FULL.get(a, a) == full and c == int(m.group(2)):
+                        found, _ = lookup(f"{a} {c}:{v}")
+                        break
+            if found and found not in seen:
+                seen.add(found)
+                mentions.append({"ref": found, "context": ctx[:90], "how": "장 + 따옴표 글로 찾음"})
+            elif not found:
+                chapters.append({"text": m.group(0), "context": ctx[:90]})
+    clean_title, series = guess_series(s, pb)
+    plain = "\n".join(("【인용】" + t + "【끝】") if k == "인용" else t for k, t in segs)
+    data = {
+        "date": str(date), "sermon_id": s["id"], "title": clean_title, "title_raw": s.get("title"),
+        "series_guess": series, "scripture": passage or s.get("scripture"), "preacher": s.get("preacher"),
+        "source_hash": source_hash(s),
+        "passage_lines": passage_lines or [],
+        "candidates": cands, "mentions": mentions, "chapter_only_mentions": chapters,
+        "manuscript": plain,
+    }
+    out = Path(out) if out else DATA_DIR / f"{date}_prepare.json"
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"{md(date)} {s.get('title')} / {passage} — 인용 블록 {sum(1 for k, _ in segs if k == '인용')}개")
+    for c in cands:
+        mark = "본문" if c["in_passage"] else ("??" if not c["ref"] else "  ")
+        print(f"  [{mark}] {c['ref'] or '(못 찾음)'}  ({c['how']} {c['match']})  {c['quote'][:40]}")
+    print("  말씀 중에 나온 구절: " + (" · ".join(m["ref"] for m in mentions) or "없음"))
+    if chapters:
+        print("  장만 말한 곳: " + " · ".join(c["text"] for c in chapters))
+    print(f"→ {out}")
+    return 0
+
+
+def _clean_text(v, limit):
+    v = re.sub(r"[ \t]+", " ", str(v or "")).strip()
+    return v[:limit]
+
+
+def _clean_summary(sm):
+    sm = sm or {}
+    pts = [{"label": _clean_text(p.get("label"), 20), "title": _clean_text(p.get("title"), 60), "text": _clean_text(p.get("text"), 600)}
+           for p in (sm.get("points") or []) if _clean_text(p.get("text"), 600)]
+    prs = [{"label": _clean_text(p.get("label"), 12), "text": _clean_text(p.get("text"), 300)}
+           for p in (sm.get("prayers") or []) if _clean_text(p.get("text"), 300)]
+    return {"question": _clean_text(sm.get("question"), 300), "points": pts[:6],
+            "one_line": _clean_text(sm.get("one_line"), 200), "prayers": prs[:4], "next": _clean_text(sm.get("next"), 300)}
+
+
+def resolve(refs, passage, skip):
+    out, bad = [], []
+    for r in refs or []:
+        canon, lines = lookup(r)
+        if not canon:
+            bad.append(r)
+            continue
+        if canon in skip or (passage and inside(canon, passage)):
+            continue
+        skip.add(canon)
+        out.append({"ref": canon, "lines": lines})
+    return out, bad
+
+
+def cmd_save(path, no_tg=False, force=False):
+    note = json.loads(Path(path).read_text(encoding="utf-8"))
+    date = dt.date.fromisoformat(note["date"])
+    st = Store()
+    s = get_sermon(st, date)
+    if not s:
+        print(f"{md(date)} 수요 원고가 없어 저장하지 않았습니다.")
+        return 1
+    passage, passage_lines = lookup(s.get("scripture"))
+    skip = set()
+    verses, bad1 = resolve(note.get("verses"), passage, skip)
+    mentions, bad2 = resolve(note.get("mentions"), passage, skip)
+    if bad1 or bad2:
+        print("이 장절을 성경 자료에서 찾지 못해 저장하지 않았습니다: " + ", ".join(bad1 + bad2))
+        return 2
+    summary = _clean_summary(note.get("summary"))
+    if not summary["points"]:
+        print("요약(points)이 비어 있어 저장하지 않았습니다.")
+        return 2
+    pb = parse_canon(passage)[0] if passage else None
+    clean_title, series = guess_series(s, pb)
+    row = {
+        "sermon_id": s["id"], "service": SERVICE, "note_date": str(date),
+        "title": _clean_text(note.get("title") or clean_title, 120),
+        "scripture": passage or s.get("scripture"), "preacher": s.get("preacher"),
+        "series": _clean_text(note.get("series") or series, 60),
+        "passage": passage_lines or [], "verses": verses, "mentions": mentions, "summary": summary,
+        "status": "draft", "source_hash": source_hash(s), "made_by": note.get("made_by") or "claude",
+    }
+    old = get_note(st, date)
+    if old and old.get("status") == "approved" and not force:
+        print(f"{md(date)} 자료는 이미 올렸습니다. 덮어쓰지 않았습니다(목사님께 여쭌 뒤 --force — 다시 '확인 전'이 됩니다).")
+        return 3
+    if old and old.get("made_by") == "pastor" and not force:
+        print(f"{md(date)} 자료는 목사님이 홈페이지에서 고치신 것이라 덮어쓰지 않았습니다(목사님께 여쭌 뒤 --force).")
+        return 3
+    saved = st.patch("sermon_notes", f"id=eq.{old['id']}", row)[0] if old else st.post("sermon_notes", row)
+    log(f"저장(확인 전) {date} {row['title']} — 구절 {len(verses)} · 나온 구절 {len(mentions)} · 요점 {len(summary['points'])}")
+    if not no_tg:
+        ok = telegram(preview_text(saved), keyboard(saved["id"], date))
+        log("텔레그램 미리보기 " + ("보냄" if ok else "실패"))
+        stt = load_state()
+        stt[str(date)] = {"hash": row["source_hash"], "sent": now_kst().isoformat(timespec="minutes")}
+        save_state(stt)
+    print(f"저장했습니다(확인 전): {md(date)} {row['title']} · 구절 {len(verses)} · 나온 구절 {len(mentions)}")
+    return 0
+
+
+def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주세요"):
+    d = n["note_date"]
+    lines = [head, f"{md(d)} · {n.get('series') or SERVICE}", f"「{n.get('title')}」 {n.get('scripture') or ''}".strip(), ""]
+    vs = n.get("verses") or []
+    lines.append(f"[인용 구절 {len(vs)}]")
+    for i, v in enumerate(vs, 1):
+        first = (v.get("lines") or [{}])[0].get("t", "")
+        lines.append(f"{i}. {v['ref']} — {first[:38]}{'…' if len(first) > 38 else ''}")
+    ms = n.get("mentions") or []
+    if ms:
+        lines.append("[말씀 중에 나온 구절] " + " · ".join(m["ref"] for m in ms))
+    sm = n.get("summary") or {}
+    lines += ["", "[설교 요약]"]
+    if sm.get("question"):
+        lines.append("오늘의 질문: " + sm["question"])
+    for p in sm.get("points") or []:
+        lines.append(f"• {p.get('label') or ''} {('— ' + p['title'] + ' — ') if p.get('title') else '— '}{p['text']}")
+    if sm.get("one_line"):
+        lines.append("한 문장: " + sm["one_line"])
+    if sm.get("prayers"):
+        lines += ["", "[함께 드리는 기도]"] + [f"{p['label']} — {p['text']}" for p in sm["prayers"]]
+    if sm.get("next"):
+        lines += ["", "다음 주: " + sm["next"]]
+    later = now_kst() < opens_at(d)
+    lines += ["", ("[올리기]를 누르시면 " + md(d) + " 저녁 8시에 로그인한 성도님께 열립니다." if later
+                   else "[올리기]를 누르시면 로그인한 성도님께 바로 열립니다(저녁 8시가 지났습니다)."),
+              "고칠 곳은 홈페이지 '예배와 말씀 ▸ 수요기도회 말씀'에서 고치시거나 클로드에게 말씀해 주세요."]
+    text = "\n".join(lines)
+    return text if len(text) <= 3900 else text[:3880] + "\n…(길어서 줄였습니다)"
+
+
+def keyboard(note_id, date):
+    later = now_kst() < opens_at(date)
+    return {"inline_keyboard": [
+        [{"text": "✅ 올리기 (저녁 8시에 열림)" if later else "✅ 올리기 (바로 열림)", "callback_data": f"wed:ok:{note_id}"}],
+        [{"text": "🔍 홈페이지에서 보기·고치기", "url": SITE_URL}],
+    ]}
+
+
+def telegram(text, markup=None):
+    try:
+        import requests
+        env = {}
+        for line in TELEGRAM_ENV_PATH.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                env[k.strip()] = v.strip()
+        token = env["TELEGRAM_BOT_TOKEN"]
+        ok = False
+        for uid in [x.strip() for x in env.get("ALLOWED_USER_IDS", "").split(",") if x.strip()]:
+            body = {"chat_id": int(uid), "text": text, "disable_web_page_preview": True}
+            if markup:
+                body["reply_markup"] = markup
+            r = requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json=body, timeout=15)
+            ok = ok or r.status_code == 200
+        return ok
+    except Exception as e:
+        log(f"[텔레그램 실패] {type(e).__name__}")     # 주소에 토큰이 있어 오류 글은 남기지 않는다
+        return False
+
+
+def cmd_remind(date):
+    st = Store()
+    n = get_note(st, date)
+    if not n or n.get("status") == "approved":
+        print("알릴 것 없음(자료가 없거나 이미 올렸습니다).")
+        return 0
+    if now_kst() < dt.datetime.combine(date, dt.time(*REMIND_AFTER), KST):
+        print("아직 알릴 시각이 아닙니다(저녁 7시 반 뒤).")
+        return 0
+    stt = load_state()
+    key = f"remind:{date}:{n.get('source_hash')}"
+    if stt.get(key):
+        print("이미 한 번 더 알렸습니다.")
+        return 0
+    ok = telegram(preview_text(n, "⏰ 아직 올리지 않은 수요기도회 말씀 자료가 있습니다"), keyboard(n["id"], date))
+    stt[key] = now_kst().isoformat(timespec="minutes")
+    save_state(stt)
+    log("다시 알림 " + ("보냄" if ok else "실패") + f" {date}")
+    return 0
+
+
+def cmd_show(date):
+    n = get_note(Store(), date)
+    if not n:
+        print(f"{md(date)} 자료가 없습니다.")
+        return 0
+    print(f"상태: {'올림' if n['status'] == 'approved' else '확인 전'} · 열리는 때 {n.get('publish_at')}")
+    print(preview_text(n, "📖 저장된 자료"))
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description="수요기도회 말씀 자료 만들기")
+    ap.add_argument("cmd", choices=["check", "prepare", "save", "remind", "show"])
+    ap.add_argument("file", nargs="?")
+    ap.add_argument("--date")
+    ap.add_argument("--out")
+    ap.add_argument("--no-telegram", action="store_true")
+    ap.add_argument("--force", action="store_true")
+    a = ap.parse_args()
+    date = dt.date.fromisoformat(a.date) if a.date else default_date()
+    if a.cmd == "check":
+        cmd_check(date)
+        return 0
+    if a.cmd == "prepare":
+        return cmd_prepare(date, a.out)
+    if a.cmd == "save":
+        if not a.file:
+            print("note.json 경로를 주세요.")
+            return 1
+        return cmd_save(a.file, a.no_telegram, a.force)
+    if a.cmd == "remind":
+        return cmd_remind(date)
+    return cmd_show(date)
+
+
+if __name__ == "__main__":
+    sys.exit(main() or 0)

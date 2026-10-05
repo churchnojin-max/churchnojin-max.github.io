@@ -459,5 +459,5 @@
     requestAnimationFrame(function () { pending = false; scan(); });
   }).observe(document.body, { childList: true, subtree: true });
 
-  window.WorshipView = { parseRef: parseRef, getVerses: getVerses };
+  window.WorshipView = { parseRef: parseRef, getVerses: getVerses, bookName: bookName };   // bookName: 수요기도회 말씀 고치기(js/wed-notes.js)
 })();

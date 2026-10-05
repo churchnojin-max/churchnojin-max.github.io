@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="js/page-slide.js?v=20261005ts"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261005guide" />
+  <link rel="stylesheet" href="css/style.css?v=20261005wed" />
 </head>
 <body>
 
@@ -41,9 +41,14 @@
       <div class="block-head">
         <span class="eyebrow2">SERMON</span>
         <h2>이번 주 말씀</h2>
-        <p>주보에 실린 본문 말씀과 설교 자료입니다.<br />말씀 상자를 누르면 전체를 볼 수 있습니다.</p>
+        <p>주보에 실린 주일 말씀과 수요기도회 말씀 자료입니다.<br />말씀 상자를 누르면 전체를 볼 수 있습니다.</p>
       </div>
       <div id="weekSermon"><p class="qt-loading">불러오는 중…</p></div>
+      <!-- 수요기도회 말씀(2026-10-05 목사님 요청): 인용 구절·설교 요약 — 목사님이 올린 것만, 수요일 저녁 8시부터, 로그인한 분께만. js/wed-notes.js -->
+      <div class="wed-wrap" id="wed">
+        <h3 class="wed-head">수요기도회 말씀</h3>
+        <div id="wedNotes"><p class="qt-loading">불러오는 중…</p></div>
+      </div>
     </div>
   </section>
 
@@ -94,7 +99,7 @@
       <div class="info-grid">
         <div class="info-card info-card-link" id="hcCard" role="button" tabindex="0" aria-label="하이델베르크 요리문답 문답 보기">
           <h3>하이델베르크 요리문답</h3>
-          <p>수요기도회에서 한 문답씩 함께 배우고 있습니다.<br />신앙의 핵심을 묻고 답하며 정리하는 시간입니다. <span class="nw">(제1문~제129문 전문)</span></p>
+          <p>수요기도회에서 한 문답씩 함께 배웠던 문답입니다.<br />신앙의 핵심을 묻고 답하며 다시 정리해 보세요. <span class="nw">(제1문~제129문 전문)</span></p>
           <span class="info-card-go">궁금한 것을 눌러 문답 보기 →</span>
         </div>
         <div class="info-card">
@@ -199,11 +204,12 @@
   <script src="js/bulletins.js?v=20261005member"></script>
   <script src="js/heidelberg.js?v=20261002kjv"></script>
   <script src="js/columns.js?v=20261002kjv"></script>
-  <script src="js/layout.js?v=20261005guide"></script>
+  <script src="js/layout.js?v=20261005wed"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
   <script src="js/bulletin-render.js?v=20260709nojin"></script>
-  <script src="js/main.js?v=20261005member"></script>
-  <script src="js/worship-view.js?v=20261003sub"></script>
+  <script src="js/main.js?v=20261005wed"></script>
+  <script src="js/worship-view.js?v=20261005wed"></script>
+  <script src="js/wed-notes.js?v=20261005wed"></script>
   <script src="js/live-status.js?v=20261004b"></script>
   <script src="js/sermon-video.js?v=20261004b"></script>
 </body>

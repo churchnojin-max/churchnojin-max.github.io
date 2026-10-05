@@ -1639,7 +1639,7 @@ if (homeBulletin) {
         const b = rows && rows[0];
         const prevB = rows && rows[1];
         const sermonBanner = document.getElementById("heroSermonBanner");
-        if (sermonBanner && b && b.title) {
+        if (sermonBanner && b && b.title && !sermonBanner.dataset.wed) {   // 수요일 저녁 8시~목요일 낮엔 js/wed-notes.js 가 '수요기도회 말씀'으로 바꿔 둔다
           const t = sermonBanner.querySelector(".hsb-title"), r = sermonBanner.querySelector(".hsb-ref");
           const lb = sermonBanner.querySelector(".hsb-label");
           if (lb) lb.textContent = sermonWhen(b.bdate).label;   // 오늘의 설교 / 지난 주일 설교 / 이번 주일 설교

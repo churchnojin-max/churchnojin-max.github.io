@@ -3959,3 +3959,101 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .sg-ts sup { font-size: .5em; }
 @keyframes sgPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
 @media (prefers-reduced-motion: reduce) { .sg-hand, .sg-bar em, .sg-back, .sg-ts { animation: none; } }
+
+/* ===== 수요기도회 말씀 — 인용 구절·설교 요약 (2026-10-05, js/wed-notes.js) =====
+   예배와 말씀 '이번 주 말씀' 아래 카드 + 크게 읽는 창(휴대폰에선 화면 가득). 글씨는 rem 이라 '가+'를 따른다. */
+.wed-wrap { max-width: 760px; margin: 40px auto 0; scroll-margin-top: 24px; }   /* html 의 scroll-padding-top(72px)에 더해 머리글 아래로 */
+.wed-head { display: flex; align-items: center; gap: 12px; font-family: "Gowun Batang", serif; font-size: 1.3rem; color: var(--accent); margin: 0 0 14px; }
+.wed-head::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.wed-card .wed-series { margin-top: 6px; color: var(--ink-soft); font-size: .95rem; font-weight: 600; }
+.wed-card .ws-title { margin-top: 4px; }
+.wed-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+.wed-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 58px; padding: 12px 10px; border-radius: 14px; border: 1.5px solid var(--accent); background: var(--accent); color: #fff; font: inherit; font-size: 1.08rem; font-weight: 700; cursor: pointer; word-break: keep-all; }
+.wed-btn b { background: rgba(255,255,255,.22); border-radius: 999px; padding: 0 9px; font-size: .92em; }
+.wed-btn span { white-space: nowrap; }
+.wed-btn-2 { background: #fff; color: var(--accent); }
+.wed-btn-2 b { background: var(--paper-alt); }
+.wed-btn:hover { filter: brightness(1.08); }
+.wed-link { display: inline-block; margin-top: 14px; padding: 6px 0; border: 0; background: none; font: inherit; font-size: .95rem; font-weight: 600; color: var(--accent); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.wed-hint { margin-top: 12px; text-align: center; color: var(--ink-soft); font-size: .92rem; word-break: keep-all; }
+.wed-empty { padding: 24px 16px; text-align: center; color: var(--ink-soft); line-height: 1.8; border: 1px dashed var(--line); border-radius: 14px; background: #fff; word-break: keep-all; }
+.wed-locked { background: #fff; }
+.wed-past { margin-top: 14px; padding: 2px 18px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.wed-past summary { padding: 13px 0; cursor: pointer; font-weight: 700; color: var(--accent); }
+.wed-past summary span { margin-left: 6px; font-weight: 500; color: var(--ink-soft); font-size: .88rem; }
+.wed-past ul { list-style: none; margin: 0 0 8px; padding: 0; }
+.wed-past li + li { border-top: 1px solid var(--line); }
+.wed-past li button { display: flex; align-items: baseline; gap: 12px; width: 100%; padding: 12px 0; border: 0; background: none; font: inherit; text-align: left; color: var(--ink); cursor: pointer; }
+.wed-past .wp-d { flex: none; min-width: 2.8em; font-weight: 700; color: var(--gold); }
+.wed-past .wp-t b { display: block; font-weight: 600; word-break: keep-all; }
+.wed-past .wp-t small { display: block; margin-top: 2px; font-size: .82rem; color: var(--ink-soft); }
+.wed-admin { margin-bottom: 14px; padding: 14px 18px; border: 2px dashed #C9A227; border-radius: 14px; background: #FFFBEA; }
+.wed-admin-tag { font-size: .8rem; font-weight: 800; color: #7A5F00; letter-spacing: .04em; }
+.wed-admin-t { margin-top: 4px; font-size: 1.02rem; color: var(--ink); word-break: keep-all; }
+.wed-admin-s { margin-top: 2px; font-size: .9rem; color: #7A5F00; }
+.wed-admin-btns, .wr-admin-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.wed-admin-btns .btn, .wr-admin-btns .btn { padding: 9px 18px; font-size: .9rem; }
+/* 크게 읽는 창 */
+.modal.wed-reader { z-index: 3150; padding: 16px; }
+.modal-box.wed-box { display: flex; flex-direction: column; max-width: 760px; max-height: 92vh; padding: 0; overflow: hidden; }
+.wed-top { flex: none; display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 22px; border-bottom: 1px solid var(--line); }
+.wed-top-tx { flex: 1; min-width: 0; }
+.wed-top-d { display: block; font-size: .82rem; font-weight: 700; color: var(--gold); }
+.wed-top-tx b { display: block; font-family: "Gowun Batang", serif; font-size: 1.15rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wed-x { flex: none; width: 46px; height: 46px; border: 0; border-radius: 50%; background: var(--paper-alt); color: var(--accent); font-size: 1.8rem; line-height: 1; cursor: pointer; }
+.wed-tabs { flex: none; display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.wed-tabs:empty { display: none; }
+.wed-tabs button { flex: none; padding: 7px 15px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font: inherit; font-size: .92rem; font-weight: 700; color: var(--accent); cursor: pointer; }
+.wed-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 18px 26px 34px; }
+.wr-head .wr-series { font-size: .9rem; font-weight: 700; color: var(--gold); }
+.wr-title { margin: 4px 0; font-family: "Gowun Batang", serif; font-size: 1.55rem; line-height: 1.45; color: var(--ink); word-break: keep-all; }
+.wr-ref { font-weight: 600; color: var(--accent); }
+.wr-sec { margin-top: 28px; }
+.wr-h { margin: 0 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--paper-alt); font-size: 1.15rem; font-weight: 800; color: var(--accent); }
+.wr-h small { margin-left: 6px; font-size: .78rem; font-weight: 500; color: var(--ink-soft); }
+.wr-lines { margin: 0; padding: 14px 18px; }
+.wr-verses { list-style: none; margin: 0; padding: 0; }
+.wr-v + .wr-v { margin-top: 16px; }
+.wr-v-ref { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: 800; color: var(--accent); }
+.wr-no { font-size: 1.3rem; line-height: 1; color: var(--gold); }
+.wr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.wr-chip { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font: inherit; font-size: .92rem; color: var(--accent); cursor: pointer; }
+.wr-chip[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wr-ment-box { margin-top: 10px; }
+.wr-ment-box[hidden] { display: none; }
+.wr-ment-ref { margin-bottom: 6px; font-weight: 800; color: var(--accent); }
+.wr-q { padding: 14px 18px; border-radius: 12px; background: var(--paper-alt); font-family: "Gowun Batang", serif; font-size: 1.1rem; line-height: 1.8; color: var(--ink); word-break: keep-all; }
+.wr-q span { display: block; margin-bottom: 2px; font-family: "IBM Plex Sans KR", sans-serif; font-size: .8rem; font-weight: 800; color: var(--gold); }
+.wr-pt { margin-top: 18px; }
+.wr-pt-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.wr-pt-h b { font-size: 1.06rem; color: var(--ink); word-break: keep-all; }
+.wr-pill { display: inline-block; margin-right: 6px; padding: 2px 9px; border-radius: 6px; background: var(--accent); color: #fff; font-size: .8rem; font-weight: 700; vertical-align: 2px; }
+.wr-pt-h .wr-pill { margin-right: 0; }
+.wr-pt-x { margin-top: 6px; font-size: 1.04rem; line-height: 1.9; color: var(--ink); word-break: keep-all; }
+.wr-one { margin-top: 22px; padding: 14px 18px; border-left: 4px solid var(--gold); border-radius: 0 12px 12px 0; background: #F2F7F3; }
+.wr-one span { font-size: .8rem; font-weight: 800; color: var(--gold); }
+.wr-one p { margin-top: 4px; font-family: "Gowun Batang", serif; font-size: 1.2rem; line-height: 1.7; color: var(--accent); word-break: keep-all; }
+.wr-pr { margin-top: 12px; font-size: 1.04rem; line-height: 1.85; color: var(--ink); word-break: keep-all; }
+.wr-next { margin-top: 26px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: .95rem; line-height: 1.8; color: var(--ink-soft); word-break: keep-all; }
+.wr-next b { margin-right: 8px; color: var(--accent); }
+.wr-admin { margin-bottom: 16px; padding: 12px 16px; border: 2px dashed #C9A227; border-radius: 12px; background: #FFFBEA; font-size: .92rem; color: #5C4800; word-break: keep-all; }
+.wr-edit { display: grid; gap: 14px; }
+.wr-edit-note { font-size: .9rem; color: var(--ink-soft); word-break: keep-all; }
+.wr-edit label { display: grid; gap: 6px; font-weight: 700; color: var(--accent); font-size: .95rem; }
+.wr-edit label small { font-weight: 500; color: var(--ink-soft); }
+.wr-edit input, .wr-edit textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-size: 1rem; font-weight: 400; color: var(--ink); background: #fff; }
+.wr-edit textarea { line-height: 1.7; resize: vertical; }
+.wr-edit-pt { display: grid; gap: 8px; margin: 0; padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.wr-edit-pt legend { padding: 0 6px; font-size: .88rem; font-weight: 700; color: var(--gold); }
+.wr-edit-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; }
+.wr-edit-row input:only-child { grid-column: 1 / -1; }
+.wr-edit-msg { min-height: 1.4em; font-size: .9rem; color: #A33; }
+.wr-edit-btns { display: flex; gap: 8px; }
+.hero-sermon-banner.is-wed .hsb-label { background: #C9A227; color: #1f1f1f; }
+@media (max-width: 680px) {
+  .modal.wed-reader { padding: 0; }
+  .modal-box.wed-box { max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; animation: none; }
+  .wed-body { padding: 14px 16px 44px; }
+  .wed-btns { grid-template-columns: minmax(0, 1fr); }   /* 휴대폰: 큰 단추를 위아래로 */
+  .wr-title { font-size: 1.35rem; }
+}
