@@ -357,11 +357,23 @@ console.log('[gyojeok.js] v20260701di');
         return '<div class="ac-who"><b class="ac-name">' + esc(u.name || '(이름없음)') + '</b>' + badges +
           '<span class="ac-mail">' + esc(u.email || (u.provider === 'kakao' ? '(카카오 가입)' : '')) + '</span></div>';
       }
+      // 지금 로그인한 사람(나)의 uid — 최고 운영자 본인 줄에는 '관리자 해제'를 두지 않는다.
+      // (최고 운영자 자리는 홈페이지에서 아무도 뺄 수 없고, 넘겨 주는 일은 Supabase 관리 화면에서만 — supabase/owner_guard_20261003.sql)
+      var myUid = '';
+      try {
+        for (var si = 0; si < sessionStorage.length; si++) {
+          var sk = sessionStorage.key(si);
+          if (/^sb-.*-auth-token$/.test(sk)) { myUid = ((JSON.parse(sessionStorage.getItem(sk)) || {}).user || {}).id || ''; break; }
+        }
+      } catch (e) { }
+      function isMeOwner(u) { return owner === true && myUid && u.uid === myUid; }
+      admins.sort(function (a, b) { return (isMeOwner(b) ? 1 : 0) - (isMeOwner(a) ? 1 : 0); });   // 최고 운영자를 맨 위에
       function personRow(u, kind) {
-        var chips = kind === 'admin' ? '<span class="ac-chip ac-chip-all">모든 영역 열림</span>'
+        var chips = kind === 'admin' ? ((isMeOwner(u) ? '<span class="ac-chip" style="background:#1A3A2F;color:#fff">👑 최고 운영자</span>' : '') + '<span class="ac-chip ac-chip-all">모든 영역 열림</span>')
           : (GJ_PERMS.filter(function (p) { return u[p[0]]; }).map(function (p) { return '<span class="ac-chip">' + esc(permName(p)) + '</span>'; }).join('') || '<span class="ac-none">받은 권한 없음</span>');
         var btn = kind === 'admin'
-          ? (adminLock ? '' : '<button type="button" class="btn btn-line ac-unadmin" style="color:#7a3b3b">관리자 해제</button>')
+          ? (isMeOwner(u) ? '<span class="ac-none" style="white-space:nowrap">해제할 수 없는 자리</span>'
+            : adminLock ? '' : '<button type="button" class="btn btn-line ac-unadmin" style="color:#7a3b3b">관리자 해제</button>')
           : '<button type="button" class="btn btn-line ac-edit">' + (kind === 'plain' ? '권한 주기' : '권한 바꾸기') + '</button>';
         return '<div class="ac-row" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '">' + whoCell(u) +
           '<div class="ac-status"><span class="st-pill">' + stPill(u.status) + '</span><select class="ck-status" aria-label="회원 구분">' +
