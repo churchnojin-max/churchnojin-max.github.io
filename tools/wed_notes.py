@@ -16,7 +16,7 @@
 
   python tools/wed_notes.py check   [--date 2026-10-07]
   python tools/wed_notes.py prepare [--date …] [--out 파일]
-  python tools/wed_notes.py save    note.json [--no-telegram] [--force]
+  python tools/wed_notes.py save    note.json [--no-telegram] [--force] [--head "첫 줄"]
   python tools/wed_notes.py remind  [--date …]
   python tools/wed_notes.py show    [--date …]
 날짜를 안 주면 오늘이 수요일이면 오늘, 아니면 지난 수요일.
@@ -454,7 +454,7 @@ def resolve(refs, passage, skip):
     return out, bad
 
 
-def cmd_save(path, no_tg=False, force=False):
+def cmd_save(path, no_tg=False, force=False, head=None):
     note = json.loads(Path(path).read_text(encoding="utf-8"))
     date = dt.date.fromisoformat(note["date"])
     st = Store()
@@ -493,7 +493,7 @@ def cmd_save(path, no_tg=False, force=False):
     saved = st.patch("sermon_notes", f"id=eq.{old['id']}", row)[0] if old else st.post("sermon_notes", row)
     log(f"저장(확인 전) {date} {row['title']} — 구절 {len(verses)} · 나온 구절 {len(mentions)} · 요점 {len(summary['points'])}")
     if not no_tg:
-        ok = telegram(preview_text(saved), keyboard(saved["id"], date))
+        ok = telegram(preview_text(saved, head) if head else preview_text(saved), keyboard(saved["id"], date))
         log("텔레그램 미리보기 " + ("보냄" if ok else "실패"))
         stt = load_state()
         stt[str(date)] = {"hash": row["source_hash"], "sent": now_kst().isoformat(timespec="minutes")}
@@ -602,6 +602,7 @@ def main():
     ap.add_argument("--out")
     ap.add_argument("--no-telegram", action="store_true")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--head", help="텔레그램 미리보기 첫 줄(시험 때)")
     a = ap.parse_args()
     date = dt.date.fromisoformat(a.date) if a.date else default_date()
     if a.cmd == "check":
@@ -613,7 +614,7 @@ def main():
         if not a.file:
             print("note.json 경로를 주세요.")
             return 1
-        return cmd_save(a.file, a.no_telegram, a.force)
+        return cmd_save(a.file, a.no_telegram, a.force, a.head)
     if a.cmd == "remind":
         return cmd_remind(date)
     return cmd_show(date)
