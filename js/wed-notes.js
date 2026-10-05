@@ -86,8 +86,21 @@
       '<div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div></div>';
   }
 
+  // 휴대폰에서 창을 오래 열어 두면 로그인 열쇠가 낡아(1시간) 401 이 난다 → auth.js 가 열쇠를 새로 받을 때까지 기다렸다가 한 번 더
+  function whenAuthReady() {
+    return new Promise(function (res) {
+      if (window.__sb) { res(window.__sb); return; }
+      window.addEventListener("sb-ready", function (e) { res((e.detail && e.detail.sb) || window.__sb); }, { once: true });
+      setTimeout(function () { res(window.__sb || null); }, 8000);
+    });
+  }
+  function freshSession() {
+    return whenAuthReady().then(function (sb) { return sb ? sb.auth.getSession() : null; }).catch(function () { return null; });
+  }
+  var shownUid = null, retried = false;
   function load() {
     if (!box) return Promise.resolve();
+    shownUid = (me() || {}).id || "";
     if (!me()) { renderLocked(); return Promise.resolve(); }
     box.innerHTML = '<p class="qt-loading">불러오는 중…</p>';
     return Promise.all([
@@ -98,8 +111,11 @@
       admin = res[1];
       var latest = list.filter(isOpen)[0];
       return latest ? getFull(latest.id).catch(function () { return null; }) : null;
-    }).then(function () { render(); ensureAnchor(); })
-      .catch(function () { box.innerHTML = '<p class="qt-loading">수요기도회 말씀을 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요.</p>'; });
+    }).then(function () { retried = false; render(); ensureAnchor(); })
+      .catch(function (e) {
+        if (e && e.status === 401 && !retried) { retried = true; _admin = null; return freshSession().then(load); }
+        box.innerHTML = '<div class="wed-empty">수요기도회 말씀을 불러오지 못했습니다.<br /><button type="button" class="btn btn-line" data-wretry>다시 불러오기</button></div>';
+      });
   }
 
   function adminCard(n) {
@@ -426,6 +442,7 @@
   // 카드·목록의 단추
   if (box) {
     box.addEventListener("click", function (e) {
+      if (e.target.closest("[data-wretry]")) { retried = false; _admin = null; freshSession().then(load); return; }
       var o = e.target.closest("[data-wopen]");
       if (o) { openReader(o.getAttribute("data-wopen"), o.getAttribute("data-wsec")); return; }
       var st = e.target.closest("[data-wstatus]");
@@ -455,5 +472,15 @@
   load();
   paintBanner();
   window.addEventListener("church:auth", function () { _admin = null; full = {}; load(); paintBanner(); });
+  // 이 화면에서 로그인·로그아웃하면(다시 불러오지 않는 경우에도) 바로 다시 그린다
+  whenAuthReady().then(function (sb) {
+    if (!sb) return;
+    try {
+      sb.auth.onAuthStateChange(function (ev, session) {
+        var uid = (session && session.user && session.user.id) || "";
+        if (uid !== shownUid) { _admin = null; full = {}; load(); paintBanner(); }
+      });
+    } catch (e) {}
+  });
   window.WedNotes = { open: openReader, reload: load };
 })();
