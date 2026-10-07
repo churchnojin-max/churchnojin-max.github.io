@@ -435,6 +435,58 @@ def manuscript_images(path):
     return out
 
 
+SITE_DIR = Path(__file__).resolve().parent.parent
+NEW_INDEX = "new/index.json"     # 악보집 '새 찬양' 목록(보관함 hymns, js/scores.js)
+
+
+def _song_key(t):
+    t = re.sub(r"\([^)]*\)", "", str(t or ""))
+    return re.sub(r"[\s·,.!?~'\"’‘“”\-]", "", t).lower()
+
+
+def _known_titles():
+    """새찬송가(js/hymn-data.js)·모두의 찬양(js/praise-index.js, 부제목 포함) 제목"""
+    out = set()
+    for f, pat in (("js/hymn-data.js", r'"title"\s*:\s*"([^"]+)"'), ("js/praise-index.js", r'\[\d+,\s*"([^"]*)",\s*"[^"]*"(?:,\s*"([^"]*)")?')):
+        for m in re.finditer(pat, (SITE_DIR / f).read_text(encoding="utf-8")):
+            out.update(_song_key(g) for g in m.groups() if g)
+    out.discard("")
+    return out
+
+
+def add_new_songs(st, date, songs):
+    """수요 원고 속 악보 가운데 새찬송가·모두의 찬양·새 찬양에 없는 곡을 악보집 '새 찬양'에 더한다
+       (2026-10-07 목사님: "악보 올린 것들을 악보집에 업데이트할 수 있을까?") songs = [(제목, png bytes)]"""
+    from io import BytesIO
+    from PIL import Image
+    base = f"{SUPABASE_URL}/storage/v1/object/hymns/"
+    r = st.rq.get(base + NEW_INDEX, headers=st.h, timeout=30)
+    index = r.json() if r.status_code == 200 else []
+    known = _known_titles() | {_song_key(s.get("title")) for s in index}
+    added = []
+    for title, png in songs:
+        k = _song_key(title)
+        if not k or re.match(r"^찬양악보\d+$", k) or "새찬송가" in title or k in known:
+            continue
+        no = max([int(s.get("no") or 0) for s in index] + [0]) + 1
+        buf = BytesIO()
+        Image.open(BytesIO(png)).convert("RGB").save(buf, "WEBP", quality=88)
+        path = f"new/{no:03d}-w{date:%Y%m%d}.webp"
+        up = st.rq.post(base + path, headers={**st.h, "Content-Type": "image/webp", "x-upsert": "true"}, data=buf.getvalue(), timeout=120)
+        if up.status_code >= 300:
+            raise RuntimeError(f"새 찬양 악보 올리기 실패 {up.status_code}: {up.text[:200]}")
+        index.append({"no": no, "title": title.strip(), "key": "", "path": path, "added": str(date), "from": f"{md(date)} 수요기도회"})
+        known.add(k)
+        added.append(title.strip())
+    if added:
+        w = st.rq.post(base + NEW_INDEX, headers={**st.h, "Content-Type": "application/json", "x-upsert": "true", "cache-control": "max-age=0"},
+                       data=json.dumps(index, ensure_ascii=False, indent=1).encode("utf-8"), timeout=60)
+        if w.status_code >= 300:
+            raise RuntimeError(f"새 찬양 목록 저장 실패 {w.status_code}: {w.text[:200]}")
+        log(f"악보집 새 찬양 더함 {date}: " + " · ".join(added))
+    return added
+
+
 def cmd_conti(date, names=None, dry=False):
     st = Store()
     have = st.get(f"sermon_conti?select=id,files&service=eq.{q(SERVICE)}&note_date=eq.{date}")
@@ -471,6 +523,11 @@ def cmd_conti(date, names=None, dry=False):
         st.post("sermon_conti", {"service": SERVICE, "note_date": str(date), "files": files})
     log(f"원고 악보 {date} {len(files)}장 ({src.name})")
     print(f"{md(date)} 원고({src.name}) 속 악보 {len(files)}장을 올렸습니다: " + " · ".join(f["name"] for f in files))
+    try:
+        added = add_new_songs(st, date, [(f["name"], b) for f, b in zip(files, imgs)])
+        print("악보집 '새 찬양'에 더함: " + (" · ".join(added) if added else "없음(모두 악보집에 있는 곡)"))
+    except Exception as e:
+        print(f"악보집 '새 찬양'에는 더하지 못했습니다: {e}")
     return 0
 
 

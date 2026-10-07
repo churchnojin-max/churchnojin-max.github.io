@@ -20,8 +20,13 @@
   // ── 곡 목록 ──
   var BOOKS = {
     hymn: { name: "새찬송가", unit: "장", list: (window.HYMNS || []).map(function (h) { return { no: h.no, title: h.title, sub: "", key: "" }; }), path: function (n) { return pad3(n) + ".webp"; } },
-    ccm:  { name: "모두의 찬양", unit: "번", list: (window.PRAISE || []).map(function (p) { return { no: p[0], title: p[1], sub: p[3] || "", key: p[2] || "" }; }), path: function (n) { return "ccm/" + pad3(n) + ".webp"; } }
+    ccm:  { name: "모두의 찬양", unit: "번", list: (window.PRAISE || []).map(function (p) { return { no: p[0], title: p[1], sub: p[3] || "", key: p[2] || "" }; }), path: function (n) { return "ccm/" + pad3(n) + ".webp"; } },
+    // 새 찬양(2026-10-07 목사님: "악보집에 새로운 곡들 악보가 없어 — 올린 악보를 악보집에, 내가 업데이트도 할 수 있게")
+    //   목록은 보관함 hymns/new/index.json [{no,title,key,path,added,from}] — 목사님이 이 화면에서 올리거나,
+    //   수요기도회 원고 속 악보 중 새찬송가·모두의 찬양에 없는 곡을 tools/wed_notes.py conti 가 더한다.
+    "new": { name: "새 찬양", unit: "번", list: [], path: function (n) { var s = byId["new:" + n]; return s ? s.path : ""; } }
   };
+  BOOKS["new"].max = 0;
   ["hymn", "ccm"].forEach(function (b) { BOOKS[b].list.forEach(function (s) { s.book = b; s.id = b + ":" + s.no; }); BOOKS[b].max = BOOKS[b].list.length; });
   var byId = {};
   ["hymn", "ccm"].forEach(function (b) { BOOKS[b].list.forEach(function (s) { byId[s.id] = s; }); });
@@ -45,8 +50,9 @@
   // ── 이 기기에 남기는 것(번호만) ──
   function load(k) { try { var v = JSON.parse(localStorage.getItem(k) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
   function keep(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-  var fav = load("nojin_sc_fav").filter(function (id) { return byId[id]; });
-  var recent = load("nojin_sc_recent").filter(function (id) { return byId[id]; });
+  var later = function (id) { return byId[id] || /^new:/.test(id); };   // 새 찬양은 목록을 받은 뒤에 채워진다
+  var fav = load("nojin_sc_fav").filter(later);
+  var recent = load("nojin_sc_recent").filter(later);
   function toggleFav(id) {
     var i = fav.indexOf(id);
     if (i >= 0) fav.splice(i, 1); else fav.unshift(id);
@@ -86,18 +92,120 @@
 
   // ── 목록 화면 ──
   var tab = "hymn", query = "";
-  try { var t0 = sessionStorage.getItem("nojin_sc_tab"); if (t0 === "ccm" || t0 === "hymn" || t0 === "fav") tab = t0; } catch (e) {}
+  try { var t0 = sessionStorage.getItem("nojin_sc_tab"); if (t0 === "ccm" || t0 === "hymn" || t0 === "fav" || t0 === "new") tab = t0; } catch (e) {}
+
+  // ── 새 찬양 목록 받기 · 목사님(최고 운영자)이 올리기·빼기 ──
+  var NEW_INDEX = "new/index.json", admin = false;
+  function setNew(arr) {
+    Object.keys(byId).forEach(function (id) { if (/^new:/.test(id)) delete byId[id]; });
+    BOOKS["new"].list = (arr || []).filter(function (s) { return s && s.no && s.title && s.path; }).map(function (s) {
+      var o = { no: +s.no, title: String(s.title), sub: s.from || "", key: s.key || "", path: s.path, book: "new", id: "new:" + s.no };
+      o.n = norm(o.title + o.sub); o.c = cho(o.n);
+      byId[o.id] = o;
+      return o;
+    });
+    BOOKS["new"].max = BOOKS["new"].list.length;
+    var c = document.getElementById("scNewCnt");
+    if (c) c.textContent = BOOKS["new"].max;
+  }
+  function readNew() {
+    // 없으면(아직 한 곡도 없으면) 빈 목록. 올린 직후에도 새 목록을 받도록 캐시는 쓰지 않는다
+    return sb.storage.from("hymns").createSignedUrl(NEW_INDEX, 60).then(function (r) {
+      if (r.error || !r.data || !r.data.signedUrl) return [];
+      return fetch(r.data.signedUrl, { cache: "no-store" }).then(function (res) { return res.ok ? res.json() : []; });
+    }).then(function (v) { return Array.isArray(v) ? v : []; }).catch(function () { return []; });
+  }
+  function loadNew() {
+    return Promise.all([readNew(), sb.rpc("my_perms").then(function (r) { return !!(r && r.data && r.data.isAdmin); }).catch(function () { return false; })])
+      .then(function (res) { setNew(res[0]); admin = res[1]; paint(); });
+  }
+  function saveNew(arr) {
+    var blob = new Blob([JSON.stringify(arr, null, 1)], { type: "application/json" });
+    return sb.storage.from("hymns").upload(NEW_INDEX, blob, { upsert: true, contentType: "application/json", cacheControl: "0" })
+      .then(function (r) { if (r.error) throw r.error; setNew(arr); });
+  }
+  // 사진은 긴 쪽 2400px · webp 로 줄여서(악보 글씨가 읽히는 정도)
+  function shrink(file) {
+    return new Promise(function (res, rej) {
+      var u = URL.createObjectURL(file), im = new Image();
+      // 보관함 hymns 는 한 파일 1MB 까지 — 넘으면 조금씩 더 줄인다
+      var tries = [[2400, 0.88], [2000, 0.8], [1700, 0.72], [1400, 0.65]];
+      var go = function (i) {
+        var k = Math.min(1, tries[i][0] / Math.max(im.naturalWidth, im.naturalHeight));
+        var cv = document.createElement("canvas");
+        cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+        var g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height);
+        cv.toBlob(function (b) {
+          if (!b || b.type !== "image/webp") { rej(new Error("이 기기에서는 사진을 바꾸지 못했습니다(컴퓨터나 다른 브라우저로 올려 주세요)")); return; }
+          if (b.size > 1000000 && i + 1 < tries.length) { go(i + 1); return; }
+          URL.revokeObjectURL(u);
+          b.size > 1000000 ? rej(new Error("사진이 너무 큽니다")) : res(b);
+        }, "image/webp", tries[i][1]);
+      };
+      im.onload = function () { go(0); };
+      im.onerror = function () { URL.revokeObjectURL(u); rej(new Error("사진을 읽지 못했습니다(사진 파일만 올릴 수 있습니다)")); };
+      im.src = u;
+    });
+  }
+  function newMsg(t) { var m = document.getElementById("scNewMsg"); if (m) m.textContent = t; }
+  function addNew() {
+    var t = document.getElementById("scNewTitle"), k = document.getElementById("scNewKey"), f = document.getElementById("scNewFile");
+    var title = t.value.trim(), file = f.files && f.files[0];
+    if (!title) { newMsg("곡 제목을 적어 주세요."); t.focus(); return; }
+    if (!file) { newMsg("악보 사진을 골라 주세요."); return; }
+    var same = BOOKS.hymn.list.concat(BOOKS.ccm.list, BOOKS["new"].list).filter(function (s) { return norm(s.title) === norm(title); })[0];
+    if (same && !confirm("'" + same.title + "'은(는) 이미 " + BOOKS[same.book].name + " " + same.no + BOOKS[same.book].unit + "에 있습니다.\n그래도 새 찬양에 올릴까요?")) return;
+    newMsg("올리는 중…");
+    var path;
+    shrink(file).then(function (blob) {
+      return readNew().then(function (arr) {
+        var no = arr.reduce(function (m, s) { return Math.max(m, +s.no || 0); }, 0) + 1;
+        path = "new/" + pad3(no) + "-" + Date.now().toString(36) + ".webp";
+        return sb.storage.from("hymns").upload(path, blob, { contentType: "image/webp", upsert: false }).then(function (r) {
+          if (r.error) throw r.error;
+          arr.push({ no: no, title: title, key: k.value.trim(), path: path, added: new Date().toISOString().slice(0, 10), from: "" });
+          return saveNew(arr);
+        });
+      });
+    }).then(function () {
+      t.value = ""; k.value = ""; f.value = "";
+      newMsg("올렸습니다: " + title);
+      paint();
+    }).catch(function (e) {
+      if (path) sb.storage.from("hymns").remove([path]).catch(function () {});
+      newMsg("⚠️ 올리지 못했습니다: " + ((e && e.message) || e) + (/policy|security|403|Unauthorized/i.test(String(e && e.message)) ? " (보관함 쓰기 규칙 SQL 을 먼저 실행해야 합니다)" : ""));
+    });
+  }
+  function removeNew(id) {
+    var s = byId[id];
+    if (!s || !confirm("'" + s.title + "' 악보를 새 찬양에서 뺄까요?\n(악보 파일도 지워집니다)")) return;
+    readNew().then(function (arr) {
+      return saveNew(arr.filter(function (x) { return "new:" + x.no !== id; }));
+    }).then(function () {
+      sb.storage.from("hymns").remove([s.path]).catch(function () {});
+      paint();
+    }).catch(function (e) { alert("빼지 못했습니다: " + ((e && e.message) || e)); });
+  }
+  function newAdminHtml() {
+    return '<div class="sc-new-admin"><p class="sc-new-t">새 악보 올리기 <small>목사님만 보입니다</small></p>' +
+      '<div class="sc-new-row"><input type="text" id="scNewTitle" placeholder="곡 제목" autocomplete="off" />' +
+      '<input type="text" id="scNewKey" placeholder="조(예: D)" autocomplete="off" class="sc-new-key" /></div>' +
+      '<div class="sc-new-row"><input type="file" id="scNewFile" accept="image/*" /><button type="button" class="sc-btn" id="scNewAdd">올리기</button></div>' +
+      '<p class="sc-new-msg" id="scNewMsg" role="status"></p></div>';
+  }
 
   function start() {
     body.innerHTML =
       '<div class="sc-tabs" role="tablist">' +
         '<button type="button" data-tab="hymn">새찬송가 <small>645</small></button>' +
         '<button type="button" data-tab="ccm">모두의 찬양 <small>684</small></button>' +
+        '<button type="button" data-tab="new">새 찬양 <small id="scNewCnt">' + (BOOKS["new"].max || "") + '</small></button>' +
         '<button type="button" data-tab="fav">★ 즐겨찾기</button>' +
       '</div>' +
       '<div class="sc-search"><input type="search" id="scQ" autocomplete="off" enterkeyhint="go" placeholder="번호, 제목, 첫소리(ㄴㅇㄱ)로 찾기" aria-label="악보 찾기" />' +
         '<button type="button" class="sc-clear" id="scClear" aria-label="지우기" hidden>×</button></div>' +
       '<div id="scRecent"></div>' +
+      '<div id="scNewAdmin"></div>' +
       '<ul class="sc-list" id="scList"></ul>';
     var q = document.getElementById("scQ"), clr = document.getElementById("scClear");
     q.addEventListener("input", function () { query = q.value; clr.hidden = !query; paint(); });
@@ -112,12 +220,16 @@
       paint();
     });
     body.addEventListener("click", function (e) {
+      if (e.target.closest("#scNewAdmin")) { if (e.target.closest("#scNewAdd")) addNew(); return; }
+      var del = e.target.closest(".sc-del");
+      if (del) { e.stopPropagation(); removeNew(del.getAttribute("data-id")); return; }
       var st = e.target.closest(".sc-star");
       if (st) { e.stopPropagation(); toggleFav(st.getAttribute("data-id")); paint(); return; }
       var li = e.target.closest("[data-id]");
       if (li) openSong(li.getAttribute("data-id"));
     });
     paint();
+    loadNew();
   }
 
   function search(list, qv) {
@@ -147,6 +259,7 @@
       '<span class="sc-t"><b>' + esc(s.title) + '</b>' +
         (s.sub || s.key || showBook ? '<small>' + [showBook ? BOOKS[s.book].name : "", s.sub, s.key ? s.key + "조" : ""].filter(Boolean).map(esc).join(" · ") + '</small>' : '') +
       '</span>' +
+      (admin && s.book === "new" && tab === "new" ? '<button type="button" class="sc-del" data-id="' + s.id + '" aria-label="' + esc(s.title) + ' 빼기">×</button>' : '') +
       '<button type="button" class="sc-star' + (on ? ' is-on' : '') + '" data-id="' + s.id + '" aria-label="즐겨찾기' + (on ? ' 빼기' : '') + '">' + (on ? '★' : '☆') + '</button></li>';
   }
   function paint() {
@@ -156,9 +269,16 @@
     else list = BOOKS[tab].list;
     if (query.trim() && tab === "fav") list = search(list, query);
     else if (query.trim()) list = search(list, query);
+    var na = document.getElementById("scNewAdmin");
+    if (na) {
+      var want = admin && tab === "new";
+      if (want && !na.firstChild) na.innerHTML = newAdminHtml();
+      else if (!want) na.innerHTML = "";
+    }
     var ul = document.getElementById("scList");
     if (!list.length) {
-      ul.innerHTML = '<li class="sc-none">' + (tab === "fav" && !query.trim() ? '아직 즐겨찾기가 없습니다. 곡 옆의 ☆ 를 누르면 여기에 모입니다.' : '찾는 곡이 없습니다.') + '</li>';
+      ul.innerHTML = '<li class="sc-none">' + (tab === "fav" && !query.trim() ? '아직 즐겨찾기가 없습니다. 곡 옆의 ☆ 를 누르면 여기에 모입니다.'
+        : tab === "new" && !query.trim() ? '아직 올린 새 찬양이 없습니다. 수요기도회 원고에 넣은 악보 가운데 새 곡은 여기에 저절로 쌓입니다.' : '찾는 곡이 없습니다.') + '</li>';
     } else {
       var cap = query.trim() ? 120 : list.length;
       ul.innerHTML = list.slice(0, cap).map(function (s) { return row(s, showBook); }).join("");
@@ -186,6 +306,10 @@
   }
   function neighbor(id, step) {
     var s = byId[id]; if (!s) return null;
+    if (s.book === "new") {   // 새 찬양은 번호가 비어 있을 수 있어(뺀 곡) 목록 차례로
+      var L = BOOKS["new"].list, i = L.indexOf(s) + step;
+      return i >= 0 && i < L.length ? L[i].id : null;
+    }
     var n = s.no + step;
     if (n < 1 || n > BOOKS[s.book].max) return null;
     return s.book + ":" + n;
@@ -257,7 +381,7 @@
     addRecent(id);
     var s = byId[id];
     document.getElementById("svTitle").innerHTML = '<b>' + esc(s.title) + '</b><small>' + esc(BOOKS[s.book].name + " " + s.no + BOOKS[s.book].unit + (s.key ? " · " + s.key + "조" : "")) + '</small>';
-    document.getElementById("svNo").textContent = s.no + " / " + BOOKS[s.book].max;
+    document.getElementById("svNo").textContent = (s.book === "new" ? BOOKS["new"].list.indexOf(s) + 1 : s.no) + " / " + BOOKS[s.book].max;
     paintFav();
     var img = document.getElementById("svImg"), msg = document.getElementById("svMsg");
     img.removeAttribute("src");

@@ -65,3 +65,14 @@ html.sc-lock, html.sc-lock body { overflow: hidden; }
   .sv-stage:not(.is-zoom) { padding: 10px 0; }
   .sv-stage:not(.is-zoom) .sv-img { width: auto; max-width: 100%; max-height: calc(100vh - 140px); box-shadow: 0 8px 26px rgba(0,0,0,.12); }
 }
+
+/* 새 찬양 — 목사님 올리기 칸·빼기 (2026-10-07) */
+.sc-new-admin { margin: 0 0 12px; padding: 14px 14px 10px; border: 1.5px dashed var(--accent); border-radius: 14px; background: #fff; }
+.sc-new-t { margin: 0 0 10px; font-weight: 800; color: var(--accent); }
+.sc-new-t small { margin-left: 6px; font-weight: 500; font-size: .78rem; color: var(--muted); }
+.sc-new-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+.sc-new-row input[type=text] { flex: 1 1 10em; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-size: 1rem; }
+.sc-new-row .sc-new-key { flex: 0 0 6.5em; }
+.sc-new-row input[type=file] { flex: 1 1 12em; min-width: 0; font-size: .9rem; }
+.sc-new-msg { margin: 2px 0 0; min-height: 1.2em; font-size: .9rem; color: var(--ink-soft); }
+.sc-del { flex: 0 0 auto; width: 36px; height: 36px; border: 0; border-radius: 999px; background: var(--paper-alt); color: #A0473F; font-size: 1.2rem; cursor: pointer; }
