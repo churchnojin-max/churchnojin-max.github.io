@@ -703,7 +703,7 @@ def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주�
     vs = n.get("verses") or []
     lines += ["", f"[인용 구절 {len(vs)}] " + (" · ".join(v["ref"] for v in vs) or "없음")]
     pr = (n.get("summary") or {}).get("prayer") or {}
-    for title, key in (("함께 드리는 기도 제목", "fixed"), ("말씀 후 적용 기도 제목", "apply")):
+    for title, key in (("고정 기도 제목", "fixed"), ("특별 기도 제목", "apply")):
         if pr.get(key):
             lines += ["", f"[{title}]"] + [f"{i}. {t}" for i, t in enumerate(pr[key], 1)]
     now = now_kst()

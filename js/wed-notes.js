@@ -146,7 +146,7 @@
 
   // 기도 제목(2026-10-07 목사님): "위에는 고정, 아래는 말씀 후 적용 기도 제목 — 두 개로 나누면"
   //   summary.prayer = { fixed: [...], apply: [...] } — 고정은 tools/wed_notes.py 가 지난 자료에서 이어 받는다
-  var PRAYER_FIXED = "함께 드리는 기도 제목", PRAYER_APPLY = "말씀 후 적용 기도 제목";
+  var PRAYER_FIXED = "고정 기도 제목", PRAYER_APPLY = "특별 기도 제목";   // 이름은 목사님이 주신 글의 제목 그대로(10/07)
   function prayerOf(n) {
     var p = ((n && n.summary) || {}).prayer || {};
     var clean = function (a) { return (a || []).map(function (x) { return String(x || "").trim(); }).filter(Boolean); };
