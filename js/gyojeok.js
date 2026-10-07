@@ -1,7 +1,7 @@
 /* gyojeok.js — 교적관리(관리자 전용): 권한관리 + 교적명단
  * 콘솔: [gyojeok.js] v20260701di
  */
-console.log('[gyojeok.js] v20260701di');
+console.log('[gyojeok.js] v20261007reg');
 
 (function () {
   var root = document.getElementById('gjRoot');
@@ -67,8 +67,14 @@ console.log('[gyojeok.js] v20260701di');
         '</div>';
     }
 
-    // '등록일'이 실제로 찍힌 사람만 새가족(이 화면으로 등록된 사람)으로 취급 — 기존 성도/목회자는 등록일이 없어 제외됨
-    function isNewFamily(m) { return !!m['등록일']; }
+    // 새가족 = 교회 등록일이 1년 안인 사람. (2026-10-07 목사님 요청으로 기존 성도도 교적 수정에서 '교회 등록일'을 넣게 되어,
+    //  예전처럼 '등록일이 찍혀 있으면 새가족'으로 보면 오래된 성도까지 새가족 명단에 섞인다)
+    function isNewFamily(m) {
+      var d = String(m['등록일'] || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+      var t = new Date(); t.setFullYear(t.getFullYear() - 1);
+      return d >= t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate());
+    }
     function regMonthOf(m) {
       var d = m['등록일'] || '';
       return d ? d.slice(0, 7) : '';
@@ -143,7 +149,7 @@ console.log('[gyojeok.js] v20260701di');
         '<b>월별 신규 등록</b><span style="color:#9aa5b1;font-size:.78rem"> · 새가족만 집계됩니다</span>' +
         '<div style="margin-top:10px">' + statsChart(all) + '</div>' +
         '<div style="margin-top:16px;border-top:1px solid #eef1f5;padding-top:10px">' +
-        '<b style="font-size:.88rem">새가족 명단</b>' +
+        '<b style="font-size:.88rem">새가족 명단</b><span style="color:#9aa5b1;font-size:.78rem"> · 등록 1년 안</span>' +
         '<p style="color:#9aa5b1;font-size:.78rem;margin:4px 0 6px">정보가 아직 미흡해도 이름으로 찾아 이어서 채워 넣을 수 있어요.</p>' +
         '<input type="text" id="nf_recent_q" placeholder="🔍 이름 검색" style="width:100%;padding:7px 10px;border:1px solid #cdd7e3;border-radius:8px;font:inherit;margin-bottom:8px">' +
         '<div id="nf_recent">' + recentListHtml(all, '') + '</div></div>' +
@@ -183,6 +189,11 @@ console.log('[gyojeok.js] v20260701di');
         var visited = panel.querySelector('#nf_visited').value;
         var note = panel.querySelector('#nf_note').value.trim();
         if (!name) { msg.style.color = '#c0392b'; msg.textContent = '등록자 이름은 필수입니다.'; return; }
+        if (regDate) {                                                    // 2026.10.7 · 20261007 처럼 적어도 받는다
+          var regIso = normDate(regDate);
+          if (!regIso) { msg.style.color = '#c0392b'; msg.textContent = '등록일 날짜를 알아볼 수 없습니다. 예: 2026-10-07'; return; }
+          regDate = regIso;
+        }
         if (birth && birth.length !== 8) { msg.style.color = '#c0392b'; msg.textContent = '등록자 생년월일은 8자리이거나 비워 두세요.'; return; }
         var famRows = Array.prototype.map.call(famList.querySelectorAll('.nf-famrow'), function (r) {
           return { name: r.querySelector('.nf-f-name').value.trim(), birth: r.querySelector('.nf-f-birth').value.replace(/[^0-9]/g, ''), lunar: r.querySelector('.nf-f-cal').value === '1', rel: r.querySelector('.nf-f-rel').value };
@@ -651,16 +662,29 @@ console.log('[gyojeok.js] v20260701di');
 
   /* ── 개인 신상 상세(클릭 시 모달, 보기/수정/사진) ── */
   // 수정 가능한 항목(라벨 → 교적 열 이름)
+  // 교회 등록일은 2026-10-07 목사님 요청("교적관리에 등록일 기록하는 란이 없다")으로 날짜 칸들 맨 앞으로 올렸다
+  // (원래는 새가족 칸들과 함께 주소 아래에 있어 눈에 띄지 않았다). 교인증명서의 '등 록 일'로 그대로 들어간다.
   var EDIT_FIELDS = [
     ['이름', '이름', 'text'], ['생년월일', '생년월일', 'birth'], ['성별', '성별', 'sex'],
     ['휴대폰', '휴대폰', 'tel'], ['신급', '신급', 'grade'], ['직책', '직책', 'role'],
-    ['세례일', '세례일', 'date'], ['임직일', '임직일', 'date'],
+    ['교회 등록일', '등록일', 'date'], ['세례일', '세례일', 'date'], ['임직일', '임직일', 'date'],
     ['교인번호', '교적번호', 'text'],
     ['세대주', '세대주', 'person'], ['세대주와 관계', '관계', 'rel'], ['배우자', '배우자', 'person'],
     ['구역/부서', '그룹', 'text'], ['회원상태', '회원상태', 'status'], ['주소', '주소', 'text'],
-    ['등록일', '등록일', 'date'], ['직전교회', '직전교회', 'text'], ['인도자', '인도자', 'text'],
+    ['직전교회', '직전교회', 'text'], ['인도자', '인도자', 'text'],
     ['새가족 심방여부', '심방여부', 'visited'], ['특이사항', '특이사항', 'textarea']
   ];
+  var DATE_COLS = { '등록일': '교회 등록일', '세례일': '세례일', '임직일': '임직일' };
+  // 날짜 글 → 'YYYY-MM-DD'. 2010-03-21 · 2010.3.21 · 2010/3/21 · 20100321 · 2010년 3월 21일 모두 받는다. 알아볼 수 없으면 ''
+  function normDate(s) {
+    s = String(s || '').trim();
+    if (!s) return '';
+    var m = s.match(/^(\d{4})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})\s*일?\s*\.?$/) || s.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (!m) return '';
+    var y = +m[1], mo = +m[2], d = +m[3], dt = new Date(y, mo - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return '';
+    return y + '-' + pad2(mo) + '-' + pad2(d);
+  }
   // '본인' = 이 기록의 주인 자신. 세대주가 따로 있어도 본인 기록은 '본인'으로 둘 수 있다
   // (그래야 아내 기록이 '배우자'로만 남아 남의 시선으로 불리는 일이 없다. 부부 연결은 '배우자' 칸이 따로 보관)
   var REL_OPTS = ['본인', '세대주', '배우자', '부', '모', '조부', '조모', '장남', '차남', '삼남', '아들', '장녀', '차녀', '삼녀', '딸', '자녀', '형제', '자매', '손자', '손녀', '사위', '며느리', '기타'];
@@ -902,6 +926,12 @@ console.log('[gyojeok.js] v20260701di');
     function viewMode(cur) {
       var fam = gjFamily(cur, ALL);
       function row(label, val) { return val ? '<div style="display:flex;padding:7px 0;border-bottom:1px solid #f0f3f7"><div style="flex:0 0 96px;color:#7b8794;font-size:.85rem">' + esc(label) + '</div><div style="flex:1;font-size:.92rem">' + esc(val) + '</div></div>' : ''; }
+      // 교회 등록일은 비어 있어도 줄을 보여 준다 — 어디에 넣는지 알 수 있게(2026-10-07)
+      function regRow() {
+        var v = cur['등록일'];
+        return '<div style="display:flex;padding:7px 0;border-bottom:1px solid #f0f3f7"><div style="flex:0 0 96px;color:#7b8794;font-size:.85rem">교회 등록일</div><div style="flex:1;font-size:.92rem">' +
+          (v ? esc(certDate(v)) : '<span style="color:#b0b8c4">아직 없음 · [수정]에서 넣을 수 있습니다</span>') + '</div></div>';
+      }
       var age = '', bd = (String(cur['매칭키'] || '').split('|')[1]) || '';
       if (bd.length === 8) { var y = Number(bd.slice(0, 4)); if (y) age = (new Date().getFullYear() - y + 1) + '세'; }
       var famRows = fam.rows.map(function (r) { var f = r.m, isMe = f['매칭키'] === cur['매칭키']; return '<tr' + (isMe ? ' style="background:#eef4ff"' : '') + '><td><a href="#" class="gd-fam" data-key="' + esc(f['매칭키']) + '" style="color:var(--accent,#1A3A2F);text-decoration:none;font-weight:600">' + esc(f['이름']) + '</a></td><td>' + esc(r.rel) + '</td><td>' + esc(birthDisplay(f)) + '</td><td>' + esc(f['직책'] || '') + '</td></tr>'; }).join('') +
@@ -911,12 +941,12 @@ console.log('[gyojeok.js] v20260701di');
         '<div style="display:flex;gap:14px;align-items:center">' + avatar(cur, 84) + '<div><h3 style="margin:0;color:var(--accent,#1A3A2F)">' + esc(cur['이름']) + (cur['직책'] ? ' <span style="font-size:.8rem;color:#7b8794">' + esc(cur['직책']) + '</span>' : '') + '</h3><div style="color:#7b8794;font-size:.85rem;margin-top:3px">' + esc(cur['그룹'] || '') + (cur['세대주'] ? ' · ' + esc(cur['세대주']) + '의 가정' : '') + '</div></div></div>' +
         '<div style="display:flex;gap:6px"><button class="btn btn-solid" id="gd_edit" style="padding:4px 14px">수정</button><button class="btn btn-line" id="gd_delete" style="padding:4px 12px;color:#c0392b;border-color:#e6b0aa">삭제</button><button class="btn btn-line" id="gd_close" style="padding:4px 12px">닫기</button></div></div>' +
         '<div style="display:flex;gap:18px;flex-wrap:wrap"><div style="flex:1;min-width:240px">' +
-        row('교인번호', cur['교적번호']) + row('생년월일', birthDisplay(cur) + (age ? ' (' + age + ')' : '')) + row('성별', cur['성별']) + row('휴대폰', fmtPhone(cur['휴대폰'])) + row('집전화', cur['집전화']) + row('구역직분', cur['구역직분']) + row('기관직책', cur['기관직책']) + row('세례여부', cur['세례여부'] ? '받음' + (cur['세례일메모'] ? ' (' + cur['세례일메모'] + ')' : '') : '') + row('세례받은교회', cur['세례받은교회']) + row('집례자', cur['집례자']) + row('직장주소', cur['직장주소']) + row('직장전화', cur['직장전화']) + row('가족사항', cur['가족사항']) +
+        row('교인번호', cur['교적번호']) + regRow() + row('생년월일', birthDisplay(cur) + (age ? ' (' + age + ')' : '')) + row('성별', cur['성별']) + row('휴대폰', fmtPhone(cur['휴대폰'])) + row('집전화', cur['집전화']) + row('구역직분', cur['구역직분']) + row('기관직책', cur['기관직책']) + row('세례여부', cur['세례여부'] ? '받음' + (cur['세례일메모'] ? ' (' + cur['세례일메모'] + ')' : '') : '') + row('세례받은교회', cur['세례받은교회']) + row('집례자', cur['집례자']) + row('직장주소', cur['직장주소']) + row('직장전화', cur['직장전화']) + row('가족사항', cur['가족사항']) +
         '</div><div style="flex:1;min-width:240px">' +
         row('세대주', cur['세대주']) + row('세대주와 관계', cur['관계']) + row('배우자', cur['배우자']) + row('회원상태', cur['회원상태']) + row('임직일', cur['임직일']) +
         '</div></div>' + (cur['주소'] ? row('주소', cur['주소']) : '') +
         '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:4px"><div style="flex:1;min-width:240px">' +
-        row('등록일', cur['등록일']) + row('직전교회', cur['직전교회']) +
+        row('직전교회', cur['직전교회']) +
         '</div><div style="flex:1;min-width:240px">' +
         row('인도자', cur['인도자']) + row('심방여부', cur['심방여부']) +
         '</div></div>' + (cur['특이사항'] ? '<div style="margin-top:6px;padding:10px 12px;background:#fbfaf6;border:1px solid #f0ece0;border-radius:8px"><div style="color:#7b8794;font-size:.8rem;margin-bottom:3px">특이사항</div><div style="font-size:.9rem;white-space:pre-wrap">' + esc(cur['특이사항']) + '</div></div>' : '') +
@@ -1035,6 +1065,14 @@ console.log('[gyojeok.js] v20260701di');
         fields['소속그룹'] = gset.join(', ');
         var msg = box.querySelector('#gd_msg');
         if (!fields['이름']) { msg.style.color = '#c0392b'; msg.textContent = '이름은 필수입니다.'; return; }
+        // 날짜 칸(교회 등록일·세례일·임직일): 2010.3.21 · 20100321 · 2010년 3월 21일 도 2010-03-21 로 맞춰 저장
+        var badDate = '';
+        Object.keys(DATE_COLS).forEach(function (c) {
+          if (!fields[c]) return;
+          var iso = normDate(fields[c]);
+          if (iso) fields[c] = iso; else if (!badDate) badDate = DATE_COLS[c];
+        });
+        if (badDate) { msg.style.color = '#c0392b'; msg.textContent = badDate + ' 날짜를 알아볼 수 없습니다. 예: 2010-03-21'; return; }
         msg.style.color = '#7b8794'; msg.textContent = '저장 중…';
         WPF.call('updateGyojeok', { id: cur['교적ID'], fields: fields }).then(function (r) {
           // 로컬 갱신
@@ -1157,6 +1195,7 @@ console.log('[gyojeok.js] v20260701di');
         fld('성명', 'ct_name', cur['이름']) +
         fld('생년월일', 'ct_birth', certDate(birthOf(cur)) + (cur['음력생일'] ? ' (음)' : '')) +
         fld('등록일', 'ct_reg', certDate(cur['등록일']), '예: 2020년 3월 1일') +
+        (cur['등록일'] ? '' : '<div class="af-field" style="grid-column:1/-1;margin-top:-4px"><label class="sw" style="font-size:.82rem;color:#7b8794"><input type="checkbox" id="ct_reg_save" checked> 교적에 교회 등록일이 아직 없습니다 — 여기 적은 날짜를 교적에도 저장(다음부터는 저절로 채워짐)</label></div>') +
         '<div class="af-field" style="grid-column:1/-1"><label>주소</label><input type="text" id="ct_addr" value="' + esc(cur['주소'] || (headRow && headRow['주소']) || '') + '"></div>' +
         '</div>' +
         '<div style="margin-top:12px;border-top:1px solid #eef1f5;padding-top:12px"><div style="font-size:.85rem;color:var(--accent,#1A3A2F);font-weight:700;margin-bottom:8px">가족 사항 <span style="font-weight:400;color:#9aa5b1;font-size:.78rem">· 증명서의 ‘가족관계’ 줄에 들어갑니다. 넣지 않으려면 비우세요.</span></div>' +
@@ -1187,8 +1226,20 @@ console.log('[gyojeok.js] v20260701di');
         if (v('ct_head')) famParts.push('세대주 ' + v('ct_head') + (v('ct_headrel') ? ' (' + v('ct_headrel') + ')' : ''));
         if (kidNames.length) famParts.push('자녀 ' + kidNames.join(', '));
         if (!v('ct_name')) { var mg = box.querySelector('#ct_msg'); mg.style.color = '#c0392b'; mg.textContent = '성명은 비울 수 없습니다.'; return; }
-        gjCertDoc({ no: no, name: v('ct_name'), birth: v('ct_birth'), addr: v('ct_addr'), family: famParts.join('  ·  '), reg: v('ct_reg'), issue: v('ct_issue') });
+        var regIso = normDate(v('ct_reg'));                        // 2010-03-21 처럼 적어도 증명서에는 '2010년 3월 21일'로
+        gjCertDoc({ no: no, name: v('ct_name'), birth: v('ct_birth'), addr: v('ct_addr'), family: famParts.join('  ·  '), reg: regIso ? certDate(regIso) : v('ct_reg'), issue: v('ct_issue') });
         var msg = box.querySelector('#ct_msg'); msg.style.color = 'green'; msg.textContent = '✓ 새 창을 열었습니다 — 안 보이면 팝업 차단을 확인해 주세요';
+        // 교적에 등록일이 없었으면, 여기 적은 날짜를 교적에도 저장(2026-10-07 목사님 요청)
+        var saveReg = box.querySelector('#ct_reg_save');
+        if (saveReg && saveReg.checked && v('ct_reg')) {
+          if (!regIso) { msg.style.color = '#b7791f'; msg.textContent += ' · 등록일을 교적에 저장하려면 2010-03-21 처럼 적어 주세요'; return; }
+          WPF.call('updateGyojeok', { id: cur['교적ID'], fields: { '등록일': regIso } }).then(function () {
+            cur['등록일'] = regIso;
+            ALL.forEach(function (x) { if (String(x['교적ID']) === String(cur['교적ID'])) x['등록일'] = regIso; });
+            saveReg.closest('.af-field').remove();
+            msg.textContent += ' · 교적에도 교회 등록일(' + certDate(regIso) + ')을 저장했습니다';
+          }).catch(function (e) { msg.style.color = '#c0392b'; msg.textContent += ' · 교적 저장 실패: ' + e.message; });
+        }
       };
     }
 
