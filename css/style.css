@@ -4146,3 +4146,48 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .dash-scores .ds-t b { font-size: 1.15rem; font-family: "Gowun Batang", serif; }
 .dash-scores .ds-t small { font-size: .85rem; color: rgba(255,255,255,.75); margin-top: 2px; }
 .dash-scores .ds-go { font-size: 1.6rem; color: #BFA06C; }
+
+/* ── 교회에 메시지 보내기 · 내 교적 · 받은 메시지 (2026-10-07) ── */
+.auth-msg-m { display: none; }
+@media (max-width: 760px) { .auth-slot .auth-msg-m { display: block; } }
+.auth-card .ac-msg { margin-top: 8px; width: 100%; cursor: pointer; font: inherit; }
+
+.site-msg .sm-note { color: var(--ink-soft); font-size: .88rem; line-height: 1.7; margin: 0 0 14px; }
+.site-msg .sm-lab { display: block; font-size: .82rem; color: var(--ink-soft); margin: 10px 0 5px; font-weight: 600; }
+.site-msg .sm-input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #dfe5ee; border-radius: 10px; font: inherit; background: #fff; }
+.site-msg textarea.sm-input { resize: vertical; line-height: 1.7; min-height: 110px; }
+.site-msg .sm-input:focus { outline: none; border-color: var(--accent); }
+.site-msg .sm-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.site-msg .sm-msg { font-size: .88rem; color: var(--ink-soft); }
+.site-msg .sm-msg.ok { color: #1a7f4b; }
+.site-msg .sm-msg.err { color: #c0392b; }
+.site-msg .sm-h4 { margin: 22px 0 8px; font-size: .92rem; color: var(--accent); border-top: 1px solid var(--line); padding-top: 16px; }
+.site-msg #smList { max-height: 40vh; overflow: auto; }
+.site-msg .sm-empty { color: #9aa5b1; font-size: .88rem; margin: 4px 0; }
+.site-msg .sm-item { border: 1px solid #e8edf3; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: #fff; text-align: left; }
+.site-msg .sm-top { display: flex; gap: 8px; align-items: center; font-size: .78rem; color: #9aa5b1; margin-bottom: 4px; }
+.site-msg .sm-kind { background: #eef2fa; color: #3a5178; border-radius: 999px; padding: 1px 8px; font-weight: 700; }
+.site-msg .sm-when { margin-left: auto; }
+.site-msg .sm-body { white-space: pre-wrap; word-break: break-word; line-height: 1.7; font-size: .92rem; color: var(--ink); }
+.site-msg .sm-state { margin-top: 6px; font-size: .82rem; color: #9aa5b1; }
+.site-msg .sm-state.done { color: #1a7f4b; font-weight: 700; }
+.site-msg .sm-state small { font-weight: 400; color: #7b8794; margin-left: 4px; }
+
+.my-gj { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.my-gj th, .my-gj td { padding: 8px 10px; border-bottom: 1px solid #eef1f5; text-align: left; vertical-align: top; }
+.my-gj th { width: 7.5em; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
+.my-gj td { word-break: keep-all; overflow-wrap: anywhere; }
+.my-gj .my-gj-empty { color: #c3cad4; font-size: .85rem; }
+
+.om-badge { display: inline-block; min-width: 1.5em; padding: 1px 7px; border-radius: 999px; background: #c0392b; color: #fff; font-size: .75rem; text-align: center; vertical-align: 2px; }
+.om-item { border: 1px solid #e8edf3; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; background: #fffdf7; }
+.om-item.done { background: #fafbfc; }
+.om-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.om-kind { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; background: #eef2fa; color: #3a5178; }
+.om-kind.gj { background: #fff1d6; color: #8a6512; }
+.om-when { margin-left: auto; font-size: .78rem; color: #9aa5b1; }
+.om-body { white-space: pre-wrap; word-break: break-word; line-height: 1.75; font-size: .93rem; margin-bottom: 10px; }
+.om-ok { padding: 7px 14px; font-size: .86rem; }
+.om-state { font-size: .84rem; color: #1a7f4b; font-weight: 700; }
+.om-done { margin-top: 6px; }
+.om-done summary { cursor: pointer; color: var(--ink-soft); font-size: .86rem; padding: 6px 0; }

@@ -312,6 +312,32 @@ def check_new_logins(state):
         log("처음 실행: 지난 로그인 " + str(len(rows)) + "개의 나라만 채움(알림 없음)")
 
 
+def check_new_messages(state):
+    """홈페이지 '교회에 메시지 보내기'로 들어온 새 글을 목사님께 알린다(2026-10-07).
+    텔레그램에는 보낸 분·종류·시각만 보내고 본문은 보내지 않는다 — 본문은 홈페이지 대시보드에서 본다.
+    여기서 무슨 일이 나도 로그인 알림은 멈추지 않도록 통째로 감싼다."""
+    try:
+        try:
+            rows = api("GET", "/rest/v1/site_messages?select=id,sender_name,kind,created_at"
+                              "&notified=eq.false&order=id&limit=50")
+        except urllib.error.HTTPError:
+            return                                   # 표가 아직 없으면(SQL 실행 전) 조용히 넘어감
+        if not rows:
+            return
+        lines = []
+        for r in rows:
+            kind = "교적 수정 요청" if r.get("kind") == "교적수정" else "일반 문의"
+            lines.append("· " + (r.get("sender_name") or "(이름 없음)") + " — " + kind + " (" + when(r["created_at"]) + ")")
+        text = ("✉ 홈페이지에 새 메시지 " + str(len(rows)) + "건\n" + "\n".join(lines) +
+                "\n\n내용은 홈페이지 대시보드 '받은 메시지'에서 보실 수 있습니다.")
+        if telegram(text) and not PREVIEW:
+            ids = ",".join(str(r["id"]) for r in rows)
+            api("PATCH", "/rest/v1/site_messages?id=in.(" + ids + ")", {"notified": True}, "return=minimal")
+        log("새 메시지 알림 " + str(len(rows)) + "건")      # 이 PC 기록에는 이름을 남기지 않는다
+    except Exception as e:
+        log("메시지 알림 오류(로그인 알림은 계속): " + type(e).__name__ + " " + str(e)[:120])
+
+
 def summary_text(since):
     s_iso = since.astimezone(timezone.utc).isoformat()
     q = urllib.parse.quote(s_iso, safe="")
@@ -448,6 +474,7 @@ def main():
     try:
         ensure_geo(state)
         check_new_logins(state)
+        check_new_messages(state)
         maybe_summary(state, force="--summary-now" in sys.argv)
         maybe_card(state)
         cleanup(state)

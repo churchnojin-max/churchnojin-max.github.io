@@ -113,6 +113,8 @@ console.log('[dashboard.js] v20260705qtfallback');
       '</div>' +
       // 관리자에게만 보이는 승인 대기 — 가입만 하고 아직 정회원이 아닌 분들
       '<div id="pendingApproval" style="margin-bottom:22px;"></div>' +
+      // 최고 운영자(목사님)에게만 — 성도가 보낸 메시지
+      '<div id="ownerMessages" style="margin-bottom:22px;"></div>' +
       '<div id="dashScores"></div>' +
       '<h2 style="' + grp + 'margin-top:6px;">🕊 나의 신앙생활</h2>' +
       '<div id="dashQt" style="margin-bottom:22px;"></div>' +
@@ -122,6 +124,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       '<h2 style="' + grp + '">💒 나의 교회생활</h2>' +
       '<div class="form-card" style="margin-bottom:22px;padding:16px 18px;"><h3 style="margin:0 0 10px;font-size:1rem;color:var(--accent,#1A3A2F);">💝 헌금</h3><div id="offeringList"><p class="qt-loading">불러오는 중…</p></div></div>' +
       '<div id="myDocs" style="margin-bottom:22px;"></div>' +
+      '<div id="myGyojeok" style="margin-bottom:22px;scroll-margin-top:90px;"></div>' +
       '<div id="familyTree" style="margin-bottom:22px;"></div>' +
       '<p style="text-align:center;margin-top:14px;"><a class="btn btn-line" href="index.html#qt">이번 주 말씀·주보는 홈에서 보기 →</a></p>';
     loadPendingApproval();
@@ -134,6 +137,8 @@ console.log('[dashboard.js] v20260705qtfallback');
     loadOfferings(me);
     loadMyDocs(me);
     loadFamily(me);
+    loadMyGyojeok();
+    loadOwnerMessages();
   }
 
   /* ================= 악보집 단추 (2026-10-07 목사님 요청) =================
@@ -980,6 +985,106 @@ console.log('[dashboard.js] v20260705qtfallback');
     function show2(which, btn) { setActive2(btn); panel.innerHTML = which === 'all' ? allTab : '<div class="form-card" style="padding:16px;">' + byTab + '</div>'; }
     Array.prototype.forEach.call(tabs2, function (b) { b.onclick = function () { show2(b.dataset.o, b); }; });
     show2('acc', tabs2[0]);
+  }
+
+  /* ================= 내 교적 (2026-10-07) =================
+     본인 교적 한 줄만(rpc my_gyojeok). 특이사항·심방 같은 목회용 메모는 DB 가 아예 돌려주지 않는다.
+     잘못된 곳은 [고칠 곳 알리기] → '교회에 메시지 보내기' 창(교적 수정 요청)으로. */
+  function dashRest(path, method, data) {
+    var url = window.SUPABASE_URL, ak = window.SUPABASE_ANON_KEY, tok = window.WPF && WPF.token();
+    if (!url || !ak || !tok) return Promise.reject(new Error('no session'));
+    return fetch(url.replace(/\/$/, '') + '/rest/v1/' + path, {
+      method: method || 'GET',
+      headers: { apikey: ak, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: data === undefined ? undefined : JSON.stringify(data)
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text().then(function (t) { return t ? JSON.parse(t) : null; });
+    });
+  }
+  function loadMyGyojeok() {
+    var box = document.getElementById('myGyojeok'); if (!box) return;
+    dashRest('rpc/my_gyojeok', 'POST', {}).then(function (rows) {
+      var g = rows && rows[0];
+      if (!g) { box.innerHTML = ''; return; }
+      function d(v) { return v ? String(v).slice(0, 10).replace(/-/g, '. ') : ''; }
+      var bap = g.baptized
+        ? ('세례' + (g.baptism_date ? ' · ' + d(g.baptism_date) : (g.baptism_note ? ' · ' + g.baptism_note : '')) + (g.baptism_church ? ' · ' + g.baptism_church : ''))
+        : (g.baptized === false ? '미세례' : (g.baptism_note || ''));
+      var rows2 = [
+        ['이름', g.name],
+        ['생년월일', g.birth ? d(g.birth) + (g.birth_lunar ? ' (음력)' : ' (양력)') : ''],
+        ['성별', g.sex],
+        ['직분', g.role],
+        ['신급', g.grade],
+        ['구역', g.groups],
+        ['구역 직분', g.district_role],
+        ['기관 직책', g.org_role],
+        ['휴대폰', g.phone],
+        ['집 전화', g.home_phone],
+        ['주소', g.address],
+        ['직장 주소', g.work_address],
+        ['직장 전화', g.work_phone],
+        ['세례', bap],
+        ['임직일', d(g.ordination_date)],
+        ['등록일', d(g.reg_date)],
+        ['직전 교회', g.prev_church],
+        ['세대주 · 관계', [g.head, g.relation].filter(Boolean).join(' · ')]
+      ];
+      box.innerHTML = '<div class="form-card" style="padding:16px 18px;">' +
+        '<h3 style="margin:0 0 4px;color:var(--accent,#1A3A2F);font-size:1rem">📋 내 교적</h3>' +
+        '<p style="color:var(--ink-soft);font-size:.82rem;margin:0 0 12px">교회 교적부에 적힌 내용입니다. 잘못된 곳이 있으면 아래 단추로 알려 주세요.</p>' +
+        '<table class="my-gj"><tbody>' + rows2.map(function (r) {
+          var v = (r[1] == null ? '' : String(r[1])).trim();
+          return '<tr><th>' + esc(r[0]) + '</th><td>' + (v ? esc(v) : '<span class="my-gj-empty">비어 있음</span>') + '</td></tr>';
+        }).join('') + '</tbody></table>' +
+        '<p style="margin:14px 0 0"><button type="button" class="btn btn-solid" id="gjFixBtn" style="padding:9px 18px">✏ 고칠 곳 알리기</button></p>' +
+        '</div>';
+      box.querySelector('#gjFixBtn').onclick = function () {
+        if (window.SiteMessage) window.SiteMessage.open({ kind: '교적수정' });
+      };
+      if (location.hash === '#myGyojeok') setTimeout(function () { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
+    }).catch(function () { box.innerHTML = ''; });
+  }
+
+  /* ================= 받은 메시지 (최고 운영자만, 2026-10-07) =================
+     [확인하였습니다]를 누르면 보낸 분의 '내가 보낸 메시지'에 그 표시가 뜬다. */
+  function loadOwnerMessages() {
+    var box = document.getElementById('ownerMessages'); if (!box) return;
+    dashRest('rpc/am_owner', 'POST', {}).then(function (ok) {
+      if (ok !== true) return;
+      return dashRest('site_messages?select=id,sender_name,kind,body,created_at,checked_at&order=created_at.desc&limit=60').then(function (rows) {
+        rows = rows || [];
+        var open = rows.filter(function (m) { return !m.checked_at; });
+        var done = rows.filter(function (m) { return m.checked_at; }).slice(0, 15);
+        function when(t) { var x = new Date(t); return isNaN(x) ? '' : (x.getMonth() + 1) + '월 ' + x.getDate() + '일 ' + ('0' + x.getHours()).slice(-2) + ':' + ('0' + x.getMinutes()).slice(-2); }
+        function item(m) {
+          return '<div class="om-item' + (m.checked_at ? ' done' : '') + '">' +
+            '<div class="om-top"><b>' + esc(m.sender_name || '') + '</b>' +
+            '<span class="om-kind' + (m.kind === '교적수정' ? ' gj' : '') + '">' + (m.kind === '교적수정' ? '교적 수정 요청' : '일반 문의') + '</span>' +
+            '<span class="om-when">' + esc(when(m.created_at)) + '</span></div>' +
+            '<div class="om-body">' + esc(m.body) + '</div>' +
+            (m.checked_at
+              ? '<div class="om-state">✓ 확인하였습니다 · ' + esc(when(m.checked_at)) + '</div>'
+              : '<button type="button" class="btn btn-solid om-ok" data-id="' + m.id + '">확인하였습니다</button>') +
+            '</div>';
+        }
+        box.innerHTML = '<div class="form-card" style="padding:16px 18px;border:1px solid ' + (open.length ? '#e9c46a' : '#e3e7ee') + '">' +
+          '<h3 style="margin:0 0 4px;color:var(--accent,#1A3A2F);font-size:1rem">✉ 받은 메시지' + (open.length ? ' <span class="om-badge">' + open.length + '</span>' : '') + '</h3>' +
+          '<p style="color:var(--ink-soft);font-size:.82rem;margin:0 0 12px">성도님들이 보낸 메시지입니다. [확인하였습니다]를 누르면 보낸 분 화면에 그대로 표시됩니다.</p>' +
+          (open.length ? open.map(item).join('') : '<p style="color:#9aa5b1;font-size:.88rem;margin:0 0 6px">새 메시지가 없습니다.</p>') +
+          (done.length ? '<details class="om-done"><summary>확인한 메시지 ' + done.length + '건</summary>' + done.map(item).join('') + '</details>' : '') +
+          '</div>';
+        Array.prototype.forEach.call(box.querySelectorAll('.om-ok'), function (b) {
+          b.onclick = function () {
+            b.disabled = true; b.textContent = '저장 중…';
+            dashRest('site_messages?id=eq.' + b.dataset.id, 'PATCH', { checked_at: new Date().toISOString() })
+              .then(loadOwnerMessages)
+              .catch(function () { b.disabled = false; b.textContent = '다시 시도'; });
+          };
+        });
+      });
+    }).catch(function () { box.innerHTML = ''; });
   }
 
   /* ================= 가계도 ================= */

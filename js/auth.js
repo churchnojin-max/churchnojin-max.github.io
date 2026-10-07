@@ -131,6 +131,7 @@
   //  · 처음 오신 분은 '먼저 둘러볼게요'로 바로 닫고 볼 수 있다.
   const KNOWN_KEY = "nojin_known_member";
   let signedIn = false, welcomeChecked = false, welcomePop = null;
+  let currentUid = null, msgBox = null;      // 메시지 보내기(⑤)
   function maybeWelcome() {
     if (welcomeChecked) return;
     welcomeChecked = true;
@@ -263,9 +264,13 @@
               ${joined ? `<div class="ac-row"><span>가입일</span><strong>${joined}</strong></div>` : ""}
             </div>
             <a class="btn btn-line ac-go" href="admin.html">내 정보 · 수정</a>
+            <button type="button" class="btn btn-line ac-go ac-msg" data-sitemsg>✉ 교회에 메시지 보내기</button>
           </div>
         </div>
+        <button class="auth-btn auth-msg-m" type="button" data-sitemsg>✉ 교회에 메시지 보내기</button>
         <button class="auth-btn" id="logoutBtn">로그아웃</button>`;
+      slot.querySelectorAll("[data-sitemsg]").forEach((b) => { b.addEventListener("click", () => openMessage()); });
+      currentUid = user.id;
       document.getElementById("logoutBtn").addEventListener("click", async () => {
         await sb.auth.signOut();
         location.reload();
@@ -278,6 +283,7 @@
       afterLogin(user);
     } else {
       signedIn = false;
+      currentUid = null;
       if (window.__joinFromQR) { window.__joinFromQR = false; setTimeout(openJoinGuide, 300); }
       else maybeWelcome();
       // 로그인 + 가입하기를 나란히 — 처음 오신 분이 '로그인'만 보고 막히지 않도록
@@ -308,7 +314,128 @@
     try { asked = !!sessionStorage.getItem("nojin_name_asked"); } catch (_) {}
     if (provider !== "email" && !meta.real_name && !asked) await askRealName(meta.name || meta.nickname || "");
     showPendingNotice(user);
+    showGyojeokCheck(user);
   }
+
+  // ④ 정회원이 되어 교적과 연결된 뒤 처음 로그인하면, 교적부를 확인해 달라고 한 번 안내한다.
+  //    (이 기기에서 한 번 — 대시보드의 '내 교적' 카드는 늘 남아 있으므로 거듭 띄우지 않는다)
+  async function showGyojeokCheck(user) {
+    const key = "nojin_gj_check_" + user.id;
+    try { if (localStorage.getItem(key)) return; } catch (_) { return; }
+    let row = null;
+    try {
+      const r = await sb.rpc("my_gyojeok");
+      row = r && !r.error && Array.isArray(r.data) ? r.data[0] : null;
+    } catch (_) { return; }
+    if (!row) return;                       // 아직 교적과 연결 전(준회원) → 승인 대기 안내가 대신 뜬다
+    const waitFree = () => new Promise((res) => {
+      let n = 0;
+      (function tick() {
+        if (!document.querySelector(".modal:not([hidden])") || n++ > 40) return res();
+        setTimeout(tick, 500);
+      })();
+    });
+    await waitFree();                       // 실명 확인 같은 다른 창이 떠 있으면 닫힐 때까지
+    try { localStorage.setItem(key, "1"); } catch (_) {}
+    const onDash = /dashboard\.html$/.test(location.pathname);
+    const box = document.createElement("div");
+    box.className = "modal";
+    box.innerHTML = `<div class="modal-backdrop" data-close></div>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-label="교적부 확인 안내" style="max-width:460px;text-align:center">
+        <div style="font-size:2.4rem;line-height:1;margin-bottom:10px" aria-hidden="true">📋</div>
+        <h3 style="font-family:'Noto Serif KR',serif;color:var(--accent);margin-bottom:12px">교적부를 확인해 주세요</h3>
+        <p style="color:var(--ink-soft);line-height:1.85;margin-bottom:18px">교적부를 확인하시어 잘못된 곳이 있다면<br /><b>교역자에게 말씀해 주시길 바랍니다.</b></p>
+        <button type="button" class="btn btn-solid" data-go style="min-width:170px;margin-bottom:8px">내 교적 확인하기</button><br />
+        <button type="button" class="btn btn-line" data-close style="min-width:170px">나중에</button>
+      </div>`;
+    document.body.appendChild(box);
+    box.querySelectorAll("[data-close]").forEach((b) => { b.onclick = () => box.remove(); });
+    box.querySelector("[data-go]").onclick = () => {
+      box.remove();
+      if (onDash) { const t = document.getElementById("myGyojeok"); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      else location.href = "dashboard.html#myGyojeok";
+    };
+  }
+
+  // ══════════ ⑤ 교회에 메시지 보내기 (2026-10-07) ══════════
+  // 받는 사람은 목사님(최고 운영자)뿐. 목사님이 확인하면 보낸 분 목록에 '확인하였습니다'가 뜬다.
+  // 저장·권한은 DB(site_messages, RLS)가 맡고, 텔레그램 알림은 사무실 PC 의 login_watch.py 가 보낸다.
+  const MSG_KIND = { "일반": "일반 문의", "교적수정": "교적 수정 요청" };
+  const escM = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const whenM = (t) => { const d = new Date(t); return isNaN(d) ? "" : `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+
+  async function loadMyMessages() {
+    const list = msgBox.querySelector("#smList");
+    list.innerHTML = '<p class="sm-empty">불러오는 중…</p>';
+    const { data, error } = await sb.from("site_messages")
+      .select("id,kind,body,created_at,checked_at")
+      .eq("user_id", currentUid)
+      .order("created_at", { ascending: false }).limit(10);
+    if (error) { list.innerHTML = '<p class="sm-empty">아직 준비 중입니다. 잠시 후 다시 열어 주세요.</p>'; return; }
+    if (!data || !data.length) { list.innerHTML = '<p class="sm-empty">아직 보낸 메시지가 없습니다.</p>'; return; }
+    list.innerHTML = data.map((m) => `<div class="sm-item">
+        <div class="sm-top"><span class="sm-kind">${escM(MSG_KIND[m.kind] || m.kind)}</span><span class="sm-when">${escM(whenM(m.created_at))}</span></div>
+        <div class="sm-body">${escM(m.body)}</div>
+        ${m.checked_at
+          ? `<div class="sm-state done">✓ 확인하였습니다 <small>${escM(whenM(m.checked_at))}</small></div>`
+          : '<div class="sm-state">전달됨 · 확인 전</div>'}
+      </div>`).join("");
+  }
+
+  function openMessage(opts) {
+    opts = opts || {};
+    if (!signedIn || !currentUid) { setMode("login"); openModal(); return; }
+    if (!msgBox) {
+      msgBox = document.createElement("div");
+      msgBox.className = "modal site-msg";
+      msgBox.hidden = true;
+      msgBox.innerHTML = `<div class="modal-backdrop" data-smclose></div>
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="smTitle" style="max-width:520px">
+          <button class="modal-close" data-smclose aria-label="닫기">&times;</button>
+          <h3 id="smTitle" style="font-family:'Noto Serif KR',serif;color:var(--accent);margin-bottom:6px">✉ 교회에 메시지 보내기</h3>
+          <p class="sm-note">목사님께 전달됩니다. 확인하시면 아래 목록에 <b>‘확인하였습니다’</b>가 표시됩니다.</p>
+          <label class="sm-lab" for="smKind">종류</label>
+          <select id="smKind" class="sm-input">
+            <option value="일반">일반 문의</option>
+            <option value="교적수정">교적 수정 요청</option>
+          </select>
+          <label class="sm-lab" for="smBody">내용</label>
+          <textarea id="smBody" class="sm-input" rows="5" maxlength="2000" placeholder="전하실 말씀을 적어 주세요."></textarea>
+          <div class="sm-actions"><button type="button" class="btn btn-solid" id="smSend">보내기</button><span id="smMsg" class="sm-msg"></span></div>
+          <h4 class="sm-h4">내가 보낸 메시지</h4>
+          <div id="smList"></div>
+        </div>`;
+      document.body.appendChild(msgBox);
+      const close = () => { msgBox.hidden = true; document.body.style.overflow = ""; };
+      msgBox.querySelectorAll("[data-smclose]").forEach((b) => { b.onclick = close; });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && msgBox && !msgBox.hidden) close(); });
+      msgBox.querySelector("#smSend").onclick = async () => {
+        const btn = msgBox.querySelector("#smSend"), out = msgBox.querySelector("#smMsg");
+        const body = msgBox.querySelector("#smBody").value.trim();
+        const kind = msgBox.querySelector("#smKind").value;
+        if (!body) { out.className = "sm-msg err"; out.textContent = "내용을 적어 주세요."; return; }
+        btn.disabled = true; out.className = "sm-msg"; out.textContent = "보내는 중…";
+        const { error } = await sb.from("site_messages").insert({ kind, body });
+        btn.disabled = false;
+        if (error) {
+          out.className = "sm-msg err";
+          out.textContent = /10건/.test(error.message || "") ? error.message : "보내지 못했습니다. 잠시 후 다시 시도해 주세요.";
+          return;
+        }
+        msgBox.querySelector("#smBody").value = "";
+        out.className = "sm-msg ok"; out.textContent = "✓ 보냈습니다. 목사님께 전달됩니다.";
+        loadMyMessages();
+      };
+    }
+    msgBox.querySelector("#smKind").value = opts.kind === "교적수정" ? "교적수정" : "일반";
+    msgBox.querySelector("#smMsg").textContent = "";
+    if (opts.text) msgBox.querySelector("#smBody").value = opts.text;
+    msgBox.hidden = false;
+    document.body.style.overflow = "hidden";
+    loadMyMessages();
+    setTimeout(() => { const t = msgBox.querySelector("#smBody"); if (t) t.focus(); }, 50);
+  }
+  window.SiteMessage = { open: openMessage };
 
   // ③ 아직 정회원 승인 전이면 안내 창을 (이 창을 닫을 때까지) 한 번 띄운다
   let pendingChecked = false;
