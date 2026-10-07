@@ -882,41 +882,62 @@ console.log('[gyojeok.js] v20261007reg');
     return { rows: rows, extra: extra };
   }
 
-  // 가정 헌금 내역(재정 권한이 있는 분에게만) — 가족의 매칭키 + 이름으로만 적힌 헌금
   function won(n) { return (Number(n) || 0).toLocaleString('ko-KR') + '원'; }
-  function loadFamilyOfferings(el, fam) {
+  // 헌금 내역(재정 권한이 있는 분에게만) — 처음에는 이 사람 본인의 헌금만, [가정 전체]를 누르면 가족 모두
+  // (2026-10-07 목사님: "손필립을 열면 가족에 묶여 헌금까지 가정 것으로 나온다 → 헌금은 따로 나와야")
+  //  본인 헌금 = 이 사람 교적과 이어진 전표 + 교적과 이어지지 않았지만 헌금자 이름이 이 사람인 전표('손필립', '손필립(생일)')
+  function loadFamilyOfferings(el, fam, cur) {
     WPF.call('myPerms').then(function (r) {
       var p = (r && r.perms) || {};
       if (!(p.canFinance || p.isAdmin)) { el.innerHTML = ''; return; }
       el.innerHTML = '<div style="color:#7b8794;font-size:.85rem">헌금 내역을 불러오는 중…</div>';
       var keys = fam.rows.map(function (x) { return x.m['매칭키']; });
+      if (cur && keys.indexOf(cur['매칭키']) < 0) keys.push(cur['매칭키']);
       var names = [];
       fam.rows.forEach(function (x) { names.push(x.m['이름']); });
+      if (cur && names.indexOf(cur['이름']) < 0) names.push(cur['이름']);
       var surname = fam.rows.length ? nrm(fam.rows[0].m['이름']).charAt(0) : '';
       fam.extra.forEach(function (e) { names.push(e.name); if (surname) names.push(surname + e.name); });
       return WPF.call('memberOfferings', { keys: keys, names: names }).then(function (res) {
-        var list = res.offerings || [];
-        var head = '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><b style="color:var(--accent,#1A3A2F)">헌금 내역 <span style="font-weight:400;font-size:.8rem;color:#7b8794">(가정 전체 · 재정 권한)</span></b>';
-        if (!list.length) { el.innerHTML = head + '</div><p style="color:#7b8794;font-size:.85rem;margin:6px 0 0">이 가정 이름으로 입력된 헌금이 없습니다.</p>'; return; }
-        var total = 0, byYear = {}, years = [];
-        list.forEach(function (o) { total += o.amount; var y = String(o.date).slice(0, 4) || '날짜 없음'; if (byYear[y] == null) { byYear[y] = 0; years.push(y); } byYear[y] += o.amount; });
+        var all = res.offerings || [];
+        var myKey = cur ? cur['매칭키'] : '', myName = cur ? nrm(cur['이름']) : '';
+        function cleanName(s) { return nrm(String(s || '').replace(/\((?:생일|심방|감사|헌신|기념)[^)]*\)/g, '').replace(/(?:생일|심방)$/, '')); }
+        var mine = all.filter(function (o) { return (myKey && o.key === myKey) || (o.byName && myName && cleanName(o.giver) === myName); });
         var nameOfKey = {}; fam.rows.forEach(function (x) { nameOfKey[x.m['매칭키']] = x.m['이름']; });
-        var SHOW = 12;
-        function rowsHtml(all) {
-          return (all ? list : list.slice(0, SHOW)).map(function (o) {
-            var who = nameOfKey[o.key] || o.giver;
-            return '<tr><td style="white-space:nowrap">' + esc(o.date) + '</td><td>' + esc(who) + (o.byName ? ' <span style="font-size:.72rem;color:#b8860b" title="교인 연결 없이 이름으로만 적힌 헌금">(이름)</span>' : '') + '</td><td>' + esc(o.account) + '</td><td style="text-align:right;white-space:nowrap">' + won(o.amount) + '</td></tr>';
-          }).join('');
+        var famCount = fam.rows.length + fam.extra.length;
+        var mode = 'me';
+        function draw() {
+          var list = mode === 'me' ? mine : all;
+          var total = 0, byYear = {}, years = [], byAcc = {};
+          list.forEach(function (o) { total += o.amount; var y = String(o.date).slice(0, 4) || '날짜 없음'; if (byYear[y] == null) { byYear[y] = 0; years.push(y); } byYear[y] += o.amount; byAcc[o.account] = (byAcc[o.account] || 0) + o.amount; });
+          var tabs = cur && famCount > 1 ? '<div style="display:flex;gap:6px;margin:8px 0 2px">' +
+            '<button type="button" class="btn ' + (mode === 'me' ? 'btn-solid' : 'btn-line') + ' gd-off-tab" data-m="me" style="padding:4px 12px;font-size:.8rem">' + esc(cur['이름']) + ' 본인 (' + mine.length + '건)</button>' +
+            '<button type="button" class="btn ' + (mode === 'all' ? 'btn-solid' : 'btn-line') + ' gd-off-tab" data-m="all" style="padding:4px 12px;font-size:.8rem">가정 전체 (' + all.length + '건)</button></div>' : '';
+          var head = '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><b style="color:var(--accent,#1A3A2F)">헌금 내역 <span style="font-weight:400;font-size:.8rem;color:#7b8794">(' + (mode === 'me' ? esc(cur ? cur['이름'] : '') + ' 본인' : '가정 전체') + ' · 재정 권한)</span></b>' +
+            (list.length ? '<span style="font-size:.86rem">모두 <b>' + list.length + '건 · ' + won(total) + '</b></span>' : '') + '</div>';
+          if (!list.length) { el.innerHTML = head + tabs + '<p style="color:#7b8794;font-size:.85rem;margin:6px 0 0">' + (mode === 'me' ? '이 분 이름으로 입력된 헌금이 없습니다.' : '이 가정 이름으로 입력된 헌금이 없습니다.') + '</p>'; wire(); return; }
+          var SHOW = 12;
+          function rowsHtml(showAll) {
+            return (showAll ? list : list.slice(0, SHOW)).map(function (o) {
+              var who = nameOfKey[o.key] || o.giver;
+              return '<tr><td style="white-space:nowrap">' + esc(o.date) + '</td><td>' + esc(who) + (o.byName ? ' <span style="font-size:.72rem;color:#b8860b" title="교인 연결 없이 이름으로만 적힌 헌금">(이름)</span>' : '') + '</td><td>' + esc(o.account) + '</td><td style="text-align:right;white-space:nowrap">' + won(o.amount) + '</td></tr>';
+            }).join('');
+          }
+          el.innerHTML = head + tabs +
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">' + years.map(function (y) { return '<span class="fin-pill" style="background:#eef4ff;color:#1A3A2F">' + esc(y) + '년 ' + won(byYear[y]) + '</span>'; }).join('') +
+            Object.keys(byAcc).sort(function (a, b) { return byAcc[b] - byAcc[a]; }).map(function (a) { return '<span class="fin-pill" style="background:#eef2f7;color:#3a4a63">' + esc(a) + ' ' + won(byAcc[a]) + '</span>'; }).join('') + '</div>' +
+            '<div style="overflow:auto"><table class="fin-table" style="font-size:.84rem"><thead><tr><th>날짜</th><th>헌금자</th><th>항목</th><th style="text-align:right">금액</th></tr></thead><tbody class="gd-off-body">' + rowsHtml(false) + '</tbody></table></div>' +
+            (list.length > SHOW ? '<button type="button" class="btn btn-line gd-off-more" style="margin-top:8px;padding:4px 12px;font-size:.8rem">나머지 ' + (list.length - SHOW) + '건 더 보기</button>' : '');
+          var more = el.querySelector('.gd-off-more');
+          if (more) more.onclick = function () { el.querySelector('.gd-off-body').innerHTML = rowsHtml(true); more.remove(); };
+          wire();
         }
-        el.innerHTML = head + '<span style="font-size:.86rem">모두 <b>' + list.length + '건 · ' + won(total) + '</b></span></div>' +
-          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">' + years.map(function (y) { return '<span class="fin-pill" style="background:#eef4ff;color:#1A3A2F">' + esc(y) + '년 ' + won(byYear[y]) + '</span>'; }).join('') + '</div>' +
-          '<div style="overflow:auto"><table class="fin-table" style="font-size:.84rem"><thead><tr><th>날짜</th><th>헌금자</th><th>항목</th><th style="text-align:right">금액</th></tr></thead><tbody class="gd-off-body">' + rowsHtml(false) + '</tbody></table></div>' +
-          (list.length > SHOW ? '<button type="button" class="btn btn-line gd-off-more" style="margin-top:8px;padding:4px 12px;font-size:.8rem">나머지 ' + (list.length - SHOW) + '건 더 보기</button>' : '');
-        var more = el.querySelector('.gd-off-more');
-        if (more) more.onclick = function () { el.querySelector('.gd-off-body').innerHTML = rowsHtml(true); more.remove(); };
+        function wire() { Array.prototype.forEach.call(el.querySelectorAll('.gd-off-tab'), function (b) { b.onclick = function () { mode = b.dataset.m; draw(); }; }); }
+        draw();
       });
     }).catch(function (e) { el.innerHTML = '<div style="color:#c0392b;font-size:.84rem">헌금 내역을 불러오지 못했습니다: ' + esc(e.message) + '</div>'; });
   }
+
 
   function showDetail(m) {
     var ov = document.createElement('div');
@@ -961,7 +982,7 @@ console.log('[gyojeok.js] v20261007reg');
         '<p style="color:#9aa5b1;font-size:.78rem;margin:4px 0 0">가족 이름을 누르면 그분의 정보와 가족 관계가 열립니다.</p></div>' +
         '<div id="gd_off" style="margin-top:16px"></div>';
       box.querySelector('#gd_close').onclick = close;
-      loadFamilyOfferings(box.querySelector('#gd_off'), fam);
+      loadFamilyOfferings(box.querySelector('#gd_off'), fam, cur);
       // 증명서는 교회 이름과 담임목사 이름으로 나가는 공식 문서라 전권 관리자에게만 연다
       isFullAdmin().then(function (ok) { var b = box.querySelector('#gd_cert'); if (ok && b) { b.hidden = false; b.onclick = function () { certMode(cur); }; } });
       box.querySelector('#gd_edit').onclick = function () { editMode(cur); };
