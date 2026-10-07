@@ -664,15 +664,19 @@ console.log('[gyojeok.js] v20261007reg');
   // 수정 가능한 항목(라벨 → 교적 열 이름)
   // 교회 등록일은 2026-10-07 목사님 요청("교적관리에 등록일 기록하는 란이 없다")으로 날짜 칸들 맨 앞으로 올렸다
   // (원래는 새가족 칸들과 함께 주소 아래에 있어 눈에 띄지 않았다). 교인증명서의 '등 록 일'로 그대로 들어간다.
+  // 2026-10-07 목사님: "집전화·직장전화 수정이 안 된다, 수정에 들어가도 항목이 없다" → 상세 보기에 나오는 칸은 모두 여기서 고칠 수 있게
+  // (집전화·직장주소·직장전화·구역직분·기관직책·세례여부·세례 메모·세례받은교회·집례자·가족사항을 더함)
   var EDIT_FIELDS = [
     ['이름', '이름', 'text'], ['생년월일', '생년월일', 'birth'], ['성별', '성별', 'sex'],
-    ['휴대폰', '휴대폰', 'tel'], ['신급', '신급', 'grade'], ['직책', '직책', 'role'],
-    ['교회 등록일', '등록일', 'date'], ['세례일', '세례일', 'date'], ['임직일', '임직일', 'date'],
+    ['휴대폰', '휴대폰', 'tel'], ['집전화', '집전화', 'tel'], ['신급', '신급', 'grade'], ['직책', '직책', 'role'],
+    ['교회 등록일', '등록일', 'date'], ['임직일', '임직일', 'date'],
+    ['세례여부', '세례여부', 'yesno'], ['세례일', '세례일', 'date'], ['세례 메모', '세례일메모', 'text'], ['세례받은교회', '세례받은교회', 'text'], ['집례자', '집례자', 'text'],
     ['교인번호', '교적번호', 'text'],
     ['세대주', '세대주', 'person'], ['세대주와 관계', '관계', 'rel'], ['배우자', '배우자', 'person'],
-    ['구역/부서', '그룹', 'text'], ['회원상태', '회원상태', 'status'], ['주소', '주소', 'text'],
+    ['구역/부서', '그룹', 'text'], ['구역직분', '구역직분', 'text'], ['기관직책', '기관직책', 'text'], ['회원상태', '회원상태', 'status'],
+    ['주소', '주소', 'text'], ['직장주소', '직장주소', 'text'], ['직장전화', '직장전화', 'tel'],
     ['직전교회', '직전교회', 'text'], ['인도자', '인도자', 'text'],
-    ['새가족 심방여부', '심방여부', 'visited'], ['특이사항', '특이사항', 'textarea']
+    ['새가족 심방여부', '심방여부', 'visited'], ['가족사항', '가족사항', 'textarea'], ['특이사항', '특이사항', 'textarea']
   ];
   var DATE_COLS = { '등록일': '교회 등록일', '세례일': '세례일', '임직일': '임직일' };
   // 날짜 글 → 'YYYY-MM-DD'. 2010-03-21 · 2010.3.21 · 2010/3/21 · 20100321 · 2010년 3월 21일 모두 받는다. 알아볼 수 없으면 ''
@@ -998,6 +1002,7 @@ console.log('[gyojeok.js] v20261007reg');
         else if (type === 'status') ctrl = '<select data-col="' + col + '">' + selOpts(STATUS_OPTS, v) + '</select>';
         else if (type === 'visited') ctrl = '<select data-col="' + col + '">' + selOpts(VISITED_OPTS, v) + '</select>';
         else if (type === 'rel') ctrl = '<select data-col="' + col + '">' + selOpts(REL_OPTS, v) + '</select>';
+        else if (type === 'yesno') ctrl = '<select data-col="' + col + '" data-bool="1"><option value=""' + (v ? '' : ' selected') + '>안 받음</option><option value="1"' + (v ? ' selected' : '') + '>받음</option></select>';
         else if (type === 'textarea') ctrl = '<textarea data-col="' + col + '" rows="2" style="width:100%;padding:8px 10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit">' + esc(v) + '</textarea>';
         else if (type === 'person') ctrl = '<input type="text" data-col="' + col + '" value="' + esc(v) + '" list="gd_names" autocomplete="off" placeholder="교적에 있는 이름">';
         else ctrl = '<input type="text" data-col="' + col + '" value="' + esc(v) + '"' + (type === 'tel' ? ' inputmode="numeric"' : '') + (type === 'birth' ? ' placeholder="예: 1981-08-19"' : '') + (type === 'date' ? ' placeholder="예: 2010-03-21"' : '') + '>';
@@ -1054,7 +1059,7 @@ console.log('[gyojeok.js] v20261007reg');
       syncHead();
       box.querySelector('#gd_save').onclick = function () {
         var fields = {};
-        Array.prototype.forEach.call(box.querySelectorAll('[data-col]'), function (el) { fields[el.dataset.col] = el.value.trim(); });
+        Array.prototype.forEach.call(box.querySelectorAll('[data-col]'), function (el) { fields[el.dataset.col] = el.dataset.bool ? (el.value === '1') : el.value.trim(); });
         // 세대주 지정 — 관계를 '본인'으로 골라 뒀으면 그대로 둔다(본인 기록을 남의 호칭으로 덮어쓰지 않음)
         if (ishead.checked) { fields['세대주'] = fields['이름']; if (fields['관계'] !== '본인') fields['관계'] = '세대주'; }
         if (!branch.checked) fields['부모세대'] = '';                                          // 분가 해제 시 연결 제거
@@ -1130,8 +1135,9 @@ console.log('[gyojeok.js] v20261007reg');
         '<p style="color:#7b8794;font-size:.85rem;margin-bottom:10px"><b>' + esc(head) + '</b>의 가정 · ' + fam.length + '명</p>' +
         '<span class="fin-msg" id="fm_msg" style="display:block;margin-bottom:8px"></span>' +
         '<div class="fin-card" style="padding:12px;margin-bottom:14px"><b style="font-size:.85rem">현재 가족</b><div style="overflow:auto;margin-top:6px"><table class="fin-table" style="font-size:.85rem"><thead><tr><th>이름</th><th>생년월일</th><th>관계</th><th>관리</th></tr></thead><tbody>' +
-        fam.map(function (f) { var isMe = f['교적ID'] === cur['교적ID']; return '<tr><td><b>' + esc(f['이름']) + '</b>' + (isMe ? ' <span style="color:#9ab;font-size:.74rem">(본인)</span>' : '') + '</td><td>' + esc(birthDisplay(f)) + '</td><td>' + relSel('fm_rel_' + f['교적ID'], f['관계']) + '</td><td style="white-space:nowrap"><button class="btn btn-line fm-relsave" data-id="' + esc(f['교적ID']) + '" style="padding:2px 8px;font-size:.74rem">관계저장</button> <button class="btn btn-line fm-remove" data-id="' + esc(f['교적ID']) + '" data-name="' + esc(f['이름']) + '" style="padding:2px 8px;font-size:.74rem">제외</button></td></tr>'; }).join('') +
-        '</tbody></table></div></div>' +
+        fam.map(function (f) { var isMe = f['교적ID'] === cur['교적ID']; return '<tr><td><b>' + esc(f['이름']) + '</b>' + (isMe ? ' <span style="color:#9ab;font-size:.74rem">(본인)</span>' : '') + '</td><td><input type="text" class="fm-birth" data-id="' + esc(f['교적ID']) + '" value="' + esc(birthOf(f)) + '" placeholder="예: 2010-03-21" inputmode="numeric" style="width:118px;padding:4px 7px;border:1px solid #dfe5ee;border-radius:6px;font:inherit;font-size:.84rem"></td><td>' + relSel('fm_rel_' + f['교적ID'], f['관계']) + '</td><td style="white-space:nowrap"><button class="btn btn-line fm-relsave" data-id="' + esc(f['교적ID']) + '" style="padding:2px 8px;font-size:.74rem">저장</button> <button class="btn btn-line fm-remove" data-id="' + esc(f['교적ID']) + '" data-name="' + esc(f['이름']) + '" style="padding:2px 8px;font-size:.74rem">제외</button></td></tr>'; }).join('') +
+        '</tbody></table></div>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><button class="btn btn-solid" id="fm_birthall" style="padding:5px 12px;font-size:.82rem">생년월일 모두 저장</button><span class="help" style="margin:0">생년월일 칸에 바로 적고 줄의 [저장] 또는 [생년월일 모두 저장]. 2010.3.21 · 20100321 · 2010년 3월 21일도 됩니다.</span></div></div>' +
         (cur['이름'] !== head ? '<div style="margin-bottom:14px"><button class="btn btn-line" id="fm_sethead" style="padding:5px 12px;font-size:.84rem">⌂ ' + esc(cur['이름']) + '님을 세대주로 지정</button></div>' : '') +
         '<div class="fin-card" style="padding:12px;margin-bottom:14px"><b style="font-size:.85rem">기존 교인 연결</b><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:8px">' +
         '<div class="af-field" style="flex:2;min-width:160px"><label>교인 선택</label><select id="fm_member"><option value="">교인 선택</option>' + cand.map(function (m) { return '<option value="' + esc(m['교적ID']) + '">' + esc(m['이름']) + ' (' + esc(birthDisplay(m)) + ')</option>'; }).join('') + '</select></div>' +
@@ -1148,9 +1154,41 @@ console.log('[gyojeok.js] v20261007reg');
       box.querySelector('#fm_back').onclick = function () { renderMembers(document.getElementById('gjPanel')); viewMode(cur); };
       var setHead = box.querySelector('#fm_sethead');
       if (setHead) setHead.onclick = function () { setMsg('세대 재편성 중…', true); Promise.all(makeHeadCalls(cur)).then(function () { rerun(cur['교적ID']); }).catch(function (e) { setMsg('오류: ' + e.message, false); }); };
+      // 생년월일 칸 → 바뀐 것만 [{m, iso}] (알아볼 수 없는 날짜가 있으면 bad 에 이름)
+      function birthChanges(ids) {
+        var out = [], bad = [];
+        Array.prototype.forEach.call(box.querySelectorAll('.fm-birth'), function (inp) {
+          if (ids && ids.indexOf(String(inp.dataset.id)) < 0) return;
+          var m = ALL.filter(function (x) { return String(x['교적ID']) === String(inp.dataset.id); })[0]; if (!m) return;
+          var v = inp.value.trim(), iso = v ? normDate(v) : '';
+          if (v && !iso) { bad.push(m['이름']); inp.style.borderColor = '#c0392b'; return; }
+          inp.style.borderColor = '#dfe5ee';
+          if (iso !== birthOf(m)) out.push({ m: m, iso: iso });
+        });
+        return { list: out, bad: bad };
+      }
+      function saveBirths(ch) {
+        return Promise.all(ch.map(function (c) { return WPF.call('updateGyojeok', { id: c.m['교적ID'], fields: { 이름: c.m['이름'], 생년월일: c.iso } }); }));
+      }
       Array.prototype.forEach.call(box.querySelectorAll('.fm-relsave'), function (b) {
-        b.onclick = function () { var sel = document.getElementById('fm_rel_' + b.dataset.id); var rel = sel ? sel.value : ''; var m = ALL.filter(function (x) { return String(x['교적ID']) === String(b.dataset.id); })[0]; if (!m) return; doLink(m, rel).then(function () { rerun(cur['교적ID']); }).catch(function (e) { setMsg('오류: ' + e.message, false); }); };
+        b.onclick = function () {
+          var sel = document.getElementById('fm_rel_' + b.dataset.id); var rel = sel ? sel.value : '';
+          var m = ALL.filter(function (x) { return String(x['교적ID']) === String(b.dataset.id); })[0]; if (!m) return;
+          var bc = birthChanges([String(b.dataset.id)]);
+          if (bc.bad.length) { setMsg(bc.bad.join(', ') + '님의 생년월일을 알아볼 수 없습니다. 예: 2010-03-21', false); return; }
+          var relChanged = String(rel || '') !== String(m['관계'] || '');
+          if (!bc.list.length && !relChanged) { setMsg('바뀐 것이 없습니다.', false); return; }
+          setMsg('저장 중…', true);
+          saveBirths(bc.list).then(function () { return relChanged ? doLink(m, rel) : null; }).then(function () { return rerun(cur['교적ID']); }).then(function () { var e = box.querySelector('#fm_msg'); if (e) { e.style.color = 'green'; e.textContent = '✓ ' + m['이름'] + '님 저장했습니다.'; } }).catch(function (e) { setMsg('오류: ' + e.message, false); });
+        };
       });
+      box.querySelector('#fm_birthall').onclick = function () {
+        var bc = birthChanges(null);
+        if (bc.bad.length) { setMsg(bc.bad.join(', ') + '님의 생년월일을 알아볼 수 없습니다. 예: 2010-03-21', false); return; }
+        if (!bc.list.length) { setMsg('바뀐 생년월일이 없습니다.', false); return; }
+        setMsg('생년월일 ' + bc.list.length + '명 저장 중…', true);
+        saveBirths(bc.list).then(function () { return rerun(cur['교적ID']); }).then(function () { var e = box.querySelector('#fm_msg'); if (e) { e.style.color = 'green'; e.textContent = '✓ 생년월일 ' + bc.list.length + '명 저장했습니다.'; } }).catch(function (e) { setMsg('오류: ' + e.message, false); });
+      };
       Array.prototype.forEach.call(box.querySelectorAll('.fm-remove'), function (b) {
         b.onclick = function () { if (!confirm(b.dataset.name + '님을 이 가족에서 제외할까요?')) return; WPF.call('updateGyojeok', { id: b.dataset.id, fields: { 세대주: b.dataset.name, 관계: '', 배우자: '', 배우자매칭키: '' } }).then(function () { rerun(cur['교적ID']); }).catch(function (e) { setMsg('오류: ' + e.message, false); }); };
       });
@@ -1160,9 +1198,11 @@ console.log('[gyojeok.js] v20261007reg');
         setMsg('연결 중…', true); doLink(m, rel).then(function () { rerun(cur['교적ID']); }).catch(function (e) { setMsg('오류: ' + e.message, false); });
       };
       box.querySelector('#fm_addnew').onclick = function () {
-        var nm = box.querySelector('#fm_nname').value.trim(); var bd = box.querySelector('#fm_nbirth').value.replace(/[^0-9]/g, ''); var rel = box.querySelector('#fm_nrel').value;
+        var nm = box.querySelector('#fm_nname').value.trim(); var bdRaw = box.querySelector('#fm_nbirth').value.trim(); var rel = box.querySelector('#fm_nrel').value;
         if (!nm) { setMsg('이름을 입력하세요.', false); return; }
-        if (bd && bd.length !== 8) { setMsg('생년월일은 8자리이거나 비워 두세요.', false); return; }
+        var bdIso = bdRaw ? normDate(bdRaw) : '';
+        if (bdRaw && !bdIso) { setMsg('생년월일을 알아볼 수 없습니다. 예: 2010-03-21 (모르면 비워 두세요)', false); return; }
+        var bd = bdIso.replace(/-/g, '');
         setMsg('추가 중…', true);
         WPF.call('addGyojeok', { name: nm, birth: bd }).then(function (r) {
           return WPF.call('listGyojeok').then(function (lr) {
