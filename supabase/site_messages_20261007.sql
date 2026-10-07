@@ -119,3 +119,26 @@ language sql security definer stable set search_path = public as $$
 $$;
 revoke all on function public.my_gyojeok() from public, anon;
 grant execute on function public.my_gyojeok() to authenticated;
+
+-- ── ③ 처리방침 제4조 ⑤ 를 지키는 장치 (2026-10-07 추가) ─────────
+-- 회원 탈퇴(프로필 삭제) 때 그 분이 보낸 메시지도 바로 지운다.
+-- (탈퇴는 auth.users 가 아니라 profiles 를 지우므로 위의 on delete cascade 만으로는 안 된다)
+create or replace function public.site_messages_on_withdraw()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  begin
+    delete from public.site_messages where user_id = old.id;
+  exception when others then
+    null;   -- 지우기가 실패해도 탈퇴는 막지 않는다
+  end;
+  return old;
+end $$;
+drop trigger if exists trg_site_messages_withdraw on public.profiles;
+create trigger trg_site_messages_withdraw after delete on public.profiles
+  for each row execute function public.site_messages_on_withdraw();
+
+-- 매일 새벽 1년 지난 메시지를 지운다(서버에서 돌아 PC 가 꺼져 있어도 된다)
+select cron.unschedule('site_messages_retention')
+ where exists (select 1 from cron.job where jobname = 'site_messages_retention');
+select cron.schedule('site_messages_retention', '20 18 * * *',
+  $$delete from public.site_messages where created_at < now() - interval '1 year'$$);

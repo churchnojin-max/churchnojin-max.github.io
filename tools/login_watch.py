@@ -454,6 +454,11 @@ def cleanup(state):
         return
     cut = (datetime.now(timezone.utc) - timedelta(days=KEEP_DAYS)).isoformat()
     api("DELETE", "/rest/v1/login_log?at=lt." + urllib.parse.quote(cut, safe=""), prefer="return=minimal")
+    # 교회에 메시지 보내기: 1년 지난 메시지 파기(처리방침 제4조 ⑤). 표가 없어도 로그인 기록 정리는 계속.
+    try:
+        api("DELETE", "/rest/v1/site_messages?created_at=lt." + urllib.parse.quote(cut, safe=""), prefer="return=minimal")
+    except Exception as e:
+        log("메시지 1년 파기 실패(다음에 다시): " + type(e).__name__)
     # 이 PC 의 기록 파일도 1년 지난 줄은 지운다
     p = DATA_DIR / "log.txt"
     if p.exists():
