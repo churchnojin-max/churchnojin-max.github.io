@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko" class="big-text">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>악보집 | 노진교회</title>
+  <!-- 목사님(최고 운영자)만 보는 화면 — 검색에 나오지 않게 -->
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="manifest" href="manifest.json?v=20260730lib13" />
+  <meta name="theme-color" content="#1A3A2F" />
+  <link rel="icon" href="images/favicon-32.png?v=20260926icon2" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png?v=20260926icon2" />
+  <meta name="apple-mobile-web-app-title" content="악보집" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=20261007pop" />
+  <link rel="stylesheet" href="css/scores.css?v=20261007sc" />
+</head>
+<body>
+
+  <!-- ===== 악보집 (2026-10-07 목사님 요청: "악보집을 들고 다닐 수 없으니 홈페이지에서 나만 바로바로 열어 보게") =====
+       새찬송가 645장 · 모두의 찬양 684곡. 악보 그림은 Supabase 비공개 보관함 hymns(001~645.webp, ccm/001~684.webp)에 있고
+       이 화면은 최고 운영자(am_owner)에게만 열린다. 화면 그리기·찾기·크게 보기는 js/scores.js -->
+  <main class="sc-page" id="scPage">
+    <div class="sc-head">
+      <h1>악보집</h1>
+      <p class="sc-sub">새찬송가 · 모두의 찬양 <span class="sc-only">목사님만 보는 화면</span></p>
+    </div>
+    <div id="scBody"><p class="sc-wait">확인하는 중…</p></div>
+  </main>
+
+  <script src="js/church.js?v=20260926denom"></script>
+  <script src="js/brand.js?v=1"></script>
+  <script src="js/config.js?v=20260730lib13"></script>
+  <script src="js/layout.js?v=20261007vc"></script>
+  <script src="js/hymn-data.js?v=20260730lib13"></script>
+  <script src="js/praise-index.js?v=20261003sub"></script>
+  <script src="js/scores.js?v=20261007sc"></script>
+</body>
+</html>
