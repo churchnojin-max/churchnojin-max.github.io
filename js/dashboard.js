@@ -113,6 +113,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       '</div>' +
       // 관리자에게만 보이는 승인 대기 — 가입만 하고 아직 정회원이 아닌 분들
       '<div id="pendingApproval" style="margin-bottom:22px;"></div>' +
+      '<div id="dashScores"></div>' +
       '<h2 style="' + grp + 'margin-top:6px;">🕊 나의 신앙생활</h2>' +
       '<div id="dashQt" style="margin-bottom:22px;"></div>' +
       '<div id="bibleRead" style="margin-bottom:22px;"></div>' +
@@ -124,6 +125,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       '<div id="familyTree" style="margin-bottom:22px;"></div>' +
       '<p style="text-align:center;margin-top:14px;"><a class="btn btn-line" href="index.html#qt">이번 주 말씀·주보는 홈에서 보기 →</a></p>';
     loadPendingApproval();
+    loadScoreButton();
     loadWelcomeName(me);
     loadTodayQt(me);
     loadBibleReading(me);
@@ -132,6 +134,24 @@ console.log('[dashboard.js] v20260705qtfallback');
     loadOfferings(me);
     loadMyDocs(me);
     loadFamily(me);
+  }
+
+  /* ================= 악보집 단추 (2026-10-07 목사님 요청) =================
+     '악보' 권한을 받은 분(교적관리 ▸ 권한 관리 ▸ 악보, 최고 운영자는 늘)에게만 보인다.
+     권한이 없으면 아무것도 그리지 않는다 — 이런 화면이 있는 줄도 모르게(목사님 말씀: "괜히 궁금해해서 달라고 할 수 있으니"). */
+  function loadScoreButton() {
+    var box = document.getElementById('dashScores');
+    var url = window.SUPABASE_URL, ak = window.SUPABASE_ANON_KEY, tok = window.WPF && WPF.token();
+    if (!box || !url || !ak || !tok) return;
+    fetch(url.replace(/\/$/, '') + '/rest/v1/rpc/can_score', {
+      method: 'POST', headers: { apikey: ak, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: '{}'
+    }).then(function (r) { return r.ok ? r.json() : false; }).then(function (ok) {
+      if (ok !== true) return;
+      box.innerHTML = '<a class="dash-scores" href="scores.html">' +
+        '<span class="ds-ic" aria-hidden="true">🎼</span>' +
+        '<span class="ds-t"><b>악보집</b><small>새찬송가 645장 · 모두의 찬양 684곡</small></span>' +
+        '<span class="ds-go" aria-hidden="true">›</span></a>';
+    }).catch(function () {});
   }
 
   /* ================= 정회원 승인 대기 (관리자에게만 보임) =================

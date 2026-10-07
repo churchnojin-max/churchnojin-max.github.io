@@ -1,7 +1,9 @@
 /* ============================================================
-   악보집 — 목사님(최고 운영자)만 보는 새찬송가·「모두의 찬양」 악보 (2026-10-07)
+   악보집 — 새찬송가·「모두의 찬양」 악보 (2026-10-07)
    목사님 말씀: "악보집을 들고 다닐 수가 없으니 홈페이지에서 나만 볼 수 있게, 필요하면 바로바로 열어서."
-   - 누가 볼 수 있나: am_owner() 가 참인 분(최고 운영자)만. 다른 분께는 "볼 수 있는 권한이 없습니다"만 보인다.
+   - 누가 볼 수 있나: can_score() 가 참인 분 — 최고 운영자와 '악보' 권한을 받은 분(교적관리 ▸ 권한 관리 ▸ 악보, 반주자 등).
+     들어오는 길은 대시보드의 '악보집' 단추(권한 있는 분께만 보임, js/dashboard.js).
+     권한이 없는 분이 주소로 들어오면 아무 말 없이 첫 화면으로 보낸다(이런 화면이 있다는 것도 모르게).
      악보 그림은 비공개 보관함 hymns 에 있어 주소를 알아도 열리지 않고, 한 시간짜리 서명 주소로만 받는다.
    - 찾기: 번호(예: 305), 제목 낱말(띄어쓰기 무시), 첫소리(예: ㄴㅇㄱ → 나 같은 죄인…).
    - 크게 보기: 화면 가득. 옆으로 밀면 앞·뒤 곡, 두 번 톡 치거나 두 손가락으로 벌리면 크게, ‹ › 단추, 컴퓨터는 ← → 키.
@@ -65,10 +67,10 @@
   function check() {
     if (!sb) return;
     sb.auth.getSession().then(function (r) {
-      if (!(r && r.data && r.data.session)) { ready = false; deny("목사님 계정으로 로그인하면 열립니다.", true); return; }
-      return sb.rpc("am_owner").then(function (res) {
+      if (!(r && r.data && r.data.session)) { ready = false; deny("로그인해 주세요.", true); return; }
+      return sb.rpc("can_score").then(function (res) {
         if (res && res.data === true) { if (!ready) { ready = true; start(); } }
-        else { ready = false; deny("볼 수 있는 권한이 없습니다.", false); }
+        else { ready = false; location.replace("index.html"); }
       });
     }).catch(function () { deny("확인하지 못했습니다. 잠시 뒤 새로고침해 주세요.", false); });
   }

@@ -480,7 +480,7 @@
     try { vcFlag = sessionStorage.getItem("nojin_vc_owner"); } catch (e) {}
     if (sessionToken() && vcFlag !== "0") {
       const s = document.createElement("script");
-      s.src = "js/visit-stats.js?v=20261007sc";
+      s.src = "js/visit-stats.js?v=20261007sc2";
       s.defer = true;
       document.body.appendChild(s);
     }

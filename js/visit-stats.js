@@ -50,7 +50,6 @@
     var el = document.getElementById("vcFooter");
     if (!el) { el = document.createElement("div"); el.id = "vcFooter"; el.className = "vc-footer"; host.insertBefore(el, host.firstChild); }
     el.innerHTML = '<button type="button" class="vc-chip" id="vcOpen" aria-label="방문자 현황 자세히 보기">📊 방문자 <b>오늘 ' + fmt(c.today) + '명</b> · 어제 ' + fmt(c.yesterday) + ' · 이번 달 ' + fmt(c.month) + ' · 누적 ' + fmt(c.total) + ' <span class="vc-more">자세히 ›</span></button>' +
-      ' <a class="vc-chip vc-scores" style="text-decoration:none;margin-left:6px" href="scores.html" title="새찬송가·모두의 찬양 악보(목사님만)">🎼 악보집 ›</a>' +
       '<span class="vc-only">목사님(최고 운영자)께만 보이는 숫자입니다</span>';
     el.querySelector("#vcOpen").onclick = function () { openModal(30); };
   }

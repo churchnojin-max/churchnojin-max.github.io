@@ -4136,3 +4136,13 @@ html.big-text.ts-xl { font-size: 137.5%; }
   .vc-grid { grid-template-columns: minmax(0, 1fr); }
   .vc-body { padding: 14px 16px 40px; }
 }
+
+/* 대시보드 '악보집' 단추(js/dashboard.js) — '악보' 권한이 있는 분께만 보인다 */
+.dash-scores { display: flex; align-items: center; gap: 14px; margin: 0 0 22px; padding: 16px 20px; border-radius: 14px; text-decoration: none;
+  background: var(--accent, #1A3A2F); color: #fff; box-shadow: 0 8px 22px rgba(26,58,47,.18); transition: transform .2s ease, box-shadow .2s ease; }
+.dash-scores:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(26,58,47,.24); }
+.dash-scores .ds-ic { font-size: 1.8rem; line-height: 1; }
+.dash-scores .ds-t { flex: 1 1 auto; display: flex; flex-direction: column; }
+.dash-scores .ds-t b { font-size: 1.15rem; font-family: "Gowun Batang", serif; }
+.dash-scores .ds-t small { font-size: .85rem; color: rgba(255,255,255,.75); margin-top: 2px; }
+.dash-scores .ds-go { font-size: 1.6rem; color: #BFA06C; }
