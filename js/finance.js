@@ -799,8 +799,13 @@ console.log('[finance.js] v20260701di');
       '<div class="form-field" style="margin-top:10px"><label>헌금자 명단 붙여넣기 <span style="font-weight:400;color:var(--ink-soft);font-size:.82rem">— 엑셀(헌금자 리스트)에서 항목·이름·금액 영역을 그대로 복사해 붙여넣으세요</span></label>' +
       '<textarea id="b_text" style="width:100%;min-height:190px;padding:10px;border:1px solid #dfe5ee;border-radius:8px;font:inherit;white-space:pre;overflow:auto" placeholder="십일조&#9;&#10;신용화(차영선)&#9;100000&#9;임수만(정춘란)&#9;50000&#10;감사헌금&#10;구성호&#9;50000&#9;김가엘&#9;5000 ..."></textarea></div>' +
       '<div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap"><button class="btn btn-line" id="b_prev">미리보기 · 교적매칭</button><button class="btn btn-solid" id="b_save" disabled>일괄 저장</button><span class="fin-msg" id="b_msg"></span></div>' +
-      '<p class="help" style="margin-top:8px">· 항목명만 있는 줄(예: 십일조, 감사헌금)은 <b>항목 구분</b>으로 인식하고, 그 아래 「이름〔탭〕금액」들을 해당 항목 헌금으로 읽습니다.<br>· 「신용화(차영선)」처럼 괄호가 있으면 <b>부부 합산</b>으로 보고 대표자(신용화)로 교적 매칭합니다. · 제목·기간·누계·합계 줄은 자동 무시됩니다.</p>' +
+      '<p class="help" style="margin-top:8px">· 항목명만 있는 줄(예: 십일조, 감사헌금)은 <b>항목 구분</b>으로 인식하고, 그 아래 「이름〔탭〕금액」들을 해당 항목 헌금으로 읽습니다.<br>· 「신용화(차영선)」처럼 괄호가 있으면 <b>부부 합산</b>으로 보고 대표자(신용화)로 교적 매칭합니다. · 제목·기간·누계·합계 줄은 자동 무시됩니다.<br>· 「2026년 5월 31일(주일) 헌금 명세」처럼 <b>날짜 머리글이 있는 여러 주일을 한꺼번에</b> 붙여넣어도 각 주일 날짜로 나누어 저장합니다. 「[감사헌금] 16명 / 350000원」·「■ 총합계」가 있으면 읽은 결과와 대조해 다른 곳을 알려 줍니다.<br>· <b>이미 저장된 같은 내역은 건너뜁니다</b>(저장을 두 번 눌러도 두 번 계산되지 않습니다).</p>' +
       '</div>' +
+      '<div class="fin-card" style="border-color:#f3dfb0;background:#fffdf7">' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="color:#8a5a00">🔍 겹쳐 저장된 전표 찾기</b>' +
+      '<button class="btn btn-line" id="b_dupfind" style="padding:4px 12px;font-size:.84rem">찾기</button><span class="fin-msg" id="b_dupmsg"></span></div>' +
+      '<p class="help" style="margin-top:6px">같은 날짜·항목·헌금자·금액의 수입 전표가 2건 이상이면(저장을 두 번 눌렀을 때) 여기서 찾아 <b>처음 것만 남기고</b> 나머지를 지울 수 있습니다. 지출은 보지 않습니다.</p>' +
+      '<div id="b_dupout"></div></div>' +
       '<div class="fin-card" style="border-color:#f1c9c4;background:#fffaf9">' +
       '<details><summary style="cursor:pointer;color:#c0392b;font-weight:700">⚠ 기존 수입(헌금) 전표 전체 삭제</summary>' +
       '<p class="help" style="margin-top:8px">새 명단을 넣기 전에 <b>기존에 입력된 모든 수입(헌금) 전표를 한 번에 삭제</b>합니다. 지출 내역은 보존됩니다. <b>되돌릴 수 없습니다.</b></p>' +
@@ -810,6 +815,8 @@ console.log('[finance.js] v20260701di');
 
     var parsed = [];
     var mode = 'offer', parsedExp = [];   // 'offer'(헌금) | 'exp'(지출)
+    var saving = false;                    // 저장 중 두 번 눌림 방지
+    var expect = {};                       // 붙여넣은 글의 "[항목] N명 / 금액원"·"■ 총합계" 를 기억해 두고 읽은 결과와 대조
     // "십일조헌금"/"십일조" 처럼 "헌금·기도·제" 같은 흔한 접미어를 떼고 핵심 단어만 비교하기 위한 정규화
     function coreName(s) {
       var n = normName(s);
@@ -824,21 +831,50 @@ console.log('[finance.js] v20260701di');
       }
       return n;
     }
+    // 날짜 머리글: "2026년 5월 31일(주일) 헌금 명세" · "2026-05-31" · "2026.5.31"
+    function lineDate(t) {
+      var m = t.match(/(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/) || t.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})(?!\d)/);
+      return m ? m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2) : '';
+    }
+    // 헌금자 칸의 이름으로 교적 찾기. 맨 앞 이름(가장)으로 먼저 찾고, 교적에 없으면 함께 적힌 다음 이름으로 찾는다.
+    //   "김동배·이경순" → 김동배가 교적에 없으면 이경순으로 연결(via=1 → 미리보기에 표시)
+    //   "손병민(채애리)" → 손병민, 없으면 괄호 속 채애리 / "주정일(심방)" → 심방은 이름이 아니므로 그냥 넘어감
+    function matchMember(payer) {
+      var s = String(payer == null ? '' : payer).trim();
+      var inParen = [];
+      s = s.replace(/\(([^)]*)\)/g, function (_, x) { inParen.push(x); return ' '; });
+      var parts = s.split(/[·・,、/／&＆]|\s+외\s*|\s+/).concat(inParen).map(function (p) { return p.trim(); }).filter(Boolean);
+      for (var i = 0; i < parts.length; i++) {
+        var hits = M.members.filter(function (m) { return m.name === parts[i]; });
+        if (hits.length === 1) return { key: hits[0].key, match: 'ok', matchName: hits[0].name, via: i };
+        if (hits.length > 1) return { key: '', match: 'dup', matchName: '', via: i };
+      }
+      return { key: '', match: 'none', matchName: '', via: -1 };
+    }
     function parse() {
       var accSet = {}, coreSet = {};
       offeringAccounts().forEach(function (a) { accSet[normName(a)] = a; if (!coreSet[coreName(a)]) coreSet[coreName(a)] = a; });
       var text = panel.querySelector('#b_text').value || '';
-      var dm = text.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
-      if (dm) { var dEl = panel.querySelector('#b_date'); if (dEl) dEl.value = dm[1] + '-' + ('0' + dm[2]).slice(-2) + '-' + ('0' + dm[3]).slice(-2); }
+      var dEl = panel.querySelector('#b_date');
       var lines = text.split(/\r?\n/);
-      var cat = '', items = [];
+      var cat = '', items = [], curDate = '', firstDate = '';
+      expect = {};
       lines.forEach(function (raw) {
         var t = raw.trim();
         if (!t) return;
-        // "[항목명] N명 / 금액원" 형식의 항목 구분 줄(헌금 명세 리포트 붙여넣기)
-        var bracket = t.match(/^\[(.+?)\]/);
-        if (bracket) { cat = bracket[1].trim(); return; }
-        if (/^■/.test(t)) return; // "■ 총합계 : ..." 줄
+        if (/^[\s─—\-=_·•*~]+$/.test(t)) return;                     // "────" 같은 구분선
+        var ld = lineDate(t);
+        if (ld && !/\([\d,]+\)/.test(t) && !/\t\s*[\d,]+\s*$/.test(raw)) { curDate = ld; if (!firstDate) firstDate = ld; cat = ''; return; }   // 날짜 머리글(주일이 바뀜)
+        // "[항목명] N명 / 금액원" 형식의 항목 구분 줄(헌금 명세 리포트 붙여넣기) — 사람 수·금액은 대조용으로 기억
+        var bracket = t.match(/^\[(.+?)\]\s*(?:(\d+)\s*명\s*\/\s*)?([\d,]+)?\s*원?/);
+        if (bracket) {
+          cat = bracket[1].trim();
+          if (bracket[3]) expect[curDate + '|' + normName(cat)] = { n: bracket[2] ? Number(bracket[2]) : null, sum: parseNum(bracket[3]) };
+          return;
+        }
+        var tot = t.match(/^■\s*총\s*합\s*계\s*[:：]?\s*([\d,]+)/);
+        if (tot) { expect[curDate + '|■'] = { sum: parseNum(tot[1]) }; return; }
+        if (/^■/.test(t)) return;
         if (/^\(/.test(t) && /\+/.test(t)) return; // "(십일조 1200000 + 주일 180000 + ...)" 합계 내역 줄
         var cells = raw.split(/[\t ]+/).map(function (c) { return c.trim(); }).filter(function (c) { return c !== ''; });
         if (!cells.length) return;
@@ -850,7 +886,7 @@ console.log('[finance.js] v20260701di');
           var inline = c.match(/^(.+)\(([\d,]+)\)$/); // "이름(금액)" 인라인 형식
           if (inline && isAmount(inline[2])) {
             var nm = inline[1].trim();
-            items.push({ cat: cat, payer: nm, base: firstName(nm), amount: parseNum(inline[2]) });
+            items.push({ date: curDate, cat: cat, rawCat: cat, payer: nm, base: firstName(nm), amount: parseNum(inline[2]) });
             i += 1;
             continue;
           }
@@ -862,23 +898,40 @@ console.log('[finance.js] v20260701di');
           while (i < cells.length && !isAmount(cells[i])) { parts.push(cells[i]); i++; }
           if (i >= cells.length || !isAmount(cells[i])) break;   // 금액이 없으면 그 줄은 버린다
           var payer = parts.join(' ');
-          items.push({ cat: cat, payer: payer, base: firstName(payer), amount: parseNum(cells[i]) });
+          items.push({ date: curDate, cat: cat, rawCat: cat, payer: payer, base: firstName(payer), amount: parseNum(cells[i]) });
           i += 1;
         }
       });
+      // 날짜 머리글이 하나뿐이면(또는 첫 머리글) 위의 일자 칸도 그 날짜로 맞춘다
+      if (firstDate && dEl) dEl.value = firstDate;
       items.forEach(function (it) {
-        var hits = M.members.filter(function (m) { return m.name === it.base; });
-        if (hits.length === 1) { it.key = hits[0].key; it.match = 'ok'; it.matchName = hits[0].name; }
-        else if (hits.length === 0) { it.key = ''; it.match = 'none'; }
-        else { it.key = ''; it.match = 'dup'; }
+        var mm = matchMember(it.payer);
+        it.key = mm.key; it.match = mm.match; it.matchName = mm.matchName; it.via = mm.via;
         var exact = accSet[normName(it.cat)];
         var core = coreSet[coreName(it.cat)];
-        if (exact) { it.accountKnown = true; }
+        if (exact) { it.cat = exact; it.accountKnown = true; }      // 계정과목 마스터의 표기("일천번헌금")로 통일해 결산에서 빠지지 않게
         else if (core) { it.cat = core; it.accountKnown = true; } // "십일조헌금" → 계정과목 마스터의 "십일조"처럼 핵심 단어로 매칭해 그 이름으로 정정
         else { it.accountKnown = false; }
       });
       parsed = items;
       return items;
+    }
+    function itemDate(i) { return i.date || panel.querySelector('#b_date').value || ''; }
+    // 붙여넣은 글의 "[항목] N명 / 금액원"·"■ 총합계"와 읽은 결과가 맞는지 대조 → 다른 곳 목록
+    function checkExpect(items) {
+      var got = {}, bad = [];
+      items.forEach(function (i) {
+        var k = (i.date || '') + '|' + normName(i.rawCat), kt = (i.date || '') + '|■';
+        (got[k] = got[k] || { n: 0, sum: 0 }); got[k].n++; got[k].sum += i.amount;
+        (got[kt] = got[kt] || { n: 0, sum: 0 }); got[kt].n++; got[kt].sum += i.amount;
+      });
+      Object.keys(expect).forEach(function (k) {
+        var e = expect[k], g = got[k] || { n: 0, sum: 0 };
+        var p = k.split('|'), label = (p[0] ? p[0] + ' ' : '') + (p[1] === '■' ? '총합계' : p[1]);
+        if (e.sum !== g.sum) bad.push(label + ': 적힌 금액 ' + won(e.sum) + '원 ≠ 읽은 금액 ' + won(g.sum) + '원');
+        else if (e.n != null && e.n !== g.n) bad.push(label + ': 적힌 사람 수 ' + e.n + '명 ≠ 읽은 건수 ' + g.n + '건');
+      });
+      return bad;
     }
 
     function preview() {
@@ -891,52 +944,93 @@ console.log('[finance.js] v20260701di');
       var nMatch = items.filter(function (i) { return i.match === 'ok'; }).length;
       var nNone = items.filter(function (i) { return i.match === 'none'; }).length;
       var nDup = items.filter(function (i) { return i.match === 'dup'; }).length;
+      var nVia = items.filter(function (i) { return i.match === 'ok' && i.via > 0; }).length;
       var unk = {}; items.forEach(function (i) { if (!i.accountKnown) unk[i.cat] = 1; });
       var unkList = Object.keys(unk);
-      // 항목별 소계
+      // 날짜별·항목별 소계
+      var byDate = {}, dateOrder = [];
+      items.forEach(function (i) { var d = itemDate(i) || '(일자 없음)'; if (!byDate[d]) { byDate[d] = { c: 0, s: 0 }; dateOrder.push(d); } byDate[d].c++; byDate[d].s += i.amount; });
       var byCat = {}; var catOrder = [];
       items.forEach(function (i) { if (!byCat[i.cat]) { byCat[i.cat] = { c: 0, s: 0 }; catOrder.push(i.cat); } byCat[i.cat].c++; byCat[i.cat].s += i.amount; });
+      var multi = dateOrder.length > 1;
+      var bad = checkExpect(items);
+      var noDate = items.some(function (i) { return !itemDate(i); });
       out.innerHTML = '<div class="fin-card">' +
         '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><b>' + items.length + '건</b><b style="color:#1e874b">' + won(tot) + '원</b>' +
-        '<span class="fin-pill in">교적매칭 ' + nMatch + '</span>' + (nNone ? '<span class="fin-pill out">미등록 ' + nNone + '</span>' : '') + (nDup ? '<span class="fin-pill out">동명이인 ' + nDup + '</span>' : '') + '</div>' +
+        '<span class="fin-pill in">교적매칭 ' + nMatch + '</span>' + (nVia ? '<span class="fin-pill" style="background:#fff4e0;color:#8a5a00">뒤 이름으로 연결 ' + nVia + '</span>' : '') + (nNone ? '<span class="fin-pill out">미등록 ' + nNone + '</span>' : '') + (nDup ? '<span class="fin-pill out">동명이인 ' + nDup + '</span>' : '') + '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + dateOrder.map(function (d) { return '<span class="fin-pill" style="background:#e7f1ff;color:#1b4b8f">📅 ' + esc(d) + ' · ' + byDate[d].c + '건 · ' + won(byDate[d].s) + '원</span>'; }).join('') + '</div>' +
+        (multi ? '<p class="help" style="color:#1b4b8f">날짜 머리글이 ' + dateOrder.length + '개 있어 <b>각 주일 날짜로 나누어</b> 저장합니다. (위의 일자 칸은 날짜 머리글이 없는 줄에만 쓰입니다)</p>' : '') +
+        (noDate ? '<p class="help" style="color:#c0392b">⚠ 날짜가 없는 내역이 있습니다. 위의 일자 칸을 확인하세요.</p>' : '') +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">' + catOrder.map(function (c) { return '<span class="fin-pill" style="background:#eef2f7;color:#3a4a63">' + esc(c) + ' ' + byCat[c].c + '건 · ' + won(byCat[c].s) + '</span>'; }).join('') + '</div>' +
+        (bad.length ? '<div class="fin-card" style="border-color:#f1c9c4;background:#fffaf9;padding:10px 14px;margin-bottom:10px"><b style="color:#c0392b">⚠ 붙여넣은 글의 합계와 읽은 결과가 다른 곳이 있습니다</b><ul style="margin:6px 0 0 18px;padding:0;font-size:.88rem;color:#7a2e26">' + bad.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul><p class="help" style="margin-top:6px">붙여넣은 글을 확인하고 고친 뒤 다시 미리보기를 누르세요. 그대로 저장할 수도 있습니다.</p></div>' : (Object.keys(expect).length ? '<p class="help" style="color:#1e874b">✓ 붙여넣은 글에 적힌 항목별 사람 수·금액, 총합계와 모두 일치합니다.</p>' : '')) +
         (unkList.length ? '<p class="help" style="color:#c0392b">⚠ 계정과목 마스터에 없는 항목: <b>' + esc(unkList.join(', ')) + '</b> — 그대로 저장되며 거래장부엔 보이지만, 결산 분류에서 빠질 수 있습니다. 필요하면 설정에서 계정 추가 후 다시 하세요.</p>' : '') +
-        '<div style="overflow:auto;max-height:420px"><table class="fin-table"><thead><tr><th>항목</th><th>헌금자</th><th class="num">금액</th><th>교적</th></tr></thead><tbody>' +
+        '<div style="overflow:auto;max-height:420px"><table class="fin-table"><thead><tr>' + (multi ? '<th>일자</th>' : '') + '<th>항목</th><th>헌금자</th><th class="num">금액</th><th>교적</th></tr></thead><tbody>' +
         items.map(function (i) {
-          var badge = i.match === 'ok' ? '<span class="fin-pill in">✓ ' + esc(i.matchName) + '</span>' : i.match === 'dup' ? '<span class="fin-pill out">동명이인(수동확인)</span>' : '<span style="color:#9aa5b1">미등록</span>';
-          return '<tr><td>' + esc(i.cat) + '</td><td>' + esc(i.payer) + '</td><td class="num">' + won(i.amount) + '</td><td>' + badge + '</td></tr>';
+          var badge = i.match === 'ok'
+            ? (i.via > 0 ? '<span class="fin-pill" style="background:#fff4e0;color:#8a5a00">⚠ ' + esc(i.base) + ' 없음 → ' + esc(i.matchName) + '</span>' : '<span class="fin-pill in">✓ ' + esc(i.matchName) + '</span>')
+            : i.match === 'dup' ? '<span class="fin-pill out">동명이인(수동확인)</span>' : '<span style="color:#9aa5b1">미등록</span>';
+          return '<tr>' + (multi ? '<td style="white-space:nowrap">' + esc(itemDate(i)) + '</td>' : '') + '<td>' + esc(i.cat) + '</td><td>' + esc(i.payer) + '</td><td class="num">' + won(i.amount) + '</td><td>' + badge + '</td></tr>';
         }).join('') + '</tbody></table></div>' +
         (nNone || nDup ? '<p class="help">미등록·동명이인 건도 헌금자 이름은 그대로 저장됩니다(헌금자통계엔 표시). 다만 개인 "내 헌금 조회"에는 교적 매칭된 건만 잡히므로, 저장 후 <b>거래장부</b>에서 해당 건을 열어 헌금자를 교적과 연결하면 됩니다.</p>' : '') +
+        (nVia ? '<p class="help">"뒤 이름으로 연결"은 앞 이름이 교적에 없어 함께 적힌 다음 이름의 교적으로 연결한 것입니다. 다르게 하려면 저장 후 거래장부에서 고치세요.</p>' : '') +
         '</div>';
       saveBtn.disabled = false;
     }
 
     function save() {
+      if (saving) return;
       if (!parsed.length) { preview(); }
       if (!parsed.length) return;
-      var date = panel.querySelector('#b_date').value;
+      var dateDefault = panel.querySelector('#b_date').value;
       var svc = panel.querySelector('#b_svc').value;
       var method = panel.querySelector('#b_method').value;
       var msg = panel.querySelector('#b_msg');
       var saveBtn = panel.querySelector('#b_save');
-      if (!date) { msg.style.color = '#c0392b'; msg.textContent = '일자를 선택하세요.'; return; }
-      if (!confirm(date + ' 헌금 ' + parsed.length + '건을 저장할까요?')) return;
       var vouchers = parsed.map(function (i) {
-        return { date: date, type: '수입', kind: '헌금', account: i.cat, service: svc, payer: i.payer, memberKey: i.key || '', amount: i.amount, method: method, memo: '' };
+        return { date: i.date || dateDefault, type: '수입', kind: '헌금', account: i.cat, service: svc, payer: i.payer, memberKey: i.key || '', amount: i.amount, method: method, memo: '' };
       });
-      saveBtn.disabled = true; msg.style.color = '#7b8794'; msg.textContent = '저장 중… (' + vouchers.length + '건)';
-      function done(n) { msg.style.color = 'green'; msg.textContent = '✓ ' + n + '건 저장 완료. 거래장부·내 헌금 조회에서 확인하세요.'; M.loaded = false; saveBtn.disabled = false; }
-      function seq(i) {
-        if (i >= vouchers.length) { done(i); return; }
-        msg.textContent = '저장 중… (' + (i + 1) + '/' + vouchers.length + ')';
-        WPF.call('addVoucher', { voucher: vouchers[i] }).then(function () { seq(i + 1); })
-          .catch(function (e) { msg.style.color = '#c0392b'; msg.textContent = (i) + '건 저장 후 실패: ' + e.message; saveBtn.disabled = false; });
-      }
-      WPF.call('addVouchersBulk', { vouchers: vouchers }).then(function (r) { done(r.count || vouchers.length); })
-        .catch(function (e) {
-          if (/unknown action/i.test(e.message)) { msg.textContent = '저장 중… (개별 저장 모드)'; seq(0); }
-          else { msg.style.color = '#c0392b'; msg.textContent = '저장 실패: ' + e.message; saveBtn.disabled = false; }
+      if (vouchers.some(function (v) { return !v.date; })) { msg.style.color = '#c0392b'; msg.textContent = '일자를 선택하세요.'; return; }
+      saving = true; saveBtn.disabled = true; msg.style.color = '#7b8794'; msg.textContent = '이미 저장된 내역이 있는지 확인하는 중…';
+      function stop(color, text) { saving = false; msg.style.color = color; msg.textContent = text; }
+      M.loaded = false;   // 지금 저장돼 있는 전표를 새로 읽어 와서 겹치는지 본다
+      ensureVouchers().then(function () {
+        // 같은 날짜·항목·헌금자·금액이 이미 있으면 그 수만큼 건너뛴다(두 번 눌러도 두 번 계산되지 않도록)
+        var have = {};
+        M.vouchers.forEach(function (v) {
+          if (String(v['구분']) !== '수입') return;
+          var k = fmtD(v['일자']) + '|' + (v['계정'] || '') + '|' + (v['헌금자'] || '') + '|' + (Number(v['금액']) || 0);
+          have[k] = (have[k] || 0) + 1;
         });
+        var fresh = [], skipped = 0;
+        vouchers.forEach(function (v) {
+          var k = v.date + '|' + v.account + '|' + v.payer + '|' + v.amount;
+          if (have[k] > 0) { have[k]--; skipped++; } else fresh.push(v);
+        });
+        if (!fresh.length) { stop('#c0392b', '이미 모두 저장되어 있는 내역입니다(' + skipped + '건). 다시 저장하지 않았습니다 — 거래장부에서 확인하세요.'); return; }
+        var dates = [], sum = 0;
+        fresh.forEach(function (v) { if (dates.indexOf(v.date) < 0) dates.push(v.date); sum += v.amount; });
+        dates.sort();
+        var q = (dates.length > 1 ? dates.length + '개 주일(' + dates[0] + ' ~ ' + dates[dates.length - 1] + ')' : dates[0]) + ' 헌금 ' + fresh.length + '건, ' + won(sum) + '원을 저장할까요?' +
+          (skipped ? '\n\n이미 저장돼 있는 ' + skipped + '건은 건너뜁니다(두 번 계산되지 않도록).' : '');
+        if (!confirm(q)) { stop('#7b8794', '저장하지 않았습니다.'); saveBtn.disabled = false; return; }
+        msg.textContent = '저장 중… (' + fresh.length + '건)';
+        function done(n) {
+          parsed = [];           // 다시 저장하려면 미리보기부터(그래도 겹치는 건 위에서 걸러진다)
+          M.loaded = false;
+          stop('green', '✓ ' + n + '건 저장 완료' + (skipped ? ' (이미 있던 ' + skipped + '건은 건너뜀)' : '') + ' — ' + dates.join(', ') + '. 거래장부·결산보고서에서 확인하세요.');
+        }
+        function seq(i) {
+          if (i >= fresh.length) { done(i); return; }
+          msg.textContent = '저장 중… (' + (i + 1) + '/' + fresh.length + ')';
+          WPF.call('addVoucher', { voucher: fresh[i] }).then(function () { seq(i + 1); })
+            .catch(function (e) { stop('#c0392b', (i) + '건 저장 후 실패: ' + e.message + ' — 다시 저장하면 이미 들어간 건은 건너뜁니다.'); saveBtn.disabled = false; });
+        }
+        return WPF.call('addVouchersBulk', { vouchers: fresh }).then(function (r) { done(r.count || fresh.length); })
+          .catch(function (e) {
+            if (/unknown action/i.test(e.message)) { msg.textContent = '저장 중… (개별 저장 모드)'; seq(0); }
+            else { stop('#c0392b', '저장 실패: ' + e.message + ' — 다시 저장하면 이미 들어간 건은 건너뜁니다.'); saveBtn.disabled = false; }
+          });
+      }).catch(function (e) { stop('#c0392b', '저장 전 확인에 실패했습니다: ' + e.message); saveBtn.disabled = false; });
     }
 
     // ── 지출(재정보고서) 파싱·미리보기·저장 ──
@@ -1043,6 +1137,61 @@ console.log('[finance.js] v20260701di');
         else { cm.style.color = '#c0392b'; cm.textContent = '삭제 실패: ' + e.message; }
       });
     };
+
+    // 겹쳐 저장된 수입 전표 찾기 → 처음 것만 남기고 지우기(목사님이 직접 누름, 두 번 확인)
+    var dupBtn = panel.querySelector('#b_dupfind'), dupOut = panel.querySelector('#b_dupout'), dupMsg = panel.querySelector('#b_dupmsg');
+    var dupExtra = [];   // 지울 전표 [{id, ...}]
+    function findDup() {
+      dupBtn.disabled = true; dupMsg.style.color = '#7b8794'; dupMsg.textContent = '전표를 읽는 중…'; dupOut.innerHTML = '';
+      M.loaded = false;
+      ensureVouchers().then(function () {
+        var groups = {}, order = [];
+        M.vouchers.forEach(function (v) {
+          if (String(v['구분']) !== '수입') return;
+          var k = fmtD(v['일자']) + '|' + (v['계정'] || '') + '|' + (v['헌금자'] || '') + '|' + (Number(v['금액']) || 0);
+          if (!groups[k]) { groups[k] = []; order.push(k); }
+          groups[k].push(v);
+        });
+        dupExtra = [];
+        var rows = [];
+        order.forEach(function (k) {
+          var g = groups[k]; if (g.length < 2) return;
+          g.sort(function (a, b) { return String(a['입력일'] || '').localeCompare(String(b['입력일'] || '')) || (parseNum(String(a['전표ID']).slice(1)) - parseNum(String(b['전표ID']).slice(1))); });
+          g.slice(1).forEach(function (v) { dupExtra.push(v); });
+          rows.push({ v: g[0], n: g.length });
+        });
+        dupBtn.disabled = false;
+        if (!rows.length) { dupMsg.style.color = 'green'; dupMsg.textContent = '✓ 겹쳐 저장된 전표가 없습니다.'; return; }
+        var sum = dupExtra.reduce(function (t, v) { return t + (Number(v['금액']) || 0); }, 0);
+        var byDate = {}; dupExtra.forEach(function (v) { var d = fmtD(v['일자']); byDate[d] = (byDate[d] || 0) + 1; });
+        dupMsg.style.color = '#c0392b'; dupMsg.textContent = '겹친 묶음 ' + rows.length + '개 — 더 들어간 전표 ' + dupExtra.length + '건, ' + won(sum) + '원이 두 번 계산되고 있습니다.';
+        dupOut.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px">' + Object.keys(byDate).sort().map(function (d) { return '<span class="fin-pill out">' + esc(d) + ' · 더 들어간 ' + byDate[d] + '건</span>'; }).join('') + '</div>' +
+          '<div style="overflow:auto;max-height:300px"><table class="fin-table"><thead><tr><th>일자</th><th>항목</th><th>헌금자</th><th class="num">금액</th><th class="num">저장된 수</th></tr></thead><tbody>' +
+          rows.map(function (r) { return '<tr><td style="white-space:nowrap">' + esc(fmtD(r.v['일자'])) + '</td><td>' + esc(r.v['계정'] || '') + '</td><td>' + esc(r.v['헌금자'] || '') + '</td><td class="num">' + won(r.v['금액']) + '</td><td class="num"><b style="color:#c0392b">' + r.n + '</b></td></tr>'; }).join('') +
+          '</tbody></table></div>' +
+          '<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn btn-solid" id="b_dupfix" style="background:#c0392b;border-color:#c0392b">처음 것만 남기고 ' + dupExtra.length + '건 지우기</button><span class="fin-msg" id="b_dupfixmsg"></span></div>' +
+          '<p class="help" style="margin-top:6px">같은 사람이 같은 날 같은 항목에 같은 금액을 <b>정말 두 번</b> 드린 경우도 여기에 잡힙니다. 그런 건이 있으면 지우지 말고 그대로 두세요.</p>';
+        dupOut.querySelector('#b_dupfix').onclick = fixDup;
+      }).catch(function (e) { dupBtn.disabled = false; dupMsg.style.color = '#c0392b'; dupMsg.textContent = '읽기 실패: ' + e.message; });
+    }
+    function fixDup() {
+      var fb = dupOut.querySelector('#b_dupfix'), fm = dupOut.querySelector('#b_dupfixmsg');
+      if (!dupExtra.length) return;
+      var sum = dupExtra.reduce(function (t, v) { return t + (Number(v['금액']) || 0); }, 0);
+      if (!confirm('겹쳐 저장된 수입 전표 ' + dupExtra.length + '건(' + won(sum) + '원)을 지웁니다.\n각 묶음의 처음 것 1건은 남습니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+      var t = prompt('정말 지우려면 "정리" 라고 입력하세요.');
+      if (t !== '정리') { fm.style.color = '#7b8794'; fm.textContent = '취소되었습니다.'; return; }
+      fb.disabled = true; fm.style.color = '#7b8794';
+      var n = 0;
+      function next(i) {
+        if (i >= dupExtra.length) { fm.style.color = 'green'; fm.textContent = '✓ ' + n + '건 지웠습니다. 다시 찾기를 눌러 확인하세요.'; M.loaded = false; dupExtra = []; return; }
+        fm.textContent = '지우는 중… (' + (i + 1) + '/' + dupExtra.length + ')';
+        WPF.call('deleteVoucher', { id: dupExtra[i]['전표ID'] }).then(function () { n++; next(i + 1); })
+          .catch(function (e) { fb.disabled = false; fm.style.color = '#c0392b'; fm.textContent = n + '건 지운 뒤 실패: ' + e.message; M.loaded = false; });
+      }
+      next(0);
+    }
+    if (dupBtn) dupBtn.onclick = findDup;
   }
 
   /* ── 지출입력 ── */
