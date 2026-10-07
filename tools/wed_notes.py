@@ -22,6 +22,7 @@
   python tools/wed_notes.py save    note.json [--no-telegram] [--force] [--head "첫 줄"]
   python tools/wed_notes.py remind  [--date …]
   python tools/wed_notes.py show    [--date …]
+  python tools/wed_notes.py conti   [--date …] [--dry] [--names "제목1|…"]   원고 속 악보 → 그날 악보(이미 있으면 그대로 둠)
 날짜를 안 주면 오늘이 수요일이면 오늘, 아니면 지난 수요일.
 열쇠: %APPDATA%\\nojin\\supabase_service.key (화면·기록·텔레그램에 내보내지 않음). 기록: %APPDATA%\\nojin\\wed_notes\\log.txt
 """
@@ -338,6 +339,141 @@ def guess_series(s, passage_book):
     return clean, series
 
 
+# ── ^ 표시 구절 · 원고 속 악보 (2026-10-07 목사님) ─────────────
+#   "인용 구절 넣을 부분에 내가 ^ 표시를 했거든? 이 표시가 들어간 것들의 성경 구절을 다 검색해서 띄워줘야 돼."
+#   "원고에 텍스트도 있고 이미지 파일도 있거든? … PDF 사진 따로 올리고 이러면 서로 힘들어."
+#   → 원고에 ^ 가 있으면 인용 구절은 ^ 바로 앞의 장절만, 설교 순서대로(오늘 본문 안 구절은 '오늘 본문'으로 따로 나와 뺀다).
+#     "5절^"·"2장 13절^"처럼 책·장을 안 쓰면 오늘 본문의 책·장으로 본다. "(1:23)^"·"고린도전서 4:2^"도 읽는다.
+#   → 원고(hwpx·docx) 속 그림은 찬양 악보로 보고 'conti' 명령이 그날 악보(sermon_conti)로 올린다.
+CARET_RE = re.compile(r"(?:([가-힣]{1,6})\s*)?\(?\s*(?:(\d{1,3})\s*(?:장\s*|[:：]\s*))?(\d{1,3})\s*절?\s*\)?\s*\^")
+
+
+def caret_refs(content, passage):
+    """원고의 ^ 표시 → [(정식 장절 또는 None, 원고에 쓴 글)] (설교 순서, 겹치면 한 번)"""
+    text = html.unescape(re.sub(r"<[^>]+>", " ", content or ""))
+    p = parse_canon(passage) if passage else None
+    out, seen = [], set()
+    for m in CARET_RE.finditer(text):
+        book, ch, v = m.group(1), m.group(2), m.group(3)
+        tries = []
+        if book:
+            tries.append(f"{book} {ch or (p[1] if p else 1)}:{v}")
+        if p:
+            tries.append(f"{p[0]} {ch or p[1]}:{v}")
+        canon = next((c for c in (lookup(t)[0] for t in tries) if c), None)
+        said = text[max(0, m.start(3) - 8): m.end()].strip()
+        if not canon:
+            out.append((None, said))
+        elif canon not in seen:
+            seen.add(canon)
+            out.append((canon, said))
+    return out
+
+
+def cited_refs(content, passage):
+    """인용 구절 = ^ 표시 구절 + 원고에서 따로 떼어 읽은 인용 블록 구절, 설교 순서대로 (2026-10-07 목사님:
+       "^ 표시가 없어도 누가 봐도 인용한 거면 넣어야지. 본문에 있으면 안 넣고 반복되는 건 넣을 필요가 없고")
+       → [(정식 장절 또는 None, 어떻게 찾았나)] — 본문 안·겹친 것은 resolve 가 뺀다"""
+    pb = parse_canon(passage)[0] if passage else None
+    out = []
+    for kind, t in segments(content):
+        if kind == "인용":
+            hit = find_quote(t, pb)
+            if hit:
+                out.append((hit[0], "인용 블록"))
+        else:
+            out += [(c, "^ " + w) for c, w in caret_refs(t, passage)]
+    return out
+
+
+def _sermon_file(date):
+    """그날 수요 원고의 바탕화면 파일(hwpx·docx) — sermon_sync 처럼 저장한 주의 수요일로 맞춘다"""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("sermon_sync", Path(__file__).resolve().parent / "sermon_sync.py")
+    ss = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ss)
+    folder = ss.SERMON_ROOT / "수요 설교"
+    best = None
+    for p in (folder.iterdir() if folder.is_dir() else []):
+        if p.suffix.lower() not in (".hwpx", ".docx") or ss.SKIP_NAME.search(p.name):
+            continue
+        d = dt.date.fromtimestamp(p.stat().st_mtime)
+        if d + dt.timedelta(days=(2 - d.weekday()) % 7) == date and (not best or p.stat().st_mtime > best.stat().st_mtime):
+            best = p
+    return best
+
+
+def manuscript_images(path):
+    """원고 속 그림을 원고에 나오는 차례대로 [png bytes] — 아주 작은 그림(장식)은 뺀다"""
+    import zipfile
+    from io import BytesIO
+    from PIL import Image
+    z = zipfile.ZipFile(path)
+    names = z.namelist()
+    if path.suffix.lower() == ".hwpx":
+        order = []
+        for sec in sorted(n for n in names if re.match(r"Contents/section\d+\.xml$", n)):
+            order += re.findall(r'binaryItemIDRef="([^"]+)"', z.read(sec).decode("utf-8", "replace"))
+        files = [next((n for n in names if n.startswith("BinData/") and Path(n).stem == i), None) for i in order]
+    else:
+        rels = dict(re.findall(r'Id="([^"]+)"[^>]*Target="(media/[^"]+)"', z.read("word/_rels/document.xml.rels").decode("utf-8")))
+        files = ["word/" + rels[i] for i in re.findall(r'r:embed="([^"]+)"', z.read("word/document.xml").decode("utf-8")) if i in rels]
+    out, seen = [], set()
+    for f in files:
+        if not f or f in seen:
+            continue
+        seen.add(f)
+        try:
+            im = Image.open(BytesIO(z.read(f)))
+            if min(im.size) < 200:
+                continue
+            buf = BytesIO()
+            im.convert("RGB").save(buf, "PNG", optimize=True)
+            out.append(buf.getvalue())
+        except Exception:
+            continue
+    return out
+
+
+def cmd_conti(date, names=None, dry=False):
+    st = Store()
+    have = st.get(f"sermon_conti?select=id,files&service=eq.{q(SERVICE)}&note_date=eq.{date}")
+    if have and (have[0].get("files") or []):
+        print(f"{md(date)} 악보가 이미 {len(have[0]['files'])}장 있어 원고 악보는 넣지 않았습니다(목사님이 올리신 것을 그대로 둡니다).")
+        return 0
+    src = _sermon_file(date)
+    if not src:
+        print(f"{md(date)} 수요 원고 파일(hwpx·docx)을 바탕화면 '수요 설교' 폴더에서 찾지 못했습니다.")
+        return 1
+    imgs = manuscript_images(src)
+    if not imgs:
+        print(f"{md(date)} 원고({src.name})에 악보 그림이 없습니다.")
+        return 0
+    if dry:
+        d = DATA_DIR / f"{date}_conti"
+        d.mkdir(parents=True, exist_ok=True)
+        for i, b in enumerate(imgs, 1):
+            (d / f"{i}.png").write_bytes(b)
+        print(f"{md(date)} 원고({src.name}) 속 악보 {len(imgs)}장 → {d}  (그림을 보고 곡 제목을 --names \"제목1|제목2|…\" 로 주세요)")
+        return 0
+    names = [n.strip() for n in names.split("|")] if names else []
+    files = []
+    for i, b in enumerate(imgs, 1):
+        key = f"conti/{date}/ms_{i}.png"
+        r = st.rq.post(f"{SUPABASE_URL}/storage/v1/object/private_files/{key}",
+                       headers={**st.h, "Content-Type": "image/png", "x-upsert": "true"}, data=b, timeout=120)
+        if r.status_code >= 300:
+            raise RuntimeError(f"악보 올리기 실패 {r.status_code}: {r.text[:200]}")
+        files.append({"path": key, "name": (names[i - 1] if i <= len(names) and names[i - 1] else f"찬양 악보 {i}"), "type": "image/png"})
+    if have:
+        st.patch("sermon_conti", f"id=eq.{have[0]['id']}", {"files": files})
+    else:
+        st.post("sermon_conti", {"service": SERVICE, "note_date": str(date), "files": files})
+    log(f"원고 악보 {date} {len(files)}장 ({src.name})")
+    print(f"{md(date)} 원고({src.name}) 속 악보 {len(files)}장을 올렸습니다: " + " · ".join(f["name"] for f in files))
+    return 0
+
+
 # ── 명령 ─────────────────────────────────────────────────────
 def cmd_check(date):
     if now_kst() >= closes_at(date):
@@ -420,13 +556,17 @@ def cmd_prepare(date, out=None):
                 mentions.append({"ref": found, "context": ctx[:90], "how": "장 + 따옴표 글로 찾음"})
             elif not found:
                 chapters.append({"text": m.group(0), "context": ctx[:90]})
+    carets = caret_refs(s.get("content"), passage)
+    cited = cited_refs(s.get("content"), passage)
     clean_title, series = guess_series(s, pb)
-    plain = "\n".join(("【인용】" + t + "【끝】") if k == "인용" else t for k, t in segs)
+    plain ="\n".join(("【인용】" + t + "【끝】") if k == "인용" else t for k, t in segs)
     data = {
         "date": str(date), "sermon_id": s["id"], "title": clean_title, "title_raw": s.get("title"),
         "series_guess": series, "scripture": passage or s.get("scripture"), "preacher": s.get("preacher"),
         "source_hash": source_hash(s),
         "passage_lines": passage_lines or [],
+        "caret_refs": [{"ref": c, "said": w, "in_passage": bool(c and passage and inside(c, passage))} for c, w in carets],
+        "cited_refs": [{"ref": c, "how": w, "in_passage": bool(c and passage and inside(c, passage))} for c, w in cited],
         "candidates": cands, "mentions": mentions, "chapter_only_mentions": chapters,
         "manuscript": plain,
     }
@@ -437,6 +577,9 @@ def cmd_prepare(date, out=None):
     for c in cands:
         mark = "본문" if c["in_passage"] else ("??" if not c["ref"] else "  ")
         print(f"  [{mark}] {c['ref'] or '(못 찾음)'}  ({c['how']} {c['match']})  {c['quote'][:40]}")
+    if carets:
+        print("  ^ 표시 구절: " + " · ".join(c or f"(못 찾음: {w})" for c, w in carets))
+        print("  싣는 인용 구절(^ + 인용 블록, 설교 순서): " + " · ".join(c for c, _ in cited if c and not (passage and inside(c, passage))))
     print("  말씀 중에 나온 구절: " + (" · ".join(m["ref"] for m in mentions) or "없음"))
     if chapters:
         print("  장만 말한 곳: " + " · ".join(c["text"] for c in chapters))
@@ -463,6 +606,23 @@ def _clean_summary(sm):
     return {"points": pts[:3]}
 
 
+def _prayer_list(v):
+    return [t for t in (_clean_text(x, 200) for x in (v or [])) if t][:20]
+
+
+def prayer_for(st, date, note, old):
+    """기도 제목(2026-10-07 목사님: 위 '고정', 아래 '말씀 후 적용' 두 칸)
+       note.json 에 있으면 그것, 없으면 그날 자료에 있던 것. 고정이 비면 지난 자료의 고정을 이어 받는다."""
+    given = note.get("prayer") or (note.get("summary") or {}).get("prayer")
+    had = ((old or {}).get("summary") or {}).get("prayer") or {}
+    src = given if given is not None else had
+    fixed, apply_ = _prayer_list(src.get("fixed")), _prayer_list(src.get("apply"))
+    if not fixed:
+        prev = st.get(f"sermon_notes?select=summary&service=eq.{q(SERVICE)}&note_date=lt.{date}&order=note_date.desc&limit=8")
+        fixed = next((f for f in (_prayer_list(((r.get("summary") or {}).get("prayer") or {}).get("fixed")) for r in prev) if f), [])
+    return {"fixed": fixed, "apply": apply_}
+
+
 def resolve(refs, passage, skip):
     out, bad = [], []
     for r in refs or []:
@@ -487,6 +647,9 @@ def cmd_save(path, no_tg=False, force=False, head=None):
         return 1
     passage, passage_lines = lookup(s.get("scripture"))
     skip = set()
+    if caret_refs(s.get("content"), passage):   # ^ 표시가 있는 원고면 ^ 구절 + 인용 블록 구절(설교 순서)이 인용 구절이다
+        found = [c for c, _ in cited_refs(s.get("content"), passage) if c]
+        note["verses"] = found + [v for v in (note.get("verses") or []) if v not in found]   # 도구가 못 찾아 클로드가 찾은 것은 뒤에
     verses, bad1 = resolve(note.get("verses"), passage, skip)
     mentions = []        # 말로만 언급한 구절은 싣지 않는다(목사님 2026-10-05: 인용 구절만)
     if bad1:
@@ -511,6 +674,7 @@ def cmd_save(path, no_tg=False, force=False, head=None):
         "status": "draft", "source_hash": source_hash(s), "made_by": note.get("made_by") or "claude",
     }
     old = get_note(st, date)
+    row["summary"]["prayer"] = prayer_for(st, date, note, old)
     if old and old.get("status") == "approved" and not force:
         print(f"{md(date)} 자료는 이미 올렸습니다. 덮어쓰지 않았습니다(목사님께 여쭌 뒤 --force — 다시 '확인 전'이 됩니다).")
         return 3
@@ -518,14 +682,15 @@ def cmd_save(path, no_tg=False, force=False, head=None):
         print(f"{md(date)} 자료는 목사님이 홈페이지에서 고치신 것이라 덮어쓰지 않았습니다(목사님께 여쭌 뒤 --force).")
         return 3
     saved = st.patch("sermon_notes", f"id=eq.{old['id']}", row)[0] if old else st.post("sermon_notes", row)
-    log(f"저장(확인 전) {date} {row['title']} — 인용 구절 {len(verses)} · 핵심 {len(summary['points'])}")
+    state_word = "올림" if row["status"] == "approved" else "확인 전"
+    log(f"저장({state_word}) {date} {row['title']} — 인용 구절 {len(verses)} · 핵심 {len(summary['points'])}")
     if not no_tg:
         ok = telegram(preview_text(saved, head) if head else preview_text(saved), keyboard(saved["id"], date))
         log("텔레그램 미리보기 " + ("보냄" if ok else "실패"))
         stt = load_state()
         stt[str(date)] = {"hash": row["source_hash"], "sent": now_kst().isoformat(timespec="minutes")}
         save_state(stt)
-    print(f"저장했습니다(확인 전): {md(date)} {row['title']} · 인용 구절 {len(verses)} · 핵심 {len(summary['points'])}")
+    print(f"저장했습니다({state_word}): {md(date)} {row['title']} · 인용 구절 {len(verses)} · 핵심 {len(summary['points'])}")
     return 0
 
 
@@ -537,7 +702,18 @@ def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주�
         lines.append(f"{i}. {(p.get('label') + ' — ') if p.get('label') else ''}{p.get('text')}")
     vs = n.get("verses") or []
     lines += ["", f"[인용 구절 {len(vs)}] " + (" · ".join(v["ref"] for v in vs) or "없음")]
+    pr = (n.get("summary") or {}).get("prayer") or {}
+    for title, key in (("함께 드리는 기도 제목", "fixed"), ("말씀 후 적용 기도 제목", "apply")):
+        if pr.get(key):
+            lines += ["", f"[{title}]"] + [f"{i}. {t}" for i, t in enumerate(pr[key], 1)]
     now = now_kst()
+    if n.get("status") == "approved":
+        tail = ((md(d) + " " + OPEN_LABEL + "에 로그인한 성도님께 열리고" if now < opens_at(d)
+                 else "지금 로그인한 성도님께 보이고" if now < closes_at(d) else "예배 시간이 지나 성도님께는 보이지 않고")
+                + ", 밤 10시 30분에 닫힙니다.")
+        lines += ["", tail, "고치실 곳은 홈페이지 '예배와 말씀 ▸ 수요기도회 말씀'에서 고치시거나 클로드에게 말씀해 주세요."]
+        text = "\n".join(lines)
+        return text if len(text) <= 3900 else text[:3880] + "\n…(길어서 줄였습니다)"
     if now < opens_at(d):
         tail = "[올리기]를 누르시면 " + md(d) + " " + OPEN_LABEL + "에 로그인한 성도님께 열리고, 밤 10시 30분에 닫힙니다."
     elif now < closes_at(d):
@@ -617,7 +793,9 @@ def cmd_show(date):
 
 def main():
     ap = argparse.ArgumentParser(description="수요기도회 말씀 자료 만들기")
-    ap.add_argument("cmd", choices=["check", "prepare", "save", "remind", "show"])
+    ap.add_argument("cmd", choices=["check", "prepare", "save", "remind", "show", "conti"])
+    ap.add_argument("--names", help='conti: 악보 제목들 "제목1|제목2|…"')
+    ap.add_argument("--dry", action="store_true", help="conti: 올리지 않고 그림만 꺼내 보기")
     ap.add_argument("file", nargs="?")
     ap.add_argument("--date")
     ap.add_argument("--out")
@@ -638,6 +816,8 @@ def main():
         return cmd_save(a.file, a.no_telegram, a.force, a.head)
     if a.cmd == "remind":
         return cmd_remind(date)
+    if a.cmd == "conti":
+        return cmd_conti(date, a.names, a.dry)
     return cmd_show(date)
 
 

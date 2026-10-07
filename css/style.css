@@ -4065,6 +4065,14 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .wr-points { margin-top: 4px; }
 .wr-points li { font-size: 1.1rem; }
 .wed-btns-1 { grid-template-columns: minmax(0, 1fr); }
+.wed-btns-pray { margin-top: 10px; }
+/* 기도 제목 — 위: 함께 드리는(고정) · 아래: 말씀 후 적용 (2026-10-07) */
+.wr-pray-part + .wr-pray-part { margin-top: 18px; }
+.wr-pray-t { margin: 0 0 8px; font-size: .98rem; font-weight: 800; color: var(--ink); }
+.wr-pray-apply .wr-pray-t::before { content: "✦ "; color: var(--accent); }
+.wr-pray { margin: 0; padding-left: 1.5em; display: grid; gap: 8px; }
+.wr-pray li { font-size: 1.08rem; line-height: 1.7; color: var(--ink); word-break: keep-all; }
+.wr-pray-apply { padding: 14px 16px 14px 14px; border-radius: 12px; background: var(--paper-alt); }
 .wed-close-note { margin-top: 12px; font-size: .86rem; color: var(--ink-soft); text-align: right; }
 .wr-conti { display: grid; gap: 14px; }
 .wr-conti-img { display: block; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; min-height: 80px; }

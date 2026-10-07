@@ -144,8 +144,28 @@
     }).join("") + '</ol>';
   }
 
+  // 기도 제목(2026-10-07 목사님): "위에는 고정, 아래는 말씀 후 적용 기도 제목 — 두 개로 나누면"
+  //   summary.prayer = { fixed: [...], apply: [...] } — 고정은 tools/wed_notes.py 가 지난 자료에서 이어 받는다
+  var PRAYER_FIXED = "함께 드리는 기도 제목", PRAYER_APPLY = "말씀 후 적용 기도 제목";
+  function prayerOf(n) {
+    var p = ((n && n.summary) || {}).prayer || {};
+    var clean = function (a) { return (a || []).map(function (x) { return String(x || "").trim(); }).filter(Boolean); };
+    return { fixed: clean(p.fixed), apply: clean(p.apply) };
+  }
+  function prayerCount(n) { var p = prayerOf(n); return p.fixed.length + p.apply.length; }
+  function prayerHtml(n) {
+    var p = prayerOf(n);
+    if (!p.fixed.length && !p.apply.length) return "";
+    var part = function (title, list, cls) {
+      return list.length ? '<div class="wr-pray-part ' + cls + '"><p class="wr-pray-t">' + esc(title) + '</p><ol class="wr-pray">' +
+        list.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ol></div>' : "";
+    };
+    return '<section class="wr-sec" id="wrPrayer"><h4 class="wr-h">기도 제목</h4>' +
+      part(PRAYER_FIXED, p.fixed, "wr-pray-fixed") + part(PRAYER_APPLY, p.apply, "wr-pray-apply") + '</section>';
+  }
+
   function mainCard(n) {
-    var cnt = (n.verses || []).length, c = contiFor(n.note_date);
+    var cnt = (n.verses || []).length, c = contiFor(n.note_date), pc = prayerCount(n);
     var showConti = c && (contiOpen(c) || (admin && (c.files || []).length));
     return '<article class="week-sermon wed-card">' +
       '<span class="ws-date">' + esc(String(n.note_date).replace(/-/g, ".")) + ' · 수요기도회</span>' +
@@ -158,6 +178,7 @@
         (showConti ? '<button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrConti"><span aria-hidden="true">🎵</span> <span>찬양 악보</span></button>'
                    : '<button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrPassage"><span aria-hidden="true">📜</span> <span>오늘 본문</span></button>') +
       '</div>' +
+      (pc ? '<div class="wed-btns wed-btns-1 wed-btns-pray"><button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrPrayer"><span aria-hidden="true">🙏</span> <span>기도 제목</span> <b>' + pc + '</b></button></div>' : '') +
       '<p class="wed-close-note">밤 10시 30분에 닫힙니다</p>' +
       '</article>';
   }
@@ -362,6 +383,7 @@
             return '<li class="wr-v"><p class="wr-v-ref"><span class="wr-no" aria-hidden="true">' + circ(i + 1) + '</span>' + esc(v.ref) + '</p>' + linesHtml(v.lines, true) + '</li>';
           }).join("") + '</ol></section>';
       }
+      h += prayerHtml(n);
     }
     if (c && (contiOpen(c) || admin)) h += contiHtml(c);
     return h;
@@ -371,6 +393,7 @@
     if (n && ((n.summary || {}).points || []).length) t.push(["wrPoints", "핵심"]);
     if (n && (n.passage || []).length) t.push(["wrPassage", "본문"]);
     if (n && (n.verses || []).length) t.push(["wrVerses", "인용 구절"]);
+    if (n && prayerCount(n)) t.push(["wrPrayer", "기도"]);
     if (c && (c.files || []).length && (contiOpen(c) || admin)) t.push(["wrConti", "악보"]);
     return t.length > 1 ? t.map(function (x) { return '<button type="button" data-go="' + x[0] + '">' + x[1] + '</button>'; }).join("") : "";
   }
@@ -460,7 +483,7 @@
   function editHtml(n) {
     var pts = (((n.summary || {}).points) || []).slice(0, 3);
     while (pts.length < 3) pts.push({});
-    var refs = (n.verses || []).map(function (v) { return v.ref; }).join("\n");
+    var refs = (n.verses || []).map(function (v) { return v.ref; }).join("\n"), pr = prayerOf(n);
     var inp = function (id, v, ph) { return '<input id="' + id + '" type="text" value="' + esc(v || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + ' />'; };
     return '<div class="wr-edit">' +
       '<p class="wr-edit-note">고친 뒤 [저장]을 누르세요. 핵심은 한 줄씩 짧게, 인용 구절은 장절만 한 줄에 하나씩 적으시면 본문은 홈페이지 성경(개역개정)에서 채웁니다.</p>' +
@@ -470,6 +493,8 @@
           inp("we_pl" + i, p.label, "예: 7절") + inp("we_px" + i, p.text, "한 줄로 짧게(비우면 빠짐)") + '</div></fieldset>';
       }).join("") +
       '<label>인용 구절 <small>설교에서 읽는 순서대로, 한 줄에 하나</small><textarea id="we_verses" rows="6" placeholder="예: 에베소서 1:20">' + esc(refs) + '</textarea></label>' +
+      '<label>' + PRAYER_FIXED + ' <small>한 줄에 하나 · 다음 주 자료에도 그대로 이어집니다</small><textarea id="we_pfixed" rows="5">' + esc(pr.fixed.join("\n")) + '</textarea></label>' +
+      '<label>' + PRAYER_APPLY + ' <small>한 줄에 하나 · 이번 주만</small><textarea id="we_papply" rows="4">' + esc(pr.apply.join("\n")) + '</textarea></label>' +
       '<p class="wr-edit-msg" id="we_msg" role="status"></p>' +
       '<div class="wr-edit-btns"><button type="button" class="btn btn-solid" data-wsave>저장</button><button type="button" class="btn btn-line" data-wcancel>취소</button></div>' +
       '</div>';
@@ -512,7 +537,9 @@
     for (var i = 0; i < 3; i++) if (val("we_px" + i)) points.push({ label: val("we_pl" + i), text: val("we_px" + i) });
     resolveRefs(val("we_verses"), n.verses)
       .then(function (verses) {
-        var body = { title: val("we_title") || n.title, verses: verses, mentions: [], made_by: "pastor", summary: { points: points } };
+        var lines = function (id) { return val(id).split(/\n+/).map(function (l) { return l.replace(/^\s*(?:\d+[.)]|[-·•])\s*/, "").trim(); }).filter(Boolean); };
+        var body = { title: val("we_title") || n.title, verses: verses, mentions: [], made_by: "pastor",
+                     summary: { points: points, prayer: { fixed: lines("we_pfixed"), apply: lines("we_papply") } } };
         return api("PATCH", "sermon_notes?id=eq." + encodeURIComponent(n.id), body, { Prefer: "return=representation" });
       })
       .then(function (rows) {
