@@ -864,6 +864,10 @@ console.log('[dashboard.js] v20260705qtfallback');
   function spouseBanner(name) {
     return name ? '<p style="background:#e8f6ee;border:1px solid #bfe3cd;color:#1e874b;padding:8px 12px;border-radius:8px;font-size:.85rem;margin-bottom:14px;">💑 배우자 <b>' + esc(name) + '</b>님과 <b>가정 헌금</b>이 합산되어 표시됩니다.</p>' : '';
   }
+  // 홈페이지 헌금 기록은 2026년 5월 31일 주일부터 들어 있다 → 그 전 헌금이 없어 실제보다 적어 보일 수 있음을 알린다(목사님 요청 2026-10-07)
+  var OFFERING_START_NOTE = '<p class="off-start-note" style="background:#fff8e8;border:1px solid #f0d98c;color:#7a5a12;padding:9px 12px;border-radius:8px;font-size:.84rem;line-height:1.55;margin:0 0 14px;">' +
+    'ℹ️ 헌금 내역은 <b>2026년 5월 31일</b>부터 집계되었습니다. 그 전에 드린 헌금은 아직 들어 있지 않아 실제와 차이가 있을 수 있습니다. 차후 이 부분도 개선될 예정입니다.</p>';
+  function addStartNote(el) { if (el && !el.querySelector('.off-start-note')) el.insertAdjacentHTML('afterbegin', OFFERING_START_NOTE); }
   function loadOfferings(me) {
     var el = document.getElementById('offeringList');
     offeringsFromSupabase(me).then(function (rows) {
@@ -872,15 +876,15 @@ console.log('[dashboard.js] v20260705qtfallback');
         return { date: o.offer_date, account: o.category || '', service: o.service || '', amount: o.amount, giver: o.giver || '',
                  who: (me.spouseKey && String(o.member_key) === String(me.spouseKey)) ? 'spouse' : 'self' };
       });
-      if (!list.length) { el.innerHTML = note + '<p style="color:var(--ink-soft);font-size:.9rem;">조회된 헌금 내역이 없습니다.</p>'; return; }
+      if (!list.length) { el.innerHTML = note + '<p style="color:var(--ink-soft);font-size:.9rem;">조회된 헌금 내역이 없습니다.</p>'; addStartNote(el); return; }
       var r = { spouse: me.spouse || '', total: list.reduce(function (s, o) { return s + (Number(o.amount) || 0); }, 0) };
-      renderWithFilter(el, list, r, me, note);
+      renderWithFilter(el, list, r, me, note); addStartNote(el);
     }).catch(function () {
       WPF.call('myOfferings').then(function (r) {
         var note = spouseBanner(r.spouse);
         var list = r.offerings || [];
-        if (!list.length) { el.innerHTML = note + '<p style="color:var(--ink-soft);font-size:.9rem;">조회된 헌금 내역이 없습니다.</p>'; return; }
-        renderWithFilter(el, list, r, me, note);
+        if (!list.length) { el.innerHTML = note + '<p style="color:var(--ink-soft);font-size:.9rem;">조회된 헌금 내역이 없습니다.</p>'; addStartNote(el); return; }
+        renderWithFilter(el, list, r, me, note); addStartNote(el);
       }).catch(function (e) {
         if (el) el.innerHTML = '<p style="color:var(--accent-soft);font-size:.9rem;">헌금 조회 실패: ' + esc(e.message) + '</p>';
       });

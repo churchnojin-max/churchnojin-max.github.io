@@ -1407,44 +1407,133 @@ console.log('[finance.js] v20260701di');
     panel.querySelector('#l_go').onclick = draw; draw();
   }
 
-  /* ── 헌금자통계 — 교적 이름으로 묶고, 이름을 누르면 그 분의 헌금 내역(일자·항목·금액) ── */
+  /* ── 헌금자 가정 찾기 ──
+   * 교적과 이어진 전표 → 그 교인, 가정 = 세대주(없으면 본인).
+   * 교적에 없는 이름 → 교인들의 '가족사항'(예: "배우자: 김성조, 아들: 찬영 / 찬익")에서 찾아 그 가정으로 묶는다.
+   *   두 글자 이름(찬영)은 그 교인·배우자의 성을 붙여(최찬영·김찬영) 찾는다.
+   * 그래도 없으면 '교적부에 등록되지 않은 성도', 구역·주일헌금 같은 것은 '구역·단체·무기명'. */
+  var FAM_WORDS = { '배우자': 1, '남편': 1, '아내': 1, '자녀': 1, '장녀': 1, '차녀': 1, '삼녀': 1, '장남': 1, '차남': 1, '삼남': 1, '아들': 1, '딸': 1, '부': 1, '모': 1, '사진': 1, '집사': 1, '권사': 1, '장로': 1, '성도': 1, '타교회': 1, '손자': 1, '손녀': 1, '며느리': 1, '사위': 1, '형제': 1, '자매': 1 };
+  function householdOf(m) { var h = m && m.head && String(m.head).trim(); return h || (m ? m.name : ''); }
+  function memberByKey(k) { for (var i = 0; i < M.members.length; i++) if (M.members[i].key === k) return M.members[i]; return null; }
+  function famIndex() {
+    if (M._famIdx && M._famIdxN === M.members.length) return M._famIdx;
+    var idx = {}, reg = {};
+    M.members.forEach(function (m) { reg[m.name] = 1; });
+    M.members.forEach(function (m) {
+      var fn = String(m.family || ''); if (!fn || !m.name) return;
+      var sp = (fn.match(/(?:배우자|남편|아내)\s*[:：]?\s*([가-힣]{2,4})/) || [])[1] || m.spouse || '';
+      var surs = [m.name.charAt(0)]; if (sp && sp.length >= 3 && surs.indexOf(sp.charAt(0)) < 0) surs.push(sp.charAt(0));
+      var re = /([가-힣]{1,4})/g, mm, prevLabel = '';
+      while ((mm = re.exec(fn))) {
+        var w = mm[1];
+        if (FAM_WORDS[w]) { prevLabel = w; continue; }
+        if (w.length < 2) continue;
+        var pri = /배우자|남편|아내/.test(prevLabel) ? 2 : 1;
+        (w.length >= 3 ? [w] : surs.map(function (s) { return s + w; })).forEach(function (c) {
+          if (reg[c]) return;
+          if (!idx[c] || idx[c].pri < pri) idx[c] = { owner: m, household: householdOf(m), rel: prevLabel, pri: pri };
+        });
+      }
+    });
+    M._famIdx = idx; M._famIdxN = M.members.length;
+    return idx;
+  }
+  function cleanGiver(s) { return String(s == null ? '' : s).replace(/\((?:생일|심방|감사|헌신|기념)[^)]*\)/g, '').replace(/(?:생일|심방)$/, '').trim(); }
+  function giverInfo(v) {
+    var key = v['매칭키'] || '';
+    if (key) { var m = memberByKey(key); if (m) return { kind: 'member', id: 'K:' + key, name: m.name, household: householdOf(m) }; }
+    var raw = v['헌금자'] || '무명', nm = cleanGiver(raw) || raw;
+    if (isGroupGiver(nm)) return { kind: 'group', id: 'G:' + nm, name: nm, household: '' };
+    var s = nm, inParen = [];
+    s = s.replace(/\(([^)]*)\)/g, function (_, x) { inParen.push(x); return ' '; });
+    var parts = s.split(/[·・,、/／&＆]|\s+외\s*|\s+/).concat(inParen).map(function (p) { return p.trim(); }).filter(Boolean);
+    var idx = famIndex();
+    for (var i = 0; i < parts.length; i++) {
+      var hits = M.members.filter(function (m) { return m.name === parts[i]; });
+      if (hits.length === 1) return { kind: 'loose', id: 'N:' + nm, name: nm, household: householdOf(hits[0]), note: hits[0].name + ' 님 이름으로 적혔지만 교적과 이어지지 않은 기록' };
+      if (idx[parts[i]]) return { kind: 'family', id: 'N:' + nm, name: nm, household: idx[parts[i]].household, note: idx[parts[i]].owner.name + ' 님 가족사항' + (idx[parts[i]].rel ? '(' + idx[parts[i]].rel + ')' : '') };
+    }
+    return { kind: 'none', id: 'N:' + nm, name: nm, household: '' };
+  }
+
+  /* ── 헌금자통계 — 사람별 / 가정별, 이름을 누르면 그 분의 헌금 내역 ── */
   function renderGivers(panel) {
     loading(panel);
     ensureVouchers().then(function () {
       var map = {};
       vouchersFY().filter(function (x) { return String(x['구분']) === '수입'; }).forEach(function (v) {
-        var key = v['매칭키'] || '', nm = (key && memberName(key)) || v['헌금자'] || '무명';
-        var id = key ? 'K:' + key : 'N:' + nm;
-        if (!map[id]) map[id] = { id: id, name: nm, key: key, kind: key ? 'member' : (isGroupGiver(nm) ? 'group' : 'none'), count: 0, total: 0, list: [], names: {} };
-        var g = map[id]; g.count++; g.total += Number(v['금액']) || 0; g.list.push(v); g.names[v['헌금자'] || ''] = 1;
+        var gi = giverInfo(v);
+        if (!map[gi.id]) map[gi.id] = { id: gi.id, name: gi.name, kind: gi.kind, household: gi.household, note: gi.note || '', count: 0, total: 0, list: [], names: {} };
+        var g = map[gi.id]; g.count++; g.total += Number(v['금액']) || 0; g.list.push(v); g.names[v['헌금자'] || ''] = 1;
       });
       var all = Object.keys(map).map(function (k) { return map[k]; });
-      var KIND = { member: '<span class="fin-pill in">교인</span>', none: '<span class="fin-pill" style="background:#fff4e0;color:#8a5a00">교적에 없음</span>', group: '<span class="fin-pill" style="background:#eef2f7;color:#3a4a63">구역·단체·무기명</span>' };
+      var KIND = {
+        member: '<span class="fin-pill in">교인</span>',
+        family: '<span class="fin-pill" style="background:#e7f1ff;color:#1b4b8f">교적 미등록 · 가족 확인</span>',
+        loose: '<span class="fin-pill" style="background:#e7f1ff;color:#1b4b8f">교인 · 교적 미연결</span>',
+        none: '<span class="fin-pill" style="background:#fff4e0;color:#8a5a00">교적부에 등록되지 않은 성도</span>',
+        group: '<span class="fin-pill" style="background:#eef2f7;color:#3a4a63">구역·단체·무기명</span>'
+      };
+      var KIND_T = { member: '교인', loose: '교인(교적 미연결)', family: '교적 미등록(가족 확인)', none: '교적부에 등록되지 않은 성도', group: '구역·단체·무기명' };
+      var r0 = fyRange(M.fy);
       panel.innerHTML =
         '<div class="fin-card"><div class="fin-grid" style="align-items:end">' +
         '<div class="form-field"><label>이름 찾기</label><input type="text" id="gv_q" placeholder="이름 일부" autocomplete="off"></div>' +
-        '<div class="form-field"><label>보기</label><select id="gv_kind"><option value="person">사람만(교인 + 교적에 없는 분)</option><option value="member">교인만</option><option value="none">교적에 없는 분만</option><option value="group">구역·단체·무기명만</option><option value="all">모두</option></select></div>' +
+        '<div class="form-field"><label>묶어 보기</label><select id="gv_mode"><option value="person">사람별</option><option value="house">가정별</option></select></div>' +
+        '<div class="form-field"><label>보기</label><select id="gv_kind"><option value="person">사람만(구역·단체 빼고)</option><option value="member">교인만</option><option value="unreg">교적에 없는 분만</option><option value="group">구역·단체·무기명만</option><option value="all">모두</option></select></div>' +
         '<div class="form-field"><label>정렬</label><select id="gv_sort"><option value="total">금액 많은 순</option><option value="name">이름 순</option></select></div>' +
-        '</div><p class="help" style="margin-top:4px">' + M.fy + '년도(' + esc(fyRange(M.fy).from) + ' ~ ' + esc(fyRange(M.fy).to) + ') 수입 전표 기준. 이름을 누르면 그 분의 헌금 내역이 펼쳐집니다. 「교적에 없음」은 교적과 이어지지 않은 이름이라 「내 헌금 조회」에 나오지 않습니다.</p></div>' +
+        '</div><p class="help" style="margin-top:4px">' + M.fy + '년도(' + esc(r0.from) + ' ~ ' + esc(r0.to) + ') 수입 전표 기준. 이름을 누르면 그 분의 헌금 내역이 펼쳐집니다.<br>교적에 없는 이름은 교인들의 <b>가족사항</b>에서 찾아 그 가정으로 묶고(「가족 확인」), 찾지 못하면 「교적부에 등록되지 않은 성도」로 따로 둡니다. 교적과 이어지지 않은 이름은 성도 본인의 「내 헌금 조회」에 나오지 않습니다.</p></div>' +
         '<div id="gv_out"></div>';
       var out = panel.querySelector('#gv_out');
+      function pass(r, kind, q) {
+        if (kind === 'person' && r.kind === 'group') return false;
+        if (kind === 'member' && r.kind !== 'member') return false;
+        if (kind === 'unreg' && !(r.kind === 'family' || r.kind === 'none' || r.kind === 'loose')) return false;
+        if (kind === 'group' && r.kind !== 'group') return false;
+        if (q && r.name.indexOf(q) < 0 && r.household.indexOf(q) < 0 && !Object.keys(r.names).some(function (n) { return n.indexOf(q) >= 0; })) return false;
+        return true;
+      }
+      function personRow(r, rank, indent) {
+        var other = Object.keys(r.names).filter(function (n) { return n && n !== r.name; });
+        var sub = [];
+        if (other.length) sub.push('적힌 이름: ' + other.join(', '));
+        if (r.kind === 'family' || r.kind === 'loose') sub.push((r.household ? r.household + ' 가정' : '') + (r.note ? ' · ' + r.note : ''));
+        return '<tr class="gv-row" data-id="' + esc(r.id) + '" style="cursor:pointer"><td class="num">' + (rank || '') + '</td><td' + (indent ? ' style="padding-left:22px"' : '') + '><b style="color:var(--accent,#1A3A2F);text-decoration:underline dotted">' + esc(r.name) + '</b>' + (sub.length ? '<div style="font-size:.74rem;color:#9aa5b1;white-space:normal">' + esc(sub.join(' · ')) + '</div>' : '') + '</td><td>' + KIND[r.kind] + '</td><td class="num">' + r.count + '</td><td class="num"><b>' + won(r.total) + '</b></td></tr>';
+      }
       function draw() {
-        var q = panel.querySelector('#gv_q').value.trim(), kind = panel.querySelector('#gv_kind').value, sort = panel.querySelector('#gv_sort').value;
-        var rows = all.filter(function (r) {
-          if (kind === 'person' && r.kind === 'group') return false;
-          if (kind !== 'person' && kind !== 'all' && r.kind !== kind) return false;
-          if (q && r.name.indexOf(q) < 0 && !Object.keys(r.names).some(function (n) { return n.indexOf(q) >= 0; })) return false;
-          return true;
-        }).sort(function (a, b) { return sort === 'name' ? a.name.localeCompare(b.name, 'ko') : (b.total - a.total || a.name.localeCompare(b.name, 'ko')); });
+        var q = panel.querySelector('#gv_q').value.trim(), kind = panel.querySelector('#gv_kind').value, sort = panel.querySelector('#gv_sort').value, mode = panel.querySelector('#gv_mode').value;
+        var rows = all.filter(function (r) { return pass(r, kind, q); });
+        function cmp(a, b) { return sort === 'name' ? a.name.localeCompare(b.name, 'ko') : (b.total - a.total || a.name.localeCompare(b.name, 'ko')); }
         var tot = rows.reduce(function (s, r) { return s + r.total; }, 0), cnt = rows.reduce(function (s, r) { return s + r.count; }, 0);
-        withPrint(out, '헌금자 통계', '<div class="fin-card"><div style="display:flex;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px"><b>' + rows.length + '명(곳) · ' + cnt + '건</b><b style="color:#1e874b">' + won(tot) + '원</b></div>' +
-          '<div style="overflow:auto;max-height:640px"><table class="fin-table"><thead><tr><th class="num">순위</th><th>헌금자</th><th>구분</th><th class="num">건수</th><th class="num">헌금 합계</th></tr></thead><tbody>' +
-          rows.map(function (r, i) {
-            var other = Object.keys(r.names).filter(function (n) { return n && n !== r.name; });
-            return '<tr class="gv-row" data-id="' + esc(r.id) + '" style="cursor:pointer"><td class="num">' + (i + 1) + '</td><td><b style="color:var(--accent,#1A3A2F);text-decoration:underline dotted">' + esc(r.name) + '</b>' + (other.length ? '<div style="font-size:.74rem;color:#9aa5b1;white-space:normal">적힌 이름: ' + esc(other.join(', ')) + '</div>' : '') + '</td><td>' + KIND[r.kind] + '</td><td class="num">' + r.count + '</td><td class="num"><b>' + won(r.total) + '</b></td></tr>';
-          }).join('') + '</tbody><tfoot><tr style="font-weight:700;background:#eef2f7"><td></td><td>합계</td><td></td><td class="num">' + cnt + '</td><td class="num">' + won(tot) + '</td></tr></tfoot></table></div></div>',
-          null,
-          { headers: ['순위', '헌금자', '구분', '건수', '헌금합계'], rows: rows.map(function (r, i) { return [i + 1, r.name, { member: '교인', none: '교적에 없음', group: '구역·단체·무기명' }[r.kind], r.count, r.total]; }) });
+        var body = '', csv = [], title;
+        if (mode === 'house') {
+          var hs = {}, horder = [];
+          rows.forEach(function (r) {
+            var hk = r.kind === 'none' ? '~none' : r.kind === 'group' ? '~group' : 'H:' + r.household;
+            if (!hs[hk]) { hs[hk] = { key: hk, label: hk === '~none' ? '교적부에 등록되지 않은 성도' : hk === '~group' ? '구역·단체·무기명' : r.household + ' 가정', rows: [], total: 0, count: 0 }; horder.push(hk); }
+            hs[hk].rows.push(r); hs[hk].total += r.total; hs[hk].count += r.count;
+          });
+          var list = horder.map(function (k) { return hs[k]; }).sort(function (a, b) {
+            var sa = a.key.charAt(0) === '~' ? 1 : 0, sb = b.key.charAt(0) === '~' ? 1 : 0;   // 따로 둔 묶음은 맨 아래
+            return sa - sb || (sort === 'name' ? a.label.localeCompare(b.label, 'ko') : b.total - a.total);
+          });
+          body = list.map(function (h, i) {
+            h.rows.sort(cmp);
+            csv.push([h.key.charAt(0) === '~' ? '' : i + 1, h.label, '', h.count, h.total]);
+            h.rows.forEach(function (r) { csv.push(['', '  ' + r.name, KIND_T[r.kind], r.count, r.total]); });
+            return '<tr style="background:#f5f8fc;font-weight:700"><td class="num">' + (h.key.charAt(0) === '~' ? '' : i + 1) + '</td><td>' + esc(h.label) + ' <span style="font-weight:400;color:#9aa5b1;font-size:.8rem">' + h.rows.length + '명</span></td><td></td><td class="num">' + h.count + '</td><td class="num">' + won(h.total) + '</td></tr>' +
+              h.rows.map(function (r) { return personRow(r, '', true); }).join('');
+          }).join('');
+          title = list.filter(function (h) { return h.key.charAt(0) !== '~'; }).length + '가정' + (hs['~none'] ? ' + 미등록 성도 ' + hs['~none'].rows.length + '명' : '') + (hs['~group'] ? ' + 구역·단체 ' + hs['~group'].rows.length + '곳' : '');
+        } else {
+          rows.sort(cmp);
+          body = rows.map(function (r, i) { csv.push([i + 1, r.name, KIND_T[r.kind], r.count, r.total]); return personRow(r, i + 1, false); }).join('');
+          title = rows.length + '명(곳)';
+        }
+        withPrint(out, '헌금자 통계', '<div class="fin-card"><div style="display:flex;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px"><b>' + esc(title) + ' · ' + cnt + '건</b><b style="color:#1e874b">' + won(tot) + '원</b></div>' +
+          '<div style="overflow:auto;max-height:680px"><table class="fin-table"><thead><tr><th class="num">순위</th><th>' + (mode === 'house' ? '가정 / 헌금자' : '헌금자') + '</th><th>구분</th><th class="num">건수</th><th class="num">헌금 합계</th></tr></thead><tbody>' + body +
+          '</tbody><tfoot><tr style="font-weight:700;background:#eef2f7"><td></td><td>합계</td><td></td><td class="num">' + cnt + '</td><td class="num">' + won(tot) + '</td></tr></tfoot></table></div></div>',
+          null, { headers: ['순위', mode === 'house' ? '가정/헌금자' : '헌금자', '구분', '건수', '헌금합계'], rows: csv });
         Array.prototype.forEach.call(out.querySelectorAll('.gv-row'), function (tr) {
           tr.onclick = function () {
             var nx = tr.nextElementSibling;
@@ -1462,7 +1551,7 @@ console.log('[finance.js] v20260701di');
         });
       }
       panel.querySelector('#gv_q').addEventListener('input', draw);
-      panel.querySelector('#gv_kind').onchange = draw; panel.querySelector('#gv_sort').onchange = draw;
+      ['#gv_kind', '#gv_sort', '#gv_mode'].forEach(function (id) { panel.querySelector(id).onchange = draw; });
       draw();
     }).catch(function (e) { panel.innerHTML = msgCard('조회 실패', e.message); });
   }
