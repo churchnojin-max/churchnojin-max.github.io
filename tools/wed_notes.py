@@ -667,6 +667,25 @@ def _prayer_list(v):
     return [t for t in (_clean_text(x, 200) for x in (v or [])) if t][:20]
 
 
+FLOW_MIN, FLOW_MAX, FLOW_STEP_MAX = 3, 6, 25   # 말씀의 흐름: 3~6단계, 한 단계 25자 안
+
+
+def flow_for(note, old):
+    """말씀의 흐름(2026-10-07 목사님: 설교문을 다 넣기보다 이해를 돕는 자료 — '논리적 흐름' 한 칸)
+       note.json 의 flow → 없으면 그날 자료에 있던 것. → (단계 목록, 문제 글 또는 None)"""
+    given = note.get("flow")
+    src = given if given is not None else ((old or {}).get("summary") or {}).get("flow")
+    steps = [t for t in (_clean_text(x, 80) for x in (src or [])) if t]
+    if not steps:
+        return [], None
+    if not FLOW_MIN <= len(steps) <= FLOW_MAX:
+        return steps, f"말씀의 흐름이 {len(steps)}단계입니다. {FLOW_MIN}~{FLOW_MAX}단계로 써 주세요"
+    long_ = [t for t in steps if len(t) > FLOW_STEP_MAX]
+    if long_:
+        return steps, f"말씀의 흐름 한 단계가 너무 깁니다({FLOW_STEP_MAX}자 넘음): " + " / ".join(long_)
+    return steps, None
+
+
 def prayer_for(st, date, note, old):
     """기도 제목(2026-10-07 목사님: 위 '고정', 아래 '말씀 후 적용' 두 칸)
        note.json 에 있으면 그것, 없으면 그날 자료에 있던 것. 고정이 비면 지난 자료의 고정을 이어 받는다."""
@@ -732,6 +751,11 @@ def cmd_save(path, no_tg=False, force=False, head=None):
     }
     old = get_note(st, date)
     row["summary"]["prayer"] = prayer_for(st, date, note, old)
+    flow, bad_flow = flow_for(note, old)
+    if bad_flow:
+        print(bad_flow + " — 더 짧게 고쳐 주세요(저장하지 않았습니다).")
+        return 2
+    row["summary"]["flow"] = flow
     if old and old.get("status") == "approved" and not force:
         print(f"{md(date)} 자료는 이미 올렸습니다. 덮어쓰지 않았습니다(목사님께 여쭌 뒤 --force — 다시 '확인 전'이 됩니다).")
         return 3
@@ -758,6 +782,9 @@ def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주�
     for i, p in enumerate((n.get("summary") or {}).get("points") or [], 1):
         lines.append(f"{i}. {(p.get('label') + ' — ') if p.get('label') else ''}{p.get('text')}")
     vs = n.get("verses") or []
+    fl = (n.get("summary") or {}).get("flow") or []
+    if fl:
+        lines += ["", "[말씀의 흐름]", " → ".join(fl)]
     lines += ["", f"[인용 구절 {len(vs)}] " + (" · ".join(v["ref"] for v in vs) or "없음")]
     pr = (n.get("summary") or {}).get("prayer") or {}
     for title, key in (("고정 기도 제목", "fixed"), ("특별 기도 제목", "apply")):

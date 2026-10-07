@@ -4066,6 +4066,12 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .wr-points li { font-size: 1.1rem; }
 .wed-btns-1 { grid-template-columns: minmax(0, 1fr); }
 .wed-btns-pray { margin-top: 10px; }
+/* 말씀의 흐름 — 단계를 위에서 아래로, 사이에 ↓ (2026-10-07) */
+.wr-flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.wr-flow li { position: relative; padding: 11px 14px; border-radius: 12px; background: var(--paper-alt); font-size: 1.08rem; font-weight: 600; line-height: 1.55; color: var(--ink); text-align: center; word-break: keep-all; }
+.wr-flow li + li { margin-top: 26px; }
+.wr-flow li + li::before { content: "↓"; position: absolute; left: 50%; top: -24px; transform: translateX(-50%); font-size: 1.05rem; line-height: 22px; color: var(--accent); font-weight: 700; }
+.wr-flow li:last-child { background: var(--accent); color: #fff; }
 /* 기도 제목 — 위: 함께 드리는(고정) · 아래: 말씀 후 적용 (2026-10-07) */
 .wr-pray-part + .wr-pray-part { margin-top: 18px; }
 .wr-pray-t { margin: 0 0 8px; font-size: .98rem; font-weight: 800; color: var(--ink); }

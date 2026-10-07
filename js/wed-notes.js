@@ -152,6 +152,14 @@
     var clean = function (a) { return (a || []).map(function (x) { return String(x || "").trim(); }).filter(Boolean); };
     return { fixed: clean(p.fixed), apply: clean(p.apply) };
   }
+  // 말씀의 흐름(2026-10-07 목사님: "설교문을 다 넣기보다 이해를 돕기 위한 자료 — 논리적 흐름") summary.flow = ["단계", …]
+  function flowOf(n) { return (((n && n.summary) || {}).flow || []).map(function (x) { return String(x || "").trim(); }).filter(Boolean); }
+  function flowHtml(n) {
+    var f = flowOf(n);
+    if (!f.length) return "";
+    return '<section class="wr-sec" id="wrFlow"><h4 class="wr-h">말씀의 흐름</h4><ol class="wr-flow">' +
+      f.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ol></section>';
+  }
   function prayerCount(n) { var p = prayerOf(n); return p.fixed.length + p.apply.length; }
   function prayerHtml(n) {
     var p = prayerOf(n);
@@ -375,6 +383,7 @@
         '<p class="wr-ref">' + esc(n.scripture || "") + (n.preacher ? ' · ' + esc(n.preacher) : '') + '</p></header>';
       var pts = pointsHtml(n, "wr-points");
       if (pts) h += '<section class="wr-sec" id="wrPoints"><h4 class="wr-h">핵심 3가지</h4>' + pts + '</section>';
+      h += flowHtml(n);
       if ((n.passage || []).length) h += '<section class="wr-sec" id="wrPassage"><h4 class="wr-h">오늘 본문 <small>' + esc(n.scripture || "") + '</small></h4>' + linesHtml(n.passage) + '</section>';
       var vs = n.verses || [];
       if (vs.length) {
@@ -391,6 +400,7 @@
   function tabsHtml(n, c) {
     var t = [];
     if (n && ((n.summary || {}).points || []).length) t.push(["wrPoints", "핵심"]);
+    if (n && flowOf(n).length) t.push(["wrFlow", "흐름"]);
     if (n && (n.passage || []).length) t.push(["wrPassage", "본문"]);
     if (n && (n.verses || []).length) t.push(["wrVerses", "인용 구절"]);
     if (n && prayerCount(n)) t.push(["wrPrayer", "기도"]);
@@ -492,6 +502,7 @@
         return '<fieldset class="wr-edit-pt"><legend>핵심 ' + (i + 1) + '</legend><div class="wr-edit-row">' +
           inp("we_pl" + i, p.label, "예: 7절") + inp("we_px" + i, p.text, "한 줄로 짧게(비우면 빠짐)") + '</div></fieldset>';
       }).join("") +
+      '<label>말씀의 흐름 <small>한 줄에 한 단계(3~6단계, 짧게) · 비우면 빠짐</small><textarea id="we_flow" rows="5">' + esc(flowOf(n).join("\n")) + '</textarea></label>' +
       '<label>인용 구절 <small>설교에서 읽는 순서대로, 한 줄에 하나</small><textarea id="we_verses" rows="6" placeholder="예: 에베소서 1:20">' + esc(refs) + '</textarea></label>' +
       '<label>' + PRAYER_FIXED + ' <small>한 줄에 하나 · 다음 주 자료에도 그대로 이어집니다</small><textarea id="we_pfixed" rows="5">' + esc(pr.fixed.join("\n")) + '</textarea></label>' +
       '<label>' + PRAYER_APPLY + ' <small>한 줄에 하나 · 이번 주만</small><textarea id="we_papply" rows="4">' + esc(pr.apply.join("\n")) + '</textarea></label>' +
@@ -539,7 +550,8 @@
       .then(function (verses) {
         var lines = function (id) { return val(id).split(/\n+/).map(function (l) { return l.replace(/^\s*(?:\d+[.)]|[-·•])\s*/, "").trim(); }).filter(Boolean); };
         var body = { title: val("we_title") || n.title, verses: verses, mentions: [], made_by: "pastor",
-                     summary: { points: points, prayer: { fixed: lines("we_pfixed"), apply: lines("we_papply") } } };
+                     summary: { points: points, flow: lines("we_flow").map(function (l) { return l.replace(/^\s*(?:→|->)\s*/, ""); }),
+                                prayer: { fixed: lines("we_pfixed"), apply: lines("we_papply") } } };
         return api("PATCH", "sermon_notes?id=eq." + encodeURIComponent(n.id), body, { Prefer: "return=representation" });
       })
       .then(function (rows) {
