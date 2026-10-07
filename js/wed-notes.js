@@ -2,14 +2,18 @@
    "수요예배 때 성도들이 참고할 수 있도록" → "내 설교를 밖으로 공개하지 않으려는 거야. 오는 사람들에게만 특권을 주는 거지.
     아주 짧게 본문, 제목, 핵심 3가지와 인용 구절만. 콘티를 올리면 악보도 — 오후 10시 30분에는 사라지게."
    목사님 결정: 예배와 말씀(이번 주 말씀 아래) + 수요일 저녁 첫 화면 띠 / 로그인한 회원만 / 목사님 확인 뒤 올림 /
-     말씀 자료는 그날 저녁 8시에 열리고 밤 10시 30분에 닫힌다('지난 수요 말씀' 모아 보기 없음) /
+     말씀 자료는 그날 저녁 7시 45분에 열리고 밤 10시 30분에 닫힌다('지난 수요 말씀' 모아 보기 없음) /
+     (2026-10-07 목사님: "8시로 했는데 내가 미리 줄테니 7시 45분쯤에 팝업이 뜨거나 그때 열려져서 자료가 보일 수 있도록")
      악보(콘티)는 목사님이 올리면 그날 보이고 밤 10시 30분에 사라진다(파일은 지우지 않고 숨김 — 목사님은 늘 봄).
    ① 예배와 말씀 #wed : 로그인 안 했으면 🔒 안내. 했으면 — 예배 시간엔 말씀 카드(핵심 3가지 + 인용 구절·악보 단추),
-      그 전엔 악보만(올렸으면), 그 밖엔 '수요일 저녁 8시에 열립니다' 안내
+      그 전엔 악보만(올렸으면), 그 밖엔 '수요일 저녁 7시 45분에 열립니다' 안내
    ② 크게 읽는 창 : 핵심 3가지 · 오늘 본문 · 인용 구절(설교에서 읽는 순서 ①②③) · 찬양 악보
       휴대폰 '뒤로'로 닫히고, 열려 있는 동안은 옆으로 밀어도 다른 화면으로 넘어가지 않는다(page-slide.js 가 pop-open 을 봄).
    ③ 관리자(목사님) : 확인용 카드(미리보기·고치기·올리기·내리기) + 이번 수요일 콘티·악보 올리기/빼기(비공개 보관함 conti/)
-   ④ 첫 화면 '이번 주 설교' 띠 : 수요일 저녁 8시 ~ 밤 10시 30분, 열린 자료가 있으면 '오늘 수요기도회 말씀'
+   ④ 첫 화면 '이번 주 설교' 띠 : 수요일 저녁 7시 45분 ~ 밤 10시 30분, 열린 자료가 있으면 '오늘 수요기도회 말씀'
+   ⑤ 첫 화면 알림 창 : 같은 때, 그날 한 번 '오늘 수요기도회 말씀이 열렸습니다' → [말씀 자료 보기]면 ①로 가서 ②를 바로 연다.
+      로그인 안 했어도 이 기기에서 로그인한 적이 있으면(성도님 기기) [로그인하고 보기] → 로그인 뒤 바로 자료로.
+      첫 화면을 열어 둔 채 7시 45분이 되어도 저절로 뜬다.
    보이는 규칙은 데이터베이스가 지킨다(supabase/sermon_notes_20261005.sql, sermon_notes_short_conti_20261005.sql) — 이 파일은 그리는 일만.
    만들기: tools/wed_notes.py(수요일 예약 작업) → 목사님 텔레그램 [올리기]. */
 (function () {
@@ -20,6 +24,8 @@
   if (!box && !banner) return;
 
   var SERVICE = "수요기도회";
+  // 여는 때 — 데이터베이스 트리거(supabase/sermon_notes_open1945_20261007.sql)와 같은 값. 닫는 때는 밤 10시 30분.
+  var OPEN_H = 19, OPEN_M = 45, OPEN_TXT = "저녁 7시 45분";
   var SB = window.SUPABASE_URL.replace(/\/$/, "");
   var esc = function (t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (m) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]; }); };
 
@@ -123,6 +129,7 @@
       render();
       ensureAnchor();
       scheduleTick();
+      autoOpen();
     }).catch(function (e) {
       if (e && e.status === 401 && !retried) { retried = true; _admin = null; return freshSession().then(load); }
       box.innerHTML = '<div class="wed-empty">수요기도회 말씀을 불러오지 못했습니다.<br /><button type="button" class="btn btn-line" data-wretry>다시 불러오기</button></div>';
@@ -156,12 +163,12 @@
   }
 
   function contiCard(c) {
-    var before8 = Date.now() < atKST(c.note_date, 20, 0);
+    var beforeOpen = Date.now() < atKST(c.note_date, OPEN_H, OPEN_M);
     return '<article class="week-sermon wed-card">' +
       '<span class="ws-date">' + esc(String(c.note_date).replace(/-/g, ".")) + ' · 수요기도회</span>' +
       '<h3 class="ws-title">오늘 찬양 악보</h3>' +
       '<div class="wed-btns wed-btns-1"><button type="button" class="wed-btn" data-wconti="' + esc(c.note_date) + '"><span aria-hidden="true">🎵</span> <span>찬양 악보 보기</span> <b>' + (c.files || []).length + '</b></button></div>' +
-      '<p class="wed-close-note">' + (before8 ? "말씀 자료는 저녁 8시에 열립니다 · " : "") + '악보는 밤 10시 30분에 사라집니다</p>' +
+      '<p class="wed-close-note">' + (beforeOpen ? "말씀 자료는 " + OPEN_TXT + "에 열립니다 · " : "") + '악보는 밤 10시 30분에 사라집니다</p>' +
       '</article>';
   }
 
@@ -170,7 +177,7 @@
     var state = !st ? "확인 전 · 성도님께는 아직 안 보입니다"
       : open ? "올림 · 지금 로그인한 성도님께 보입니다(밤 10시 30분까지)"
       : closed ? "올림 · 예배가 끝나 닫혔습니다"
-      : "올림 · " + dayLabel(n.note_date) + " 저녁 8시에 열립니다";
+      : "올림 · " + dayLabel(n.note_date) + " " + OPEN_TXT + "에 열립니다";
     return '<div class="wed-admin">' +
       '<p class="wed-admin-tag">목사님 확인용</p>' +
       '<p class="wed-admin-t"><b>' + esc(dayLabel(n.note_date)) + '</b> 「' + esc(n.title) + '」</p>' +
@@ -207,18 +214,33 @@
     var conti = contis.filter(contiOpen)[0];
     if (open) h += mainCard(open);
     else if (conti) h += contiCard(conti);
-    else h += '<div class="wed-empty">수요기도회 말씀 자료(본문·핵심 3가지·인용 구절)는<br />수요일 저녁 8시 예배 때 열리고, 밤 10시 30분에 닫힙니다.</div>';
+    else h += '<div class="wed-empty">수요기도회 말씀 자료(본문·핵심 3가지·인용 구절)는<br />수요일 ' + OPEN_TXT + '에 열리고, 밤 10시 30분에 닫힙니다.</div>';
     box.innerHTML = h;
   }
 
-  // 저녁 8시·밤 10시 30분이 되면 저절로 다시 그린다(창을 열어 둔 채여도 열리고 닫히게)
+  // 첫 화면 알림 창의 [말씀 자료 보기]로 왔으면(2분 안) 크게 읽는 창을 바로 연다
+  var GO_KEY = "nojin_wed_go", LOGIN_KEY = "nojin_wed_login";
+  function flagFresh(k, ms) {
+    try { var v = +sessionStorage.getItem(k); return !!v && Date.now() - v < ms; } catch (e) { return false; }
+  }
+  function flagSet(k) { try { sessionStorage.setItem(k, String(Date.now())); } catch (e) {} }
+  function flagClear(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+  function autoOpen() {
+    if (!flagFresh(GO_KEY, 120000)) return;
+    flagClear(GO_KEY);
+    var open = notes.filter(isOpen)[0];
+    if (open) openReader(open.id);
+  }
+
+  // 저녁 7시 45분·밤 10시 30분이 되면 저절로 다시 그린다(창을 열어 둔 채여도 열리고 닫히게)
   var tick = null;
   function scheduleTick() {
     if (tick) clearTimeout(tick);
     var now = Date.now(), t = todayKST();
-    var marks = [atKST(t, 0, 0) + 864e5, atKST(t, 20, 0), atKST(t, 22, 30)]
+    var marks = [atKST(t, 0, 0) + 864e5, atKST(t, OPEN_H, OPEN_M), atKST(t, 22, 30)]
       .concat(notes.map(function (n) { return Date.parse(n.publish_at); }), notes.map(closeMs))
       .filter(function (m) { return m > now && m - now < 18 * 3600e3; });
+    if (inWindow() && !notes.filter(isOpen)[0]) marks.push(now + 5 * 60e3);   // 예배 시간인데 아직 안 올라왔으면 5분마다 다시
     if (!marks.length) return;
     var next = Math.min.apply(null, marks);
     tick = setTimeout(function () {
@@ -317,7 +339,7 @@
     var msg = !st ? "확인 전 자료입니다 · 성도님께는 아직 보이지 않습니다."
       : open ? "올린 자료입니다 · 지금 로그인한 성도님께 보입니다(밤 10시 30분까지)."
       : closed ? "올린 자료입니다 · 예배가 끝나 닫혔습니다."
-      : "올린 자료입니다 · " + dayLabel(n.note_date) + " 저녁 8시에 열립니다.";
+      : "올린 자료입니다 · " + dayLabel(n.note_date) + " " + OPEN_TXT + "에 열립니다.";
     return '<div class="wr-admin"><p><b>목사님 확인용</b> ' + esc(msg) + '</p><div class="wr-admin-btns">' +
       (closed ? '' : st ? '<button type="button" class="btn btn-line" data-wstatus="draft" data-id="' + esc(n.id) + '">내리기</button>'
                         : '<button type="button" class="btn btn-solid" data-wstatus="approved" data-id="' + esc(n.id) + '">올리기</button>') +
@@ -420,7 +442,7 @@
     if (!n) return;
     var nowOpen = Date.parse(n.publish_at) <= Date.now();
     var ask = status === "approved"
-      ? "이 자료를 올릴까요?\n" + (nowOpen ? "로그인한 성도님께 바로 보이고, 밤 10시 30분에 닫힙니다." : dayLabel(n.note_date) + " 저녁 8시에 로그인한 성도님께 열리고, 밤 10시 30분에 닫힙니다.")
+      ? "이 자료를 올릴까요?\n" + (nowOpen ? "로그인한 성도님께 바로 보이고, 밤 10시 30분에 닫힙니다." : dayLabel(n.note_date) + " " + OPEN_TXT + "에 로그인한 성도님께 열리고, 밤 10시 30분에 닫힙니다.")
       : "이 자료를 내릴까요?\n성도님께 보이지 않게 됩니다(지워지지는 않습니다).";
     if (!confirm(ask)) return;
     api("PATCH", "sermon_notes?id=eq." + encodeURIComponent(id), { status: status }, { Prefer: "return=representation" })
@@ -577,13 +599,25 @@
     });
   }
 
-  // ===== ④ 첫 화면 띠 — 수요일 저녁 8시 ~ 밤 10시 30분 =====
+  // ===== ④ 첫 화면 띠 — 수요일 저녁 7시 45분 ~ 밤 10시 30분 =====
+  function inWindow() {
+    var k = kst(), mins = k.getUTCHours() * 60 + k.getUTCMinutes();
+    return k.getUTCDay() === 3 && mins >= OPEN_H * 60 + OPEN_M && mins < 22 * 60 + 30;
+  }
+  var bannerTimer = null, bannerRetried = false;
+  function bannerLater(ms) {
+    if (bannerTimer) clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function () { bannerTimer = null; paintBanner(); }, ms);
+  }
   function paintBanner() {
     if (!banner) return;
-    var k = kst(), mins = k.getUTCHours() * 60 + k.getUTCMinutes();
-    if (!(k.getUTCDay() === 3 && mins >= 20 * 60 && mins < 22 * 60 + 30)) return;
+    // 첫 화면을 열어 둔 채 7시 45분이 되면 그때 다시 본다
+    var at = atKST(todayKST(), OPEN_H, OPEN_M), now = Date.now();
+    if (kst().getUTCDay() === 3 && now < at && at - now < 12 * 3600e3) { bannerLater(at - now + 3000); return; }
+    if (!inWindow()) return;
     api("POST", "rpc/wed_note_now", {}).then(function (r) {
-      if (!r || !r.open) return;
+      bannerRetried = false;
+      if (!r || !r.open) { bannerLater(5 * 60e3); return; }   // 목사님이 아직 안 올리셨으면 5분마다 다시
       banner.dataset.wed = "1";
       var lb = banner.querySelector(".hsb-label"), t = banner.querySelector(".hsb-title"),
           rf = banner.querySelector(".hsb-ref"), ar = banner.querySelector(".hsb-arrow");
@@ -593,12 +627,116 @@
       if (ar) ar.textContent = "말씀 자료 보기 →";
       banner.setAttribute("href", "word.html#wed");
       banner.classList.add("is-wed");
-    }).catch(function () {});
+      wedPop(r);
+    }).catch(function (e) {
+      // 로그인 열쇠가 낡았으면(401) 새로 받아 한 번 더
+      if (e && e.status === 401 && !bannerRetried) { bannerRetried = true; freshSession().then(paintBanner); }
+    });
+  }
+
+  // ===== ⑤ 첫 화면 알림 창 — 그날 한 번(이 기기) =====
+  //  로그인한 분: 제목·본문 + [말씀 자료 보기] → 예배와 말씀으로 가서 크게 읽는 창을 바로 연다.
+  //  로그인 안 했지만 이 기기에서 로그인한 적이 있으면(성도님 기기): [로그인하고 보기] → 로그인 뒤 창 없이 바로 자료로.
+  //  처음 오신 분(로그인한 적 없는 기기)에게는 띄우지 않는다(띠만). 사용법 안내·로그인 창 등이 떠 있으면 닫힐 때까지 기다린다.
+  var POP_KEY = "nojin_wed_pop";   // localStorage: 띄운 날짜(로그인한 분) / POP_KEY + "_g": 로그인 안 한 성도님 기기
+  var pop = null, popOn = false, popR = null, popTimer = null, popWait = 0;
+  function popSeen(k) { try { return localStorage.getItem(k) === todayKST(); } catch (e) { return true; } }
+  function popMark(k) { try { localStorage.setItem(k, todayKST()); } catch (e) {} }
+  function knownDevice() { try { return !!localStorage.getItem("nojin_known_member"); } catch (e) { return false; } }
+  function screenBusy() {
+    return !!document.querySelector(".modal:not([hidden]), .pop-modal:not([hidden]), .ig-viewer:not([hidden])") ||
+      document.documentElement.classList.contains("pop-open") || document.body.classList.contains("menu-lock");
+  }
+  function wedPop(r) {
+    if (r.title && flagFresh(LOGIN_KEY, 15 * 60e3)) {   // [로그인하고 보기]로 로그인하고 돌아왔다
+      flagClear(LOGIN_KEY); flagSet(GO_KEY);
+      location.href = "word.html#wed";
+      return;
+    }
+    popR = r;
+    if (popOn || popTimer) return;
+    popTimer = setTimeout(firePop, 1200);
+  }
+  function firePop() {
+    popTimer = null;
+    var r = popR, member = !!(r && r.title), key = member ? POP_KEY : POP_KEY + "_g";
+    if (!r || popOn || popSeen(key) || !inWindow() || member !== !!me()) return;
+    if (!member && !knownDevice()) return;
+    if (screenBusy()) { if (popWait++ < 120) popTimer = setTimeout(firePop, 1500); return; }
+    showPop(r, member, key);
+  }
+  function showPop(r, member, key) {
+    if (!pop) {
+      pop = document.createElement("div");
+      pop.className = "modal wed-pop";
+      pop.hidden = true;
+      document.body.appendChild(pop);
+      pop.addEventListener("click", onPopClick);
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && popOn) popClose(); });
+    }
+    pop.innerHTML = '<div class="modal-backdrop" data-wpop="close"></div>' +
+      '<div class="modal-box wpop-box" role="dialog" aria-modal="true" aria-labelledby="wpopTitle">' +
+        '<button type="button" class="modal-close" data-wpop="close" aria-label="닫기">&times;</button>' +
+        '<p class="wpop-eyebrow"><span aria-hidden="true">📖</span> 오늘 수요기도회 말씀</p>' +
+        (member
+          ? '<h3 class="wpop-title" id="wpopTitle">' + esc(r.title) + '</h3>' +
+            (r.scripture ? '<p class="wpop-ref">' + esc(r.scripture) + '</p>' : '') +
+            '<p class="wpop-text">본문 · 핵심 3가지 · 인용 구절을<br />지금 보실 수 있습니다.</p>' +
+            '<button type="button" class="btn btn-solid wpop-go" data-wpop="go">말씀 자료 보기</button>'
+          : '<h3 class="wpop-title" id="wpopTitle">말씀 자료가 열렸습니다</h3>' +
+            '<p class="wpop-text">예배에 오신 성도님께 드리는 자료입니다.<br />로그인하시면 바로 보실 수 있습니다.</p>' +
+            '<button type="button" class="btn btn-solid wpop-go" data-wpop="login">로그인하고 보기</button>') +
+        '<button type="button" class="btn btn-line wpop-later" data-wpop="close">닫기</button>' +
+        '<p class="wpop-note">밤 10시 30분에 닫힙니다</p>' +
+      '</div>';
+    popMark(key);
+    pop.hidden = false;
+    popOn = true;
+    document.body.style.overflow = "hidden";
+    document.documentElement.classList.add("pop-open");   // 뒤 화면이 옆으로 넘어가지 않게
+    if (window.ModalNav) window.ModalNav.open(popHide);   // 휴대폰 '뒤로'로 이 창만 닫히게
+  }
+  function popHide() {
+    if (!popOn) return;
+    popOn = false;
+    pop.hidden = true;
+    if (!document.querySelector(".modal:not([hidden]), .pop-modal:not([hidden])")) {
+      document.body.style.overflow = "";
+      document.documentElement.classList.remove("pop-open");
+    }
+  }
+  function popClose() { if (popOn && !(window.ModalNav && window.ModalNav.close())) popHide(); }
+  // 창을 닫고('뒤로' 기록까지 정리한 뒤) 다음 일을 한다
+  function afterPop(fn) {
+    var done = false, run = function () { if (done) return; done = true; popHide(); fn(); };
+    if (popOn && window.ModalNav && window.ModalNav.close()) {
+      window.addEventListener("popstate", function () { setTimeout(run, 0); }, { once: true });
+      setTimeout(run, 800);
+    } else run();
+  }
+  function onPopClick(e) {
+    var b = e.target.closest("[data-wpop]");
+    if (!b) return;
+    var act = b.getAttribute("data-wpop");
+    if (act === "close") { popClose(); return; }
+    if (act === "go") { flagSet(GO_KEY); afterPop(function () { location.href = "word.html#wed"; }); return; }
+    if (act === "login") {
+      flagSet(LOGIN_KEY);
+      afterPop(function () {   // 다른 화면의 '로그인' 단추(data-mo)와 같은 창
+        if (window.__authSetMode) window.__authSetMode("login"); else window.__authPendingMode = "login";
+        var m = document.getElementById("authModal");
+        if (m) { m.hidden = false; document.body.style.overflow = "hidden"; }
+      });
+    }
   }
 
   load();
   paintBanner();
   window.addEventListener("church:auth", function () { _admin = null; load(); paintBanner(); });
+  // 휴대폰에서 다른 앱을 보다 돌아왔을 때(멈춰 있던 시계 대신) 한 번 더 본다
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && banner && !banner.dataset.wed && inWindow()) paintBanner();
+  });
   // 이 화면에서 로그인·로그아웃하면(다시 불러오지 않는 경우에도) 바로 다시 그린다
   whenAuthReady().then(function (sb) {
     if (!sb) return;

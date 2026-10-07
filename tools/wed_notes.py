@@ -4,7 +4,8 @@
   "수요예배 때 성도들이 참고할 수 있도록 인용 구절과 설교 요약을 홈페이지에"
   목사님 결정: 예배와 말씀 + 수요일 첫 화면 / 저녁 8시에 한꺼번에 / 로그인한 회원만 / 목사님 확인 뒤 올림
   같은 날 밤 고침: "내 설교를 밖으로 공개하지 않으려는 거야. 오는 사람들에게만 특권" → 본문·제목·핵심 3가지(아주 짧게)·인용 구절만,
-  저녁 8시에 열리고 밤 10시 30분에 닫힘(지난 자료 모아 보기 없음). 악보(콘티)는 목사님이 홈페이지에서 올림(이 도구와 상관없음).
+  저녁 7시 45분에 열리고 밤 10시 30분에 닫힘(지난 자료 모아 보기 없음). 악보(콘티)는 목사님이 홈페이지에서 올림(이 도구와 상관없음).
+  2026-10-07 고침: "8시로 했는데 내가 미리 줄테니 7시 45분쯤에 … 열려져서 자료가 보일 수 있도록" → 여는 시각 저녁 7시 45분.
   화면: js/wed-notes.js · 표: sermon_notes (supabase/sermon_notes_20261005.sql, sermon_notes_short_conti_20261005.sql)
 
 흐름 — 수요일 예약 작업(클로드 '수요 말씀 자료')이 차례로 부른다
@@ -13,8 +14,8 @@
               → 클로드가 원고를 읽고 note.json(인용 구절 장절 목록·핵심 3가지)을 쓴다
   3. save     note.json → 구절 본문은 bible-verse 자료(bible.js)에서만 가져와 '확인 전(draft)'으로 저장
               → 목사님 텔레그램에 미리보기 + [올리기] 단추(비서봇 sermon_note_actions.py 가 받는다)
-  4. remind   저녁 7시 반이 넘도록 확인 전이면 한 번 더 알림(같은 자료로는 한 번만)
-  올린 자료는 그날 저녁 8시(트리거가 정함)부터 로그인한 성도님께 보인다. 목사님(관리자)은 홈페이지에서 미리 보고 고칠 수 있다.
+  4. remind   저녁 7시 15분이 넘도록 확인 전이면 한 번 더 알림(같은 자료로는 한 번만)
+  올린 자료는 그날 저녁 7시 45분(트리거가 정함)부터 로그인한 성도님께 보인다. 목사님(관리자)은 홈페이지에서 미리 보고 고칠 수 있다.
 
   python tools/wed_notes.py check   [--date 2026-10-07]
   python tools/wed_notes.py prepare [--date …] [--out 파일]
@@ -56,9 +57,17 @@ SUPABASE_URL = "https://vwuzmklacdwiqyqjrxyt.supabase.co"   # js/config.js 와 �
 SITE_URL = "https://churchnojin-max.github.io/word.html#wed"
 SERVICE = "수요기도회"
 KST = dt.timezone(dt.timedelta(hours=9))
-OPEN_HOUR = 20          # 저녁 8시에 열림(supabase 트리거와 같은 값)
+OPEN_AT = (19, 45)      # 저녁 7시 45분에 열림(supabase 트리거와 같은 값 — 10/07 8시에서 고침)
 CLOSE_AT = (22, 30)     # 밤 10시 30분에 닫힘(supabase 트리거와 같은 값)
-REMIND_AFTER = (19, 30)  # 이 시각이 넘도록 확인 전이면 한 번 더 알림
+REMIND_AFTER = (19, 15)  # 이 시각이 넘도록 확인 전이면 한 번 더 알림(여는 때보다 30분 앞)
+
+
+def hm_label(h, m):
+    """(19, 45) → '저녁 7시 45분'"""
+    return ("저녁 " if h >= 17 else "오후 " if h >= 12 else "오전 ") + f"{h - 12 if h > 12 else h}시" + (f" {m}분" if m else "")
+
+
+OPEN_LABEL = hm_label(*OPEN_AT)
 
 
 def log(msg):
@@ -100,7 +109,7 @@ def md(d):
 
 
 def opens_at(d):
-    return dt.datetime.combine(dt.date.fromisoformat(str(d)), dt.time(OPEN_HOUR), KST)
+    return dt.datetime.combine(dt.date.fromisoformat(str(d)), dt.time(*OPEN_AT), KST)
 
 
 def closes_at(d):
@@ -530,7 +539,7 @@ def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주�
     lines += ["", f"[인용 구절 {len(vs)}] " + (" · ".join(v["ref"] for v in vs) or "없음")]
     now = now_kst()
     if now < opens_at(d):
-        tail = "[올리기]를 누르시면 " + md(d) + " 저녁 8시에 로그인한 성도님께 열리고, 밤 10시 30분에 닫힙니다."
+        tail = "[올리기]를 누르시면 " + md(d) + " " + OPEN_LABEL + "에 로그인한 성도님께 열리고, 밤 10시 30분에 닫힙니다."
     elif now < closes_at(d):
         tail = "[올리기]를 누르시면 로그인한 성도님께 바로 보이고, 밤 10시 30분에 닫힙니다."
     else:
@@ -542,7 +551,7 @@ def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주�
 
 def keyboard(note_id, date):
     now = now_kst()
-    label = ("✅ 올리기 (저녁 8시에 열림)" if now < opens_at(date)
+    label = ("✅ 올리기 (" + OPEN_LABEL + "에 열림)" if now < opens_at(date)
              else "✅ 올리기 (바로 열림 · 10시 30분 닫힘)" if now < closes_at(date) else "✅ 올리기 (예배가 끝나 보이지 않음)")
     return {"inline_keyboard": [
         [{"text": label, "callback_data": f"wed:ok:{note_id}"}],
@@ -579,7 +588,7 @@ def cmd_remind(date):
         print("알릴 것 없음(자료가 없거나 이미 올렸습니다).")
         return 0
     if now_kst() < dt.datetime.combine(date, dt.time(*REMIND_AFTER), KST):
-        print("아직 알릴 시각이 아닙니다(저녁 7시 반 뒤).")
+        print("아직 알릴 시각이 아닙니다(" + hm_label(*REMIND_AFTER) + " 뒤).")
         return 0
     if now_kst() >= closes_at(date):
         print("예배 시간이 지나 알리지 않습니다.")

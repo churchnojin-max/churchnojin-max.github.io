@@ -4076,6 +4076,16 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .wca-x { flex: none; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #F3E7B8; color: #7A5F00; font-size: 1.2rem; line-height: 1; cursor: pointer; }
 .wca-up { cursor: pointer; }
 .wca-msg { margin-top: 6px; min-height: 1.2em; font-size: .88rem; color: #7A5F00; }
+/* 수요기도회 첫 화면 알림 창(2026-10-07 목사님: "7시 45분쯤에 팝업이 뜨거나…", js/wed-notes.js ⑤) */
+.modal.wed-pop { z-index: 3150; }
+.modal-box.wpop-box { max-width: 400px; padding: 34px 26px 24px; text-align: center; }
+.wpop-eyebrow { display: inline-block; margin: 0 0 14px; padding: 5px 14px; border-radius: 999px; background: #C9A227; color: #1f1f1f; font-size: .9rem; font-weight: 800; }
+.wpop-title { margin: 0 0 6px; font-family: "Gowun Batang", serif; font-size: 1.45rem; line-height: 1.45; color: var(--accent); word-break: keep-all; }
+.wpop-ref { margin: 0 0 14px; font-weight: 700; color: var(--ink-soft); word-break: keep-all; }
+.wpop-text { margin: 10px 0 22px; font-size: 1rem; line-height: 1.75; color: var(--ink); word-break: keep-all; }
+.wpop-go { width: 100%; padding: 15px; font-size: 1.1rem; }
+.wpop-later { width: 100%; margin-top: 10px; padding: 12px; }
+.wpop-note { margin: 14px 0 0; font-size: .84rem; color: var(--ink-soft); }
 
 /* ===== 방문자 수 — 최고 운영자에게만 (2026-10-07, js/visit-stats.js) ===== */
 .vc-footer { margin: 0 0 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
