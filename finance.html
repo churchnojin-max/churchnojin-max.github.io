@@ -43,6 +43,8 @@
     .fin-sugg div:hover,.fin-sugg div.hi{background:#f5f8fc}
     .fin-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.72rem;font-weight:700}
     .fin-pill.in{background:#e8f6ee;color:#1e874b}.fin-pill.out{background:#fdecea;color:#c0392b}
+    /* 휴대폰: 표 글씨·여백을 줄여 오른쪽 칸이 잘리지 않게 */
+    @media (max-width:640px){.fin-card{padding:12px;border-radius:10px;margin-bottom:12px}.fin-table{font-size:.8rem}.fin-table th,.fin-table td{padding:6px 5px}.fin-menu .fm-top{padding:9px 11px;font-size:.92rem}.fin-grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}.fin-table .hide-m{display:none}}
     .rcp-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:700}
     .rcp-badge.ok{background:#e8f6ee;color:#1e874b}
     .rc-r{display:inline-flex;align-items:center;gap:4px;font-size:.86rem;margin-right:6px;cursor:pointer}
@@ -73,6 +75,6 @@
   <script src="js/upload.js?v=20261005conti"></script>
   <script src="js/jszip.min.js?v=20260730lib13"></script>
   <script src="js/finance-api.js?v=20261005login"></script>
-  <script src="js/finance.js?v=20261007date"></script>
+  <script src="js/finance.js?v=20261007fin"></script>
 </body>
 </html>
