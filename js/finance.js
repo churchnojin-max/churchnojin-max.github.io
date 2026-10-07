@@ -14,6 +14,45 @@ console.log('[finance.js] v20260701di');
   var pad2 = function (n) { return ('0' + n).slice(-2); };
   var fmtD = function (d) { return String(d == null ? '' : d).slice(0, 10); }; // 'YYYY-MM-DDT..Z' → 'YYYY-MM-DD'
   var today = function () { var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
+  // ── 헌금 날짜 도우미 ──
+  // 헌금은 주일에 드리므로, 입력 칸의 처음 값은 '오늘'이 아니라 '가장 가까운 지난 주일(오늘이 주일이면 오늘)'.
+  // (예전에 목요일에 입력하면서 날짜를 못 바꿔 8/9 헌금이 8/13로 들어간 일이 있었다)
+  var ymdOf0 = function (d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
+  var lastSunday = function () { var d = new Date(); d.setDate(d.getDate() - d.getDay()); return ymdOf0(d); };
+  var DOW_KO = ['주일', '월', '화', '수', '목', '금', '토'];
+  var dowOf = function (ds) { var d = new Date(String(ds) + 'T00:00:00'); return isNaN(d) ? '' : DOW_KO[d.getDay()]; };
+  var isSunday = function (ds) { var d = new Date(String(ds) + 'T00:00:00'); return !isNaN(d) && d.getDay() === 0; };
+  var validYmd = function (y, m, d) { var x = new Date(y, m - 1, d); return x.getFullYear() === y && x.getMonth() === m - 1 && x.getDate() === d ? ymdOf0(x) : ''; };
+  // 글 한 줄(또는 파일 이름)에서 날짜 찾기. 기간(시작 ~ 끝)이면 끝 날짜(주일).
+  //   "2026년 8월 9일" · "2026.08.09" · "2026-8-9" · "2026/08/09" · "20260809" · "8월 9일"(연도 없으면 올해, 앞날이면 작년)
+  function findDate(t, opts) {
+    t = String(t == null ? '' : t); opts = opts || {};
+    var Y = '(\\d{4})\\s*(?:년\\s*|[.\\-\\/]\\s*)(\\d{1,2})\\s*(?:월\\s*|[.\\-\\/]\\s*)(\\d{1,2})\\s*일?';
+    var range = t.match(new RegExp(Y + '[^~∼～\\d]{0,12}[~∼～]\\s*' + Y));
+    if (range) return validYmd(+range[4], +range[5], +range[6]);
+    var m = t.match(new RegExp(Y + '(?!\\d)'));
+    if (m) return validYmd(+m[1], +m[2], +m[3]);
+    if (opts.compact) { var c = t.match(/(?:^|\D)(20\d{2})(\d{2})(\d{2})(?!\d)/); if (c) return validYmd(+c[1], +c[2], +c[3]); }
+    if (opts.noYear) {
+      var n = t.match(/^\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+      if (n) {
+        var y = new Date().getFullYear(), ds = validYmd(y, +n[1], +n[2]);
+        if (ds && ds > today()) ds = validYmd(y - 1, +n[1], +n[2]);
+        return ds;
+      }
+    }
+    return '';
+  }
+  // 날짜 칸 옆에 '(주일)' / '(목) ⚠ 주일이 아닙니다' 표시
+  function dateBadge(input, span) {
+    function upd() {
+      var v = input.value;
+      if (!v) { span.innerHTML = ''; return; }
+      span.innerHTML = isSunday(v) ? '<span style="color:#1e874b">(주일)</span>' : '<span style="color:#c0392b;font-weight:700">(' + dowOf(v) + ') ⚠ 주일이 아닙니다</span>';
+    }
+    input.addEventListener('input', upd); input.addEventListener('change', upd); upd();
+    return upd;
+  }
 
   // ── 회계연도 ──
   function fyStartMonth() { var v = Number(localStorage.getItem('wpf_fy_start')); return (v >= 1 && v <= 12) ? v : 1; }
@@ -520,7 +559,7 @@ console.log('[finance.js] v20260701di');
   function renderOfferingInput(panel) {
     panel.innerHTML =
       '<div class="fin-card"><div class="fin-grid">' +
-      '<div class="form-field"><label>일자</label><input type="date" id="o_date" value="' + today() + '"></div>' +
+      '<div class="form-field"><label>일자 <span id="o_dow" style="font-weight:400;font-size:.82rem"></span></label><input type="date" id="o_date" value="' + lastSunday() + '"></div>' +
       '<div class="form-field"><label>예배</label><select id="o_svc">' + svcOptions() + '</select></div>' +
       '<div class="form-field"><label>헌금 항목</label><select id="o_acc">' + accOptions('수입', '헌금') + '</select></div>' +
       '<div class="form-field"><label>수단</label><select id="o_method"><option>현금</option><option>통장</option></select></div>' +
@@ -530,6 +569,7 @@ console.log('[finance.js] v20260701di');
       '<div class="form-field"><label>금액</label><input type="text" id="o_amt" lang="ko" placeholder="0" style="text-align:right;font-weight:700"></div>' +
       '<div class="form-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="o_memo_on" style="width:auto;margin:0"> 적요 입력(선택)</label><input type="text" id="o_memo" disabled placeholder="체크하면 입력"></div>' +
       '</div><div style="margin-top:6px;display:flex;gap:10px;align-items:center;"><button class="btn btn-solid" id="o_add">＋ 헌금 추가</button><span class="fin-msg" id="o_msg"></span></div></div><div id="o_today"></div>';
+    dateBadge(panel.querySelector('#o_date'), panel.querySelector('#o_dow'));
     var payerEl = panel.querySelector('#o_payer'), spouseEl = panel.querySelector('#o_spouse'), coupleTop = panel.querySelector('#o_couple_top');
     var lastPick = null;
     function focusAmt() { setTimeout(function () { var a = panel.querySelector('#o_amt'); if (a) { a.focus(); a.select(); } }, 0); }
@@ -555,6 +595,11 @@ console.log('[finance.js] v20260701di');
       var v = { date: panel.querySelector('#o_date').value, type: '수입', kind: '헌금', account: panel.querySelector('#o_acc').value, service: panel.querySelector('#o_svc').value, payer: payerName, memberKey: panel.querySelector('#o_key').value, amount: parseNum(amt.value), method: panel.querySelector('#o_method').value, memo: panel.querySelector('#o_memo').value.trim() };
       var msg = panel.querySelector('#o_msg');
       if (!v.date || !v.amount) { msg.style.color = '#c0392b'; msg.textContent = '일자와 금액을 입력하세요.'; return; }
+      // 주일이 아닌 날짜는 한 번 묻는다(같은 날짜로 이어서 넣을 때는 한 번만)
+      if (!isSunday(v.date) && panel._dateOk !== v.date) {
+        if (!confirm('일자가 ' + v.date + '(' + dowOf(v.date) + ')입니다. 주일이 아닙니다.\n\n이 날짜로 넣을까요?\n(주일 헌금이면 [취소]를 누르고 일자를 고쳐 주세요)')) { msg.style.color = '#c0392b'; msg.textContent = '일자를 확인해 주세요.'; return; }
+        panel._dateOk = v.date;
+      }
       // 교적 매칭 확인: 선택(매칭키)도 없고 이름이 교적에 없으면 → 등록 팝업
       if (!v.memberKey && base) {
         var hits = M.members.filter(function (m) { return m.name === base; });
@@ -792,7 +837,7 @@ console.log('[finance.js] v20260701di');
       '<input type="file" id="b_file" accept=".xlsx" style="display:none">' +
       '</div></div>' +
       '<div class="fin-card"><div class="fin-grid" style="align-items:end">' +
-      '<div class="form-field"><label>일자(주일)</label><input type="date" id="b_date" value="' + today() + '"></div>' +
+      '<div class="form-field"><label>일자(주일) <span id="b_dow" style="font-weight:400;font-size:.82rem"></span></label><input type="date" id="b_date" value="' + lastSunday() + '"><div id="b_datesrc" style="font-size:.78rem;color:#7b8794;margin-top:4px">자료에 날짜가 있으면 그 날짜로 저절로 바뀝니다.</div></div>' +
       '<div class="form-field"><label>예배</label><select id="b_svc">' + svcOptions() + '</select></div>' +
       '<div class="form-field"><label>수단</label><select id="b_method"><option>현금</option><option>통장</option></select></div>' +
       '</div>' +
@@ -832,10 +877,28 @@ console.log('[finance.js] v20260701di');
       return n;
     }
     // 날짜 머리글: "2026년 5월 31일(주일) 헌금 명세" · "2026-05-31" · "2026.5.31"
+    // 한 줄이 '날짜 머리글'이면 그 날짜. 헌금 내역 줄(이름(금액), 이름〔탭〕금액)은 날짜로 보지 않는다.
     function lineDate(t) {
-      var m = t.match(/(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/) || t.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})(?!\d)/);
-      return m ? m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2) : '';
+      if (/\([\d,]+\)/.test(t) || /\t\s*[\d,]{4,}\s*$/.test(t)) return '';
+      return findDate(t, { noYear: true });
     }
+    var dateEl = panel.querySelector('#b_date'), dateSrc = panel.querySelector('#b_datesrc');
+    var updDow = dateBadge(dateEl, panel.querySelector('#b_dow'));
+    var fileDate = '', fileName = '';   // 엑셀 파일(기간·파일 이름)에서 찾은 날짜
+    var autoDate = false;   // 일자 칸이 자료에서 저절로 맞춘 날짜인지(직접 고치면 false)
+    function setDate(ds, src) {
+      if (!ds) return;
+      dateEl.value = ds; updDow(); autoDate = true;
+      dateSrc.innerHTML = '📅 <b>' + esc(src) + '</b>에서 찾은 날짜로 맞췄습니다.';
+      dateSrc.style.color = '#1b4b8f';
+    }
+    // 새 자료에 날짜가 없을 때: 앞 자료에서 저절로 맞춘 날짜가 남아 있지 않게 지난 주일로 되돌린다(직접 고친 날짜는 그대로)
+    function noDataDate() {
+      if (autoDate) { dateEl.value = lastSunday(); updDow(); }
+      dateSrc.style.color = '#8a5a00';
+      dateSrc.textContent = autoDate || !dateEl.value ? '자료에 날짜가 없어 지난 주일로 맞췄습니다. 다른 주일이면 고쳐 주세요.' : '자료에 날짜가 없어 이 칸의 날짜로 저장합니다.';
+    }
+    dateEl.addEventListener('change', function () { autoDate = false; dateSrc.style.color = '#7b8794'; dateSrc.textContent = '직접 고친 날짜입니다. (붙여넣은 글에 날짜 머리글이 있으면 그 날짜가 먼저입니다)'; });
     // 헌금자 칸의 이름으로 교적 찾기. 맨 앞 이름(가장)으로 먼저 찾고, 교적에 없으면 함께 적힌 다음 이름으로 찾는다.
     //   "김동배·이경순" → 김동배가 교적에 없으면 이경순으로 연결(via=1 → 미리보기에 표시)
     //   "손병민(채애리)" → 손병민, 없으면 괄호 속 채애리 / "주정일(심방)" → 심방은 이름이 아니므로 그냥 넘어감
@@ -864,7 +927,7 @@ console.log('[finance.js] v20260701di');
         if (!t) return;
         if (/^[\s─—\-=_·•*~]+$/.test(t)) return;                     // "────" 같은 구분선
         var ld = lineDate(t);
-        if (ld && !/\([\d,]+\)/.test(t) && !/\t\s*[\d,]+\s*$/.test(raw)) { curDate = ld; if (!firstDate) firstDate = ld; cat = ''; return; }   // 날짜 머리글(주일이 바뀜)
+        if (ld && !/\t\s*[\d,]{4,}\s*$/.test(raw)) { curDate = ld; if (!firstDate) firstDate = ld; cat = ''; return; }   // 날짜 머리글(주일이 바뀜) · 엑셀의 '기간 … ~ …' 줄도 여기서 끝 날짜로
         // "[항목명] N명 / 금액원" 형식의 항목 구분 줄(헌금 명세 리포트 붙여넣기) — 사람 수·금액은 대조용으로 기억
         var bracket = t.match(/^\[(.+?)\]\s*(?:(\d+)\s*명\s*\/\s*)?([\d,]+)?\s*원?/);
         if (bracket) {
@@ -902,8 +965,10 @@ console.log('[finance.js] v20260701di');
           i += 1;
         }
       });
-      // 날짜 머리글이 하나뿐이면(또는 첫 머리글) 위의 일자 칸도 그 날짜로 맞춘다
-      if (firstDate && dEl) dEl.value = firstDate;
+      // 자료 속 날짜로 위의 일자 칸을 맞춘다: 붙여넣은 글의 날짜 머리글 > 엑셀 파일의 기간·파일 이름 > (없으면) 지난 주일 그대로
+      if (firstDate) setDate(firstDate, fileName ? '엑셀 파일 「' + fileName + '」의 날짜' : '붙여넣은 글의 날짜 머리글');
+      else if (fileDate) setDate(fileDate, '엑셀 파일 「' + fileName + '」 이름');
+      else noDataDate();
       items.forEach(function (it) {
         var mm = matchMember(it.payer);
         it.key = mm.key; it.match = mm.match; it.matchName = mm.matchName; it.via = mm.via;
@@ -955,10 +1020,14 @@ console.log('[finance.js] v20260701di');
       var multi = dateOrder.length > 1;
       var bad = checkExpect(items);
       var noDate = items.some(function (i) { return !itemDate(i); });
+      var notSun = dateOrder.filter(function (d) { return d !== '(일자 없음)' && !isSunday(d); });
+      var fromData = items.some(function (i) { return !!i.date; }) || !!fileDate;
       out.innerHTML = '<div class="fin-card">' +
         '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><b>' + items.length + '건</b><b style="color:#1e874b">' + won(tot) + '원</b>' +
         '<span class="fin-pill in">교적매칭 ' + nMatch + '</span>' + (nVia ? '<span class="fin-pill" style="background:#fff4e0;color:#8a5a00">뒤 이름으로 연결 ' + nVia + '</span>' : '') + (nNone ? '<span class="fin-pill out">미등록 ' + nNone + '</span>' : '') + (nDup ? '<span class="fin-pill out">동명이인 ' + nDup + '</span>' : '') + '</div>' +
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + dateOrder.map(function (d) { return '<span class="fin-pill" style="background:#e7f1ff;color:#1b4b8f">📅 ' + esc(d) + ' · ' + byDate[d].c + '건 · ' + won(byDate[d].s) + '원</span>'; }).join('') + '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + dateOrder.map(function (d) { var ok = isSunday(d); return '<span class="fin-pill" style="background:' + (ok ? '#e7f1ff;color:#1b4b8f' : '#fdecea;color:#c0392b') + '">📅 ' + esc(d) + (dowOf(d) ? '(' + dowOf(d) + ')' : '') + ' · ' + byDate[d].c + '건 · ' + won(byDate[d].s) + '원</span>'; }).join('') + '</div>' +
+        (notSun.length ? '<p class="help" style="color:#c0392b;font-weight:700">⚠ 주일이 아닌 날짜가 있습니다: ' + esc(notSun.map(function (d) { return d + '(' + dowOf(d) + ')'; }).join(', ')) + ' — 맞는지 확인하세요. 저장할 때 한 번 더 묻습니다.</p>' : '') +
+        (!fromData && !noDate ? '<p class="help" style="color:#8a5a00">자료에 날짜가 없어 위 일자 칸의 날짜(' + esc(panel.querySelector('#b_date').value) + ', ' + esc(dowOf(panel.querySelector('#b_date').value)) + ')로 저장합니다. 다른 주일이면 일자 칸을 고친 뒤 다시 미리보기를 누르세요.</p>' : '') +
         (multi ? '<p class="help" style="color:#1b4b8f">날짜 머리글이 ' + dateOrder.length + '개 있어 <b>각 주일 날짜로 나누어</b> 저장합니다. (위의 일자 칸은 날짜 머리글이 없는 줄에만 쓰입니다)</p>' : '') +
         (noDate ? '<p class="help" style="color:#c0392b">⚠ 날짜가 없는 내역이 있습니다. 위의 일자 칸을 확인하세요.</p>' : '') +
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">' + catOrder.map(function (c) { return '<span class="fin-pill" style="background:#eef2f7;color:#3a4a63">' + esc(c) + ' ' + byCat[c].c + '건 · ' + won(byCat[c].s) + '</span>'; }).join('') + '</div>' +
@@ -1010,7 +1079,9 @@ console.log('[finance.js] v20260701di');
         var dates = [], sum = 0;
         fresh.forEach(function (v) { if (dates.indexOf(v.date) < 0) dates.push(v.date); sum += v.amount; });
         dates.sort();
-        var q = (dates.length > 1 ? dates.length + '개 주일(' + dates[0] + ' ~ ' + dates[dates.length - 1] + ')' : dates[0]) + ' 헌금 ' + fresh.length + '건, ' + won(sum) + '원을 저장할까요?' +
+        var odd = dates.filter(function (d) { return !isSunday(d); });
+        var q = (dates.length > 1 ? dates.length + '개 주일(' + dates[0] + ' ~ ' + dates[dates.length - 1] + ')' : dates[0] + '(' + dowOf(dates[0]) + ')') + ' 헌금 ' + fresh.length + '건, ' + won(sum) + '원을 저장할까요?' +
+          (odd.length ? '\n\n⚠ 주일이 아닌 날짜: ' + odd.map(function (d) { return d + '(' + dowOf(d) + ')'; }).join(', ') + '\n주일 헌금이면 [취소]를 누르고 날짜를 고쳐 주세요.' : '') +
           (skipped ? '\n\n이미 저장돼 있는 ' + skipped + '건은 건너뜁니다(두 번 계산되지 않도록).' : '');
         if (!confirm(q)) { stop('#7b8794', '저장하지 않았습니다.'); saveBtn.disabled = false; return; }
         msg.textContent = '저장 중… (' + fresh.length + '건)';
@@ -1069,7 +1140,7 @@ console.log('[finance.js] v20260701di');
       var msg = panel.querySelector('#b_msg'), saveBtn = panel.querySelector('#b_save');
       if (!date) { msg.style.color = '#c0392b'; msg.textContent = '일자를 선택하세요.'; return; }
       if (!parsedExp.length) return;
-      if (!confirm(date + ' 지출 ' + parsedExp.length + '건을 저장할까요?')) return;
+      if (!confirm(date + '(' + dowOf(date) + ') 지출 ' + parsedExp.length + '건을 저장할까요?')) return;
       var vouchers = parsedExp.map(function (i) { return { date: date, type: '지출', account: i.account, payer: '', amount: i.amount, method: method, memo: i.memo || '' }; });
       saveBtn.disabled = true; msg.style.color = '#7b8794'; msg.textContent = '저장 중… (' + vouchers.length + '건)';
       WPF.call('addVouchersBulk', { vouchers: vouchers })
@@ -1085,9 +1156,14 @@ console.log('[finance.js] v20260701di');
       file.arrayBuffer().then(parseXlsx).then(function (rows) {
         if (!rows || !rows.length) throw new Error('빈 파일이거나 데이터를 찾지 못했습니다.');
         var flat = rows.map(function (r) { return r.join(' '); }).join('\n');
-        // 기간(예: 2026.06.29 ~ 2026.07.05)에서 종료일=주일을 일자로 자동 세팅
-        var mper = flat.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})\s*[~\-]\s*(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
-        if (mper) { var de = panel.querySelector('#b_date'); if (de) de.value = mper[4] + '-' + ('0' + mper[5]).slice(-2) + '-' + ('0' + mper[6]).slice(-2); }
+        // 날짜: 파일 안의 기간(예: 2026.06.29 ~ 2026.07.05 → 끝 날짜 주일)이나 날짜 > 파일 이름의 날짜(20260809, 2026-08-09 …)
+        fileName = file.name;
+        var inFile = '';
+        rows.some(function (r) { inFile = findDate(r.join(' ')); return !!inFile; });
+        fileDate = findDate(file.name.replace(/\.xlsx$/i, ''), { compact: true });
+        if (inFile) setDate(inFile, '엑셀 파일 「' + file.name + '」 안의 날짜');
+        else if (fileDate) setDate(fileDate, '엑셀 파일 「' + file.name + '」 이름');
+        else noDataDate();
         var isExp = /재정\s*보고서/.test(flat) || rows.some(function (r) { return r.indexOf('지출항목') >= 0; });
         var isOff = /헌금자\s*리스트/.test(flat) || rows.some(function (r) { return r.some(function (c) { return OFFER_CATS[String(c).replace(/\s+/g, '')]; }); });
         if (isExp && !isOff) {
@@ -1118,7 +1194,7 @@ console.log('[finance.js] v20260701di');
 
     panel.querySelector('#b_prev').onclick = preview;
     panel.querySelector('#b_save').onclick = function () { (mode === 'exp' ? saveExp : save)(); };
-    panel.querySelector('#b_text').addEventListener('input', function () { mode = 'offer'; panel.querySelector('#b_save').disabled = true; });
+    panel.querySelector('#b_text').addEventListener('input', function () { mode = 'offer'; fileName = ''; fileDate = ''; panel.querySelector('#b_save').disabled = true; });
 
     // 기존 수입(헌금) 전표 전체 삭제 — 이중 확인
     var clearBtn = panel.querySelector('#b_clear');
