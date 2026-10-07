@@ -446,6 +446,46 @@
     }
   })();
 
+  // ===== 방문자 수 세기 (2026-10-07 목사님 요청: "방문자 수 카운터 — 관리자인 나만 보면 돼") =====
+  // 개인을 알아볼 수 없는 방식: 이 브라우저가 '그날만' 쓰는 임의 번호로 그날 몇 명인지만 센다(날이 바뀌면 새 번호).
+  // 이름·IP 는 남기지 않고, 기기 종류·들어온 곳은 서버(supabase/site_visits_20261007.sql 의 log_visit)가 낱말 하나로만 남긴다.
+  // 검색 로봇·관리자(목사님) 방문은 서버가 세지 않는다. 숫자는 최고 운영자에게만 화면 맨 아래에 보인다(js/visit-stats.js).
+  (function countVisit() {
+    if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY) || navigator.webdriver) return;
+    if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === "file:") return;   // 내 컴퓨터에서 미리 보는 것은 세지 않음
+    const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+    const store = (function () { try { localStorage.setItem("_t", "1"); localStorage.removeItem("_t"); return localStorage; } catch (e) { try { return sessionStorage; } catch (e2) { return null; } } })();
+    let vid = "";
+    try { const o = JSON.parse((store && store.getItem("nojin_visit")) || "null"); if (o && o.d === today && /^[a-z0-9]{8,32}$/.test(o.v)) vid = o.v; } catch (e) {}
+    if (!vid) {
+      const bytes = (window.crypto && crypto.getRandomValues) ? Array.from(crypto.getRandomValues(new Uint8Array(12))) : Array.from({ length: 12 }, () => Math.floor(Math.random() * 256));
+      vid = bytes.map((b) => (b % 36).toString(36)).join("");
+      try { if (store) store.setItem("nojin_visit", JSON.stringify({ d: today, v: vid })); } catch (e) {}
+    }
+    const page = ((location.pathname.split("/").pop() || "index.html").replace(/\.html?$/, "") || "index").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 40) || "index";
+    let ref = "";
+    try { if (document.referrer) { const rh = new URL(document.referrer).hostname; if (rh && rh !== location.hostname) ref = rh.slice(0, 60); } } catch (e) {}
+    const send = function (withLogin) {
+      const h = { apikey: window.SUPABASE_ANON_KEY, "Content-Type": "application/json" };
+      const tok = withLogin ? sessionToken() : "";
+      if (tok) h.Authorization = "Bearer " + tok;
+      return fetch(window.SUPABASE_URL + "/rest/v1/rpc/log_visit", { method: "POST", headers: h, body: JSON.stringify({ p_vid: vid, p_page: page, p_ref: ref }), keepalive: true })
+        .then(function (r) { if (r.status === 401 && tok) return send(false); })    // 로그인 열쇠가 낡았으면 손님으로라도 센다
+        .catch(function () {});
+    };
+    const go = function () { setTimeout(function () { send(true); }, 1200); };
+    if (document.readyState === "complete") go(); else window.addEventListener("load", go, { once: true });
+    // 로그인한 분이면 '최고 운영자인지' 확인해서 화면 맨 아래에 방문자 수를 보여 준다(운영자가 아니면 이 창에서는 다시 묻지 않음)
+    let vcFlag = null;
+    try { vcFlag = sessionStorage.getItem("nojin_vc_owner"); } catch (e) {}
+    if (sessionToken() && vcFlag !== "0") {
+      const s = document.createElement("script");
+      s.src = "js/visit-stats.js?v=20261007vc";
+      s.defer = true;
+      document.body.appendChild(s);
+    }
+  })();
+
   // ===== 토스트 메시지(로그아웃 등 안내) =====
   function showFlash(msg) {
     try {

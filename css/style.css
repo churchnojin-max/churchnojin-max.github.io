@@ -4076,3 +4076,53 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .wca-x { flex: none; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #F3E7B8; color: #7A5F00; font-size: 1.2rem; line-height: 1; cursor: pointer; }
 .wca-up { cursor: pointer; }
 .wca-msg { margin-top: 6px; min-height: 1.2em; font-size: .88rem; color: #7A5F00; }
+
+/* ===== 방문자 수 — 최고 운영자에게만 (2026-10-07, js/visit-stats.js) ===== */
+.vc-footer { margin: 0 0 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.vc-chip { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.1); color: #fff; border-radius: 999px; padding: 8px 16px; font: inherit; font-size: .9rem; line-height: 1.5; cursor: pointer; text-align: left; word-break: keep-all; }
+.vc-chip b { color: #fff; }
+.vc-chip:hover { background: rgba(255,255,255,.18); }
+.vc-more { margin-left: 6px; font-weight: 700; color: #D9E8DE; white-space: nowrap; }
+.vc-only { font-size: .74rem; color: rgba(255,255,255,.5); }
+.modal.vc-modal { z-index: 3150; padding: 16px; }
+.modal-box.vc-box { display: flex; flex-direction: column; max-width: 760px; max-height: 92vh; padding: 0; overflow: hidden; }
+.vc-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 12px 10px 22px; border-bottom: 1px solid var(--line); }
+.vc-top b { font-size: 1.15rem; color: var(--accent); }
+.vc-x { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--paper-alt); color: var(--accent); font-size: 1.7rem; line-height: 1; cursor: pointer; }
+.vc-tabs { flex: none; display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.vc-tabs button { padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font: inherit; font-size: .92rem; font-weight: 700; color: var(--accent); cursor: pointer; }
+.vc-tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.vc-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 16px 20px 26px; }
+.vc-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.vc-card { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 12px; background: var(--paper-alt); }
+.vc-card span { font-size: .82rem; color: var(--ink-soft); }
+.vc-card b { font-size: 1.35rem; color: var(--accent); }
+.vc-card small { font-size: .76rem; color: var(--ink-soft); }
+.vc-card-main { background: var(--accent); }
+.vc-card-main span, .vc-card-main small { color: rgba(255,255,255,.8); }
+.vc-card-main b { color: #fff; }
+.vc-h { margin: 22px 0 8px; font-size: 1rem; font-weight: 800; color: var(--accent); }
+.vc-h small { margin-left: 6px; font-size: .76rem; font-weight: 500; color: var(--ink-soft); }
+.vc-chart { display: block; width: 100%; height: auto; }
+.vc-chart .vc-b { fill: var(--gold); }
+.vc-chart .vc-b-today { fill: var(--accent); }
+.vc-chart .vc-axis { stroke: var(--line); stroke-width: 1; }
+.vc-chart .vc-t { font-size: 11px; fill: #7f8f87; }
+.vc-chart .vc-v { font-size: 11px; font-weight: 700; fill: var(--accent); }
+.vc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
+.vc-row { display: grid; grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 5px 0; font-size: .9rem; }
+.vc-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.vc-bar { height: 10px; border-radius: 6px; background: var(--paper-alt); overflow: hidden; }
+.vc-bar i { display: block; height: 100%; border-radius: 6px; background: var(--gold); }
+.vc-n { font-weight: 700; color: var(--accent); white-space: nowrap; }
+.vc-n small { font-weight: 500; color: var(--ink-soft); }
+.vc-none, .vc-err { color: var(--ink-soft); font-size: .9rem; }
+.vc-note { margin-top: 20px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: .82rem; line-height: 1.7; color: var(--ink-soft); word-break: keep-all; }
+@media (max-width: 680px) {
+  .vc-footer { align-items: stretch; }
+  .modal.vc-modal { padding: 0; }
+  .modal-box.vc-box { max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; animation: none; }
+  .vc-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vc-grid { grid-template-columns: minmax(0, 1fr); }
+  .vc-body { padding: 14px 16px 40px; }
+}
