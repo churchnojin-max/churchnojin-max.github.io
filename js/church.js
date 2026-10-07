@@ -46,7 +46,7 @@ window.CHURCH = {
   kakaoChannel: "",
 
   /* --- 사이트 주소·테마 --- */
-  domain:     "https://churchnojin-max.github.io/",  // 실제 도메인 (끝에 / 포함). 검색·SNS 미리보기에 사용.
+  domain:     "https://nojin.kr/",  // 실제 도메인 (끝에 / 포함). 검색·SNS 미리보기에 사용.
   themeColor: "#1A3A2F",               // 대표 색(딥그린, 로고 색). 모바일 주소창·아이콘 배경 등에 사용.
 
   /* --- 검색엔진 소유확인 (선택) ---

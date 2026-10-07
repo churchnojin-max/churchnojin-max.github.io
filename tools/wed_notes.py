@@ -55,7 +55,7 @@ BIBLE_JS = next((p for p in (Path.home() / ".claude/skills/bible-verse/scripts/b
                 Path(r"C:\Users\PC\.claude\skills\bible-verse\scripts\bible.js"))
 TELEGRAM_ENV_PATH = Path(r"D:\클코저장소\텔레그램봇\.env")
 SUPABASE_URL = "https://vwuzmklacdwiqyqjrxyt.supabase.co"   # js/config.js 와 같은 값(공개)
-SITE_URL = "https://churchnojin-max.github.io/word.html#wed"
+SITE_URL = "https://nojin.kr/word.html#wed"
 SERVICE = "수요기도회"
 KST = dt.timezone(dt.timedelta(hours=9))
 OPEN_AT = (19, 45)      # 저녁 7시 45분에 열림(supabase 트리거와 같은 값 — 10/07 8시에서 고침)

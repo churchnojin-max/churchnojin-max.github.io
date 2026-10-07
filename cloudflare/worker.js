@@ -20,6 +20,8 @@
 
 // 업로드를 허용할 출처(우리 홈페이지). [0]은 미매칭 시 기본값이므로 실제 도메인을 먼저.
 const ALLOW_ORIGINS = [
+  "https://nojin.kr",
+  "https://www.nojin.kr",
   "https://churchnojin-max.github.io",
   "http://localhost:8102",
   "http://localhost:5500",

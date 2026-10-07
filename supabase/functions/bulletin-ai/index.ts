@@ -18,6 +18,8 @@ const MODEL = Deno.env.get("COUNSEL_MODEL") ??
   (PROVIDER === "gemini" ? "gemini-3.5-flash-lite" : "claude-haiku-4-5-20251001");
 
 const ALLOW_ORIGINS = [
+  "https://nojin.kr",
+  "https://www.nojin.kr",
   "https://churchnojin-max.github.io",
   "https://www.churchnojin-max.github.io",
   "http://localhost:8099",
