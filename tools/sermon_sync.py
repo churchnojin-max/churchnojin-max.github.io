@@ -208,6 +208,10 @@ def whole_ref(t):
 _bible_cache = {}
 
 
+# 예약 작업에서 돌 때 node·powershell 의 검은 창이 잠깐 떠 화면이 10분마다 깜빡이던 것을 막는다
+NOWIN = dict(creationflags=0x08000000) if os.name == "nt" else {}   # CREATE_NO_WINDOW
+
+
 def bible_lookup(ref):
     """bible.js 로 장절을 정식 이름으로 고치고 개역개정 본문을 받는다. (정식장절, 본문) / 못 읽으면 (None, None)"""
     ref = re.sub(r"[–—－]", "~", ref)
@@ -221,7 +225,7 @@ def bible_lookup(ref):
         tmp = DATA_DIR / "_ref.txt"
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         tmp.write_text(ref, encoding="utf-8")
-        r = subprocess.run(["node", str(BIBLE_JS), "찾기", "--파일", str(tmp)], capture_output=True, timeout=60)
+        r = subprocess.run(["node", str(BIBLE_JS), "찾기", "--파일", str(tmp)], capture_output=True, timeout=60, **NOWIN)
         out = r.stdout.decode("utf-8", "replace")
     except Exception as e:
         log(f"bible.js 실행 실패: {e}")
@@ -246,7 +250,7 @@ def verse_lookup(verse_text):
         tmp = DATA_DIR / "_word.txt"
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         tmp.write_text(q, encoding="utf-8")
-        r = subprocess.run(["node", str(BIBLE_JS), "낱말", "--파일", str(tmp), "--최대", "5"], capture_output=True, timeout=60)
+        r = subprocess.run(["node", str(BIBLE_JS), "낱말", "--파일", str(tmp), "--최대", "5"], capture_output=True, timeout=60, **NOWIN)
         out = r.stdout.decode("utf-8", "replace")
     except Exception:
         return None
@@ -488,6 +492,25 @@ def collect():
     return groups
 
 
+def folder_fp(groups):
+    """설교 폴더 전체의 지문(파일 이름·고친 시각·크기). 지난번과 같으면 새로 읽을 것이 없다."""
+    h = hashlib.md5()
+    for folder in sorted(groups):
+        for stem in sorted(groups[folder]):
+            for p in sorted(groups[folder][stem]):
+                try:
+                    st = p.stat()
+                except OSError:
+                    continue
+                h.update(f"{folder}|{p.name}|{int(st.st_mtime)}|{st.st_size}".encode("utf-8"))
+    return h.hexdigest()
+
+
+def retry_due(state):
+    now = dt.datetime.now().isoformat()
+    return any(isinstance(v, dict) and v.get("pdf_missing") and str(v.get("retry_after", "")) <= now for v in state.values())
+
+
 def sig_of(paths):
     h = hashlib.md5()
     for p in sorted(paths):
@@ -517,7 +540,7 @@ def ensure_pdf(paths, allow_convert=True):
     started = dt.datetime.now()
     try:
         r = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HWP2PDF),
-                            "-SrcPath", str(s), "-PdfPath", str(out)], capture_output=True, timeout=180)
+                            "-SrcPath", str(s), "-PdfPath", str(out)], capture_output=True, timeout=180, **NOWIN)
         if out.exists() and out.stat().st_size > 1000:
             return out
         log(f"PDF 변환 실패({r.returncode}): {r.stderr.decode('utf-8', 'replace')[:200]}")
@@ -529,7 +552,7 @@ def ensure_pdf(paths, allow_convert=True):
         try:
             subprocess.run(["powershell", "-NoProfile", "-Command",
                             f"Get-Process Hwp -ErrorAction SilentlyContinue | Where-Object {{ $_.StartTime -ge [datetime]'{started:%Y-%m-%dT%H:%M:%S}' }} | Stop-Process -Force"],
-                           capture_output=True, timeout=30)
+                           capture_output=True, timeout=30, **NOWIN)
         except Exception:
             pass
     except Exception as e:
@@ -698,6 +721,11 @@ def _main(a, lock):
             state = {}
 
     groups = collect()
+    fp = folder_fp(groups)
+    # 설교 폴더가 지난번 그대로면(그리고 PDF 다시 붙일 차례도 아니면) 파일을 하나도 열지 않고 끝낸다 — 10분마다 가볍게
+    if not (a.all or a.dry_run or a.dump or a.retry_files) and state.get("_fp") == fp and not retry_due(state):
+        log("새 설교 파일이 없습니다.")
+        return
     entries, problems = build_entries(groups)
 
     if a.dump:
@@ -735,6 +763,9 @@ def _main(a, lock):
 
     if not todo:
         log("새 설교 파일이 없습니다.")
+        if state.get("_fp") != fp:
+            state["_fp"] = fp
+            STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
         return
 
     key = load_key()
@@ -819,6 +850,10 @@ def _main(a, lock):
         msg.append(f"\n🔎 확인 필요 {len(new_problems)}건 (등록하지 않음)")
         msg += ["· " + x[:120] for x in new_problems[:8]]
     state["_problems"] = problems
+    if failed:
+        state.pop("_fp", None)          # 실패한 것이 있으면 다음에 다시 읽어 본다
+    else:
+        state["_fp"] = folder_fp(collect())
     STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
     if done or failed or new_problems:
         notify_telegram("\n".join(msg))
