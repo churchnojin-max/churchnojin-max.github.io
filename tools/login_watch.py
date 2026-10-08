@@ -312,6 +312,27 @@ def check_new_logins(state):
         log("처음 실행: 지난 로그인 " + str(len(rows)) + "개의 나라만 채움(알림 없음)")
 
 
+def check_special_requests(state):
+    """특별 승인 신청(다른 교회 성도)이 새로 들어오면 목사님께 '신청 N건'만 알린다(2026-10-08).
+    신상(이름·교회·전화)은 텔레그램에 보내지 않는다 — 홈페이지 교적관리 ▸ 권한 관리에서 본다."""
+    try:
+        try:
+            rows = api("GET", "/rest/v1/special_requests?select=id&status=eq.pending&notified=eq.false&order=id&limit=50")
+        except urllib.error.HTTPError:
+            return                                   # 표가 아직 없으면 조용히 넘어감
+        if not rows:
+            return
+        text = ("🙋 홈페이지 특별 승인 신청 " + str(len(rows)) + "건이 들어왔습니다(다른 교회 성도).\n"
+                "교적관리 ▸ 권한 관리 맨 위에서 점검표를 보고 승인·거절해 주세요.")
+        buttons = {"inline_keyboard": [[{"text": "🔍 교적관리 열기", "url": "https://nojin.kr/gyojeok.html"}]]}
+        if telegram(text, buttons) and not PREVIEW:
+            ids = ",".join(str(r["id"]) for r in rows)
+            api("PATCH", "/rest/v1/special_requests?id=in.(" + ids + ")", {"notified": True}, "return=minimal")
+        log("특별 승인 신청 알림 " + str(len(rows)) + "건")
+    except Exception as e:
+        log("특별 승인 알림 오류(로그인 알림은 계속): " + type(e).__name__ + " " + str(e)[:120])
+
+
 def check_new_messages(state):
     """홈페이지 '교회에 메시지 보내기'로 들어온 새 글을 목사님께 알린다(2026-10-07).
     텔레그램에는 보낸 분·종류·시각만 보내고 본문은 보내지 않는다 — 본문은 홈페이지 대시보드에서 본다.
@@ -480,6 +501,7 @@ def main():
         ensure_geo(state)
         check_new_logins(state)
         check_new_messages(state)
+        check_special_requests(state)
         maybe_summary(state, force="--summary-now" in sys.argv)
         maybe_card(state)
         cleanup(state)

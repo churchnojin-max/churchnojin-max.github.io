@@ -347,6 +347,22 @@ window.WPF = (function () {
         return rpc('admin_set_member', { p_uid: params.uid, p_status: params.status, p_member_key: params.memberKey || '', p_member_name: params.memberName || '' });
       case 'adminSetSpecial':   // 특별 승인(교적 없이 정회원, 2026-10-08)
         return rpc('admin_set_special', { p_uid: params.uid, p_note: params.note || '' });
+      // 특별 승인 신청서·점검표·추천인 보증·1년 기한(2026-10-08, supabase/special_apply_20261008.sql)
+      case 'submitSpecial':
+        return rpc('submit_special_request', { p_real_name: params.name || '', p_church: params.church || '', p_region: params.region || '',
+          p_denomination: params.denomination || '', p_office: params.office || '', p_referrer: params.referrer || '', p_phone: params.phone || '', p_reason: params.reason || '' });
+      case 'mySpecial':
+        return rpc('my_special_request').then(function (r) { return { ok: true, request: r || null }; });
+      case 'myVouch':
+        return rpc('my_vouch_requests').then(function (r) { return { ok: true, list: r || [] }; });
+      case 'vouchSpecial':
+        return rpc('vouch_special_request', { p_id: params.id, p_yes: !!params.yes });
+      case 'adminSpecialRequests':
+        return rpc('admin_special_requests').then(function (r) { return { ok: true, list: r || [] }; });
+      case 'decideSpecial':
+        return rpc('decide_special_request', { p_id: params.id, p_approve: !!params.approve, p_note: params.note || null });
+      case 'extendSpecial':
+        return rpc('admin_extend_special', { p_uid: params.uid });
       case 'listReceipts':
         return restAll('donation_receipts?select=*&order=id').then(function (rows) { return { ok: true, receipts: (rows || []).map(recOut) }; });
       case 'addReceipt': {

@@ -53,7 +53,10 @@ console.log('[finance-member.js] v20260701dj');
       '<div class="form-actions" style="margin-top:14px;display:flex;gap:10px;align-items:center;">' +
       '  <button type="button" class="btn btn-solid" id="mm_btn">교적 인증</button>' +
       '  <span class="profile-msg" id="mm_msg"></span>' +
-      '</div>';
+      '</div>' +
+      // 다른 교회 성도 — 특별 승인 신청(2026-10-08 목사님: 소속 교회·직분·추천인·연락처를 스스로 적게)
+      '<div id="spBox" style="margin-top:18px;padding-top:14px;border-top:1px dashed var(--line,#e3e6ea)"></div>';
+    drawSpecial(document.getElementById('spBox'));
     document.getElementById('mm_btn').onclick = function () {
       var name = document.getElementById('mm_name').value.trim();
       var birth = document.getElementById('mm_birth').value.replace(/[^0-9]/g, '');
@@ -65,6 +68,70 @@ console.log('[finance-member.js] v20260701dj');
         else { msg.style.color = 'var(--accent-soft)'; msg.textContent = r.message || '교적에서 일치하는 정보를 찾지 못했습니다.'; }
       }).catch(function (e) { msg.style.color = 'var(--accent-soft)'; msg.textContent = '오류: ' + e.message; });
     };
+  }
+
+  // ── 특별 승인 신청(우리 교회 교적에 없는 분) — supabase/special_apply_20261008.sql
+  //    목사님이 고르신 것: 소속 교회·지역·교단·직분·추천인(노진교회에서 아는 분)·휴대폰(필수)·까닭.
+  //    신청서는 목사님·관리자만 보고, 추천인으로 적힌 성도가 대시보드에서 '아는 분이 맞습니다'로 보증할 수 있다.
+  var SP_OFFICES = ['성도', '집사', '안수집사', '권사', '장로', '전도사', '강도사', '목사', '사모', '선교사', '기타'];
+  function drawSpecial(box) {
+    if (!box) return;
+    WPF.call('mySpecial').then(function (r) {
+      var q = r.request;
+      var head = '<p style="font-size:.92rem;margin:0 0 6px"><b>우리 교회 교적에 없는 분이신가요?</b></p>';
+      if (q && q.status === 'pending') {
+        box.innerHTML = head + '<p style="color:var(--accent-soft);font-size:.88rem;line-height:1.7;margin:0 0 10px">⏳ <b>특별 승인 신청</b>이 접수되어 확인을 기다리고 있습니다.<br>' +
+          esc(q.church) + ' · ' + esc(q.office) + ' · 추천인 ' + esc(q.referrer) + '</p>' +
+          '<button type="button" class="btn btn-line" id="sp_open" style="padding:8px 16px">신청서 고쳐서 다시 내기</button>';
+      } else {
+        box.innerHTML = head +
+          (q && q.status === 'rejected' ? '<p style="color:#8a6d1f;font-size:.86rem;margin:0 0 8px">지난 신청은 승인되지 않았습니다. 담임목사님께 먼저 말씀하신 뒤 다시 신청해 주세요.</p>' : '') +
+          '<p style="color:var(--ink-soft);font-size:.86rem;line-height:1.7;margin:0 0 10px">다른 교회 성도님도 <b>노진교회에서 아는 분(추천인)</b>이 있으면 <b>특별 승인</b>을 신청하실 수 있습니다. 담임목사님이 확인한 뒤 승인해 드립니다(1년마다 다시 확인).</p>' +
+          '<button type="button" class="btn btn-line" id="sp_open" style="padding:8px 16px">특별 승인 신청하기</button>';
+      }
+      box.querySelector('#sp_open').onclick = openSpecialForm;
+    }).catch(function () { box.innerHTML = ''; });
+  }
+  function openSpecialForm() {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:24px 14px;overflow:auto';
+    var f = function (id, label, ph, extra) {
+      return '<div class="form-field" style="margin-bottom:10px"><label for="' + id + '" style="font-weight:700">' + label + '</label>' +
+        '<input type="text" id="' + id + '" placeholder="' + ph + '"' + (extra || '') + ' style="width:100%;padding:10px 12px;border:1px solid #dfe5ee;border-radius:8px;font:inherit" /></div>';
+    };
+    ov.innerHTML = '<div class="fin-card" style="max-width:480px;width:100%;background:#fff;margin:auto">' +
+      '<h3 style="margin:0 0 6px;color:var(--accent,#1A3A2F)">특별 승인 신청</h3>' +
+      '<p style="color:var(--ink-soft);font-size:.84rem;line-height:1.6;margin-bottom:12px">적어 주신 내용은 <b>담임목사님과 관리자만</b> 보고, 승인 여부를 확인하는 데만 씁니다. 승인되지 않으면 30일 뒤 지웁니다.</p>' +
+      f('sp_name', '이름 (실명)', '예: 홍길동', ' maxlength="40"') +
+      f('sp_church', '소속 교회', '예: ○○교회', ' maxlength="60"') +
+      f('sp_region', '교회 지역 (시·군)', '예: 화성시 장안면', ' maxlength="40"') +
+      f('sp_denom', '교단 (아시면)', '예: 예장 합동', ' maxlength="40"') +
+      '<div class="form-field" style="margin-bottom:10px"><label for="sp_office" style="font-weight:700">직분</label><select id="sp_office" style="width:100%;padding:10px 12px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"><option value="">고르세요</option>' +
+        SP_OFFICES.map(function (o) { return '<option>' + o + '</option>'; }).join('') + '</select></div>' +
+      f('sp_ref', '노진교회에서 나를 아는 분 (추천인)', '예: 노진교회 성도 이름', ' maxlength="40"') +
+      f('sp_phone', '휴대폰 번호', '예: 010-1234-5678', ' maxlength="13" inputmode="tel"') +
+      '<div class="form-field" style="margin-bottom:10px"><label for="sp_reason" style="font-weight:700">신청하는 까닭 (짧게)</label><textarea id="sp_reason" rows="2" maxlength="200" placeholder="예: 수요예배에 함께 참석하고 있습니다" style="width:100%;padding:10px 12px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"></textarea></div>' +
+      '<p class="help" id="sp_msg" style="min-height:1.2em;margin:4px 0 8px;color:#c0392b"></p>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn btn-line" id="sp_cancel" style="min-height:44px;padding:8px 18px">취소</button>' +
+      '<button type="button" class="btn btn-solid" id="sp_send" style="min-height:44px;padding:8px 22px">신청하기</button></div></div>';
+    document.body.appendChild(ov);
+    function close() { ov.remove(); }
+    function v(id) { return (ov.querySelector('#' + id).value || '').trim(); }
+    ov.querySelector('#sp_cancel').onclick = close;
+    ov.querySelector('#sp_send').onclick = function () {
+      var msgEl = ov.querySelector('#sp_msg'), btn = this;
+      var d = { name: v('sp_name'), church: v('sp_church'), region: v('sp_region'), denomination: v('sp_denom'), office: v('sp_office'),
+                referrer: v('sp_ref'), phone: v('sp_phone'), reason: v('sp_reason') };
+      if (!d.name || !d.church || !d.region || !d.office || !d.referrer) { msgEl.textContent = '이름·소속 교회·지역·직분·추천인을 모두 적어 주세요.'; return; }
+      if (!/^01[016789]\d{7,8}$/.test(d.phone.replace(/\D/g, ''))) { msgEl.textContent = '휴대폰 번호를 정확히 적어 주세요(예: 010-1234-5678).'; return; }
+      btn.disabled = true; msgEl.style.color = 'var(--ink-soft)'; msgEl.textContent = '보내는 중…';
+      WPF.call('submitSpecial', d).then(function () {
+        close();
+        drawSpecial(document.getElementById('spBox'));
+        if (window.showFlash) window.showFlash('특별 승인 신청을 보냈습니다');
+      }).catch(function (e) { btn.disabled = false; msgEl.style.color = '#c0392b'; msgEl.textContent = e.message; });
+    };
+    setTimeout(function () { var n = ov.querySelector('#sp_name'); if (n) n.focus(); }, 50);
   }
 
   // 정회원 → 대시보드 안내 + 진행중인 교육

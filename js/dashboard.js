@@ -113,6 +113,8 @@ console.log('[dashboard.js] v20260705qtfallback');
       '</div>' +
       // 관리자에게만 보이는 승인 대기 — 가입만 하고 아직 정회원이 아닌 분들
       '<div id="pendingApproval" style="margin-bottom:22px;"></div>' +
+      // 나를 추천인으로 적은 특별 승인 신청 — 보증(2026-10-08)
+      '<div id="referrerRequests" style="margin-bottom:22px;"></div>' +
       // 최고 운영자(목사님)에게만 — 성도가 보낸 메시지
       '<div id="ownerMessages" style="margin-bottom:22px;"></div>' +
       '<div id="dashScores"></div>' +
@@ -128,6 +130,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       '<div id="familyTree" style="margin-bottom:22px;"></div>' +
       '<p style="text-align:center;margin-top:14px;"><a class="btn btn-line" href="index.html#qt">이번 주 말씀·주보는 홈에서 보기 →</a></p>';
     loadPendingApproval();
+    loadReferrerRequests();
     loadScoreButton();
     loadWelcomeName(me);
     loadTodayQt(me);
@@ -171,13 +174,48 @@ console.log('[dashboard.js] v20260705qtfallback');
     if (u.joinVia === 'qr') b += '<span style="background:#1A3A2F;color:#fff;border-radius:999px;padding:1px 8px;font-size:.74rem;font-weight:700">교회 QR</span>';
     return b;
   }
+  // 특별 승인 신청에서 나를 '노진교회에서 아는 분(추천인)'으로 적은 분 — '아는 분이 맞습니다' / '모르는 분입니다'
+  function loadReferrerRequests() {
+    var box = document.getElementById('referrerRequests');
+    if (!box || !window.WPF) return;
+    WPF.call('myVouch').then(function (r) {
+      var list = r.list || [];
+      if (!list.length) { box.innerHTML = ''; return; }
+      box.innerHTML = '<div class="form-card" style="padding:16px 18px;border:1px solid #cfe3d6;background:#f6fbf8">' +
+        '<h3 style="margin:0 0 4px;font-size:1rem;color:var(--accent,#1A3A2F)">🤝 추천인 확인 부탁드립니다</h3>' +
+        '<p style="margin:0 0 12px;font-size:.84rem;color:#5f7268;line-height:1.6">다른 교회 성도님이 홈페이지 특별 승인을 신청하면서 <b>성도님을 아는 분(추천인)</b>으로 적었습니다. 정말 아는 분인지 알려 주세요. 담임목사님이 승인할 때 참고합니다.</p>' +
+        list.map(function (q) {
+          return '<div class="rv-row" data-id="' + esc(q.id) + '" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;background:#fff;border:1px solid #e3eee7;border-radius:9px;margin-bottom:8px">' +
+            '<span style="flex:1;min-width:180px"><b>' + esc(q.name) + '</b> <span style="color:#7b8794;font-size:.85rem">' + esc(q.church) + ' (' + esc(q.region) + ') · ' + esc(q.office) + '</span></span>' +
+            '<button type="button" class="btn btn-solid rv-yes" style="padding:8px 14px">아는 분이 맞습니다</button>' +
+            '<button type="button" class="btn btn-line rv-no" style="padding:8px 14px">모르는 분입니다</button></div>';
+        }).join('') + '</div>';
+      Array.prototype.forEach.call(box.querySelectorAll('.rv-row'), function (row) {
+        var id = +row.getAttribute('data-id');
+        function send(yes) {
+          if (!confirm(yes ? '이 분을 아는 분이라고 확인할까요?' : '모르는 분이라고 알릴까요?')) return;
+          WPF.call('vouchSpecial', { id: id, yes: yes }).then(function () {
+            row.innerHTML = '<span style="color:#1a7f4b;font-size:.9rem">✓ ' + (yes ? '아는 분으로 확인했습니다. 감사합니다.' : '모르는 분이라고 알렸습니다.') + '</span>';
+          }).catch(function (e) { alert('저장하지 못했습니다: ' + e.message); });
+        }
+        row.querySelector('.rv-yes').onclick = function () { send(true); };
+        row.querySelector('.rv-no').onclick = function () { send(false); };
+      });
+    }).catch(function () { box.innerHTML = ''; });
+  }
+
   function loadPendingApproval() {
     var box = document.getElementById('pendingApproval');
     if (!box || !window.WPF) return;
-    WPF.call('listAccess').then(function (r) {
+    Promise.all([WPF.call('listAccess'), WPF.call('adminSpecialRequests').catch(function () { return { list: [] }; })]).then(function (rs) {
+      var r = rs[0];
+      var spPending = (rs[1].list || []).filter(function (q) { return q.status === 'pending'; });
+      var spLine = spPending.length ? '<p style="margin:0 0 12px;padding:9px 12px;background:#fff;border:1px solid #e6c98a;border-radius:9px;font-size:.88rem">🙋 <b>특별 승인 신청 ' + spPending.length + '건</b> (다른 교회 성도) — ' +
+        spPending.map(function (q) { return esc(q.name) + '(' + esc(q.church) + ')'; }).join(', ') + ' · <a href="gyojeok.html">교적관리에서 확인 →</a></p>' : '';
       var all = r.users || [];
       var pending = all.filter(function (u) { return u.status !== '정회원'; });
-      if (!pending.length) { box.innerHTML = ''; return; }
+      if (!pending.length && !spLine) { box.innerHTML = ''; return; }
+      if (!pending.length) { box.innerHTML = '<div class="form-card" style="padding:16px 18px;border:1px solid #e6c98a;background:#fffdf6">' + spLine + '</div>'; return; }
       // 최근 가입자가 위로
       pending.sort(function (a, b) { return String(b.joinedAt || '').localeCompare(String(a.joinedAt || '')); });
       function fmtJoin(s) {
@@ -188,7 +226,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       box.innerHTML =
         '<div class="form-card" style="padding:16px 18px;border:1px solid #e6c98a;background:#fffdf6">' +
         '<h3 style="margin:0 0 4px;font-size:1rem;color:#8a6d1f">🔔 정회원 승인 대기 <b>' + pending.length + '명</b></h3>' +
-        '<p style="margin:0 0 12px;font-size:.84rem;color:#8a7a52">가입은 했지만 아직 승인 전이라 교회 정보를 볼 수 없는 분들입니다. 어느 성도님인지 확인한 뒤 승인해 주세요.</p>' +
+        '<p style="margin:0 0 12px;font-size:.84rem;color:#8a7a52">가입은 했지만 아직 승인 전이라 교회 정보를 볼 수 없는 분들입니다. 어느 성도님인지 확인한 뒤 승인해 주세요.</p>' + spLine +
         '<div style="display:flex;flex-direction:column;gap:8px">' +
         pending.map(function (u) {
           return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:#fff;border:1px solid #efe3c4;border-radius:9px">' +

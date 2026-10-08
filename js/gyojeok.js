@@ -324,7 +324,10 @@ console.log('[gyojeok.js] v20261007reg');
       WPF.call('listScoreAccess').catch(function () { return { uids: [] }; }),
       // 최고 운영자·권한 변경 기록(supabase/owner_guard_20261003.sql). 아직 없으면 예전처럼
       WPF.call('amOwner').catch(function () { return { owner: null }; }),
-      WPF.call('listAccessLog', { limit: 50 }).catch(function () { return { log: null }; })]).then(function (res) {
+      WPF.call('listAccessLog', { limit: 50 }).catch(function () { return { log: null }; }),
+      // 특별 승인 신청서(supabase/special_apply_20261008.sql). 아직 없으면 빈 목록
+      WPF.call('adminSpecialRequests').catch(function () { return { list: [] }; })]).then(function (res) {
+      var spReqs = res[5].list || [];
       var scoreUids = res[2].uids || [];
       var owner = res[3].owner, accessLog = res[4].log;
       var adminLock = owner === false;   // 관리자 지정·해제는 최고 운영자만
@@ -369,9 +372,55 @@ console.log('[gyojeok.js] v20261007reg');
           // 교적 인증 신청(이름·생년월일) — 스스로 정회원이 되지 않고, 여기서 확인해 승인한다(supabase/security_fix_20261003.sql)
           (u.claimName && u.status !== '정회원' ? '<span style="display:block;color:#7b8794;font-size:.76rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
             (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '') +
-          (u.special ? '<span style="display:block;color:#8a6d1f;font-size:.76rem">특별 승인: ' + esc(u.specialNote) + (u.specialAt ? ' (' + esc(String(u.specialAt).slice(0, 10)) + ')' : '') + '</span>' : '');
+          (u.special ? '<span style="display:block;color:#8a6d1f;font-size:.76rem">특별 승인: ' + esc(u.specialNote) + (u.specialUntil ? ' · ' + esc(String(u.specialUntil).slice(0, 10)) + '까지' : '') +
+            ' <button type="button" class="sp-extend" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '" style="border:1px solid #d9c38a;background:#fff;border-radius:6px;padding:1px 8px;font:inherit;font-size:.74rem;cursor:pointer;color:#8a6d1f">1년 연장</button></span>' : '') +
+          (u.specialExpired ? '<span style="display:block;color:#c0392b;font-size:.76rem">특별 승인 기한이 지나 준회원으로 돌아왔습니다 (' + esc(u.specialNote) + ') ' +
+            '<button type="button" class="sp-extend" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '" style="border:1px solid #e2bcbc;background:#fff;border-radius:6px;padding:1px 8px;font:inherit;font-size:.74rem;cursor:pointer;color:#7a3b3b">다시 1년</button></span>' : '') +
+          ((u.special || u.specialExpired) && (!u.lastSignIn || Date.now() - Date.parse(u.lastSignIn) > 180 * 864e5) ? '<span style="display:block;color:#c0392b;font-size:.76rem">⚠ 6개월 넘게 로그인하지 않았습니다</span>' : '');
         return '<div class="ac-who"><b class="ac-name">' + esc(u.name || '(이름없음)') + '</b>' + badges +
           '<span class="ac-mail">' + esc(u.email || (u.provider === 'kakao' ? '(카카오 가입)' : '')) + '</span></div>';
+      }
+      // ── 특별 승인 신청서 + 점검표(2026-10-08 목사님: "확실하게 허락을 해야 될지 말아야 될지 알 수 있는 기준") ──
+      //    신호: 🟢 좋음 · 🟡 확인해 볼 것 · 🔴 조심. IP 는 서버가 세기만 하고 화면에 내보내지 않는다.
+      function dayStr(s) { return s ? String(s).slice(0, 10) : ''; }
+      function spSignals(q) {
+        var out = [];
+        var g = function (c, t) { out.push('<li><span aria-hidden="true">' + c + '</span> ' + t + '</li>'); };
+        if (q.referrerMembers > 0) g('🟢', '추천인 <b>' + esc(q.referrer) + '</b> — 우리 교회 정회원');
+        else if (q.referrerInGyojeok > 0) g('🟡', '추천인 <b>' + esc(q.referrer) + '</b> — 교적에는 있으나 홈페이지 정회원은 아님(보증 단추를 못 누름)');
+        else g('🔴', '추천인 <b>' + esc(q.referrer) + '</b> — 우리 교적에 없는 이름');
+        if (q.vouchKind === 'referrer') g('🟢', '추천인 ' + esc(q.vouchedByName || q.referrer) + '님이 "아는 분이 맞습니다"라고 확인(' + dayStr(q.vouchedAt) + ')');
+        else if (q.vouchKind === 'owner') g('🟢', '최고 운영자 보증(' + dayStr(q.vouchedAt) + ')');
+        else if (q.vouchKind === 'denied') g('🔴', '추천인이 "모르는 분입니다"라고 답함');
+        else g('⚪', '아직 추천인 보증 없음');
+        if (q.signupName && q.signupName !== q.name) g('🟡', '가입할 때 적은 이름은 「' + esc(q.signupName) + '」');
+        else g('🟢', '가입 이름과 신청서 이름이 같음');
+        if (!/^[가-힣]{2,5}$/.test(q.name)) g('🟡', '이름 모양이 흔하지 않음 — 실명인지 확인');
+        var m = +q.minutesToApply || 0;
+        if (m < 60) g('🟡', '가입하고 ' + Math.max(0, m) + '분 만에 신청');
+        else g('🟢', '가입하고 ' + (m >= 1440 ? Math.floor(m / 1440) + '일' : Math.floor(m / 60) + '시간') + ' 뒤 신청 · 로그인 ' + (q.logins || 0) + '번');
+        if (q.foreignLogin) g('🔴', '해외에서 로그인한 기록이 있음');
+        if (q.sharedAccounts > 0) g('🟡', '같은 인터넷(기기)에서 들어온 다른 계정 ' + q.sharedAccounts + '개 — 가족일 수도 있음');
+        g('📞', '<a href="tel:' + esc(String(q.phone).replace(/[^0-9]/g, '')) + '">' + esc(q.phone) + '</a> — 전화 한 통으로 확인하실 수 있습니다');
+        return '<ul class="sr-sig">' + out.join('') + '</ul>';
+      }
+      function specialReqHtml(list) {
+        var pend = list.filter(function (q) { return q.status === 'pending'; });
+        var done = list.filter(function (q) { return q.status !== 'pending'; });
+        if (!list.length) return '';
+        return '<div class="ac-box" style="border:2px solid #e6c98a;background:#fffdf6"><div class="ac-head"><h4>🙋 특별 승인 신청 <span>(대기 ' + pend.length + '건)</span></h4><span>다른 교회 성도님이 직접 적은 신청서입니다. 아래 점검표를 보고 정해 주세요(승인하면 1년 동안).</span></div>' +
+          '<style>.sr-card{padding:14px 16px;border-top:1px solid #efe3c4}.sr-card h5{margin:0 0 4px;font-size:1rem}.sr-sig{list-style:none;margin:8px 0;padding:0;display:grid;gap:4px;font-size:.86rem;line-height:1.5}.sr-sig a{color:var(--accent,#1A3A2F)}.sr-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.sr-btns .btn{min-height:42px;padding:8px 14px}</style>' +
+          pend.map(function (q) {
+            var map = 'https://map.naver.com/p/search/' + encodeURIComponent(q.church + ' ' + q.region);
+            return '<div class="sr-card" data-id="' + esc(q.id) + '"><h5>' + esc(q.name) + ' <span style="font-weight:500;color:#7b8794;font-size:.88rem">' + esc(q.church) + ' (' + esc(q.region) + ')' + (q.denomination ? ' · ' + esc(q.denomination) : '') + ' · ' + esc(q.office) + '</span></h5>' +
+              '<p style="margin:0;color:#7b8794;font-size:.82rem">' + esc(q.email || (q.provider === 'kakao' ? '카카오 가입' : '')) + ' · 신청 ' + esc(dayStr(q.createdAt)) + (q.reason ? ' · 까닭: ' + esc(q.reason) : '') + '</p>' +
+              spSignals(q) +
+              '<div class="sr-btns"><a class="btn btn-line" href="' + map + '" target="_blank" rel="noopener">🔍 교회 찾아보기</a>' +
+              (owner === true && !q.vouchKind ? '<button type="button" class="btn btn-line sr-vouch">🤝 제가 아는 분입니다</button>' : '') +
+              '<button type="button" class="btn btn-solid sr-ok">승인</button><button type="button" class="btn btn-line sr-no" style="color:#7a3b3b">거절</button></div></div>';
+          }).join('') +
+          (done.length ? '<p class="help" style="padding:8px 16px 12px;margin:0">최근 30일 결정: ' + done.map(function (q) { return esc(q.name) + ' ' + (q.status === 'approved' ? '✓승인' : '✗거절'); }).join(' · ') + '</p>' : '') +
+          '</div>';
       }
       // 지금 로그인한 사람(나)의 uid — 최고 운영자 본인 줄에는 '관리자 해제'를 두지 않는다.
       // (최고 운영자 자리는 홈페이지에서 아무도 뺄 수 없고, 넘겨 주는 일은 Supabase 관리 화면에서만 — supabase/owner_guard_20261003.sql)
@@ -407,6 +456,7 @@ console.log('[gyojeok.js] v20261007reg');
         '<p style="color:var(--ink-soft);font-size:.85rem;margin-bottom:14px;line-height:1.6"><b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동). 우리 교회 성도가 아니어도 믿을 만한 분은 <b>특별 승인</b>으로 정회원처럼 쓰게 할 수 있습니다(교적 연결 없음, 어떤 분인지 적어 둠).' +
           (adminLock ? '<br>관리자 지정·해제는 최고 운영자만 할 수 있습니다.' : '') + '</p>' +
         '<p class="help" id="gj_msg" style="margin:0 0 10px;min-height:1.2em;font-weight:700"></p>' +
+        specialReqHtml(spReqs) +
         box('ac-admin', '① 최고 권한 · 관리자', '모든 영역에 들어갈 수 있는 분입니다. 꼭 필요한 분만 두세요.', admins, 'admin') +
         box('ac-granted', '② 영역 권한을 받은 분', '맡은 일에 해당하는 영역만 열려 있습니다.', granted, 'granted') +
         box('ac-plain', '③ 일반 회원', '받은 권한이 없는 분입니다.', plain, 'plain',
@@ -431,6 +481,39 @@ console.log('[gyojeok.js] v20261007reg');
         Array.prototype.forEach.call(panel.querySelectorAll('.ac-plain .ac-row'), function (r) { r.style.display = (!s || String(r.getAttribute('data-name')).indexOf(s) >= 0) ? '' : 'none'; });
       });
       function reload(ok, text) { renderAccess(panel, { ok: ok, text: text }); }
+
+      // 특별 승인 신청 단추: 보증(최고 운영자) · 승인 · 거절
+      Array.prototype.forEach.call(panel.querySelectorAll('.sr-card[data-id]'), function (card) {
+        var id = +card.getAttribute('data-id');
+        var q = spReqs.filter(function (x) { return x.id === id; })[0] || {};
+        var vb = card.querySelector('.sr-vouch');
+        if (vb) vb.onclick = function () {
+          if (!confirm('「' + q.name + '」님을 목사님께서 직접 아는 분으로 보증할까요?')) return;
+          WPF.call('vouchSpecial', { id: id, yes: true }).then(function () { reload(true, '✓ 「' + q.name + '」님을 보증했습니다'); })
+            .catch(function (e) { flash(false, '오류: ' + e.message); });
+        };
+        card.querySelector('.sr-ok').onclick = function () {
+          var warn = (q.vouchKind === 'referrer' || q.vouchKind === 'owner') ? '' : '\n\n※ 아직 추천인 보증이 없습니다. 전화 등으로 확인하셨나요?';
+          if (!confirm('「' + q.name + '」님(' + q.church + ' · ' + q.office + ')을 특별 승인할까요?\n1년 동안 정회원처럼 쓸 수 있고, 1년 뒤 다시 확인합니다.' + warn)) return;
+          WPF.call('decideSpecial', { id: id, approve: true }).then(function () { reload(true, '✓ 「' + q.name + '」님을 특별 승인했습니다(1년)'); })
+            .catch(function (e) { flash(false, '오류: ' + e.message); });
+        };
+        card.querySelector('.sr-no').onclick = function () {
+          var why = prompt('「' + q.name + '」님 신청을 거절합니다. 메모가 있으면 적어 주세요(본인에게는 보이지 않습니다).', '');
+          if (why === null) return;
+          WPF.call('decideSpecial', { id: id, approve: false, note: why }).then(function () { reload(true, '「' + q.name + '」님 신청을 거절했습니다(신상은 30일 뒤 지웁니다)'); })
+            .catch(function (e) { flash(false, '오류: ' + e.message); });
+        };
+      });
+      // 특별 승인 1년 연장
+      Array.prototype.forEach.call(panel.querySelectorAll('.sp-extend'), function (b) {
+        b.onclick = function () {
+          var uid2 = b.getAttribute('data-uid'), nm2 = b.getAttribute('data-name');
+          if (!confirm('「' + nm2 + '」님 특별 승인을 1년 연장할까요?')) return;
+          WPF.call('extendSpecial', { uid: uid2 }).then(function () { reload(true, '✓ 「' + nm2 + '」님 특별 승인을 1년 연장했습니다'); })
+            .catch(function (e) { flash(false, '오류: ' + e.message); });
+        };
+      });
 
       // 한 사람의 권한을 바꾸는 창 — 체크는 여기서만, 저장을 눌러야 바뀌고, 바뀌는 내용을 한 번 더 보여 주고 묻는다
       function openPermEditor(u) {
