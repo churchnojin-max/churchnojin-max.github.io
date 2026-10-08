@@ -15,7 +15,11 @@ console.log('[gyojeok.js] v20261007reg');
   function fmtPhone(p) { p = String(p == null ? '' : p).replace(/[^0-9]/g, ''); if (!p) return ''; if (p.length === 10 && p.charAt(0) !== '0') p = '0' + p; if (p.length === 11) return p.slice(0, 3) + '-' + p.slice(3, 7) + '-' + p.slice(7); if (p.length === 10) return p.slice(0, 3) + '-' + p.slice(3, 6) + '-' + p.slice(6); return p; }
   function msgCard(t, x) { return '<div class="fin-card" style="text-align:center;padding:40px 18px;"><h3 style="margin:0 0 8px;color:var(--accent,#1A3A2F);">' + esc(t) + '</h3><p style="color:var(--ink-soft,#7b8794);">' + esc(x) + '</p></div>'; }
   function loading(el) { el.innerHTML = '<p class="qt-loading">불러오는 중…</p>'; }
-  function stPill(st) { return '<span class="fin-pill ' + (st === '정회원' ? 'in' : 'out') + '">' + (st === '정회원' ? '정회원' : '준회원') + '</span>'; }
+  // 특별 승인(2026-10-08): 교적 없이 정회원 — 우리 교회 성도가 아니어도 믿을 만한 분(supabase/special_member_20261008.sql)
+  function stPill(st, special) {
+    if (st === '정회원' && special) return '<span class="fin-pill in" style="background:#8a6d1f;color:#fff">특별 승인</span>';
+    return '<span class="fin-pill ' + (st === '정회원' ? 'in' : 'out') + '">' + (st === '정회원' ? '정회원' : '준회원') + '</span>';
+  }
 
   var tries = 0, tab = 'access';
   function boot() {
@@ -364,7 +368,8 @@ console.log('[gyojeok.js] v20261007reg');
           (u.realName && u.realName !== u.name ? '<span style="display:block;color:#9aa5b1;font-size:.76rem">본인이 적은 이름: ' + esc(u.realName) + '</span>' : '') +
           // 교적 인증 신청(이름·생년월일) — 스스로 정회원이 되지 않고, 여기서 확인해 승인한다(supabase/security_fix_20261003.sql)
           (u.claimName && u.status !== '정회원' ? '<span style="display:block;color:#7b8794;font-size:.76rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
-            (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '');
+            (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '') +
+          (u.special ? '<span style="display:block;color:#8a6d1f;font-size:.76rem">특별 승인: ' + esc(u.specialNote) + (u.specialAt ? ' (' + esc(String(u.specialAt).slice(0, 10)) + ')' : '') + '</span>' : '');
         return '<div class="ac-who"><b class="ac-name">' + esc(u.name || '(이름없음)') + '</b>' + badges +
           '<span class="ac-mail">' + esc(u.email || (u.provider === 'kakao' ? '(카카오 가입)' : '')) + '</span></div>';
       }
@@ -387,9 +392,10 @@ console.log('[gyojeok.js] v20261007reg');
             : adminLock ? '' : '<button type="button" class="btn btn-line ac-unadmin" style="color:#7a3b3b">관리자 해제</button>')
           : '<button type="button" class="btn btn-line ac-edit">' + (kind === 'plain' ? '권한 주기' : '권한 바꾸기') + '</button>';
         return '<div class="ac-row" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '">' + whoCell(u) +
-          '<div class="ac-status"><span class="st-pill">' + stPill(u.status) + '</span><select class="ck-status" aria-label="회원 구분">' +
+          '<div class="ac-status"><span class="st-pill">' + stPill(u.status, u.special) + '</span><select class="ck-status" aria-label="회원 구분">' +
             '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
-            '<option value="정회원"' + (u.status === '정회원' ? ' selected' : '') + '>정회원</option></select></div>' +
+            '<option value="정회원"' + (u.status === '정회원' && !u.special ? ' selected' : '') + '>정회원</option>' +
+            '<option value="특별"' + (u.status === '정회원' && u.special ? ' selected' : '') + '>특별 승인</option></select></div>' +
           '<div class="ac-chips">' + chips + '</div><div class="ac-act">' + btn + '</div></div>';
       }
       function box(cls, title, sub, list, kind, extra) {
@@ -398,7 +404,7 @@ console.log('[gyojeok.js] v20261007reg');
       }
       panel.innerHTML = AC_CSS + '<div class="fin-card">' +
         '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:6px">홈페이지에 가입한 회원입니다. 실수로 눌리지 않도록 <b>세 상자</b>로 나누었고, 권한은 <b>‘권한 바꾸기’</b>를 눌러 그 사람 창에서만 바꿀 수 있습니다(저장할 때 한 번 더 묻습니다).</p>' +
-        '<p style="color:var(--ink-soft);font-size:.85rem;margin-bottom:14px;line-height:1.6"><b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동).' +
+        '<p style="color:var(--ink-soft);font-size:.85rem;margin-bottom:14px;line-height:1.6"><b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동). 우리 교회 성도가 아니어도 믿을 만한 분은 <b>특별 승인</b>으로 정회원처럼 쓰게 할 수 있습니다(교적 연결 없음, 어떤 분인지 적어 둠).' +
           (adminLock ? '<br>관리자 지정·해제는 최고 운영자만 할 수 있습니다.' : '') + '</p>' +
         '<p class="help" id="gj_msg" style="margin:0 0 10px;min-height:1.2em;font-weight:700"></p>' +
         box('ac-admin', '① 최고 권한 · 관리자', '모든 영역에 들어갈 수 있는 분입니다. 꼭 필요한 분만 두세요.', admins, 'admin') +
@@ -484,7 +490,7 @@ console.log('[gyojeok.js] v20261007reg');
         var u = users.filter(function (x) { return x.uid === uid; })[0] || {};
         var nm = u.name || u.email || '(이름없음)';
         var sel = tr.querySelector('.ck-status');
-        var prevStatus = u.status === '정회원' ? '정회원' : '준회원';
+        var prevStatus = u.status === '정회원' ? (u.special ? '특별' : '정회원') : '준회원';
         var editBtn = tr.querySelector('.ac-edit'), unBtn = tr.querySelector('.ac-unadmin');
         if (editBtn) editBtn.addEventListener('click', function () { openPermEditor(u); });
         if (unBtn) unBtn.addEventListener('click', function () {
@@ -498,12 +504,23 @@ console.log('[gyojeok.js] v20261007reg');
         function setMember(status, key, name) {
           msg.style.color = 'var(--ink-soft)'; msg.textContent = '저장 중…';
           WPF.call('adminSetMember', { uid: uid, status: status, memberKey: key, memberName: name }).then(function () {
-            prevStatus = status; u.status = status; if (name) { u.name = name; tr.querySelector('.ac-name').textContent = name; tr.setAttribute('data-name', name); }
+            prevStatus = status; u.status = status; u.special = false; if (name) { u.name = name; tr.querySelector('.ac-name').textContent = name; tr.setAttribute('data-name', name); }
             var sp = tr.querySelector('.st-pill'); if (sp) sp.innerHTML = stPill(status);
             flash(true, '✓ ' + (name ? name + ' · ' : '') + status + ' 저장됨');
           }).catch(function (e) { flash(false, '오류: ' + e.message); sel.value = prevStatus; });
         }
         sel.addEventListener('change', function () {
+          if (sel.value === '특별') {
+            // 특별 승인 — 교적 없이 정회원. 어떤 분인지(까닭)를 꼭 적게 하고, 한 번 더 묻는다
+            var why = prompt('「' + nm + '」님을 특별 승인합니다.\n우리 교회 교적에 없어도 정회원처럼 홈페이지를 쓸 수 있게 됩니다.\n\n어떤 분인지 적어 주세요 (예: ○○교회 집사, 목사님 지인)', u.specialNote || '');
+            if (why === null || !why.trim()) { sel.value = prevStatus; if (why !== null) flash(false, '어떤 분인지 적어야 특별 승인할 수 있습니다.'); return; }
+            if (!confirm('「' + nm + '」님 특별 승인\n· ' + why.trim() + '\n\n교적과는 연결되지 않습니다(헌금 조회·가정 합산 없음). 승인할까요?')) { sel.value = prevStatus; return; }
+            msg.style.color = 'var(--ink-soft)'; msg.textContent = '저장 중…';
+            WPF.call('adminSetSpecial', { uid: uid, note: why.trim() }).then(function () {
+              reload(true, '✓ 「' + nm + '」님을 특별 승인했습니다');
+            }).catch(function (e) { flash(false, '오류: ' + e.message); sel.value = prevStatus; });
+            return;
+          }
           if (sel.value === '정회원') {
             pickGyojeok(gj, function (m) {
               if (!m) { sel.value = prevStatus; return; }

@@ -345,6 +345,8 @@ window.WPF = (function () {
         return rest('POST', 'app_settings?on_conflict=key', { key: params.key, value: String(params.value == null ? '' : params.value), updated_at: new Date().toISOString() }, 'resolution=merge-duplicates,return=minimal').then(function () { return { ok: true }; });
       case 'adminSetMember':
         return rpc('admin_set_member', { p_uid: params.uid, p_status: params.status, p_member_key: params.memberKey || '', p_member_name: params.memberName || '' });
+      case 'adminSetSpecial':   // 특별 승인(교적 없이 정회원, 2026-10-08)
+        return rpc('admin_set_special', { p_uid: params.uid, p_note: params.note || '' });
       case 'listReceipts':
         return restAll('donation_receipts?select=*&order=id').then(function (rows) { return { ok: true, receipts: (rows || []).map(recOut) }; });
       case 'addReceipt': {
