@@ -2670,9 +2670,9 @@ html.snap-page .section-head .eyebrow { display: block; }
   margin-right: -1.6em;                                   /* 오른쪽이 긴 만큼 밀어 글자가 화면 가운데 오게 */
   background: url("../images/brush-stroke-white.svg") center / 100% 100% no-repeat;
   filter: drop-shadow(0 6px 18px rgba(0,0,0,.28));
-  transform: rotate(-1.6deg);
 }
-.hero-brush .hb-line { white-space: nowrap; display: inline-block; transform: rotate(1.2deg); }
+/* 두 낱말 묶음을 한 줄 높이로 가지런히(2026-10-08 목사님: "높이가 달라, 일렬로 맞춰") — 묶음마다 따로 기울이던 것을 없앰 */
+.hero-brush .hb-line { white-space: nowrap; display: inline-block; vertical-align: baseline; }
 @keyframes brushIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @media (prefers-reduced-motion: reduce) { .hero-brush { animation: none; } }
 
@@ -2722,9 +2722,9 @@ html.snap-page .section-head .eyebrow { display: block; }
   .hero-brush .hb-line {
     display: block; width: max-content; margin: 0 auto; padding: .28em 1.6em .36em .8em;
     background: url("../images/brush-stroke-white.svg") center / 100% 100% no-repeat;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,.28)); transform: rotate(-1.5deg);
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,.28));
   }
-  .hero-brush .hb-line + .hb-line { margin-top: .1em; transform: rotate(1deg) translateX(.4em); }
+  .hero-brush .hb-line + .hb-line { margin-top: .1em; }
   .hero-full .hero-sermon-banner { padding: 16px 18px 14px; gap: 6px; }
   .hero-full .hero-sermon-banner .hsb-label { font-size: .7rem; padding: 4px 12px; }
   .hero-full .hero-sermon-banner .hsb-title { font-size: 1.3rem; }
