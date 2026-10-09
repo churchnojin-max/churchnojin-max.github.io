@@ -58,11 +58,20 @@ html { scroll-padding-top: 0; }
 .wl-xref summary::-webkit-details-marker { display: none; }
 .wl-xref summary::before { content: "▸ "; }
 .wl-xref[open] summary::before { content: "▾ "; }
-.wl-x { margin: 8px 0 12px; }
-.wl-x b { display: block; color: var(--gold); }
-.wl-x p { margin: 2px 0 0; line-height: 1.75; }
-.wl-news { margin: 0; padding-left: 1.2em; }
-.wl-news li { margin: 0 0 6px; line-height: 1.7; }
+.wl-x { margin: 0; padding: 12px 0; border-top: 1px dashed var(--line); }
+.wl-xref summary + .wl-x { margin-top: 10px; }
+.wl-x b { display: flex; align-items: center; gap: 9px; color: var(--gold); }
+/* 장절 앞 초록 마름모(2026-10-09 목사님 요청) */
+.wl-x b::before { content: ""; flex: none; width: .5em; height: .5em; background: var(--accent); border-radius: 2px; transform: rotate(45deg); }
+.wl-x p { margin: 4px 0 0; line-height: 1.75; }
+/* 교회소식: 번호 동그라미 + 제목 굵게 */
+.wl-news { margin: 0; padding: 0; list-style: none; }
+.wl-news li { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 10px 0; border-top: 1px dashed var(--line); line-height: 1.7; }
+.wl-news li:first-child { border-top: 0; padding-top: 2px; }
+.wl-news-no { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1.65em; height: 1.65em; margin-top: .1em;
+  border-radius: 50%; background: var(--accent); color: #fff; font-size: .82em; font-weight: 700; }
+.wl-news p { margin: 0; min-width: 0; }
+.wl-news b { display: block; color: var(--accent); }
 .wl-hint { margin: 0; color: var(--ink-soft); font-size: .9em; }
 .wl-hy-t { margin: 10px 0 6px; font-weight: 700; color: var(--gold); }
 .wl-hy-t:first-child { margin-top: 0; }

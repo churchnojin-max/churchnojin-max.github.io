@@ -234,7 +234,12 @@
     }
     else if (/교회\s*소식|광고/.test(name)) {
       var ns = String(d.notices || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
-      c = ns.length ? '<ul class="wl-news">' + ns.map(function (l) { return "<li>" + esc(l.replace(/^\d+\.\s*/, "")) + "</li>"; }).join("") + "</ul>" : "";
+      // 번호 동그라미 + '제목 ― 내용'이면 제목은 굵게 한 줄, 내용은 그 아래(2026-10-09 목사님: 번호 없이 글만 있어 읽기 불편)
+      c = ns.length ? '<ol class="wl-news">' + ns.map(function (l, i) {
+        var no = (l.match(/^(\d+)\s*[.)]/) || [])[1] || String(i + 1), t = l.replace(/^\d+\s*[.)]\s*/, "");
+        var m = t.match(/^([^―—]{2,30}?)\s*[―—]\s*(.+)$/);
+        return '<li><span class="wl-news-no">' + esc(no) + "</span><p>" + (m ? "<b>" + esc(m[1]) + "</b>" + esc(m[2]) : esc(t)) + "</p></li>";
+      }).join("") + "</ol>" : "";
       sub = esc(plainDetail);
     }
     else sub = esc(plainDetail || detail);
