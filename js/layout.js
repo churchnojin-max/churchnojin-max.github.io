@@ -48,6 +48,8 @@
       { href: "finance.html", label: "재정관리", perm: "canFinance" },
       { href: "gyojeok.html", label: "교적관리", perm: "canGyojeok" },
       { href: "affairs.html", label: "목회행정", perm: "canAffairs|canWorship" },
+      // 주보 제작 및 배포(2026-10-09 목사님: 자주 들어가니 따로) — 파일 올리기 → 차례로 확인 → 배포(js/affairs.js 마법사)
+      { href: "affairs.html#bulletin-make", label: "주보 제작 및 배포", perm: "canWorship" },
       { href: "home-settings.html", label: "홈페이지 설정", perm: "canHomepage" },
     ] },
     // 사이트맵: 상단 메뉴는 4개로 간소화하기 위해 빼고, 푸터에서만 보이게 함(footerOnly)

@@ -1633,8 +1633,19 @@ if (homeBulletin) {
     setBrief(`<p class="qt-loading">아직 게시된 주보가 없습니다.</p>`);
   } else {
     const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=*&order=bdate.desc&limit=2";
-    fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + window.SUPABASE_ANON_KEY } })
-      .then((r) => (r.ok ? r.json() : []))
+    // 로그인한 분은 그 열쇠로 — 그래야 향기로운 예물 명단(로그인한 분만, member_only_20261005.sql)이 보인다(2026-10-09).
+    // 예전엔 늘 익명 열쇠로 불러 로그인해도 명단이 안 보였다. 열쇠가 낡았으면(401) 익명으로 다시.
+    const homeTok = (() => {
+      try {
+        const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
+        const s = JSON.parse(sessionStorage.getItem("sb-" + ref + "-auth-token") || "null");
+        const ss = s && (s.currentSession || s);
+        return (ss && ss.access_token) || "";
+      } catch (e) { return ""; }
+    })();
+    const getHomeB = (tok) => fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + (tok || window.SUPABASE_ANON_KEY) } })
+      .then((r) => (r.status === 401 && tok ? getHomeB("") : r.ok ? r.json() : []));
+    getHomeB(homeTok)
       .then((rows) => {
         const b = rows && rows[0];
         const prevB = rows && rows[1];

@@ -5592,6 +5592,19 @@ console.log('[affairs.js] v20260712memo2');
   }
   function committeeFor(ym) { if (!COMMITTEES) return null; for (var i = 0; i < COMMITTEES.length; i++) if (COMMITTEES[i].month === ym) return COMMITTEES[i]; return null; }
 
+  // ── 주보 제작 및 배포 마법사(2026-10-09 목사님) ──
+  //   메뉴에서 들어오면 이번 주일 주보를 열어(없으면 새로) 단계별로: 파일 올리기 → ① 기본 정보 → ② 주일 예배 →
+  //   ③ 인용 말씀·설교 요약 → ④ 예배 순서 → ⑤ 향기로운 예물·한 주의 광고 → 배포. 단계마다 '맞습니다'를 눌러야 넘어간다.
+  function openBulletinMakeFromHash() {
+    if (location.hash !== '#bulletin-make' || !tabAllowed('bulletin')) return;
+    if (document.querySelector('[data-bt-editor]')) return;   // 이미 열려 있음
+    tab = 'bulletin'; render();
+    var bd = nextSunday();
+    api('GET', 'bulletins?bdate=eq.' + bd + '&select=*').catch(function () { return []; }).then(function (rows) {
+      bulletinEditor((rows && rows[0]) || {}, { wizard: true });
+    });
+  }
+
   function renderBulletinAdmin(panel) {
     panel.innerHTML =
       '<div class="fin-card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
@@ -5631,9 +5644,12 @@ console.log('[affairs.js] v20260712memo2');
     });
   }
 
-  function bulletinEditor(rec) {
+  function bulletinEditor(rec, opts) {
     rec = rec || {}; var d = rec.data || {};
+    opts = opts || {};
+    var WIZ = !!opts.wizard;
     var ov = document.createElement('div');
+    ov.setAttribute('data-bt-editor', '1');
     ov.style.cssText = 'position:fixed;inset:0;background:#f5f7fa;z-index:9000;overflow:auto';
     var bd0 = fmtD(rec.bdate) || nextSunday();
     var order = (d.order && d.order.length) ? d.order : BULLETIN_PRESET.map(function (n) { return { name: n, detail: '' }; });
@@ -5655,7 +5671,7 @@ console.log('[affairs.js] v20260712memo2');
       '</div></header>' +
       '<div style="max-width:1100px;margin:0 auto;padding:20px 18px 70px">' +
       // 완성된 주보 파일 그대로 올리기(선택) — 아래 항목을 일일이 입력하지 않고 파일만 올려 게시 가능
-      '<div class="fin-card" style="border-color:#9cc0f0;background:#f7faff"><h4 style="margin:0 0 6px;color:var(--accent)">📎 완성된 주보 파일 올리기 <span style="font-weight:400;font-size:.78rem;color:#9aa5b1">(선택 — PDF는 그대로 게시용 파일로, HWPX는 날짜·제목·본문·설교자를 자동으로 읽어 채우는 용도)</span></h4>' +
+      '<div class="fin-card" data-wz="0" style="border-color:#9cc0f0;background:#f7faff"><h4 style="margin:0 0 6px;color:var(--accent)">📎 완성된 주보 파일 올리기 <span style="font-weight:400;font-size:.78rem;color:#9aa5b1">(선택 — PDF는 그대로 게시용 파일로, HWPX는 날짜·제목·본문·설교자를 자동으로 읽어 채우는 용도)</span></h4>' +
       '<div id="bt_pdf_slot">' + (d.pdf_url
         ? '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><a href="' + esc(d.pdf_url) + '" target="_blank" rel="noopener" class="btn btn-line" style="padding:6px 14px;font-size:.84rem">📄 ' + esc(d.pdf_name || '올린 파일') + ' 보기</a><button type="button" class="btn btn-line" id="bt_pdf_remove" style="padding:6px 14px;font-size:.84rem;color:#c0392b">제거</button></div>'
         : '<label class="btn btn-line" style="cursor:pointer;padding:8px 16px;font-size:.86rem;display:inline-block">＋ 파일 선택(PDF 또는 HWPX)<input type="file" id="bt_pdf_file" accept="application/pdf,.pdf,.hwpx" hidden></label>') + '</div>' +
@@ -5664,23 +5680,25 @@ console.log('[affairs.js] v20260712memo2');
       '<p class="help" style="margin-top:8px"><b>PDF</b>를 올리면 그 파일이 홈페이지·주보 보관함에서 그대로 열립니다. <b>HWPX</b>를 올리면 파일 안의 내용을 읽어 아래 빈 칸만 자동으로 채웁니다(파일 자체는 게시되지 않으니, 게시용 파일은 인쇄(PDF)로 만들어 따로 올려주세요).</p>' +
       '</div>' +
       // 기본
-      '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">① 기본 정보</h4>' +
+      '<div class="fin-card" data-wz="1"><h4 style="margin:0 0 10px;color:var(--accent)">① 기본 정보</h4>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">' +
       '<div class="af-field"><label>주일 날짜</label><input type="date" id="bt_bdate" value="' + esc(bd0) + '"></div>' +
       tI('호수(No.) <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">직전 호수 +1로 자동</span>', 'bt_no', d.no || '', '예: 5033') +
       tI('주차 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">자동</span>', 'bt_week', d.week || bulletinWeekLabel(bd0), '예: 7월 첫째 주') +
       '</div></div>' +
       // 주일 낮 예배
-      '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">② 주일 낮 예배</h4>' +
-      '<div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px">' +
+      '<div class="fin-card" data-wz="2,3,4"><h4 style="margin:0 0 10px;color:var(--accent)">② 주일 낮 예배</h4>' +
+      '<div data-wz="2"><div class="fin-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px">' +
       tI('설교 제목', 'bt_title', rec.title) + tI('본문', 'bt_scripture', rec.scripture, '예: 나훔 2:8-13') + tI('설교자', 'bt_preacher', rec.preacher || '손병민 담임목사') +
-      '</div>' +
+      '</div></div>' +
+      '<div data-wz="3">' +
       '<div class="af-field" style="margin-bottom:12px"><label>📖 본문 말씀(개역개정) <span id="bt_headline_status" style="font-weight:400;font-size:.72rem;color:#9aa5b1;margin-left:4px">위 \'본문\' 입력 시 자동으로 채워집니다</span></label>' +
       '<textarea id="bt_headline" placeholder="위 \'본문\'을 입력하면 개역개정 성경 본문이 자동으로 채워집니다." style="min-height:64px;line-height:1.6;font-family:\'Noto Serif KR\',serif">' + esc(d.headline || '') + '</textarea></div>' +
       '<div class="af-field" style="margin-bottom:12px"><label>📝 설교 요약 <span style="font-weight:400;font-size:.72rem;color:#9aa5b1">홈페이지 <b>말씀으로 ▸ 이번 주 말씀</b>에 표시됩니다 · 데이터 불러오기 시 설교 요약이 자동으로 채워집니다</span></label>' +
       '<textarea id="bt_summary" placeholder="이번 주 설교 요약을 적어 주세요. 홈페이지 방문자가 보게 됩니다." style="min-height:96px;line-height:1.7">' + esc(d.summary || '') + '</textarea></div>' +
+      '</div><div data-wz="4">' +
       '<label style="font-size:.82rem;color:#7b8794;display:block;margin-bottom:6px">예배 순서 <span style="font-weight:400">(순서명 · 내용/담당) — 데이터 불러오기 시 자동 채워집니다</span></label>' +
-      '<div id="bt_order"></div></div>' +
+      '<div id="bt_order"></div></div></div>' +
       // 주중 예배 — 당분간 비활성화(숨김). 필요해지면 이 div의 hidden 속성만 지우면 됨.
       '<div class="fin-card" hidden><h4 style="margin:0 0 10px;color:var(--accent)">주중 · 새벽 · QT</h4>' +
       '<div class="fin-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
@@ -5693,7 +5711,7 @@ console.log('[affairs.js] v20260712memo2');
       '<div>' + tI('매일 QT 본문', 'bt_qt', d.qt, '예: 나훔 3장, 시편107편~109편') + '</div>' +
       '</div></div>' +
       // 향기로운 예물 + 헌금 금액(통합 동적 표 — 특별헌금 등 자유 추가)
-      '<div class="fin-card"><h4 style="margin:0 0 4px;color:var(--accent)">③ 향기로운 예물 · 헌금</h4>' +
+      '<div class="fin-card" data-wz="5"><h4 style="margin:0 0 4px;color:var(--accent)">③ 향기로운 예물 · 헌금</h4>' +
       '<p style="margin:0 0 10px;font-size:.8rem;color:#9aa5b1">항목을 자유롭게 추가할 수 있습니다(특별헌금·추수감사·맥추감사 등). <b>명단</b>은 홈페이지에도 공개되고, <b>금액</b>은 🔒 인쇄(PDF)에만 표시됩니다. — 데이터 불러오기 시 직전 주일 헌금이 항목별로 채워집니다.</p>' +
       '<div id="bt_offer"></div></div>' +
       // 칼럼 — 당분간 비활성화(숨김). 필요해지면 이 div의 hidden 속성만 지우면 됨.
@@ -5701,10 +5719,10 @@ console.log('[affairs.js] v20260712memo2');
       tI('제목/출처', 'bt_col_title', d.column_title, '예: 김다위, 「하나님 마음에 맞는 사람」 (두란노)') +
       tA('본문', 'bt_col_body', d.column_body, '칼럼 내용…', 140) + '</div>' +
       // 광고
-      '<div class="fin-card"><h4 style="margin:0 0 10px;color:var(--accent)">④ 한 주의 소식 (광고)</h4>' +
+      '<div class="fin-card" data-wz="5"><h4 style="margin:0 0 10px;color:var(--accent)">④ 한 주의 소식 (광고)</h4>' +
       tA('소식 (한 줄에 하나씩)', 'bt_notices', d.notices, '다음 주는 맥추감사주일로 지킵니다.\n학습세례 문답 및 성찬 예식이 있습니다.', 140) + '</div>' +
-      // 팟캐스트 · 요약영상 (유튜브 주소)
-      '<div class="fin-card"><h4 style="margin:0 0 4px;color:var(--accent)">⑤ 설교 팟캐스트 · 요약영상</h4>' +
+      // 팟캐스트 · 요약영상 (유튜브 주소) — 2026-10-09 목사님: "지금은 필요 없으니 감추어 줘". 값은 그대로 남는다(hidden 만 지우면 다시 보임)
+      '<div class="fin-card" hidden><h4 style="margin:0 0 4px;color:var(--accent)">⑤ 설교 팟캐스트 · 요약영상</h4>' +
       '<p style="margin:0 0 10px;font-size:.8rem;color:#9aa5b1">유튜브에 올린 뒤 주소를 붙여넣으면 홈페이지 <b>말씀으로</b> 페이지에 재생 화면이 나타납니다. 비워 두면 그 항목은 홈페이지에 아예 표시되지 않습니다.</p>' +
       tI('🎧 주일설교 팟캐스트 — 유튜브 주소', 'bt_podcast_yt', d.podcast_yt, '예: https://youtu.be/XXXXXXXXXXX') +
       '<div style="height:10px"></div>' +
@@ -5712,7 +5730,11 @@ console.log('[affairs.js] v20260712memo2');
       '</div>';
     document.body.appendChild(ov);
     document.body.style.overflow = 'hidden';
-    function close() { ov.remove(); document.body.style.overflow = ''; }
+    function close() {
+      ov.remove(); document.body.style.overflow = '';
+      // 마법사(#bulletin-make)로 열었으면 주소의 #을 지워, 메뉴를 다시 눌러도 다시 열리게 하고 목록을 새로 그린다
+      if (WIZ) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} if (tab === 'bulletin') render(); }
+    }
     ov.querySelector('#bt_close').onclick = close;
     function bmsg(t, c) { var e = ov.querySelector('#bt_msg'); e.style.color = c || '#7b8794'; e.textContent = t; }
 
@@ -5882,6 +5904,26 @@ console.log('[affairs.js] v20260712memo2');
         }
         return out;
       }
+      // section0.xml 의 표 줄마다 '<칸><칸>…' 한 줄 — 미리보기 글과 같은 모양이라 위 규칙(예배 순서·예물·제목)을 그대로 쓴다
+      function hwpxRowsText(xml) {
+        if (!xml || !window.DOMParser) return '';
+        try {
+          var doc = new DOMParser().parseFromString(xml, 'application/xml');
+          if (doc.getElementsByTagName('parsererror').length) return '';
+          var trs = doc.getElementsByTagName('hp:tr'), lines = [];
+          for (var i = 0; i < trs.length; i++) {
+            var cells = [];
+            for (var c = trs[i].firstElementChild; c; c = c.nextElementSibling) {
+              if (c.nodeName !== 'hp:tc') continue;
+              var ts = c.getElementsByTagName('hp:t'), parts = [];
+              for (var k = 0; k < ts.length; k++) parts.push(ts[k].textContent);
+              cells.push('<' + parts.join(' ').replace(/\s+/g, ' ').trim() + '>');
+            }
+            if (cells.length) lines.push(cells.join(''));
+          }
+          return lines.join('\n');
+        } catch (e) { return ''; }
+      }
       function autoFillFromHwpx(file) {
         var get = function (id) { return ov.querySelector('#' + id); };
         pdfMsg.style.color = '#7b8794'; pdfMsg.textContent = 'HWPX에서 내용을 읽는 중…';
@@ -5895,6 +5937,10 @@ console.log('[affairs.js] v20260712memo2');
           })
           .then(function (res) {
             var text = res[0], secXml = res[1];
+            // 미리보기 글(PrvText.txt)은 한글이 저장할 때 새로 안 써지는 일이 있어 지난주 내용이 남는다(2026-10-09 10/11 주보에서 확인).
+            // 본문(section0.xml)의 표를 같은 모양의 줄('<칸><칸>')로 만들어 앞에 두고, 미리보기는 그 뒤에 예비로만 둔다.
+            var xmlText = hwpxRowsText(secXml);
+            if (xmlText) text = xmlText + '\n' + text;
             var ex = {};
             var mDate = file.name.match(/(\d{2,4})\s*년\s*0?(\d{1,2})\s*월\s*0?(\d{1,2})\s*일/);
             if (mDate) { var y = mDate[1].length === 2 ? '20' + mDate[1] : mDate[1]; ex.bdate = y + '-' + ('0' + mDate[2]).slice(-2) + '-' + ('0' + mDate[3]).slice(-2); }
@@ -5913,6 +5959,13 @@ console.log('[affairs.js] v20260712memo2');
               if (ws.notices) ex.notices = ws.notices;
             }
             var filled = [];
+            // 마법사(주보 제작 및 배포)에서는 파일이 기준 — 빈 칸만이 아니라 파일 내용으로 바꿔 채운다
+            var force = WIZ;
+            if (force) {
+              ['bt_title', 'bt_scripture', 'bt_summary', 'bt_notices'].forEach(function (id) { if (ex[id.slice(3)]) get(id).value = ''; });
+              if (ex.preacher) get('bt_preacher').value = '';
+              if (ex.bdate) get('bt_bdate').value = '';
+            }
             if (ex.bdate && !get('bt_bdate').value) { get('bt_bdate').value = ex.bdate; get('bt_bdate').dispatchEvent(new Event('change')); filled.push('날짜'); }
             if (ex.title && !get('bt_title').value.trim()) { get('bt_title').value = ex.title; filled.push('제목'); }
             if (ex.scripture && !get('bt_scripture').value.trim()) { get('bt_scripture').value = ex.scripture; filled.push('본문'); }
@@ -5921,13 +5974,14 @@ console.log('[affairs.js] v20260712memo2');
             if (ex.notices && !get('bt_notices').value.trim()) { get('bt_notices').value = ex.notices; filled.push('교회소식'); }
             if (get('bt_scripture').value.trim()) autoFillScriptureText();
             // 예배 순서: 아직 하나도 안 채워진(전부 detail 공란) 상태일 때만 통째로 반영
-            if (hwOrder.length && order.every(function (o) { return !o.detail; })) {
+            if (hwOrder.length && (force || order.every(function (o) { return !o.detail; }))) {
               order.length = 0; hwOrder.forEach(function (o) { order.push(o); });
               renderBOrder(); filled.push('예배 순서');
             }
             // 향기로운 예물(이름만) — 항목명이 이미 있으면 그 줄의 명단이 비어 있을 때만 채움, 없으면 새 줄 추가
             if (Object.keys(hwOffer).length) {
               var offerFilled = false;
+              if (force) coffer.forEach(function (r) { r.givers = ''; });
               Object.keys(hwOffer).forEach(function (cat) {
                 var row = null;
                 for (var i = 0; i < coffer.length; i++) { if (coffer[i].name === cat) { row = coffer[i]; break; } }
@@ -5936,6 +5990,8 @@ console.log('[affairs.js] v20260712memo2');
               });
               if (offerFilled) { renderOffer(); filled.push('향기로운 예물(명단)'); }
             }
+            if (filled.length) wzFileOk = true;
+            if (WIZ && wzAfterFile) wzAfterFile(filled);
             pdfMsg.style.color = 'green';
             pdfMsg.textContent = filled.length
               ? ('✓ HWPX에서 ' + filled.join('·') + ' 자동으로 채웠습니다(확인해 주세요) · 이 파일 자체는 게시되지 않으니, 게시용 파일은 PDF로 올려주세요')
@@ -5955,7 +6011,9 @@ console.log('[affairs.js] v20260712memo2');
             ov.querySelector('#bt_pdf_url').value = r.url;
             ov.querySelector('#bt_pdf_name').value = f.name;
             showUploaded(r.url, f.name);
+            wzFileOk = true;
             autoFillFromPdf(f);
+            if (WIZ && wzAfterFile) wzAfterFile(['PDF 파일']);
           }).catch(function (e) { pdfMsg.style.color = '#c0392b'; pdfMsg.textContent = '업로드 실패: ' + ((e && e.message) || e); });
         };
       }
@@ -6199,6 +6257,89 @@ console.log('[affairs.js] v20260712memo2');
       if (!confirm('이 주보를 홈페이지에 게시할까요?\n(헌금 금액은 홈페이지에 노출되지 않습니다)')) return;
       save(function () { bmsg('✓ 게시되었습니다 — 홈페이지 주보란에 반영됩니다', 'green'); }, { published: true });
     };
+
+    // ===== 주보 제작 및 배포 마법사(WIZ) — 단계마다 '맞습니다'를 눌러야 다음으로 =====
+    var wzFileOk = false, wzAfterFile = null;
+    if (WIZ) (function () {
+      var STEPS = ['주보 파일 올리기', '기본 정보', '주일 예배', '인용 말씀 · 설교 요약', '예배 순서', '향기로운 예물 · 한 주의 광고', '배포'];
+      var ASK = ['', '기본 정보(주일 날짜·호수·주차)가 맞습니까?', '주일 예배(설교 제목·본문·설교자)가 맞습니까?', '인용 말씀(본문 말씀)과 설교 요약이 맞습니까?', '예배 순서가 맞습니까?', '향기로운 예물 명단과 한 주의 광고가 맞습니까?', ''];
+      var step = 0;
+      ['bt_pull', 'bt_ai', 'bt_printbtn', 'bt_sahoean', 'bt_publish'].forEach(function (id) { var b = ov.querySelector('#' + id); if (b) b.style.display = 'none'; });
+      var hdTitle = ov.querySelector('header div[style*="flex:1"]');
+      if (hdTitle) hdTitle.innerHTML = '<div style="font-family:\'Noto Serif KR\',serif;font-weight:700;font-size:1.2rem;color:var(--accent,#1A3A2F)">주보 제작 및 배포</div><div style="font-size:.72rem;color:#9aa5b1">파일 올리기 → 차례로 확인 → 배포</div>';
+      var main = ov.children[1];
+      main.insertAdjacentHTML('afterbegin',
+        '<ol id="wz_bar" style="list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;padding:0">' +
+        STEPS.map(function (t, i) { return '<li data-i="' + i + '" style="padding:6px 12px;border-radius:999px;font-size:.84rem;font-weight:700;background:#eef1f5;color:#7b8794">' + (i ? i + '. ' : '') + t + '</li>'; }).join('') + '</ol>' +
+        '<p id="wz_ask" style="margin:0 0 12px;font-size:1.08rem;font-weight:800;color:var(--accent,#1A3A2F)"></p>');
+      main.insertAdjacentHTML('beforeend',
+        '<div id="wz_final" class="fin-card" hidden style="border:2px solid var(--accent,#1A3A2F)"></div>' +
+        '<div id="wz_nav" style="position:sticky;bottom:0;display:flex;justify-content:space-between;gap:10px;padding:12px 0;background:linear-gradient(180deg,rgba(245,247,250,0),#f5f7fa 30%)">' +
+        '<button type="button" class="btn btn-line" id="wz_prev" style="min-height:48px;padding:10px 18px">‹ 이전</button>' +
+        '<button type="button" class="btn btn-solid" id="wz_next" style="min-height:48px;padding:10px 22px;font-size:1.02rem;font-weight:700">✓ 맞습니다, 다음 ›</button></div>');
+      var fin = ov.querySelector('#wz_final');
+      function finalHtml() {
+        var g = gather(), dd = g.data;
+        var lines = (dd.notices || '').split(/\n/).filter(function (l) { return l.trim(); }).length;
+        var row = function (k, v) { return '<tr><th style="text-align:left;white-space:nowrap;padding:6px 10px;color:#7b8794;font-weight:600">' + k + '</th><td style="padding:6px 10px">' + v + '</td></tr>'; };
+        return '<h4 style="margin:0 0 10px;color:var(--accent)">배포하시겠습니까?</h4>' +
+          '<table style="border-collapse:collapse;width:100%;font-size:.92rem">' +
+          row('주일', esc(fmtD(g.bdate)) + (dd.no ? ' · 제' + esc(dd.no) + '호' : '') + (dd.week ? ' · ' + esc(dd.week) : '')) +
+          row('설교', '「' + esc(g.title || '') + '」 ' + esc(g.scripture || '') + ' · ' + esc(g.preacher || '')) +
+          row('설교 요약', dd.summary ? esc(dd.summary.length) + '자' : '<span style="color:#c0392b">비어 있음</span>') +
+          row('예배 순서', esc(dd.order.length) + '가지') +
+          row('향기로운 예물', esc(Object.keys(dd.offering).length) + '가지 명단') +
+          row('한 주의 광고', lines + '줄') + '</table>' +
+          '<p style="margin:12px 0 0;font-size:.88rem;color:#7b8794">배포하면 홈페이지 첫 화면의 <b>\'이번 주 주보\'</b>에 바로 나옵니다(헌금 금액은 나오지 않습니다).</p>' +
+          '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button type="button" class="btn btn-solid" id="wz_go" style="min-height:52px;padding:10px 26px;font-size:1.08rem;font-weight:800">🌐 배포하기</button></div>' +
+          '<p id="wz_done" style="margin:12px 0 0;font-weight:700"></p>';
+      }
+      function show(n) {
+        step = n;
+        Array.prototype.forEach.call(main.querySelectorAll('[data-wz]'), function (el) {
+          var on = el.getAttribute('data-wz').split(',').indexOf(String(n)) >= 0;
+          el.style.display = on ? '' : 'none';
+        });
+        Array.prototype.forEach.call(ov.querySelectorAll('#wz_bar li'), function (li) {
+          var i = +li.getAttribute('data-i');
+          li.style.background = i === n ? 'var(--accent,#1A3A2F)' : i < n ? '#e6f4ea' : '#eef1f5';
+          li.style.color = i === n ? '#fff' : i < n ? '#1e874b' : '#7b8794';
+        });
+        ov.querySelector('#wz_ask').textContent = n === 0 ? '완성된 주보 파일(HWPX 또는 PDF)을 올려 주세요.' : ASK[n];
+        ov.querySelector('#wz_prev').style.visibility = n === 0 ? 'hidden' : '';
+        var nx = ov.querySelector('#wz_next');
+        nx.style.display = n === STEPS.length - 1 ? 'none' : '';
+        nx.textContent = n === 0 ? '다음 ›' : '✓ 맞습니다, 다음 ›';
+        fin.hidden = n !== STEPS.length - 1;
+        if (!fin.hidden) {
+          fin.innerHTML = finalHtml();
+          fin.querySelector('#wz_go').onclick = function () {
+            if (!confirm('이 주보를 배포하시겠습니까?\n홈페이지 첫 화면 \'이번 주 주보\'에 바로 나옵니다.')) return;
+            var go = this; go.disabled = true;
+            save(function () {
+              fin.querySelector('#wz_done').innerHTML = '<span style="color:#1e874b">✓ 배포되었습니다 — 홈페이지 첫 화면 \'이번 주 주보\'에 나옵니다.</span> ' +
+                '<a class="btn btn-line" href="index.html" target="_blank" rel="noopener" style="margin-left:6px;padding:6px 14px">첫 화면에서 보기 ↗</a>';
+              go.textContent = '✓ 배포됨';
+            }, { published: true });
+            setTimeout(function () { if (!/배포됨/.test(go.textContent)) go.disabled = false; }, 4000);
+          };
+        }
+        ov.scrollTop = 0;
+      }
+      wzAfterFile = function (filled) {
+        if (step !== 0) return;
+        var m = ov.querySelector('#wz_ask');
+        m.textContent = filled && filled.length ? '✓ 파일을 읽었습니다. [다음]을 눌러 하나씩 확인해 주세요.' : '파일에서 읽은 내용이 없습니다. 다른 파일을 올리시거나 다음 단계에서 직접 적어 주세요.';
+      };
+      ov.querySelector('#wz_prev').onclick = function () { if (step > 0) show(step - 1); };
+      ov.querySelector('#wz_next').onclick = function () {
+        if (step === 0 && !wzFileOk && !rec.id) { alert('먼저 완성된 주보 파일을 올려 주세요.'); return; }
+        if (step === 1 && !ov.querySelector('#bt_bdate').value) { alert('주일 날짜를 넣어 주세요.'); return; }
+        if (step === 2 && !ov.querySelector('#bt_title').value.trim()) { alert('설교 제목을 넣어 주세요.'); return; }
+        if (step < STEPS.length - 1) show(step + 1);
+      };
+      show(0);
+    })();
     // 헌금 집계(Supabase offerings) → 동적 헌금 표(coffer)에 항목별 반영. 특별헌금 등은 자동 추가
     function fillOfferings(rows) {
       if (!rows) return false;
@@ -7919,6 +8060,9 @@ console.log('[affairs.js] v20260712memo2');
       loadGeneral(); // 설립일(호수 주년 기준) 미리 로드
       render();
       if (tabAllowed('sermon')) maybeQtIncoming();
+      // 메뉴 '주보 제작 및 배포'(affairs.html#bulletin-make) — 주보제작 탭을 열고 단계별 마법사를 바로 띄운다
+      openBulletinMakeFromHash();
+      window.addEventListener('hashchange', openBulletinMakeFromHash);
     }).catch(function (e) { root.innerHTML = msgCard('오류', e.message); });
   }
 
