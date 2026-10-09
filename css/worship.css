@@ -1,0 +1,121 @@
+/* 주일 예배 화면(worship.html · js/worship-live.js) — 2026-10-09
+   현장 예배: 주보를 예배 순서대로 크게 / 온라인 예배: PC 왼쪽 주보·오른쪽 실황, 휴대폰은 실황 위 고정·주보 아래로 */
+/* 이 화면은 맨 위 고정 머리 높이를 scroll-margin 으로 직접 맞추므로 사이트 공통 scroll-padding(72px)을 끈다 */
+html { scroll-padding-top: 0; }
+.wl-page { --wl-fs: 1.14; min-height: 90vh; padding: calc(var(--hdr, 84px) + 12px) 0 70px; background: var(--paper-alt, #D7E4DB); }
+.wl-bar { max-width: 1240px; margin: 0 auto 12px; padding: 0 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wl-home { color: var(--accent); font-weight: 700; text-decoration: none; padding: 8px 4px; white-space: nowrap; }
+.wl-modes { display: flex; flex: 1 1 auto; justify-content: center; gap: 6px; }
+.wl-modes a { flex: 0 1 auto; text-decoration: none; font-weight: 700; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line);
+  background: #fff; color: var(--ink-soft); white-space: nowrap; }
+.wl-modes a.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wl-fs { display: flex; gap: 4px; }
+.wl-fs button { font: inherit; font-weight: 700; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--accent); cursor: pointer; }
+
+.wl-wrap { max-width: 780px; margin: 0 auto; padding: 0 16px; }
+.wl-bulletin { font-size: calc(1rem * var(--wl-fs)); color: var(--ink); word-break: keep-all; overflow-wrap: anywhere; }
+.wl-head { background: var(--accent); color: #fff; border-radius: 16px; padding: 20px 22px; margin-bottom: 12px; }
+.wl-head .wl-date { margin: 0 0 4px; font-size: .86em; opacity: .85; }
+.wl-head h1 { margin: 0; font-family: "Gowun Batang", serif; font-size: 1.55em; line-height: 1.3; color: #fff; }
+.wl-head .wl-ref { margin: 6px 0 0; font-size: .95em; color: #CFE6D8; }
+.wl-note, .wl-preview { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: #FFF8E6; border: 1px solid #F0D98C; color: #6B5310; font-size: .92em; }
+.wl-preview { max-width: 1240px; margin: 0 auto 12px; box-sizing: border-box; }
+.wl-wrap > .wl-preview, .wl-page > #wlBody > .wl-preview { margin-left: 16px; margin-right: 16px; }
+
+.wl-toc { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 12px; }
+.wl-toc p { margin: 0 0 6px; font-weight: 700; color: var(--gold); font-family: "Gowun Batang", serif; }
+.wl-toc ol { margin: 0; padding: 0; list-style: none; counter-reset: wl; display: flex; flex-wrap: wrap; gap: 6px; }
+.wl-toc li { counter-increment: wl; }
+.wl-toc a { display: inline-block; text-decoration: none; color: var(--accent); background: var(--paper-alt); border-radius: 999px; padding: 6px 12px; font-size: .9em; }
+.wl-toc a::before { content: counter(wl) ". "; opacity: .6; }
+
+.wl-item { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; scroll-margin-top: calc(var(--hdr, 84px) + 12px); }
+.wl-item h2 { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; font-size: 1.12em; line-height: 1.4; color: var(--accent); }
+.wl-no { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 1.7em; height: 1.7em; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: .8em; font-weight: 700; align-self: center; }
+.wl-name { font-weight: 800; }
+.wl-item h2 small { font-size: .86em; font-weight: 500; color: var(--ink-soft); }
+.wl-c { margin-top: 10px; }
+.wl-read p { margin: 0; line-height: 1.85; }
+.wl-invite p { font-family: "Gowun Batang", serif; }
+.wl-gd-t { margin: 0 0 8px; font-weight: 700; color: var(--gold); }
+.wl-gd p { margin: 0 0 6px; line-height: 1.75; display: flex; gap: 10px; }
+.wl-gd .wl-role { flex: 0 0 auto; font-size: .72em; font-weight: 700; padding: 2px 8px; border-radius: 999px; align-self: flex-start; margin-top: .35em; }
+.wl-gd-lead .wl-role { background: var(--paper-alt); color: var(--accent); }
+.wl-gd-people { font-weight: 700; }
+.wl-gd-people .wl-role { background: var(--accent); color: #fff; }
+.wl-gd-all { font-weight: 800; color: var(--accent); }
+.wl-gd-all .wl-role { background: var(--gold); color: #fff; }
+.wl-verses p { margin: 0 0 6px; line-height: 1.85; }
+.wl-verses sup { font-size: .7em; font-weight: 700; color: var(--gold); margin-right: 4px; }
+.wl-score { margin: 0; text-align: center; }
+.wl-score img { display: block; width: 100%; max-width: 720px; height: auto; margin: 0 auto; border-radius: 8px; background: #fff; border: 1px solid #e6ece8; }
+.wl-sermon { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.wl-sermon b { font-family: "Gowun Batang", serif; font-size: 1.2em; color: var(--accent); }
+.wl-sermon span { color: var(--ink-soft); font-size: .92em; }
+.wl-xref { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.wl-xref summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: 8px 0; list-style: none; }
+.wl-xref summary::-webkit-details-marker { display: none; }
+.wl-xref summary::before { content: "▸ "; }
+.wl-xref[open] summary::before { content: "▾ "; }
+.wl-x { margin: 8px 0 12px; }
+.wl-x b { display: block; color: var(--gold); }
+.wl-x p { margin: 2px 0 0; line-height: 1.75; }
+.wl-news { margin: 0; padding-left: 1.2em; }
+.wl-news li { margin: 0 0 6px; line-height: 1.7; }
+.wl-hint { margin: 0; color: var(--ink-soft); font-size: .9em; }
+.wl-hy-t { margin: 10px 0 6px; font-weight: 700; color: var(--gold); }
+.wl-hy-t:first-child { margin-top: 0; }
+.wl-end { text-align: center; color: var(--ink-soft); margin: 20px 0 0; }
+
+/* 들어올 수 없을 때 안내 */
+.wl-gate { max-width: 520px; margin: 30px auto; padding: 34px 22px; text-align: center; background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+.wl-gate-ic { font-size: 2.4rem; }
+.wl-gate h1 { font-family: "Gowun Batang", serif; color: var(--accent); font-size: 1.45rem; margin: 10px 0 8px; }
+.wl-gate p { color: var(--ink-soft); font-size: 1.05rem; line-height: 1.7; margin: 0 0 18px; word-break: keep-all; }
+.wl-gate-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.wl-btn { display: inline-block; font: inherit; font-weight: 700; padding: 11px 22px; border-radius: 999px; border: 1px solid var(--accent);
+  background: #fff; color: var(--accent); cursor: pointer; text-decoration: none; }
+.wl-btn-solid { background: var(--accent); color: #fff; }
+.wl-wait-line { text-align: center; color: var(--ink-soft); padding: 40px 0; }
+
+/* 온라인 예배: 실황 + 주보 */
+.wl-split { max-width: 1240px; margin: 0 auto; padding: 0 16px; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-areas: "bul vid"; align-items: start; }
+.wl-split > .wl-bulletin { grid-area: bul; }
+.wl-split > .wl-video { grid-area: vid; position: sticky; top: calc(var(--hdr, 84px) + 10px); }
+.wl-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0e1714; border-radius: 14px; overflow: hidden; }
+.wl-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.wl-wait { display: flex; align-items: center; justify-content: center; text-align: center; color: #DDE9E2; padding: 16px; box-sizing: border-box; }
+.wl-wait p { margin: 0 0 6px; }
+.wl-wait-t { font-weight: 700; font-size: 1.1rem; color: #fff; }
+.wl-wait .wl-btn { margin-top: 10px; padding: 8px 18px; }
+
+/* 휴대폰(세로): 실황은 위에 붙이고, 주보는 그 아래로 넘긴다 */
+@media (max-width: 899px) {
+  .wl-split { display: block; padding: 0; }
+  .wl-split > .wl-video { position: sticky; top: var(--hdr, 64px); z-index: 50; margin: 0 0 12px; background: #0e1714; }
+  /* 고정 머리와 붙은 영상 사이 틈(아이패드 세로에서 11px)으로 주보가 비쳐 보이지 않게 위를 덮는다 */
+  .wl-split > .wl-video::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 24px; background: var(--paper-alt, #D7E4DB); }
+  .wl-split > .wl-video .wl-frame { border-radius: 0; }
+  .wl-split > .wl-bulletin { padding: 0 12px; }
+  .wl-split .wl-item { scroll-margin-top: calc(var(--hdr, 64px) + 56.25vw + 10px); }   /* 온라인(영상이 위에 붙음)일 때만 영상 높이만큼 */
+}
+/* 휴대폰을 옆으로 눕히면 PC 처럼 나란히 */
+@media (max-width: 899px) and (orientation: landscape) and (max-height: 560px) {
+  .wl-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); grid-template-areas: "bul vid"; gap: 10px; padding: 0 10px; }
+  .wl-split > .wl-video { position: sticky; top: calc(var(--hdr, 64px) + 6px); margin: 0; background: none; }
+  .wl-split > .wl-video::before { display: none; }
+  .wl-split > .wl-video .wl-frame { border-radius: 10px; }
+  .wl-split > .wl-bulletin { padding: 0; }
+  .wl-split .wl-item { scroll-margin-top: calc(var(--hdr, 64px) + 8px); }
+}
+@media (max-width: 560px) {
+  .wl-bar { padding: 0 10px; gap: 6px; }
+  .wl-home { font-size: .9rem; }
+  .wl-modes a { padding: 8px 12px; font-size: .92rem; }
+  .wl-fs button { padding: 6px 8px; font-size: .9rem; }
+  .wl-wrap { padding: 0 10px; }
+  .wl-item { padding: 14px 14px; }
+  .wl-head { padding: 16px 16px; }
+}

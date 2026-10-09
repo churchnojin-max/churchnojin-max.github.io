@@ -1743,10 +1743,30 @@ if (homeBulletin) {
         if (bar) {
           const cur = bar.querySelector(".hbul-cur"), prv = bar.querySelector(".hbul-prev");
           const when = sermonWhen(b.bdate).short;
-          cur.querySelector("b").textContent = when === "지난" || !when ? "주보 보기" : "이번 주 주보 보기";
+          const curLabel = when === "지난" || !when ? "주보 보기" : "이번 주 주보 보기";
+          cur.querySelector("b").textContent = curLabel;
           cur.querySelector("small").textContent = mdOf(b.bdate) + " 주일";
           if (prevB && prv) { prv.querySelector("small").textContent = mdOf(prevB.bdate); prv.hidden = false; }
+          // 주일 예배 시간(js/church.js sundayWorship, 한국 시각)에는 가운데가 '오늘 예배 현장 입장하기'(worship.html), 오른쪽 '온라인 예배드리기'가 켜진다.
+          // 그 밖의 시간에는 가운데는 지금처럼 이번 주 주보 창, 오른쪽은 흐리게 '주일 10:45 열림'(눌러도 안내 화면). 정회원 확인은 worship.html 이 한다.
+          const sw = (window.CHURCH && window.CHURCH.sundayWorship) || { open: "10:45", close: "12:30" };
+          const hm = (s) => { const m = String(s || "").match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : 0; };
+          const liveA = bar.querySelector(".hbul-live");
+          const swOpen = () => { const k = new Date(Date.now() + 9 * 3600e3), m = k.getUTCHours() * 60 + k.getUTCMinutes(); return k.getUTCDay() === 0 && m >= hm(sw.open) && m < hm(sw.close); };
+          const paintSunday = () => {
+            const on = swOpen();
+            bar.classList.toggle("is-sunday", on);
+            const cb = cur.querySelector("b");
+            if (on) cb.innerHTML = '오늘 예배 <i class="hbul-br"></i>현장 입장하기'; else cb.textContent = curLabel;   // 휴대폰에서는 낱말 사이에서만 줄바꿈
+            const ic = cur.querySelector(".hbul-ic"); if (ic) ic.textContent = on ? "⛪" : "📖";
+            if (on) cur.setAttribute("data-go", "worship.html"); else cur.removeAttribute("data-go");
+            if (liveA) { liveA.classList.toggle("is-off", !on); liveA.querySelector("small").textContent = on ? "예배 실황과 주보" : "주일 " + sw.open + " 열림"; }
+          };
+          paintSunday();
+          setInterval(paintSunday, 30000);
           bar.addEventListener("click", (e) => {
+            const go = e.target.closest("[data-go]");
+            if (go) { e.preventDefault(); location.href = go.getAttribute("data-go"); return; }
             const t = e.target.closest("[data-bul]");
             if (!t || !window.SitePopup) return;
             showBulletin(t.getAttribute("data-bul"));

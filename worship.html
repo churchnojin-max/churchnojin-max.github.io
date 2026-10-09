@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오늘 주일 예배 | 노진교회</title>
+  <!-- 정회원만 쓰는 예배 화면 — 검색에 나오지 않게 -->
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="manifest" href="manifest.json?v=20260730lib13" />
+  <meta name="theme-color" content="#1A3A2F" />
+  <link rel="icon" href="images/favicon-32.png?v=20260926icon2" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png?v=20260926icon2" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=20261009wl" />
+  <link rel="stylesheet" href="css/worship.css?v=20261009wl2" />
+</head>
+<body>
+
+  <!-- ===== 주일 예배 화면 (2026-10-09 목사님 요청) =====
+       worship.html        = 오늘 예배 현장 입장하기: 이번 주 주보를 예배 순서대로(사도신경·교독문·새찬송가 악보·성경봉독 본문까지)
+       worship.html?m=online = 온라인 예배드리기: PC 왼쪽 주보·오른쪽 예배 실황 / 휴대폰은 실황 위 고정·주보 아래로
+       정회원만, 주일 10:45~12:30(js/church.js sundayWorship). 그리기·확인은 js/worship-live.js -->
+  <main class="wl-page" id="wlPage">
+    <div class="wl-bar" id="wlBar"></div>
+    <div id="wlBody"><p class="wl-wait-line">확인하는 중…</p></div>
+  </main>
+
+  <script src="js/church.js?v=20261009wl"></script>
+  <script src="js/brand.js?v=1"></script>
+  <script src="js/config.js?v=20260730lib13"></script>
+  <script src="js/layout.js?v=20261007msg"></script>
+  <script src="js/gyodok-data.js?v=20261003full"></script>
+  <script src="js/live-status.js?v=20261004b"></script>
+  <script src="js/worship-view.js?v=20261005wed"></script>
+  <script src="js/worship-live.js?v=20261009wl2"></script>
+</body>
+</html>

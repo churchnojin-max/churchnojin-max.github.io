@@ -36,7 +36,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700;900&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="js/page-slide.js?v=20261005ts"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261008level" />
+  <link rel="stylesheet" href="css/style.css?v=20261009wl" />
   <!-- 구조화 데이터(교회 정보) — 구글 검색 이해도 향상 -->
   <style>
     .hb-card{max-width:860px;margin:0 auto;border:1px solid var(--line,#e3e7ee);border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(26,58,47,.07)}
@@ -101,10 +101,12 @@
         <span class="hsb-ref"></span>
         <span class="hsb-arrow" aria-hidden="true">설교 보러가기 →</span>
       </a>
-      <!-- 2026-10-03 목사님 요청: 첫 화면에서 주보로 바로 — 왼쪽 지난 주보(작게), 오른쪽 이번 주 주보(크게). 내용은 main.js 가 채운다 -->
+      <!-- 2026-10-03 목사님 요청: 첫 화면에서 주보로 바로 — 왼쪽 지난 주보(작게), 오른쪽 이번 주 주보(크게). 내용은 main.js 가 채운다
+           2026-10-09: 세 칸으로 — 가운데는 주일 예배 시간(js/church.js sundayWorship)에 '오늘 예배 현장 입장하기'로 바뀌고, 오른쪽 '온라인 예배드리기'(worship.html) -->
       <div class="hero-bul" id="heroBulletinBar" hidden>
         <button type="button" class="hbul-prev" data-bul="prev" hidden><span class="hbul-ar" aria-hidden="true">‹</span><span class="hbul-tx"><b>지난 주보</b><small></small></span></button>
         <button type="button" class="hbul-cur" data-bul="cur"><span class="hbul-ic" aria-hidden="true">📖</span><span class="hbul-tx"><b>이번 주 주보 보기</b><small></small></span><span class="hbul-ar" aria-hidden="true">›</span></button>
+        <a class="hbul-live is-off" href="worship.html?m=online"><span class="hbul-ic" aria-hidden="true">📺</span><span class="hbul-tx"><b>온라인 <i class="hbul-br"></i>예배드리기</b><small>주일 10:45 열림</small></span></a>
       </div>
     </div>
   </section>
@@ -159,7 +161,7 @@
     </div>
   </section>
 
-  <script src="js/church.js?v=20260926denom"></script>
+  <script src="js/church.js?v=20261009wl"></script>
 
   <script src="js/brand.js?v=1"></script>
 
@@ -168,7 +170,7 @@
   <script src="js/layout.js?v=20261007msg"></script>
   <script src="js/counsel.js?v=20260730lib13"></script>
   <script src="js/bulletin-render.js?v=20260709nojin"></script>
-  <script src="js/main.js?v=20261005wed"></script>
+  <script src="js/main.js?v=20261009wl"></script>
   <script src="js/worship-view.js?v=20261005wed"></script>
   <script src="js/wed-notes.js?v=20261007flow"></script>
   <script src="js/upload.js?v=20261005conti"></script>
