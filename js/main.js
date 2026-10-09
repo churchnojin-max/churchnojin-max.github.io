@@ -1028,7 +1028,7 @@ window.WPCTts = WPCTts;
   function openDailyBible(db) {
     const verses = (db.verses || []).map((v) => `<p class="sv-line"><sup>${escQt(v[1])}</sup>${escQt(v[2])}</p>`).join("");
     window.SlideSheet.open("오늘의 매일성경", `
-      <div class="ws-pop">
+      <div class="ws-pop db-pop">
         <span class="ws-date">${todayStr()} · 매일성경</span>
         ${db.title ? `<h3 class="ws-title">${escQt(db.title)}</h3>` : ""}
         <p class="ws-ref">${escQt(db.ref)}${db.hymn ? ` · 찬송가 ${escQt(db.hymn)}장` : ""}</p>

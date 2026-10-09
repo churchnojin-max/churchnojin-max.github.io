@@ -3599,6 +3599,21 @@ html.snap-page .w-en { display: none; }
   text-align: left; word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .db-preview sup { font-size: .7em; color: var(--gold); font-weight: 700; margin: 0 3px 0 2px; }
+/* PC 에서는 칸과 글씨를 크게(2026-10-09 목사님 — PC 로 보는 분들도 시원하게) */
+@media (min-width: 900px) {
+  .qt-today { max-width: 960px; }
+  .qt-today .qt-card-today { padding: 56px 72px; }
+  .qt-today .qt-badge { font-size: .98rem; padding: 7px 20px; }
+  .qt-today .qt-card-title { font-size: 2.2rem; margin-top: 26px; }
+  .qt-today .qt-card-ref { font-size: 1.3rem; }
+  .qt-today .db-hymn { font-size: 1.05rem; }
+  .qt-today .db-preview { font-size: 1.28rem; line-height: 1.9; -webkit-line-clamp: 4; }
+  .qt-today .qt-card-more { font-size: 1.02rem; }
+  .qt-daily-link-row .qt-d-daily-link { font-size: 1.02rem; padding: 12px 24px; }
+  .db-pop .ws-title { font-size: 1.9rem; }
+  .db-pop .ws-ref { font-size: 1.15rem; }
+  .db-pop .sv-line { font-size: 1.3rem; line-height: 2; }
+}
 .qt-church-link {
   display: block; width: 100%; margin-top: 14px; padding: 14px 20px; border-radius: 12px; cursor: pointer; font-family: inherit;
   background: var(--paper-alt); border: 1px solid var(--line); color: var(--accent); font-size: .95rem; font-weight: 600; text-align: center; word-break: keep-all;
