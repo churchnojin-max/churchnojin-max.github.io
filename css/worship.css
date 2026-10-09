@@ -26,12 +26,8 @@ html { scroll-padding-top: 0; }
 .wl-toc p { margin: 0 0 6px; font-weight: 700; color: var(--gold); font-family: "Gowun Batang", serif; }
 .wl-toc ol { margin: 0; padding: 0; list-style: none; counter-reset: wl; display: flex; flex-wrap: wrap; gap: 6px; }
 .wl-toc li { counter-increment: wl; }
-/* 예배 순서 단추: 흰 바탕 + 초록 테두리·초록 굵은 글씨로 또렷하게(2026-10-09 목사님 — 연한 바탕이라 눈에 안 들어옴) */
-.wl-toc a { display: inline-block; text-decoration: none; color: var(--accent); background: #fff; border: 1.5px solid var(--accent); border-radius: 999px;
-  padding: 6px 13px; font-size: .9em; font-weight: 700; box-shadow: 0 1px 2px rgba(26,58,47,.12); }
-.wl-toc a::before { content: counter(wl) ". "; color: var(--gold); }
-.wl-toc a:hover, .wl-toc a:active { background: var(--accent); color: #fff; }
-.wl-toc a:hover::before, .wl-toc a:active::before { color: #CFE6D8; }
+.wl-toc a { display: inline-block; text-decoration: none; color: var(--accent); background: var(--paper-alt); border-radius: 999px; padding: 6px 12px; font-size: .9em; }
+.wl-toc a::before { content: counter(wl) ". "; opacity: .6; }
 
 .wl-item { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; scroll-margin-top: calc(var(--hdr, 84px) + 12px); }
 .wl-item h2 { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; font-size: 1.12em; line-height: 1.4; color: var(--accent); }

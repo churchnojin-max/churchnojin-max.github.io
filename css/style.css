@@ -512,6 +512,17 @@ ul { list-style: none; }
   font-size: 1.15rem; color: #fff; font-weight: 700;
 }
 
+/* 예배 순서자 안내(2026-10-09 목사님): 담당 칸이 초록 위 반투명 음영이라 눈에 안 들어오고, 주차 제목은 초록 위 초록(--gold=이끼색)이라 안 보임
+   → 담당 칸은 흰 바탕·초록 글씨, 주차 제목은 밝은 금색, 이번 주는 금색 테두리 + '이번 주' 이름표 */
+.committee .week-label, .committee .c-role { color: #F1DFA8; }
+.committee-week.is-now { background: rgba(255,255,255,.12); border-color: #E3C77F; box-shadow: 0 0 0 1px #E3C77F; }
+.committee-week.is-now .week-label { color: #F6E3A6; }
+.committee-week.is-now .week-label::after { content: "이번 주"; display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 999px;
+  background: #E3C77F; color: var(--accent); font-size: .74rem; font-weight: 800; opacity: 1; vertical-align: .15em; }
+.committee .week-role { background: #fff; border-radius: 10px; padding: 12px 8px; box-shadow: 0 2px 8px rgba(0,0,0,.14); }
+.committee .role-title { color: #3F7A5E; font-weight: 700; }
+.committee .role-name { color: var(--accent); font-weight: 800; }
+
 @media (max-width: 680px) {
   .committee-rows { grid-template-columns: 1fr; }
   .committee-weeks { grid-template-columns: 1fr; }
