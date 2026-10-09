@@ -250,6 +250,13 @@ ul { list-style: none; }
 .hb-sermon-ref { color: var(--ink-soft); font-size: .92rem; margin: 0; }
 .hb-scripture { font-family: "Gowun Batang", serif; font-size: .97rem; line-height: 1.95; color: var(--ink); border-left: 3px solid var(--gold); padding: 2px 0 2px 16px; margin: 0; white-space: pre-line; word-break: keep-all; }
 .hb-summary { font-size: .95rem; line-height: 1.9; color: var(--ink); word-break: keep-all; white-space: pre-line; }
+/* 주보 팝업 '설교 요약' — [함께 읽을 말씀]·●장절·본문·질문을 칸으로(main.js summaryBlocks, 2026-10-09) */
+.hb-summary.is-blocks { white-space: normal; }
+.hb-summary.is-blocks p { margin: 0; }
+.hb-summary.is-blocks .ss-sub { margin: 16px 0 6px; font-size: 1rem; }
+.hb-summary.is-blocks .ss-sub:first-child { margin-top: 0; }
+.hb-summary.is-blocks .ss-xref { font-weight: 700; color: var(--gold); margin: 12px 0 2px; }
+.hb-summary.is-blocks .ss-q { padding: 10px 14px; background: var(--paper-alt); border-radius: 10px; margin-top: 8px; }
 @media (max-width: 640px) { .hb-sec { padding: 18px 20px; } }
 
 /* ===== 이달의 찬양(말씀으로 페이지) ===== */
@@ -3796,7 +3803,7 @@ li.is-wv .wv-btns { display: inline-flex; flex-wrap: wrap; gap: 5px; font-style:
 li.is-wv .wv-btns .wv-more { margin-left: 0; }
 li.is-wv .wv-btns { margin-left: 6px; }
 li.is-wv .wv-xref { background: var(--accent); }
-li.is-wv .wv-xref:hover { background: #10241D; }
+li.is-wv .wv-xref:hover, li.is-wv:hover .wv-xref { background: #10241D; }
 /* 찬송가 줄: 깊은 파랑 '♪ 악보' (주황 '보기'와 구분) */
 li.is-wv.is-hymn .wv-more { background: #2B5C9E; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); letter-spacing: .02em; }
 li.is-wv.is-hymn:hover .wv-more { background: #1F4677; }

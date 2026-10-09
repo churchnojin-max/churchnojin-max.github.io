@@ -254,15 +254,31 @@
 
   // 주보 설교 요약의 인용구절(●장절 + 본문) — main.js 가 window.BULLETIN_XREFS 에 넣어 둔다.
   // '[함께 나누는 질문]' 같은 질문 칸은 빼고, ● 줄마다 그 아래 줄들을 본문으로 묶는다.
+  // ● 없이 '창세기 2:21 여호와 하나님이…'처럼 장절과 본문을 한 줄에 적어도(10/11 주보) 말씀 칸 안이면 하나씩 나눈다.
+  function splitRefLine(line) {
+    var s = String(line || "").replace(/^●\s*/, "").trim();
+    REF_RE.lastIndex = 0;
+    var m = REF_RE.exec(s);
+    if (!m || m.index !== 0 || m[1] || !refFromMatch(m)) return null;
+    var label = m[0].replace(/\s+$/, ""), rest = s.slice(label.length);   // 범위 끝(~2) 뒤 띄어쓰기까지 잡히므로 떼고 본다
+    if (rest && !/^\s/.test(rest)) return null;   // '창세기 15장 12절에서…' 같은 글은 나누지 않는다
+    return { label: label, text: rest.replace(/^[\s:：\-–—]+/, "").trim() };
+  }
+  function isVerseHead(h) { return /말씀|인용|구절|본문/.test(h) && !/질문|기도|나눔/.test(h); }
   function parseXrefs(text) {
-    var out = [], cur = null, skip = false;
+    var out = [], cur = null, skip = false, verseSec = false;
     String(text || "").split(/\r?\n/).forEach(function (raw) {
       var l = raw.trim();
       if (!l) return;
-      if (/^\[.*\]$/.test(l)) { skip = /질문/.test(l); cur = null; return; }
+      var h = l.match(/^\[(.*)\]$/);
+      if (h) { skip = /질문/.test(h[1]); verseSec = isVerseHead(h[1]); cur = null; return; }
       if (skip) return;
-      var m = l.match(/^●\s*(.+)$/);
-      if (m) { cur = { label: m[1].trim(), text: [] }; out.push(cur); return; }
+      var bullet = /^●/.test(l), sp = (bullet || verseSec) ? splitRefLine(l) : null;
+      if (bullet || sp) {
+        cur = { label: sp ? sp.label : l.replace(/^●\s*/, "").trim(), text: sp && sp.text ? [sp.text] : [] };
+        out.push(cur);
+        return;
+      }
       if (cur) cur.text.push(l);
     });
     return out;
@@ -302,6 +318,8 @@
       return ["hymn", [+hm[2], (hm[3] || "").replace(/\s+/g, " ").trim()]];
     }
     if (/성경봉독|성경말씀|봉독/.test(name)) { var r = parseRef(rest); if (r) return ["bible", r]; }
+    // 말씀선포(설교) 줄: 설교 인용구절이 있으면 누르면 인용구절 창(2026-10-09 목사님 요청 — 성경봉독 줄에서 옮김)
+    if (/말씀선포|말씀강해|설교|^말씀$/.test(name) && parseXrefs(window.BULLETIN_XREFS).length) return ["xrefs"];
     // 입례송·찬양 등: 내용이 찬양집 곡 제목과 같으면 악보
     if (scoreOK && !/기도|말씀|소식|축도|봉독|광고|선포/.test(name) && nz(rest).length >= 3) {
       if (!praiseMap) { loadPraise(); return null; }
@@ -321,14 +339,16 @@
       li.classList.add("is-wv");
       li.setAttribute("role", "button");
       li.setAttribute("tabindex", "0");
-      // 성경봉독 줄에는 설교 인용구절이 있으면 '인용구절 보기'도 함께(휴대폰에서는 '보기' 밑으로)
-      var xr = k[0] === "bible" && parseXrefs(window.BULLETIN_XREFS).length
-        ? '<em class="wv-more wv-xref" role="button" tabindex="0">인용구절 ›</em>' : "";
+      // 말씀선포 줄에는 초록 '인용구절 ›' 하나만(성경봉독 줄은 주황 '보기 ›')
+      if (k[0] === "xrefs") {
+        li.insertAdjacentHTML("beforeend", '<em class="wv-btns"><em class="wv-more wv-xref">인용구절 ›</em></em>');
+        return;
+      }
       // 찬송가 줄은 주황 '보기'와 헷갈리지 않게 파란 '♪ 악보'(2026-10-03 목사님 요청)
       var score = k[0] === "hymn" || k[0] === "praise";
       if (score) li.classList.add("is-hymn");
       var label = score ? "♪ 악보 ›" : "보기 ›";
-      li.insertAdjacentHTML("beforeend", '<em class="wv-btns"><em class="wv-more">' + label + '</em>' + xr + '</em>');
+      li.insertAdjacentHTML("beforeend", '<em class="wv-btns"><em class="wv-more">' + label + '</em></em>');
     });
   }
 
@@ -430,7 +450,7 @@
       e.preventDefault();
       e.stopPropagation();   // 주보 요약 상자 전체를 누른 것으로 치지 않게
       var k = ORDER_KINDS[+li.dataset.wv];
-      if (k) openOrder(k[0], k[1]);
+      if (k && k[0] === "xrefs") openXrefs(); else if (k) openOrder(k[0], k[1]);
       return;
     }
     var btn = e.target.closest && e.target.closest("button.vref");
@@ -447,7 +467,7 @@
     if (!li) return;
     e.preventDefault();
     var k = ORDER_KINDS[+li.dataset.wv];
-    if (k) openOrder(k[0], k[1]);
+    if (k && k[0] === "xrefs") openXrefs(); else if (k) openOrder(k[0], k[1]);
   });
 
   function scan() { markOrders(document); linkRefs(document); }
@@ -459,5 +479,5 @@
     requestAnimationFrame(function () { pending = false; scan(); });
   }).observe(document.body, { childList: true, subtree: true });
 
-  window.WorshipView = { parseRef: parseRef, getVerses: getVerses, bookName: bookName };   // bookName: 수요기도회 말씀 고치기(js/wed-notes.js)
+  window.WorshipView = { parseRef: parseRef, getVerses: getVerses, bookName: bookName, splitRefLine: splitRefLine, isVerseHead: isVerseHead };   // bookName: 수요기도회 말씀 고치기(js/wed-notes.js)
 })();

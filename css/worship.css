@@ -54,7 +54,7 @@ html { scroll-padding-top: 0; }
 .wl-sermon b { font-family: "Gowun Batang", serif; font-size: 1.2em; color: var(--accent); }
 .wl-sermon span { color: var(--ink-soft); font-size: .92em; }
 .wl-xref { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
-.wl-xref summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: 8px 0; list-style: none; }
+.wl-xref summary { display: inline-block; cursor: pointer; font-weight: 700; color: #fff; background: var(--accent); padding: 8px 16px; border-radius: 999px; list-style: none; }
 .wl-xref summary::-webkit-details-marker { display: none; }
 .wl-xref summary::before { content: "▸ "; }
 .wl-xref[open] summary::before { content: "▾ "; }

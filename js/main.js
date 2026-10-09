@@ -455,27 +455,37 @@ function versesHtml(text, escH) {
   }).join("");
 }
 
+// 설교 요약 또는 '말씀 자료'([함께 읽을 말씀] · ●구절 · 1. 질문) 글을 읽기 좋게 — 이번 주 말씀 창(word.html)과 주보 팝업이 같이 쓴다.
+// ● 없이 '창세기 2:21 여호와 하나님이…'처럼 장절과 본문을 한 줄에 적어도, 말씀 칸 안이면 장절 줄과 본문 줄로 나눈다(js/worship-view.js splitRefLine).
+function summaryBlocks(t, escH) {
+  const lines = String(t || "").split(/\n/).map((l) => l.trim());
+  const isMaterial = lines.some((l) => /^\[.+\]$/.test(l) || /^●/.test(l));
+  if (!isMaterial) {
+    return String(t || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+      .map((p) => `<p>${escH(p).replace(/\n/g, "<br />")}</p>`).join("");
+  }
+  const WV = window.WorshipView || {};
+  let verseSec = false;
+  return lines.filter(Boolean).map((l) => {
+    let m;
+    if ((m = l.match(/^\[(.+)\]$/))) {
+      verseSec = WV.isVerseHead ? WV.isVerseHead(m[1]) : /말씀|인용|구절/.test(m[1]);
+      return `<h4 class="ss-sub">${escH(m[1])}</h4>`;
+    }
+    const sp = (/^●/.test(l) || verseSec) && WV.splitRefLine ? WV.splitRefLine(l) : null;
+    if (sp) return `<p class="ss-xref">${escH(sp.label)}</p>` + (sp.text ? `<p>${escH(sp.text)}</p>` : "");
+    if ((m = l.match(/^●\s*(.+)$/))) return `<p class="ss-xref">${escH(m[1])}</p>`;
+    if (/^\d+\.\s/.test(l)) return `<p class="ss-q">${escH(l)}</p>`;
+    return `<p>${escH(l)}</p>`;
+  }).join("");
+}
+
 // ===== 1-2b. 이번 주 말씀 — 게시된 주보(bulletins_public)의 본문 말씀·설교 요약(말씀 자료) =====
 (function () {
   const box = document.getElementById("weekSermon");
   if (!box) return;
   const escH = (t) => String(t == null ? "" : t).replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
-  // 설교 요약 또는 '말씀 자료'([함께 읽을 말씀] · ●구절 · 1. 질문) 글을 읽기 좋게
-  function summaryHtml(t) {
-    const lines = String(t || "").split(/\n/).map((l) => l.trim());
-    const isMaterial = lines.some((l) => /^\[.+\]$/.test(l) || /^●/.test(l));
-    if (!isMaterial) {
-      return String(t || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
-        .map((p) => `<p>${escH(p).replace(/\n/g, "<br />")}</p>`).join("");
-    }
-    return lines.filter(Boolean).map((l) => {
-      let m;
-      if ((m = l.match(/^\[(.+)\]$/))) return `<h4 class="ss-sub">${escH(m[1])}</h4>`;
-      if ((m = l.match(/^●\s*(.+)$/))) return `<p class="ss-xref">${escH(m[1])}</p>`;
-      if (/^\d+\.\s/.test(l)) return `<p class="ss-q">${escH(l)}</p>`;
-      return `<p>${escH(l)}</p>`;
-    }).join("");
-  }
+  const summaryHtml = (t) => summaryBlocks(t, escH);
 
   if (!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) {
     box.innerHTML = `<p class="qt-loading">아직 등록된 설교가 없습니다.</p>`;
@@ -1695,7 +1705,7 @@ if (homeBulletin) {
           ? `<div class="hb-sec"><p class="hb-col-title">오늘의 본문 말씀 <span style="font-weight:400;color:var(--ink-soft)">(개역개정)</span></p><p class="hb-scripture">${escB(d.headline)}</p></div>`
           : "";
         const summaryHtml = d.summary
-          ? `<div class="hb-sec"><p class="hb-col-title">설교 요약</p><p class="hb-summary">${escB(d.summary)}</p></div>`
+          ? `<div class="hb-sec"><p class="hb-col-title">설교 요약</p><div class="hb-summary is-blocks">${summaryBlocks(d.summary, escB)}</div></div>`
           : "";
         const orderList = (d.order || []).filter((o) => o && (o.name || o.detail));
         const orderHtml = orderList.length
@@ -1771,9 +1781,18 @@ if (homeBulletin) {
             if (on) cb.innerHTML = '오늘 예배 <i class="hbul-br"></i>현장 입장하기'; else cb.textContent = curLabel;   // 휴대폰에서는 낱말 사이에서만 줄바꿈
             const ic = cur.querySelector(".hbul-ic"); if (ic) ic.textContent = on ? "⛪" : "📖";
             if (on) cur.setAttribute("data-go", "worship.html"); else cur.removeAttribute("data-go");
-            if (liveA) { liveA.classList.toggle("is-off", !on); liveA.querySelector("small").textContent = on ? "예배 실황과 주보" : "주일 " + sw.open + " 열림"; }
+            // 관리자(목사님)는 언제든 미리보기 — 주일에 성도님들께 어떻게 보일지 미리 확인(worship.html 이 관리자에게 미리보기로 열어 준다)
+            const pv = !on && isAdm;
+            if (liveA) { liveA.classList.toggle("is-off", !on && !pv); liveA.querySelector("small").textContent = on ? "예배 실황과 주보" : pv ? "관리자 미리보기" : "주일 " + sw.open + " 열림"; }
           };
+          let isAdm = false;
           paintSunday();
+          if (homeTok) {
+            fetch(window.SUPABASE_URL + "/rest/v1/rpc/my_perms", { method: "POST", headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + homeTok, "Content-Type": "application/json" }, body: "{}" })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((p) => { if (p && p.isAdmin) { isAdm = true; paintSunday(); } })
+              .catch(() => {});
+          }
           setInterval(paintSunday, 30000);
           bar.addEventListener("click", (e) => {
             const go = e.target.closest("[data-go]");

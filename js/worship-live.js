@@ -160,13 +160,20 @@
   }
 
   // 말씀선포: 주보 '설교 요약' 칸의 ●장절 + 본문 줄 → 인용 구절([..질문..] 칸은 뺀다)
+  // ● 없이 '창세기 2:21 여호와 하나님이…'처럼 장절과 본문을 한 줄에 적어도 말씀 칸 안이면 나눈다(js/worship-view.js splitRefLine)
   function xrefsOf(summary) {
-    var out = [], cur = null, skip = false;
+    var out = [], cur = null, skip = false, verseSec = false, WV = window.WorshipView || {};
     String(summary || "").split(/\r?\n/).forEach(function (raw) {
       var l = raw.trim(); if (!l) return;
-      if (/^\[.*\]$/.test(l)) { skip = /질문/.test(l); cur = null; return; }
+      var h = l.match(/^\[(.*)\]$/);
+      if (h) { skip = /질문/.test(h[1]); verseSec = WV.isVerseHead ? WV.isVerseHead(h[1]) : false; cur = null; return; }
       if (skip) return;
-      if (/^●/.test(l)) { cur = { ref: l.replace(/^●\s*/, ""), lines: [] }; out.push(cur); return; }
+      var bullet = /^●/.test(l), sp = (bullet || verseSec) && WV.splitRefLine ? WV.splitRefLine(l) : null;
+      if (bullet || sp) {
+        cur = { ref: sp ? sp.label : l.replace(/^●\s*/, ""), lines: sp && sp.text ? [sp.text] : [] };
+        out.push(cur);
+        return;
+      }
       if (cur) cur.lines.push(l);
     });
     return out;
