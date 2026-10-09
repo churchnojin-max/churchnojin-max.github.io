@@ -11,8 +11,8 @@
       { href: "index.html#pop-bulletin", label: "이번 주 주보" },
       { href: "word.html#wed", label: "수요기도회 말씀" },
       { href: "word.html#qt", label: "매일 말씀 묵상" },
-      { href: "word.html#believe", label: "우리가 믿는 것" },
       { href: "word.html#song", label: "이달의 찬양" },
+      { href: "word.html#believe", label: "우리가 믿는 것" },
     ] },
     // 삶의 질문(story.html#qna)은 2026-09-29 숨김 — 다시 쓰려면 story.html 의 hidden 을 지우고 여기에 다시 넣는다
     { href: "story.html", label: "공동체와 양육", sub: [
