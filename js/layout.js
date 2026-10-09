@@ -7,6 +7,8 @@
   const NAV = [
     { href: "word.html", label: "예배와 말씀", sub: [
       { href: "word.html#sermon", label: "이번 주 말씀" },
+      // 이번 주 주보: 교회 안내에서 옮김(2026-10-09 목사님 — 첫 화면과 두 군데라 교회 안내 쪽은 뺌). 첫 화면 주보 창을 바로 연다
+      { href: "index.html#pop-bulletin", label: "이번 주 주보" },
       { href: "word.html#wed", label: "수요기도회 말씀" },
       { href: "word.html#qt", label: "매일 말씀 묵상" },
       { href: "word.html#believe", label: "우리가 믿는 것" },
@@ -26,7 +28,6 @@
     { href: "welcome.html", label: "교회 안내", sub: [
       { href: "welcome.html#about", label: "노진교회를 소개합니다" },
       { href: "welcome.html#worship", label: "예배 안내" },
-      { href: "welcome.html#bulletin", label: "이번 주 주보" },
       { href: "welcome.html#directions", label: "찾아오시는 길" },
       { href: "welcome.html#newfamily", label: "새가족 등록" },
     ] },
