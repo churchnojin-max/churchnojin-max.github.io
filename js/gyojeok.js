@@ -369,6 +369,10 @@ console.log('[gyojeok.js] v20261007reg');
         var badges = (u.provider === 'kakao' ? ' <span style="background:#FEE500;color:#3c1e1e;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">카카오</span>' : '') +
           (u.joinVia === 'qr' ? ' <span style="background:#1A3A2F;color:#fff;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">교회 QR</span>' : '') +
           (u.realName && u.realName !== u.name ? '<span style="display:block;color:#9aa5b1;font-size:.76rem">본인이 적은 이름: ' + esc(u.realName) + '</span>' : '') +
+          // 가입할 때 적은 기본 정보(2026-10-10~) — 승인 전인 분만
+          (u.status !== '정회원' ? (u.signup && u.signup.phone
+            ? '<span style="display:block;color:#5f6b7a;font-size:.76rem">📝 ' + esc(u.signup.relation || '') + ' · ' + esc(u.signup.intro || '') + ' · ' + esc(u.signup.phone) + ' · ' + esc(u.signup.birth || '') + '</span>'
+            : '<span style="display:block;color:#c0392b;font-size:.76rem">⚠ 가입 기본 정보 없음</span>') : '') +
           // 교적 인증 신청(이름·생년월일) — 스스로 정회원이 되지 않고, 여기서 확인해 승인한다(supabase/security_fix_20261003.sql)
           (u.claimName && u.status !== '정회원' ? '<span style="display:block;color:#7b8794;font-size:.76rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
             (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '') +

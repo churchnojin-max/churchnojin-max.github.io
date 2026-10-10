@@ -204,6 +204,13 @@ console.log('[dashboard.js] v20260705qtfallback');
     }).catch(function () { box.innerHTML = ''; });
   }
 
+  // 가입할 때 적은 기본 정보(휴대폰·생년월일·관계·확인 내용, 2026-10-10~). 없으면 '기본 정보 없음'
+  function signupLine(u) {
+    var s = u.signup;
+    if (!s || !s.phone) return '<span style="flex-basis:100%;color:#c0392b;font-size:.8rem">⚠ 기본 정보 없음 — 로그인하면 적어 달라는 창이 뜹니다</span>';
+    return '<span style="flex-basis:100%;color:#5f6b7a;font-size:.8rem">📝 ' + esc(s.relation || '') + ' · ' + esc(s.intro || '') + ' · ' + esc(s.phone) + ' · ' + esc(s.birth || '') + '</span>';
+  }
+
   function loadPendingApproval() {
     var box = document.getElementById('pendingApproval');
     if (!box || !window.WPF) return;
@@ -235,6 +242,7 @@ console.log('[dashboard.js] v20260705qtfallback');
             joinBadges(u) +
             '<span style="color:#7b8794;font-size:.85rem;flex:1;min-width:150px">' + esc(u.email) + '</span>' +
             '<span style="color:#9aa5b1;font-size:.78rem">' + esc(fmtJoin(u.joinedAt)) + '</span>' +
+            signupLine(u) +
             // 본인이 넣은 교적 인증 신청(이름·생년월일)과 교적 일치 여부 — 승인 판단용
             (u.claimName ? '<span style="flex-basis:100%;color:#7b8794;font-size:.8rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
               (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '') +

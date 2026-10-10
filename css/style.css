@@ -4271,3 +4271,16 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .om-state { font-size: .84rem; color: #1a7f4b; font-weight: 700; }
 .om-done { margin-top: 6px; }
 .om-done summary { cursor: pointer; color: var(--ink-soft); font-size: .86rem; padding: 6px 0; }
+
+/* 가입 기본 정보(2026-10-10): 이메일 가입·승인 대기자 기본 정보 창 */
+.su-extra { display: flex; flex-direction: column; gap: 14px; }
+.su-extra[hidden] { display: none; }
+.su-req { color: #c0392b; font-weight: 700; }
+.su-hint { color: var(--ink-soft); font-size: .78rem; line-height: 1.5; }
+.su-warn { background: #fff6f4; border: 1px solid #f0c9c2; color: #8a2f22; border-radius: 10px; padding: 10px 12px; font-size: .86rem; line-height: 1.65; text-align: left; }
+.su-agree { display: flex; gap: 8px; align-items: flex-start; font-size: .88rem; color: var(--ink); text-align: left; line-height: 1.5; cursor: pointer; }
+.su-agree input { width: 20px; height: 20px; flex: 0 0 auto; margin-top: 1px; }
+.su-form .form-field input, .su-form .form-field select { width: 100%; }
+.su-extra .form-field select { width: 100%; }
+@media (max-width: 760px) { .su-pop .modal-box { padding: 28px 20px; } }
+.auth-options[hidden] { display: none; }

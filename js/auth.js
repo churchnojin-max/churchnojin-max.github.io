@@ -68,6 +68,56 @@
     } catch (_) { return ""; }
   }
 
+  // ── 가입 기본 정보(2026-10-10 목사님): 이메일 가입도 실명·휴대폰·생년월일·교회와의 관계·확인해 줄 내용을 받는다.
+  //    user_metadata.signup 에 저장 → 승인 대기 목록(list_access 'signup')에서 관리자가 보고 판단한다.
+  //    정보를 안 적으면 승인이 거절될 수 있다고 미리 알린다.
+  const CH = (window.CHURCH && window.CHURCH.name) || "우리 교회";
+  const RELATIONS = [CH + " 성도", CH + " 성도의 가족", "새로 오신 분(등록 전)", "다른 교회 성도"];
+  const escA = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function signupFieldsHtml(v) {
+    v = v || {};
+    return `<div class="form-field"><label>휴대폰 번호 <b class="su-req">*</b></label><input type="tel" name="su_phone" inputmode="tel" autocomplete="tel" maxlength="13" placeholder="010-1234-5678" value="${escA(v.phone)}" /></div>
+      <div class="form-field"><label>생년월일 <b class="su-req">*</b></label><input type="text" name="su_birth" inputmode="numeric" maxlength="10" placeholder="예: 1975-03-21" value="${escA(v.birth)}" /></div>
+      <div class="form-field"><label>교회와의 관계 <b class="su-req">*</b></label><select name="su_relation"><option value="">골라 주세요</option>${RELATIONS.map((r) => `<option${v.relation === r ? " selected" : ""}>${escA(r)}</option>`).join("")}</select></div>
+      <div class="form-field"><label>확인해 줄 수 있는 내용 <b class="su-req">*</b></label><input type="text" name="su_intro" maxlength="80" placeholder="예: 3구역 / 김○○ 권사 딸 / ○○교회 집사" value="${escA(v.intro)}" />
+        <small class="su-hint">구역, 소개해 준 분, 가족 이름, 다니는 교회처럼 담당자가 누구신지 알 수 있는 내용</small></div>
+      <div class="su-warn">⚠️ <b>기본 정보를 적지 않거나 사실과 다르면 승인이 거절될 수 있습니다.</b><br />적어 주신 정보는 담당자가 교인이신지 확인하는 데만 씁니다.</div>
+      <label class="su-agree"><input type="checkbox" name="su_agree"${v.agreedAt ? " checked" : ""} /> 위 안내를 읽었고, 정보를 사실대로 적었습니다.</label>`;
+  }
+  // 입력값을 읽어 확인한다. 잘못되면 { err }, 맞으면 { info }
+  function readSignupInfo(root, name) {
+    const val = (n) => { const el = root.querySelector(`[name="${n}"]`); return el ? String(el.value || "").trim() : ""; };
+    if (!/^[가-힣]{2,10}$|^[A-Za-z][A-Za-z .'-]{1,39}$/.test(name || "")) return { err: "이름은 실명으로 적어 주세요(예: 홍길동)." };
+    const digits = val("su_phone").replace(/\D/g, "");
+    if (!/^01[016789]\d{7,8}$/.test(digits)) return { err: "휴대폰 번호를 정확히 적어 주세요(예: 010-1234-5678)." };
+    const phone = digits.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3");
+    const bp = val("su_birth").split(/\D+/).filter(Boolean);       // 1980.5.6 · 1980-05-06 · 19800506 모두 받음
+    const bd = bp.length === 3 ? bp[0] + bp[1].padStart(2, "0") + bp[2].padStart(2, "0") : bp.join("");
+    const by = +bd.slice(0, 4), bm = +bd.slice(4, 6), bdd = +bd.slice(6, 8);
+    const bDate = new Date(by, bm - 1, bdd);
+    if (bd.length !== 8 || by < 1900 || bDate.getMonth() !== bm - 1 || bDate.getDate() !== bdd || bDate > new Date())
+      return { err: "생년월일을 정확히 적어 주세요(예: 1975-03-21)." };
+    const birth = `${bd.slice(0, 4)}-${bd.slice(4, 6)}-${bd.slice(6, 8)}`;
+    const relation = val("su_relation");
+    if (!RELATIONS.includes(relation)) return { err: "교회와의 관계를 골라 주세요." };
+    const intro = val("su_intro");
+    if (intro.length < 2) return { err: "담당자가 확인할 수 있는 내용(구역·소개해 준 분·다니는 교회 등)을 적어 주세요." };
+    const agree = root.querySelector('[name="su_agree"]');
+    if (!agree || !agree.checked) return { err: "안내를 읽고 '사실대로 적었습니다'에 체크해 주세요." };
+    return { info: { phone, birth, relation, intro, agreedAt: new Date().toISOString() } };
+  }
+  // 회원가입 창에 기본 정보 칸을 붙인다(이름 칸 바로 아래, 가입 모드에서만 보임)
+  let signupExtra = null;
+  if (nameField) {
+    signupExtra = document.createElement("div");
+    signupExtra.className = "su-extra";
+    signupExtra.hidden = true;
+    signupExtra.innerHTML = signupFieldsHtml();
+    const nl = nameField.querySelector("label"); if (nl) nl.innerHTML = '이름(실명) <b class="su-req">*</b>';
+    const pf = document.getElementById("passwordField");
+    if (pf) pf.after(signupExtra); else nameField.after(signupExtra);
+  }
+
   function openModal() { modal.hidden = false; document.body.style.overflow = "hidden"; }
 
   async function startKakao() {
@@ -197,6 +247,7 @@
     if (subEl) subEl.textContent = m === "signup" ? "카카오톡을 쓰지 않으시는 분의 일반 가입입니다. 카카오로도 가입하시면 카카오 계정 하나로 합쳐집니다." : SUB0;
     submitBtn.textContent = isReset ? "비밀번호 변경" : m === "login" ? "로그인" : "회원가입";
     nameField.hidden = m !== "signup";
+    if (signupExtra) signupExtra.hidden = m !== "signup";
     if (channelField) channelField.hidden = m !== "signup";
     // 재설정 모드: 이메일 숨기고 비밀번호만 새로 입력
     if (emailField) emailField.hidden = isReset;
@@ -310,11 +361,78 @@
       try { await sb.auth.updateUser({ data: { join_via: via } }); } catch (_) {}
     }
     const provider = (user.app_metadata && user.app_metadata.provider) || "email";
-    let asked = false;
-    try { asked = !!sessionStorage.getItem("nojin_name_asked"); } catch (_) {}
+    let asked = false, infoAsked = false;
+    try { asked = !!sessionStorage.getItem("nojin_name_asked"); infoAsked = !!sessionStorage.getItem("nojin_info_asked"); } catch (_) {}
+    // 승인 대기 중인데 기본 정보가 없으면(예전 가입자·카카오 가입자) 기본 정보 창을 띄운다 — 성함도 함께 받는다
+    if (!meta.signup && !infoAsked && (await isPending(user))) { await askSignupInfo(user, meta); return; }
     if (provider !== "email" && !meta.real_name && !asked) await askRealName(meta.name || meta.nickname || "");
     showPendingNotice(user);
     showGyojeokCheck(user);
+  }
+
+  // 정회원 승인 전인지(운영진 제외). 확인이 안 되면 false
+  let pendingVal = null;
+  async function isPending(user) {
+    if (pendingVal !== null) return pendingVal;
+    try {
+      const { data } = await sb.from("member_links").select("member_status").eq("user_id", user.id).maybeSingle();
+      if (data && data.member_status === "정회원") return (pendingVal = false);
+      const perm = await sb.rpc("my_perms");
+      if (!perm || perm.error || (perm.data && perm.data.isAdmin)) return (pendingVal = false);
+      return (pendingVal = true);
+    } catch (_) { return false; }
+  }
+
+  // 승인 대기 중인 분께: 기본 정보를 적어 달라는 창(적지 않으면 승인이 거절될 수 있음)
+  function askSignupInfo(user, meta) {
+    return new Promise((done) => {
+      try { sessionStorage.setItem("nojin_info_asked", "1"); sessionStorage.setItem("nojin_pending_shown", "1"); } catch (_) {}
+      const nick = meta.real_name || meta.name || meta.full_name || "";
+      const box = document.createElement("div");
+      box.className = "modal su-pop";
+      box.innerHTML = `<div class="modal-backdrop"></div>
+        <div class="modal-box" role="dialog" aria-modal="true" aria-label="기본 정보 적기" style="max-width:460px">
+          <div style="text-align:center;font-size:2.2rem;line-height:1;margin-bottom:8px" aria-hidden="true">📝</div>
+          <h3 style="font-family:'Noto Serif KR',serif;color:var(--accent);margin-bottom:8px;text-align:center">기본 정보를 적어 주세요</h3>
+          <p style="color:var(--ink-soft);line-height:1.7;margin-bottom:14px;text-align:center;font-size:.95rem">가입해 주셔서 감사합니다. 지금은 <b>정회원 승인 대기 중</b>입니다.<br />담당자가 누구신지 확인할 수 있도록 아래 정보를 적어 주세요.</p>
+          <form class="auth-form su-form">
+            <div class="form-field"><label>이름(실명) <b class="su-req">*</b></label><input type="text" name="su_name" maxlength="30" autocomplete="name" placeholder="예: 홍길동" value="${escA(/^[가-힣]{2,10}$/.test(nick) ? nick : "")}" /></div>
+            ${signupFieldsHtml()}
+            <p class="auth-msg err su-msg" hidden></p>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button type="button" class="btn btn-line" data-later>나중에</button>
+              <button type="submit" class="btn btn-solid">저장</button>
+            </div>
+          </form>
+        </div>`;
+      document.body.appendChild(box);
+      document.body.style.overflow = "hidden";
+      const f = box.querySelector("form"), m = box.querySelector(".su-msg");
+      const close = () => { box.remove(); document.body.style.overflow = ""; done(); };
+      box.querySelector("[data-later]").onclick = () => {
+        if (confirm("기본 정보를 적지 않으시면 승인이 늦어지거나 거절될 수 있습니다.\n다음에 로그인할 때 다시 여쭙겠습니다. 닫을까요?")) close();
+      };
+      f.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = f.querySelector('[name="su_name"]').value.trim();
+        const chk = readSignupInfo(f, name);
+        if (chk.err) { m.hidden = false; m.textContent = chk.err; return; }
+        const btn = f.querySelector('[type="submit"]'); btn.disabled = true;
+        try {
+          const { error } = await sb.auth.updateUser({ data: { real_name: name, name, signup: chk.info } });
+          if (error) throw error;
+          try { await sb.rpc("set_my_name", { p_name: name }); } catch (_) {}
+          box.querySelector(".modal-box").innerHTML = `<div style="text-align:center">
+            <div style="font-size:2.2rem;line-height:1;margin-bottom:10px" aria-hidden="true">✅</div>
+            <h3 style="font-family:'Noto Serif KR',serif;color:var(--accent);margin-bottom:10px">저장했습니다</h3>
+            <p style="color:var(--ink-soft);line-height:1.8;margin-bottom:18px">담당자가 확인한 뒤 승인해 드립니다.<br />승인되면 주보·사진 등 교회 정보를 보실 수 있습니다.</p>
+            <button type="button" class="btn btn-solid" data-ok style="min-width:140px">확인</button></div>`;
+          box.querySelector("[data-ok]").onclick = () => { close(); renderAuth(); };
+        } catch (err) {
+          btn.disabled = false; m.hidden = false; m.textContent = "저장하지 못했습니다: " + ((err && err.message) || err);
+        }
+      };
+    });
   }
 
   // ④ 정회원이 되어 교적과 연결된 뒤 처음 로그인하면, 교적부를 확인해 달라고 한 번 안내한다.
@@ -559,8 +677,9 @@
           showMsg("비밀번호가 변경되었습니다. 이제 로그인됩니다.", true);
           setTimeout(() => { closeModal(); location.reload(); }, 1200);
         } else if (mode === "signup") {
-          const meta = { name: name || email.split("@")[0] };
-          if (name) meta.real_name = name;
+          const chk = readSignupInfo(form, name);
+          if (chk.err) { showMsg(chk.err, false); return; }
+          const meta = { name, real_name: name, signup: chk.info };
           if (joinVia()) meta.join_via = joinVia();
           const { data, error } = await sb.auth.signUp({ email, password, options: { data: meta } });
           if (error) throw error;
