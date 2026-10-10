@@ -373,6 +373,7 @@ console.log('[gyojeok.js] v20261007reg');
       //   교인 = 정회원 + 교적 연결 / 교적 미연결 정회원 = 연결해 주어야 함 / 비교인 = 특별 승인(다른 교회)
       //   승인 대기 = 정회원 전(서버에서 비회원과 똑같이 막힘), 본인이 적은 '교회와의 관계'를 함께 보여 줌
       function memberKind(u) {
+        if (u.suspended && !u.isAdmin) return { k: 'rejected', label: /^승인 거절/.test(u.suspendNote || '') ? '승인 거절됨' : '정지됨', bg: '#eceff3', fg: '#5f6b7a' };
         if (u.status === '정회원' && u.special) return { k: 'guest', label: '비교인 · 특별 승인', bg: '#fbf1dc', fg: '#8a6d1f' };
         if (u.status === '정회원' && u.linked) return { k: 'member', label: '교인 · 교적 연결', bg: '#e3f3e8', fg: '#1a7f4b' };
         if (u.status === '정회원' || u.isAdmin) return { k: 'unlinked', label: '정회원 · 교적 미연결', bg: '#fff4d6', fg: '#8a6d1f' };
@@ -459,7 +460,10 @@ console.log('[gyojeok.js] v20261007reg');
         var btn = kind === 'admin'
           ? (isMeOwner(u) ? '<span class="ac-none" style="white-space:nowrap">해제할 수 없는 자리</span>'
             : adminLock ? '' : '<button type="button" class="btn btn-line ac-unadmin" style="color:#7a3b3b">관리자 해제</button>')
-          : '<button type="button" class="btn btn-line ac-edit">' + (kind === 'plain' ? '권한 주기' : '권한 바꾸기') + '</button>';
+          : '<button type="button" class="btn btn-line ac-edit">' + (kind === 'plain' ? '권한 주기' : '권한 바꾸기') + '</button>' +
+            // 승인 거절(2026-10-10): 승인 대기인 분은 [승인 거절], 거절·정지한 분은 [되돌리기]
+            (memberKind(u).k === 'pending' ? '<button type="button" class="btn btn-line ac-reject" style="color:#a23b2c;border-color:#e9b1a8">승인 거절</button>' : '') +
+            (memberKind(u).k === 'rejected' ? '<button type="button" class="btn btn-line ac-unreject">되돌리기</button>' : '');
         return '<div class="ac-row" data-uid="' + esc(u.uid) + '" data-kind="' + memberKind(u).k + '" data-name="' + esc(u.name || '') + '">' + whoCell(u) +
           '<div class="ac-status"><span class="st-pill">' + stPill(u.status, u.special) + '</span><select class="ck-status" aria-label="회원 구분">' +
             '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
@@ -506,6 +510,22 @@ console.log('[gyojeok.js] v20261007reg');
           var k = bt.getAttribute('data-k');
           Array.prototype.forEach.call(panel.querySelectorAll('.mk-btn'), function (x) { x.classList.toggle('on', x === bt && !!k); });
           Array.prototype.forEach.call(panel.querySelectorAll('.ac-row[data-kind]'), function (r) { r.style.display = !k || r.getAttribute('data-kind') === k ? '' : 'none'; });
+        });
+      });
+      Array.prototype.forEach.call(panel.querySelectorAll('.ac-reject, .ac-unreject'), function (bt) {
+        bt.addEventListener('click', function () {
+          var row = bt.closest('.ac-row'), uid = row.getAttribute('data-uid'), nm = row.getAttribute('data-name') || '이 분';
+          var undo = bt.classList.contains('ac-unreject'), note = null;
+          if (undo) { if (!confirm(nm + '님의 거절(정지)을 풀까요?\n다시 로그인할 수 있게 되고, 승인 대기로 돌아갑니다.')) return; }
+          else {
+            note = prompt(nm + '님의 가입 승인을 거절합니다.\n거절하면 이 계정은 로그인할 수 없게 됩니다(여기서 되돌릴 수 있음).\n\n거절 까닭을 적어 주세요(예: 기본 정보 없음, 모르는 분):', '기본 정보 없음');
+            if (note === null) return;
+            note = '승인 거절: ' + (note.trim() || '까닭 없음');
+          }
+          bt.disabled = true;
+          WPF.call('setSuspend', { uid: uid, suspend: !undo, note: note }).then(function () {
+            renderAccess(panel, { ok: true, text: undo ? '✓ ' + nm + '님의 거절을 풀었습니다.' : '✓ ' + nm + '님의 승인을 거절했습니다(로그인 막힘).' });
+          }).catch(function (e) { bt.disabled = false; alert('처리하지 못했습니다: ' + e.message); });
         });
       });
       var msg = panel.querySelector('#gj_msg');

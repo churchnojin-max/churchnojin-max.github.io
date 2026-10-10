@@ -65,6 +65,15 @@
       // ── 비밀번호 변경 (현재 비밀번호 재확인 후 진행) ──
       const pwForm = document.getElementById("pwForm");
       const pwMsg = document.getElementById("pwMsg");
+      // 로봇 확인(로그인 창과 같은 것, js/auth.js ChurchCaptcha) — 현재 비밀번호 확인도 로그인이라 필요하다
+      let pwCap = null;
+      if (window.ChurchCaptcha) {
+        const capBox = document.createElement("div");
+        capBox.className = "auth-captcha";
+        const pwBtn = pwForm.querySelector("button");
+        if (pwBtn) pwBtn.before(capBox);
+        pwCap = window.ChurchCaptcha(capBox);
+      }
       pwForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const fd = new FormData(pwForm);
@@ -75,8 +84,11 @@
         btn.disabled = true; say(pwMsg, "확인 중…", true);
         try {
           // 보안: 현재 비밀번호가 맞는지 다시 로그인으로 확인
-          const { error: verifyErr } = await sb.auth.signInWithPassword({ email: user.email, password: cur });
-          if (verifyErr) throw new Error("현재 비밀번호가 올바르지 않습니다.");
+          const capTok = pwCap ? await pwCap.token() : undefined;
+          if (pwCap && pwCap.on && !capTok) throw new Error("로봇 확인이 아직 끝나지 않았습니다. 잠시 뒤 다시 눌러 주세요.");
+          const { error: verifyErr } = await sb.auth.signInWithPassword({ email: user.email, password: cur, options: { captchaToken: capTok } });
+          if (pwCap) pwCap.reset();
+          if (verifyErr) throw new Error(/captcha/i.test(verifyErr.message || "") ? "로봇 확인에 실패했습니다. 화면을 새로 고친 뒤 다시 시도해 주세요." : "현재 비밀번호가 올바르지 않습니다.");
           const { error } = await sb.auth.updateUser({ password: pw1 });
           if (error) {
             if (/same password|different from the old/i.test(error.message)) throw new Error("이전과 다른 비밀번호를 입력해 주세요.");

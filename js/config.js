@@ -23,6 +23,12 @@ window.ONESIGNAL_APP_ID = "";
 window.SUPABASE_URL = "https://vwuzmklacdwiqyqjrxyt.supabase.co";
 window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3dXpta2xhY2R3aXF5cWpyeHl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MDE5MTAsImV4cCI6MjA5OTA3NzkxMH0.DSdstEsMoNGzCEWsXfDblY0KuxLS3Ay-MuePJrIjdDE";
 
+/* --- 로봇 확인(Cloudflare Turnstile) — 2026-10-10 ---
+   Cloudflare ▸ Turnstile 위젯의 Site Key(공개되어도 되는 값). 가입·로그인·비밀번호 찾기 때 사람인지 확인합니다.
+   Secret Key 는 여기 넣지 말고 Supabase ▸ Authentication ▸ Attack Protection 에만 넣습니다.
+   비어 있으면 로봇 확인 없이 예전처럼 동작합니다. */
+window.TURNSTILE_SITE_KEY = "";
+
 /* --- 파일 업로드(Cloudflare R2 Worker) ---
    Cloudflare Worker 배포 후 받은 주소. 예: "https://church-files.<계정>.workers.dev"
    비어 있으면 사진/파일 업로드 기능이 자동으로 숨겨집니다. */

@@ -118,7 +118,59 @@
     if (pf) pf.after(signupExtra); else nameField.after(signupExtra);
   }
 
-  function openModal() { modal.hidden = false; document.body.style.overflow = "hidden"; }
+  // ── 로봇 확인(Cloudflare Turnstile, 2026-10-10 목사님) ──
+  //   프로그램으로 가입·로그인을 마구 시도하는 것을 막는다. 사이트 키(공개 값)는 js/config.js TURNSTILE_SITE_KEY,
+  //   비밀 키는 Supabase ▸ Authentication ▸ Attack Protection 에만 넣는다. 키가 비어 있으면 예전처럼 확인 없이 동작.
+  //   사람에게는 대부분 아무것도 안 보이고, 의심스러울 때만 체크 칸이 나온다(interaction-only). 토큰은 한 번 쓰면 끝.
+  const TS_KEY = window.TURNSTILE_SITE_KEY || "";
+  let tsLoading = null;
+  function loadTurnstile() {
+    if (window.turnstile) return Promise.resolve(window.turnstile);
+    if (!tsLoading) tsLoading = new Promise((res, rej) => {
+      const sc = document.createElement("script");
+      sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      sc.async = true;
+      sc.onload = () => res(window.turnstile);
+      sc.onerror = () => { tsLoading = null; rej(new Error("captcha-load")); };
+      document.head.appendChild(sc);
+    });
+    return tsLoading;
+  }
+  function makeCaptcha(box) {
+    if (!TS_KEY || !box) return { on: false, token: () => Promise.resolve(undefined), reset() {} };
+    let wid = null, tok = "";
+    const waiters = [];
+    const give = (t) => { tok = t; waiters.splice(0).forEach((w) => w(t)); };
+    loadTurnstile().then((ts) => {
+      wid = ts.render(box, {
+        sitekey: TS_KEY, language: "ko", appearance: "interaction-only",
+        callback: give, "expired-callback": () => { tok = ""; }, "error-callback": () => { tok = ""; },
+      });
+    }).catch(() => {});
+    return {
+      on: true,
+      token() { return tok ? Promise.resolve(tok) : new Promise((res) => { waiters.push(res); setTimeout(() => res(""), 20000); }); },
+      reset() { tok = ""; try { if (wid !== null) window.turnstile.reset(wid); } catch (_) {} },
+    };
+  }
+  window.ChurchCaptcha = makeCaptcha;
+  let authCap = null;
+  function getAuthCap() {
+    if (!authCap) {
+      const capBox = document.createElement("div");
+      capBox.className = "auth-captcha";
+      if (submitBtn) submitBtn.before(capBox);
+      authCap = makeCaptcha(capBox);
+    }
+    return authCap;
+  }
+  async function capToken() {
+    const t = await getAuthCap().token();
+    if (TS_KEY && !t) throw new Error("captcha-wait");
+    return t || undefined;
+  }
+
+  function openModal() { modal.hidden = false; document.body.style.overflow = "hidden"; getAuthCap(); }
 
   async function startKakao() {
     const { error } = await sb.auth.signInWithOAuth({
@@ -281,6 +333,8 @@
     const m = (err && err.message) || "";
     if (/banned/i.test(m)) return BLOCKED_TEXT();
     if (/invalid login credentials/i.test(m)) return "이메일 또는 비밀번호가 올바르지 않습니다.";
+    if (m === "captcha-wait") return "로봇 확인이 아직 끝나지 않았습니다. 잠시 뒤 다시 눌러 주세요.";
+    if (/captcha/i.test(m)) return "로봇 확인에 실패했습니다. 화면을 새로 고친 뒤 다시 시도해 주세요.";
     if (/email not confirmed/i.test(m)) return "이메일 인증이 완료되지 않았습니다. 가입 확인 메일을 확인해 주세요.";
     return "오류: " + (m || "다시 시도해 주세요.");
   }
@@ -658,13 +712,15 @@
         try {
           const { error } = await sb.auth.resetPasswordForEmail(email, {
             redirectTo: location.origin + "/reset.html",
+            captchaToken: await capToken(),
           });
           if (error) throw error;
           showMsg("비밀번호 재설정 메일을 보냈습니다. 메일의 링크는 30분 동안 1회만 사용할 수 있습니다.", true);
         } catch (err) {
-          showMsg("오류: " + (err.message || "다시 시도해 주세요."), false);
+          showMsg(/captcha/i.test((err && err.message) || "") ? friendlyError(err) : "오류: " + (err.message || "다시 시도해 주세요."), false);
         } finally {
           forgotBtn.disabled = false;
+          getAuthCap().reset();
         }
       });
     }
@@ -688,7 +744,7 @@
           if (chk.err) { showMsg(chk.err, false); return; }
           const meta = { name, real_name: name, signup: chk.info };
           if (joinVia()) meta.join_via = joinVia();
-          const { data, error } = await sb.auth.signUp({ email, password, options: { data: meta } });
+          const { data, error } = await sb.auth.signUp({ email, password, options: { data: meta, captchaToken: await capToken() } });
           if (error) throw error;
           // Supabase 의 '이메일 확인' 설정이 꺼져 있으면 세션이 바로 나오고 메일도 안 간다.
           // 예전에는 무조건 "확인 메일을 보냈습니다"라고 띄워서 안내와 실제가 어긋났다.
@@ -699,7 +755,7 @@
             showMsg("가입 확인 메일을 보냈습니다. 메일의 링크를 눌러 인증해 주세요.", true);
           }
         } else {
-          const { error } = await sb.auth.signInWithPassword({ email, password });
+          const { error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken: await capToken() } });
           if (error) throw error;
           // 이메일 기억하기
           try {
@@ -713,6 +769,7 @@
         showMsg(friendlyError(err), false);
       } finally {
         submitBtn.disabled = false;
+        if (mode !== "reset") getAuthCap().reset();   // 로봇 확인 토큰은 한 번만 쓸 수 있다
       }
     });
   }

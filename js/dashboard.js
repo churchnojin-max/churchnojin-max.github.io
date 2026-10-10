@@ -211,6 +211,21 @@ console.log('[dashboard.js] v20260705qtfallback');
     return '<span style="flex-basis:100%;color:#5f6b7a;font-size:.8rem">📝 ' + esc(s.relation || '') + ' · ' + esc(s.intro || '') + ' · ' + esc(s.phone) + ' · ' + esc(s.birth || '') + '</span>';
   }
 
+  // 승인 거절(2026-10-10 목사님): 계정을 정지하고 로그인돼 있던 기기도 끊는다. 교적관리 ▸ 권한 관리에서 되돌릴 수 있다.
+  function bindReject(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('.pa-reject'), function (bt) {
+      bt.onclick = function () {
+        var row = bt.closest('.pa-row'), uid = row.getAttribute('data-uid'), nm = row.getAttribute('data-name') || '이 분';
+        var why = prompt(nm + '님의 가입 승인을 거절합니다.\n거절하면 이 계정은 로그인할 수 없게 됩니다(나중에 교적관리 ▸ 권한 관리에서 되돌릴 수 있음).\n\n거절 까닭을 적어 주세요(예: 기본 정보 없음, 모르는 분):', '기본 정보 없음');
+        if (why === null) return;
+        bt.disabled = true;
+        WPF.call('setSuspend', { uid: uid, suspend: true, note: '승인 거절: ' + (why.trim() || '까닭 없음') }).then(function () {
+          row.innerHTML = '<span style="color:#a23b2c;font-size:.9rem">✗ ' + esc(nm) + '님 — 승인을 거절했습니다(로그인 막힘).</span>';
+        }).catch(function (e) { bt.disabled = false; alert('거절하지 못했습니다: ' + e.message); });
+      };
+    });
+  }
+
   function loadPendingApproval() {
     var box = document.getElementById('pendingApproval');
     if (!box || !window.WPF) return;
@@ -220,7 +235,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       var spLine = spPending.length ? '<p style="margin:0 0 12px;padding:9px 12px;background:#fff;border:1px solid #e6c98a;border-radius:9px;font-size:.88rem">🙋 <b>특별 승인 신청 ' + spPending.length + '건</b> (다른 교회 성도) — ' +
         spPending.map(function (q) { return esc(q.name) + '(' + esc(q.church) + ')'; }).join(', ') + ' · <a href="gyojeok.html">교적관리에서 확인 →</a></p>' : '';
       var all = r.users || [];
-      var pending = all.filter(function (u) { return u.status !== '정회원'; });
+      var pending = all.filter(function (u) { return u.status !== '정회원' && !u.isAdmin && !u.suspended; });   // 거절(정지)한 분은 빼고
       if (!pending.length && !spLine) { box.innerHTML = ''; return; }
       if (!pending.length) { box.innerHTML = '<div class="form-card" style="padding:16px 18px;border:1px solid #e6c98a;background:#fffdf6">' + spLine + '</div>'; return; }
       // 최근 가입자가 위로
@@ -236,7 +251,7 @@ console.log('[dashboard.js] v20260705qtfallback');
         '<p style="margin:0 0 12px;font-size:.84rem;color:#8a7a52">가입은 했지만 아직 승인 전이라 <b>로그인하지 않은 분과 똑같이</b> 교회 정보를 볼 수 없는 분들입니다. 적어 준 기본 정보로 어느 분인지 확인한 뒤 승인해 주세요. 정보가 없거나 모르는 분은 승인하지 않으시면 됩니다.</p>' + spLine +
         '<div style="display:flex;flex-direction:column;gap:8px">' +
         pending.map(function (u) {
-          return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:#fff;border:1px solid #efe3c4;border-radius:9px">' +
+          return '<div class="pa-row" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.realName || u.name || '') + '" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:#fff;border:1px solid #efe3c4;border-radius:9px">' +
             '<b style="min-width:80px">' + esc(u.realName || u.name || '(이름없음)') + '</b>' +
             (u.realName && u.name && u.realName !== u.name ? '<span style="color:#9aa5b1;font-size:.8rem">(' + esc(u.name) + ')</span>' : '') +
             joinBadges(u) +
@@ -246,12 +261,14 @@ console.log('[dashboard.js] v20260705qtfallback');
             // 본인이 넣은 교적 인증 신청(이름·생년월일)과 교적 일치 여부 — 승인 판단용
             (u.claimName ? '<span style="flex-basis:100%;color:#7b8794;font-size:.8rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
               (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '') +
+            '<button type="button" class="btn btn-line pa-reject" style="padding:6px 14px;min-height:36px;color:#a23b2c;border-color:#e9b1a8">승인 거절</button>' +
             '</div>';
         }).join('') +
         '</div>' +
         '<p style="margin:12px 0 0"><a class="btn btn-solid" href="gyojeok.html" style="padding:9px 18px">교적관리에서 승인하기 →</a></p>' +
         '<p style="margin:8px 0 0;font-size:.78rem;color:#9aa5b1">※ 승인은 교적관리 ▸ 권한 관리에서 <b>정회원</b>으로 바꾸고 교적의 본인을 골라 연결하면 됩니다.</p>' +
         '</div>';
+      bindReject(box);
     }).catch(function () {
       // 관리자가 아니면 list_access 가 빈 배열/오류 → 아무것도 안 보여 준다
       box.innerHTML = '';

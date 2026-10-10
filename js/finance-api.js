@@ -345,6 +345,8 @@ window.WPF = (function () {
         return rest('POST', 'app_settings?on_conflict=key', { key: params.key, value: String(params.value == null ? '' : params.value), updated_at: new Date().toISOString() }, 'resolution=merge-duplicates,return=minimal').then(function () { return { ok: true }; });
       case 'adminSetMember':
         return rpc('admin_set_member', { p_uid: params.uid, p_status: params.status, p_member_key: params.memberKey || '', p_member_name: params.memberName || '' });
+      case 'setSuspend':        // 승인 거절·계정 정지/되돌리기(supabase/suspend.sql, 2026-10-10 승인란 거절 단추)
+        return rpc('admin_set_suspend', { target: params.uid, suspend: !!params.suspend, note: params.note || null }).then(function () { return { ok: true }; });
       case 'adminSetSpecial':   // 특별 승인(교적 없이 정회원, 2026-10-08)
         return rpc('admin_set_special', { p_uid: params.uid, p_note: params.note || '' });
       // 특별 승인 신청서·점검표·추천인 보증·1년 기한(2026-10-08, supabase/special_apply_20261008.sql)
