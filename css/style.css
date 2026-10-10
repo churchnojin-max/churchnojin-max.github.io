@@ -4284,3 +4284,6 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .su-extra .form-field select { width: 100%; }
 @media (max-width: 760px) { .su-pop .modal-box { padding: 28px 20px; } }
 .auth-options[hidden] { display: none; }
+/* 승인 대기(정회원 전) 잠금 안내(2026-10-10) */
+.pending-lock .pending-warn { margin: 8px auto 12px; max-width: 420px; background: #fff6f4; border: 1px solid #f0c9c2; color: #8a2f22; border-radius: 10px; padding: 8px 12px; font-size: .86rem; line-height: 1.6; }
+.member-only-line button[data-mo="info"] { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 0; }

@@ -304,6 +304,22 @@
     } catch (e) { return ""; }
   }
   window.ChurchSignedIn = () => !!sessionToken();
+  // 승인 대기(정회원 전) — 서버는 비회원과 똑같이 막는다(supabase/pending_as_guest_20261010.sql).
+  // 화면은 auth.js 가 로그인 때 확인해 sessionStorage 'nojin_pending'(내 계정 id)에 적어 둔 것으로 안다.
+  function sessionUid() {
+    try {
+      const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
+      const s0 = JSON.parse(sessionStorage.getItem(`sb-${ref}-auth-token`) || "null");
+      const s = s0 && s0.currentSession ? s0.currentSession : s0;
+      return (s && s.user && s.user.id) || "";
+    } catch (e) { return ""; }
+  }
+  window.ChurchPending = () => { try { const u = sessionUid(); return !!u && sessionStorage.getItem("nojin_pending") === u; } catch (e) { return false; } };
+  // 승인 대기인 분께 보여 줄 잠금 안내(what: '봉사위원 명단은' 처럼)
+  window.PendingLockHtml = (what) =>
+    `<div class="member-only pending-lock"><p>🔒 ${what}<br /><b>정회원 승인 뒤에</b> 보실 수 있습니다.</p>` +
+    `<p class="pending-warn">⚠️ 기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다.</p>` +
+    `<div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="info">기본 정보 적기</button></div></div>`;
 
   // ===== 홈페이지 설정(공개 읽기) — 로고 · 섬기는 사람들 · 월별 봉사위원 =====
   // church_settings 의 공개 키를 1회씩 읽어 캐시한다. 봉사위원('committees')은 이름이 들어 있어
@@ -954,7 +970,7 @@
     sdk.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     sdk.onload = function () {
       const auth = document.createElement("script");
-      auth.src = "js/auth.js?v=20261010su";
+      auth.src = "js/auth.js?v=20261010guest";
       document.body.appendChild(auth);
     };
     // SDK 로드 실패 시에도 버튼은 유지(클릭 시 모달은 위 핸들러가 처리)
@@ -1036,6 +1052,7 @@ document.addEventListener("click", function (e) {
   var b = e.target && e.target.closest ? e.target.closest("[data-mo]") : null;
   if (!b) return;
   var act = b.getAttribute("data-mo");
+  if (act === "info") { if (window.__askSignupInfo) window.__askSignupInfo(); return; }   // 승인 대기: 기본 정보 적기
   if (act === "join" && window.__openJoinGuide) { window.__openJoinGuide(); return; }   // 카카오 먼저 권하는 가입 안내
   var mode = act === "join" ? "signup" : "login";
   if (window.__authSetMode) window.__authSetMode(mode); else window.__authPendingMode = mode;

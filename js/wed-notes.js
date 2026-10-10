@@ -108,7 +108,10 @@
   function noteById(id) { return notes.filter(function (n) { return n.id === id; })[0]; }
   function contiFor(iso) { return contis.filter(function (c) { return c.note_date === iso; })[0]; }
 
+  function pendingNow() { return !!(me() && window.ChurchPending && window.ChurchPending()); }   // 승인 대기 = 비회원과 같음(2026-10-10)
+  window.addEventListener("church-pending", function () { if (box) load(); });
   function renderLocked() {
+    if (pendingNow() && window.PendingLockHtml) { box.innerHTML = window.PendingLockHtml("수요기도회 말씀 자료는"); return; }
     box.innerHTML = '<div class="member-only wed-locked"><p>🔒 수요기도회 말씀 자료는<br />수요일 저녁 예배 때 로그인하신 분께만 보여 드립니다.</p>' +
       '<div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div></div>';
   }
@@ -116,7 +119,7 @@
   function load() {
     if (!box) return Promise.resolve();
     shownUid = (me() || {}).id || "";
-    if (!me()) { renderLocked(); return Promise.resolve(); }
+    if (!me() || pendingNow()) { renderLocked(); return Promise.resolve(); }
     box.innerHTML = '<p class="qt-loading">불러오는 중…</p>';
     var svc = "&service=eq." + encodeURIComponent(SERVICE);
     return Promise.all([

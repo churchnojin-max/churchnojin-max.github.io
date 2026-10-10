@@ -313,9 +313,13 @@ if (sermonDeck) {
 
   // 봉사위원 명단에는 성도님 이름이 있어 가입하고 로그인한 분께만 보여 준다(2026-10-05 목사님).
   // DB(church_settings 'committees')도 로그인한 분만 읽을 수 있다(supabase/member_only_20261005.sql).
-  function renderCommitteeLocked() {
+  function renderCommitteeLocked(pending) {
     const box = document.getElementById("committee");
     if (!box) return;
+    if (pending && window.PendingLockHtml) {
+      box.innerHTML = `<div class="committee-head"><span class="w-en light">SERVICE TEAM</span><h4>이 달의 봉사위원</h4></div>` + window.PendingLockHtml("봉사위원 명단은");
+      return;
+    }
     box.innerHTML = `
       <div class="committee-head">
         <span class="w-en light">SERVICE TEAM</span>
@@ -327,11 +331,14 @@ if (sermonDeck) {
       </div>`;
   }
 
+  window.addEventListener("church-pending", () => { if (document.getElementById("committee")) renderCommitteeLocked(true); });
   // 봉사위원: DB(교회행정 통합) 우선, 없으면 하드코딩 COMMITTEES 폴백
   const hardcoded = (typeof COMMITTEES !== "undefined" && COMMITTEES.length) ? COMMITTEES : null;
   if (document.getElementById("committee")) {
     if (window.ChurchSignedIn && !window.ChurchSignedIn()) {
       renderCommitteeLocked();
+    } else if (window.ChurchPending && window.ChurchPending()) {   // 승인 대기 = 비회원과 같음(2026-10-10)
+      renderCommitteeLocked(true);
     } else if (window.SiteSettings) {
       window.SiteSettings.committees()
         .then((data) => {
@@ -1717,7 +1724,9 @@ if (homeBulletin) {
           ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><ul class="hb-extra hb-offer">${offerKeys.map((k) => `<li><b>${escB(k)}</b><span>${escB(d.offering[k])}</span></li>`).join("")}</ul></div>`
           : (window.ChurchSignedIn && !window.ChurchSignedIn()
             ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><p class="member-only-line">예물 명단은 가입하고 로그인하신 분께만 보여 드립니다. <button type="button" data-mo="login">로그인</button></p></div>`
-            : "");
+            : (window.ChurchPending && window.ChurchPending()
+              ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><p class="member-only-line">예물 명단은 정회원 승인 뒤에 보실 수 있습니다. 기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다. <button type="button" data-mo="info">기본 정보 적기</button></p></div>`
+              : ""));
         const noticeLines = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean);
         const noticeHtml = noticeLines.length
           ? `<div class="hb-sec"><p class="hb-col-title">한 주의 소식</p><ul class="hb-news">${noticeLines.map((l) => `<li>${escB(l)}</li>`).join("")}</ul></div>`

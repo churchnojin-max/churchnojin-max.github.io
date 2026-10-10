@@ -142,6 +142,7 @@
   async function handleFiles(card, cat, fileList) {
     const me = currentUser();
     if (!me) { alert("사진을 올리려면 로그인해 주세요."); openLogin(); return; }
+    if (window.ChurchPending && window.ChurchPending()) { alert("정회원 승인 뒤에 이용하실 수 있습니다.\n기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다."); if (window.__askSignupInfo) window.__askSignupInfo(); return; }
     if (!uploadReady()) { alert("업로드 서버가 아직 설정되지 않았습니다."); return; }
     const files = Array.from(fileList || []).filter((f) => /^image\//.test(f.type));
     if (!files.length) { alert("이미지 파일만 올릴 수 있습니다."); return; }
@@ -161,6 +162,7 @@
   async function toggleLike(photo) {
     const me = currentUser();
     if (!me) { alert("좋아요를 누르려면 로그인해 주세요."); openLogin(); return null; }
+    if (window.ChurchPending && window.ChurchPending()) { alert("정회원 승인 뒤에 이용하실 수 있습니다.\n기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다."); if (window.__askSignupInfo) window.__askSignupInfo(); return null; }
     if (!social) return null;
     const id = String(photo.id);
     const liked = myLikes.has(id);
@@ -192,6 +194,7 @@
   async function addComment(photoId, body) {
     const me = currentUser();
     if (!me) { alert("댓글을 쓰려면 로그인해 주세요."); openLogin(); return null; }
+    if (window.ChurchPending && window.ChurchPending()) { alert("정회원 승인 뒤에 이용하실 수 있습니다.\n기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다."); if (window.__askSignupInfo) window.__askSignupInfo(); return null; }
     const text = String(body || "").trim();
     if (!text) return null;
     const row = { photo_id: photoId, user_id: me.id, author_name: displayName(me), body: text };
@@ -234,7 +237,7 @@
     galTitle.textContent = cat;
     if (!list.length) {
       gal.className = "album-feed empty";
-      gal.innerHTML = `<p class="placeholder-note">아직 사진이 없습니다.${currentUser() ? " 카드에 사진을 끌어다 놓아 올려보세요." : " 로그인 후 올릴 수 있어요."}</p>`;
+      gal.innerHTML = `<p class="placeholder-note">아직 사진이 없습니다.${!currentUser() ? " 로그인 후 올릴 수 있어요." : window.ChurchPending && window.ChurchPending() ? " 정회원 승인 뒤에 보고 올릴 수 있어요." : " 카드에 사진을 끌어다 놓아 올려보세요."}</p>`;
     } else {
       gal.className = "album-feed";
       gal.innerHTML = list.map((p, i) => cardHtml(p, i)).join("");

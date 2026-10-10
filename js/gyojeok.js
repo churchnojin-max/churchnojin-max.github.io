@@ -358,6 +358,10 @@ console.log('[gyojeok.js] v20261007reg');
         '.ac-chip{background:#eef4ef;color:#1A3A2F;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700;white-space:nowrap}' +
         '.ac-chip-all{background:#7a3b3b;color:#fff}.ac-none{color:#9aa5b1;font-size:.8rem}' +
         '.ac-act .btn{padding:8px 14px;font-size:.84rem;white-space:nowrap;min-height:40px}' +
+        '.mk-pill{display:inline-block;border-radius:999px;padding:0 8px;font-size:.72rem;font-weight:700;white-space:nowrap;vertical-align:1px}' +
+        '.mk-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid #e3e8ef;border-radius:12px;background:#fafcfd}' +
+        '.mk-title{font-weight:700;font-size:.9rem;margin-right:4px}.mk-btn{border:1.5px solid;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:.84rem;cursor:pointer;min-height:36px}' +
+        '.mk-btn.on{background:#1A3A2F;color:#fff;border-color:#1A3A2F}.mk-note{flex-basis:100%;margin:6px 0 0;font-size:.8rem;color:#7b8794;line-height:1.6}' +
         '.ac-empty{padding:14px 16px;border-top:1px solid #eef1f5;color:#9aa5b1;font-size:.86rem}' +
         '.ac-search{margin:12px 16px 12px;width:calc(100% - 32px);padding:9px 11px;border:1px solid #dfe5ee;border-radius:8px;font:inherit}' +
         '.ac-opt{display:flex;gap:12px;align-items:flex-start;padding:12px 10px;border-bottom:1px solid #f0f2f5;cursor:pointer;min-height:48px}' +
@@ -365,6 +369,16 @@ console.log('[gyojeok.js] v20261007reg');
         '.ac-opt small{display:block;color:var(--ink-soft,#7b8794);font-size:.78rem;line-height:1.5}' +
         '@media (max-width:720px){.ac-row{grid-template-columns:1fr auto;gap:8px 10px;padding:14px 14px}.ac-who{grid-column:1 / -1}.ac-chips{grid-column:1 / -1}.ac-act{grid-column:1 / -1}.ac-act .btn{width:100%;min-height:46px}.ac-act .ac-unadmin{width:auto;min-height:40px;float:right}}' +
         '</style>';
+      // ── 교인·비교인 구분(2026-10-10 목사님) ──
+      //   교인 = 정회원 + 교적 연결 / 교적 미연결 정회원 = 연결해 주어야 함 / 비교인 = 특별 승인(다른 교회)
+      //   승인 대기 = 정회원 전(서버에서 비회원과 똑같이 막힘), 본인이 적은 '교회와의 관계'를 함께 보여 줌
+      function memberKind(u) {
+        if (u.status === '정회원' && u.special) return { k: 'guest', label: '비교인 · 특별 승인', bg: '#fbf1dc', fg: '#8a6d1f' };
+        if (u.status === '정회원' && u.linked) return { k: 'member', label: '교인 · 교적 연결', bg: '#e3f3e8', fg: '#1a7f4b' };
+        if (u.status === '정회원' || u.isAdmin) return { k: 'unlinked', label: '정회원 · 교적 미연결', bg: '#fff4d6', fg: '#8a6d1f' };
+        var rel = (u.signup && u.signup.relation) || '';
+        return { k: 'pending', label: '승인 대기' + (/다른 교회/.test(rel) ? ' · 비교인이라 적음' : /새로 오신/.test(rel) ? ' · 새가족이라 적음' : rel ? ' · 교인이라 적음' : ' · 정보 없음'), bg: '#fdecea', fg: '#a23b2c' };
+      }
       function whoCell(u) {
         var badges = (u.provider === 'kakao' ? ' <span style="background:#FEE500;color:#3c1e1e;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">카카오</span>' : '') +
           (u.joinVia === 'qr' ? ' <span style="background:#1A3A2F;color:#fff;border-radius:999px;padding:0 7px;font-size:.72rem;font-weight:700">교회 QR</span>' : '') +
@@ -381,7 +395,9 @@ console.log('[gyojeok.js] v20261007reg');
           (u.specialExpired ? '<span style="display:block;color:#c0392b;font-size:.76rem">특별 승인 기한이 지나 준회원으로 돌아왔습니다 (' + esc(u.specialNote) + ') ' +
             '<button type="button" class="sp-extend" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '" style="border:1px solid #e2bcbc;background:#fff;border-radius:6px;padding:1px 8px;font:inherit;font-size:.74rem;cursor:pointer;color:#7a3b3b">다시 1년</button></span>' : '') +
           ((u.special || u.specialExpired) && (!u.lastSignIn || Date.now() - Date.parse(u.lastSignIn) > 180 * 864e5) ? '<span style="display:block;color:#c0392b;font-size:.76rem">⚠ 6개월 넘게 로그인하지 않았습니다</span>' : '');
-        return '<div class="ac-who"><b class="ac-name">' + esc(u.name || '(이름없음)') + '</b>' + badges +
+        var mk = memberKind(u);
+        return '<div class="ac-who"><b class="ac-name">' + esc(u.name || '(이름없음)') + '</b>' +
+          ' <span class="mk-pill" style="background:' + mk.bg + ';color:' + mk.fg + '">' + esc(mk.label) + '</span>' + badges +
           '<span class="ac-mail">' + esc(u.email || (u.provider === 'kakao' ? '(카카오 가입)' : '')) + '</span></div>';
       }
       // ── 특별 승인 신청서 + 점검표(2026-10-08 목사님: "확실하게 허락을 해야 될지 말아야 될지 알 수 있는 기준") ──
@@ -444,12 +460,21 @@ console.log('[gyojeok.js] v20261007reg');
           ? (isMeOwner(u) ? '<span class="ac-none" style="white-space:nowrap">해제할 수 없는 자리</span>'
             : adminLock ? '' : '<button type="button" class="btn btn-line ac-unadmin" style="color:#7a3b3b">관리자 해제</button>')
           : '<button type="button" class="btn btn-line ac-edit">' + (kind === 'plain' ? '권한 주기' : '권한 바꾸기') + '</button>';
-        return '<div class="ac-row" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '">' + whoCell(u) +
+        return '<div class="ac-row" data-uid="' + esc(u.uid) + '" data-kind="' + memberKind(u).k + '" data-name="' + esc(u.name || '') + '">' + whoCell(u) +
           '<div class="ac-status"><span class="st-pill">' + stPill(u.status, u.special) + '</span><select class="ck-status" aria-label="회원 구분">' +
             '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
             '<option value="정회원"' + (u.status === '정회원' && !u.special ? ' selected' : '') + '>정회원</option>' +
             '<option value="특별"' + (u.status === '정회원' && u.special ? ' selected' : '') + '>특별 승인</option></select></div>' +
           '<div class="ac-chips">' + chips + '</div><div class="ac-act">' + btn + '</div></div>';
+      }
+      function kindBarHtml() {
+        var c = { member: 0, unlinked: 0, guest: 0, pending: 0 };
+        users.forEach(function (u) { c[memberKind(u).k]++; });
+        var B = function (k, t, n, col) { return '<button type="button" class="mk-btn" data-k="' + k + '" style="border-color:' + col + '">' + t + ' <b>' + n + '</b></button>'; };
+        return '<div class="mk-bar"><span class="mk-title">회원 구분</span>' +
+          B('', '전체', users.length, '#cdd7e3') + B('member', '교인(교적 연결)', c.member, '#9fd3b2') + B('unlinked', '교적 미연결', c.unlinked, '#e6c98a') +
+          B('guest', '비교인(특별 승인)', c.guest, '#e6c98a') + B('pending', '승인 대기', c.pending, '#e9b1a8') +
+          '<p class="mk-note">승인 대기인 분은 로그인하지 않은 분과 똑같이 교회 정보(사진·주보 예물 명단·봉사위원·자료실·수요 말씀)를 볼 수 없고 글도 쓸 수 없습니다. 교적 미연결 정회원은 ‘권한 바꾸기’에서 교적의 본인과 연결해 주세요.</p></div>';
       }
       function box(cls, title, sub, list, kind, extra) {
         return '<div class="ac-box ' + cls + '"><div class="ac-head"><h4>' + title + ' <span>(' + list.length + '명)</span></h4><span>' + sub + '</span></div>' + (extra || '') +
@@ -460,7 +485,7 @@ console.log('[gyojeok.js] v20261007reg');
         '<p style="color:var(--ink-soft);font-size:.85rem;margin-bottom:14px;line-height:1.6"><b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동). 우리 교회 성도가 아니어도 믿을 만한 분은 <b>특별 승인</b>으로 정회원처럼 쓰게 할 수 있습니다(교적 연결 없음, 어떤 분인지 적어 둠).' +
           (adminLock ? '<br>관리자 지정·해제는 최고 운영자만 할 수 있습니다.' : '') + '</p>' +
         '<p class="help" id="gj_msg" style="margin:0 0 10px;min-height:1.2em;font-weight:700"></p>' +
-        specialReqHtml(spReqs) +
+        specialReqHtml(spReqs) + kindBarHtml() +
         box('ac-admin', '① 최고 권한 · 관리자', '모든 영역에 들어갈 수 있는 분입니다. 꼭 필요한 분만 두세요.', admins, 'admin') +
         box('ac-granted', '② 영역 권한을 받은 분', '맡은 일에 해당하는 영역만 열려 있습니다.', granted, 'granted') +
         box('ac-plain', '③ 일반 회원', '받은 권한이 없는 분입니다.', plain, 'plain',
@@ -475,6 +500,13 @@ console.log('[gyojeok.js] v20261007reg');
         llBtn.disabled = true; out.innerHTML = '<p class="qt-loading">불러오는 중…</p>';
         WPF.call('listLoginLog', { days: 30 }).then(function (r) { renderLoginLog(out, r); llBtn.textContent = '다시 불러오기'; llBtn.disabled = false; })
           .catch(function (e) { out.innerHTML = '<p class="help" style="color:#c0392b">불러오지 못했습니다: ' + esc(e.message) + '</p>'; llBtn.disabled = false; });
+      });
+      Array.prototype.forEach.call(panel.querySelectorAll('.mk-btn'), function (bt) {
+        bt.addEventListener('click', function () {
+          var k = bt.getAttribute('data-k');
+          Array.prototype.forEach.call(panel.querySelectorAll('.mk-btn'), function (x) { x.classList.toggle('on', x === bt && !!k); });
+          Array.prototype.forEach.call(panel.querySelectorAll('.ac-row[data-kind]'), function (r) { r.style.display = !k || r.getAttribute('data-kind') === k ? '' : 'none'; });
+        });
       });
       var msg = panel.querySelector('#gj_msg');
       function flash(ok, txt) { msg.style.color = ok ? 'green' : '#c0392b'; msg.textContent = txt; }

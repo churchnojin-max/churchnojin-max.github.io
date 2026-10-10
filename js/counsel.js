@@ -172,6 +172,11 @@
       try { document.getElementById("loginBtnInit")?.click(); } catch (e) {}
       busy = false; sendBtn.disabled = false; return;
     }
+    if (window.ChurchPending && window.ChurchPending()) {   // 승인 대기 = 비회원과 같음(2026-10-10, 서버도 막음)
+      typing.remove();
+      addMsg("ai", "이 기능은 정회원 승인 뒤에 이용하실 수 있어요. 기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다. 🙏");
+      busy = false; sendBtn.disabled = false; return;
+    }
 
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 60000); // 60초 지나면 무한 대기 방지

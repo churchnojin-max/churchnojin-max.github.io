@@ -364,7 +364,8 @@
     let asked = false, infoAsked = false;
     try { asked = !!sessionStorage.getItem("nojin_name_asked"); infoAsked = !!sessionStorage.getItem("nojin_info_asked"); } catch (_) {}
     // 승인 대기 중인데 기본 정보가 없으면(예전 가입자·카카오 가입자) 기본 정보 창을 띄운다 — 성함도 함께 받는다
-    if (!meta.signup && !infoAsked && (await isPending(user))) { await askSignupInfo(user, meta); return; }
+    const pend = await isPending(user);
+    if (!meta.signup && !infoAsked && pend) { await askSignupInfo(user, meta); return; }
     if (provider !== "email" && !meta.real_name && !asked) await askRealName(meta.name || meta.nickname || "");
     showPendingNotice(user);
     showGyojeokCheck(user);
@@ -375,13 +376,21 @@
   async function isPending(user) {
     if (pendingVal !== null) return pendingVal;
     try {
-      const { data } = await sb.from("member_links").select("member_status").eq("user_id", user.id).maybeSingle();
-      if (data && data.member_status === "정회원") return (pendingVal = false);
-      const perm = await sb.rpc("my_perms");
-      if (!perm || perm.error || (perm.data && perm.data.isAdmin)) return (pendingVal = false);
-      return (pendingVal = true);
+      const r = await sb.rpc("am_full_member");            // 서버 기준(관리자 또는 정회원)과 똑같이 판단
+      if (r.error) return false;
+      pendingVal = r.data !== true;
     } catch (_) { return false; }
+    // 화면이 '승인 대기' 잠금 안내를 그릴 수 있게 적어 둔다(layout.js ChurchPending)
+    let was = null;
+    try { was = sessionStorage.getItem("nojin_pending"); if (pendingVal) sessionStorage.setItem("nojin_pending", user.id); else sessionStorage.removeItem("nojin_pending"); } catch (_) {}
+    if (pendingVal && was !== user.id) window.dispatchEvent(new CustomEvent("church-pending"));
+    return pendingVal;
   }
+  window.__askSignupInfo = async function () {
+    const { data } = await sb.auth.getSession();
+    const u = data && data.session && data.session.user;
+    if (u) return askSignupInfo(u, u.user_metadata || {});
+  };
 
   // 승인 대기 중인 분께: 기본 정보를 적어 달라는 창(적지 않으면 승인이 거절될 수 있음)
   function askSignupInfo(user, meta) {
@@ -397,7 +406,7 @@
           <p style="color:var(--ink-soft);line-height:1.7;margin-bottom:14px;text-align:center;font-size:.95rem">가입해 주셔서 감사합니다. 지금은 <b>정회원 승인 대기 중</b>입니다.<br />담당자가 누구신지 확인할 수 있도록 아래 정보를 적어 주세요.</p>
           <form class="auth-form su-form">
             <div class="form-field"><label>이름(실명) <b class="su-req">*</b></label><input type="text" name="su_name" maxlength="30" autocomplete="name" placeholder="예: 홍길동" value="${escA(/^[가-힣]{2,10}$/.test(nick) ? nick : "")}" /></div>
-            ${signupFieldsHtml()}
+            ${signupFieldsHtml(meta.signup)}
             <p class="auth-msg err su-msg" hidden></p>
             <div style="display:flex;gap:8px;justify-content:flex-end">
               <button type="button" class="btn btn-line" data-later>나중에</button>
@@ -561,12 +570,7 @@
     if (pendingChecked) return;
     pendingChecked = true;
     try { if (sessionStorage.getItem("nojin_pending_shown")) return; } catch (_) {}
-    try {
-      const { data } = await sb.from("member_links").select("member_status").eq("user_id", user.id).maybeSingle();
-      if (data && data.member_status === "정회원") return;
-      const perm = await sb.rpc("my_perms");                        // 운영진(관리자)은 안내하지 않음
-      if (perm && perm.data && perm.data.isAdmin) return;
-    } catch (_) { return; }                                          // 확인이 안 되면 띄우지 않음
+    if (!(await isPending(user))) return;                           // 정회원·운영진이거나 확인이 안 되면 띄우지 않음
     try { sessionStorage.setItem("nojin_pending_shown", "1"); } catch (_) {}
     const box = document.createElement("div");
     box.className = "modal";
@@ -575,11 +579,14 @@
         <div style="font-size:2.4rem;line-height:1;margin-bottom:10px" aria-hidden="true">⏳</div>
         <h3 style="font-family:'Noto Serif KR',serif;color:var(--accent);margin-bottom:10px">정회원 승인 대기 중입니다</h3>
         <p style="color:var(--ink-soft);line-height:1.8;margin-bottom:6px">가입해 주셔서 감사합니다.<br /><b>운영진의 승인이 필요합니다.</b></p>
-        <p style="color:var(--ink-soft);line-height:1.8;font-size:.95rem;margin-bottom:18px">교인이심이 확인되면 주보·헌금 내역 등<br />교회 정보를 보실 수 있습니다.</p>
-        <button type="button" class="btn btn-solid" data-ok style="min-width:140px">확인</button>
+        <p style="color:var(--ink-soft);line-height:1.8;font-size:.95rem;margin-bottom:12px">승인 전에는 로그인하지 않은 분과 같은 내용만 보입니다.<br />교인이심이 확인되면 주보·사진 등 교회 정보를 보실 수 있습니다.</p>
+        <p class="su-warn" style="margin-bottom:16px">⚠️ <b>기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다.</b></p>
+        <button type="button" class="btn btn-line" data-info style="min-width:140px;margin:0 4px 8px">기본 정보 확인·고치기</button>
+        <button type="button" class="btn btn-solid" data-ok style="min-width:140px;margin:0 4px 8px">확인</button>
       </div>`;
     document.body.appendChild(box);
     box.querySelectorAll("[data-ok]").forEach((b) => { b.onclick = () => box.remove(); });
+    box.querySelector("[data-info]").onclick = () => { box.remove(); askSignupInfo(user, user.user_metadata || {}); };
   }
 
   function askRealName(nick) {

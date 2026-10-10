@@ -233,7 +233,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       box.innerHTML =
         '<div class="form-card" style="padding:16px 18px;border:1px solid #e6c98a;background:#fffdf6">' +
         '<h3 style="margin:0 0 4px;font-size:1rem;color:#8a6d1f">🔔 정회원 승인 대기 <b>' + pending.length + '명</b></h3>' +
-        '<p style="margin:0 0 12px;font-size:.84rem;color:#8a7a52">가입은 했지만 아직 승인 전이라 교회 정보를 볼 수 없는 분들입니다. 어느 성도님인지 확인한 뒤 승인해 주세요.</p>' + spLine +
+        '<p style="margin:0 0 12px;font-size:.84rem;color:#8a7a52">가입은 했지만 아직 승인 전이라 <b>로그인하지 않은 분과 똑같이</b> 교회 정보를 볼 수 없는 분들입니다. 적어 준 기본 정보로 어느 분인지 확인한 뒤 승인해 주세요. 정보가 없거나 모르는 분은 승인하지 않으시면 됩니다.</p>' + spLine +
         '<div style="display:flex;flex-direction:column;gap:8px">' +
         pending.map(function (u) {
           return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;background:#fff;border:1px solid #efe3c4;border-radius:9px">' +

@@ -246,6 +246,10 @@
   async function load() {
     const me = currentUser();
     if (!me || !me.id) { loginPrompt(); return; }
+    if (window.ChurchPending && window.ChurchPending() && window.PendingLockHtml) {   // 승인 대기 = 비회원과 같음(2026-10-10)
+      GROUPS.forEach((g) => (g.el.innerHTML = window.PendingLockHtml("회원 전용 자료실은")));
+      return;
+    }
     GROUPS.forEach((g) => (g.el.innerHTML = '<p class="qt-loading">불러오는 중…</p>'));
     admin = await isAdminUser(me.id);
     try {
