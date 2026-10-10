@@ -2296,6 +2296,7 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
   text-decoration: none; box-shadow: 0 6px 20px rgba(0,0,0,.25);
   transition: transform .2s ease, background .2s ease, color .2s ease;
 }
+.live-float[hidden] { display: none; }   /* 방송 중일 때만 보임(js/live-badge.js) */
 .live-float:hover { background: var(--gold); color: var(--accent); transform: translateY(-2px); }
 /* 점: 평소에는 회색으로 가만히, 주일 11:30~16:00 에만 빨갛게 깜빡(js/live-badge.js 가 .is-live 를 붙임) */
 .live-dot {

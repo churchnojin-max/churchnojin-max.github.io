@@ -36,7 +36,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700;900&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="js/page-slide.js?v=20261005ts"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261009news" />
+  <link rel="stylesheet" href="css/style.css?v=20261010live" />
   <!-- 구조화 데이터(교회 정보) — 구글 검색 이해도 향상 -->
   <style>
     .hb-card{max-width:860px;margin:0 auto;border:1px solid var(--line,#e3e7ee);border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(26,58,47,.07)}
@@ -80,8 +80,8 @@
 </head>
 <body>
 
-  <!-- ===== 실시간 예배 — 스크롤과 무관하게 항상 떠 있는 버튼 ===== -->
-  <a href="https://www.youtube.com/@노진교회/streams" class="live-float" target="_blank" rel="noopener">
+  <!-- ===== 실시간 예배 — 방송 중일 때만 떠 있는 버튼(2026-10-10 목사님, js/live-badge.js 가 켬) ===== -->
+  <a href="https://www.youtube.com/@노진교회/streams" class="live-float" target="_blank" rel="noopener" hidden>
     <span class="live-dot" aria-hidden="true"></span>
     <span>실시간 예배 영상보기</span>
   </a>
@@ -179,6 +179,6 @@
   <script src="js/home-news.js?v=20261005member"></script>
   <script src="js/hero-walk.js?v=20260930a"></script>
   <script src="js/live-status.js?v=20261004b"></script>
-  <script src="js/live-badge.js?v=20261004b"></script>
+  <script src="js/live-badge.js?v=20261010only"></script>
 </body>
 </html>
