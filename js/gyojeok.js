@@ -386,7 +386,9 @@ console.log('[gyojeok.js] v20261007reg');
           (u.realName && u.realName !== u.name ? '<span style="display:block;color:#9aa5b1;font-size:.76rem">본인이 적은 이름: ' + esc(u.realName) + '</span>' : '') +
           // 가입할 때 적은 기본 정보(2026-10-10~) — 승인 전인 분만
           (u.status !== '정회원' ? (u.signup && u.signup.phone
-            ? '<span style="display:block;color:#5f6b7a;font-size:.76rem">📝 ' + esc(u.signup.relation || '') + ' · ' + esc(u.signup.intro || '') + ' · ' + esc(u.signup.phone) + ' · ' + esc(u.signup.birth || '') + '</span>'
+            ? '<span style="display:block;color:#5f6b7a;font-size:.76rem">📝 ' + esc(u.signup.relation || '') + ' · ' + esc(u.signup.intro || '') + ' · <a href="tel:' + esc(String(u.signup.phone).replace(/\D/g, '')) + '">📞 ' + esc(u.signup.phone) + '</a> · ' + esc(u.signup.birth || '') + '</span>' +
+              (u.gjMatch ? '<span style="display:block;color:#1a7f4b;font-size:.76rem">✅ 교적의 <b>' + esc(u.gjMatch.name) + '</b>님과 ' + esc([u.gjMatch.phone ? '전화번호' : '', u.gjMatch.nameBirth ? '이름·생년월일' : ''].filter(Boolean).join('·')) + ' 일치</span>'
+                : '<span style="display:block;color:#a23b2c;font-size:.76rem">❔ 교적에서 찾지 못함 — 전화로 확인해 보세요</span>')
             : '<span style="display:block;color:#c0392b;font-size:.76rem">⚠ 가입 기본 정보 없음</span>') : '') +
           // 교적 인증 신청(이름·생년월일) — 스스로 정회원이 되지 않고, 여기서 확인해 승인한다(supabase/security_fix_20261003.sql)
           (u.claimName && u.status !== '정회원' ? '<span style="display:block;color:#7b8794;font-size:.76rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +

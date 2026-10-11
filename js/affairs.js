@@ -5592,6 +5592,73 @@ console.log('[affairs.js] v20260712memo2');
   }
   function committeeFor(ym) { if (!COMMITTEES) return null; for (var i = 0; i < COMMITTEES.length; i++) if (COMMITTEES[i].month === ym) return COMMITTEES[i]; return null; }
 
+  // ── 주보 광고 → 행정 공지사항(2026-10-11 목사님) ──
+  //   광고 줄마다 [올리기]·[📌 상단 고정]을 골라 notices 에 한꺼번에 올린다. '1. 제목 ― 내용' 꼴이면 제목/내용으로 나눈다.
+  //   이미 같은 제목의 공지가 있으면 '이미 올림'으로 표시하고 기본으로 고르지 않는다(두 번 올라가지 않게).
+  function splitNoticeLine(line) {
+    var t = String(line || '').replace(/^\s*(\d{1,2}|[①-⑳])\s*[.)．]?\s*/, '').trim();
+    var m = t.match(/^(.{2,40}?)\s*[―—–]\s*(.+)$/) || t.match(/^(.{2,30}?)\s*[:：]\s*(.+)$/);
+    if (m) return { title: m[1].trim(), body: m[2].trim() };
+    return t.length > 30 ? { title: t.slice(0, 30) + '…', body: t } : { title: t, body: '' };   // 짧은 한 줄은 제목만
+  }
+  function openNoticePicker(text) {
+    var items = String(text || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).map(splitNoticeLine).filter(function (x) { return x.title; });
+    if (!items.length) { alert('먼저 한 주의 광고를 적어 주세요.'); return; }
+    api('GET', 'notices?select=title&order=created_at.desc&limit=100').catch(function () { return []; }).then(function (ex) {
+      var have = {}; (ex || []).forEach(function (n) { have[String(n.title || '').trim()] = 1; });
+      var box = document.createElement('div');
+      box.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,25,.5);z-index:9800;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto';
+      box.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:720px;width:100%;padding:20px 18px;box-shadow:0 20px 60px rgba(0,0,0,.3)">' +
+        '<h3 style="margin:0 0 4px;color:var(--accent,#1A3A2F)">📢 광고를 공지사항으로 올리기</h3>' +
+        '<p style="margin:0 0 12px;font-size:.86rem;color:#7b8794;line-height:1.6">올릴 광고에 <b>☑ 올리기</b>, 홈페이지 공지 맨 위에 붙일 것은 <b>📌 상단 고정</b>을 고르세요. 제목·내용은 여기서 고칠 수 있습니다.</p>' +
+        '<style>.np-row{border:1px solid #e3e8ef;border-radius:10px;padding:10px 12px;margin-bottom:8px}.np-row.on{border-color:#9fd3b2;background:#f6fbf8}.np-top{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:6px}.np-top label{display:flex;gap:6px;align-items:center;font-size:.9rem;font-weight:700;cursor:pointer;min-height:36px}.np-top input[type=checkbox]{width:20px;height:20px}.np-row input[type=text],.np-row textarea{width:100%;box-sizing:border-box;border:1px solid #dfe5ee;border-radius:8px;padding:8px 10px;font:inherit;font-size:.9rem}.np-row textarea{min-height:52px;margin-top:6px}.np-had{font-size:.76rem;color:#8a6d1f;background:#fbf1dc;border-radius:999px;padding:1px 8px}</style>' +
+        items.map(function (it, i) {
+          var had = !!have[it.title];
+          return '<div class="np-row' + (had ? '' : '') + '" data-i="' + i + '"><div class="np-top">' +
+            '<label><input type="checkbox" class="np-on"> 올리기</label>' +
+            '<label style="color:#8a6d1f"><input type="checkbox" class="np-pin"> 📌 상단 고정</label>' +
+            (had ? '<span class="np-had">이미 같은 제목의 공지가 있음</span>' : '') + '</div>' +
+            '<input type="text" class="np-title" maxlength="200" value="' + esc(it.title) + '">' +
+            '<textarea class="np-body">' + esc(it.body) + '</textarea></div>';
+        }).join('') +
+        '<p id="np_msg" style="min-height:1.2em;margin:8px 0;font-weight:700"></p>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button type="button" class="btn btn-line" id="np_close">닫기</button><button type="button" class="btn btn-solid" id="np_go">선택한 광고 올리기</button></div></div>';
+      document.body.appendChild(box);
+      var rows = box.querySelectorAll('.np-row');
+      Array.prototype.forEach.call(rows, function (r) {
+        var on = r.querySelector('.np-on'), pin = r.querySelector('.np-pin');
+        on.onchange = function () { r.classList.toggle('on', on.checked); };
+        pin.onchange = function () { if (pin.checked && !on.checked) { on.checked = true; r.classList.add('on'); } };
+      });
+      box.querySelector('#np_close').onclick = function () { box.remove(); };
+      box.querySelector('#np_go').onclick = function () {
+        var pick = Array.prototype.filter.call(rows, function (r) { return r.querySelector('.np-on').checked; }).map(function (r) {
+          return { title: r.querySelector('.np-title').value.trim(), body: r.querySelector('.np-body').value.trim(), pinned: r.querySelector('.np-pin').checked };
+        }).filter(function (x) { return x.title; });
+        var msg = box.querySelector('#np_msg');
+        if (!pick.length) { msg.style.color = '#c0392b'; msg.textContent = '올릴 광고를 하나 이상 골라 주세요.'; return; }
+        var pins = pick.filter(function (x) { return x.pinned; }).length;
+        if (!confirm(pick.length + '건을 행정 공지사항에 올릴까요?' + (pins ? '\n(그중 ' + pins + '건은 맨 위에 고정)' : ''))) return;
+        var s = sess() || {}, nm = '';
+        try { var raw = JSON.parse(sessionStorage.getItem('sb-' + (SB || '').match(/https:\/\/([^.]+)\./)[1] + '-auth-token')); var ss = raw && raw.currentSession ? raw.currentSession : raw; var um = (ss && ss.user && ss.user.user_metadata) || {}; nm = um.real_name || um.name || um.full_name || ''; } catch (e) {}
+        var go = box.querySelector('#np_go'); go.disabled = true;
+        msg.style.color = '#7b8794'; msg.textContent = '올리는 중…';
+        // 주보 순서대로 보이도록 마지막 광고부터 올린다(공지는 최근 것이 위)
+        var list = pick.slice().reverse(), done = 0;
+        (function next() {
+          if (!list.length) {
+            msg.style.color = 'green'; msg.textContent = '✓ ' + done + '건을 공지사항에 올렸습니다.';
+            go.textContent = '다 올렸습니다'; return;
+          }
+          var x = list.shift();
+          api('POST', 'notices', { title: x.title.slice(0, 200), body: x.body, pinned: x.pinned, user_id: s.uid || null, author_name: nm || null }, 'return=minimal')
+            .then(function () { done++; next(); })
+            .catch(function (e) { go.disabled = false; msg.style.color = '#c0392b'; msg.textContent = done + '건 올린 뒤 멈췄습니다: ' + (/row-level security|42501/i.test(e.message) ? '공지사항을 올릴 권한(게시판)이 없습니다. 관리자에게 부탁해 주세요.' : e.message); });
+        })();
+      };
+    });
+  }
+
   // ── 주보 제작 및 배포 마법사(2026-10-09 목사님) ──
   //   메뉴에서 들어오면 이번 주일 주보를 열어(없으면 새로) 단계별로: 파일 올리기 → ① 기본 정보 → ② 주일 예배 →
   //   ③ 인용 말씀·설교 요약 → ④ 예배 순서 → ⑤ 향기로운 예물·한 주의 광고 → 배포. 단계마다 '맞습니다'를 눌러야 넘어간다.
@@ -5719,7 +5786,7 @@ console.log('[affairs.js] v20260712memo2');
       tI('제목/출처', 'bt_col_title', d.column_title, '예: 김다위, 「하나님 마음에 맞는 사람」 (두란노)') +
       tA('본문', 'bt_col_body', d.column_body, '칼럼 내용…', 140) + '</div>' +
       // 광고
-      '<div class="fin-card" data-wz="5"><h4 style="margin:0 0 10px;color:var(--accent)">④ 한 주의 소식 (광고)</h4>' +
+      '<div class="fin-card" data-wz="5"><h4 style="margin:0 0 10px;color:var(--accent);display:flex;align-items:center;gap:8px;flex-wrap:wrap">④ 한 주의 소식 (광고) <button type="button" class="btn btn-line" id="bt_to_notice" style="padding:5px 12px;font-size:.8rem;font-weight:700">📢 공지사항으로 올리기</button></h4>' +
       tA('소식 (한 줄에 하나씩)', 'bt_notices', d.notices, '다음 주는 맥추감사주일로 지킵니다.\n학습세례 문답 및 성찬 예식이 있습니다.', 140) + '</div>' +
       // 팟캐스트 · 요약영상 (유튜브 주소) — 2026-10-09 목사님: "지금은 필요 없으니 감추어 줘". 값은 그대로 남는다(hidden 만 지우면 다시 보임)
       '<div class="fin-card" hidden><h4 style="margin:0 0 4px;color:var(--accent)">⑤ 설교 팟캐스트 · 요약영상</h4>' +
@@ -6252,6 +6319,8 @@ console.log('[affairs.js] v20260712memo2');
         })
         .catch(function (e) { bodyEl.innerHTML = '<p style="color:#c0392b">호출 실패: ' + esc(e.message) + '</p><p style="font-size:.82rem;color:#9aa5b1;margin-top:10px">※ Supabase에 bulletin-ai Edge Function을 배포해 주세요.</p>'; });
     };
+
+    ov.querySelector('#bt_to_notice').onclick = function () { openNoticePicker(ov.querySelector('#bt_notices').value); };
 
     ov.querySelector('#bt_publish').onclick = function () {
       if (!confirm('이 주보를 홈페이지에 게시할까요?\n(헌금 금액은 홈페이지에 노출되지 않습니다)')) return;

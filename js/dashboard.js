@@ -208,7 +208,15 @@ console.log('[dashboard.js] v20260705qtfallback');
   function signupLine(u) {
     var s = u.signup;
     if (!s || !s.phone) return '<span style="flex-basis:100%;color:#c0392b;font-size:.8rem">⚠ 기본 정보 없음 — 로그인하면 적어 달라는 창이 뜹니다</span>';
-    return '<span style="flex-basis:100%;color:#5f6b7a;font-size:.8rem">📝 ' + esc(s.relation || '') + ' · ' + esc(s.intro || '') + ' · ' + esc(s.phone) + ' · ' + esc(s.birth || '') + '</span>';
+    return '<span style="flex-basis:100%;color:#5f6b7a;font-size:.8rem">📝 ' + esc(s.relation || '') + ' · ' + esc(s.intro || '') + ' · <a href="tel:' + esc(String(s.phone).replace(/\D/g, '')) + '">📞 ' + esc(s.phone) + '</a> · ' + esc(s.birth || '') + '</span>' + gjMatchLine(u);
+  }
+  // 적은 정보와 교적 대조(supabase/signup_match_20261011.sql) — 휴대폰이 같거나 이름+생년월일이 같은 교적 사람
+  function gjMatchLine(u) {
+    var m = u.gjMatch;
+    if (!u.signup || !u.signup.phone) return '';
+    if (!m) return '<span style="flex-basis:100%;font-size:.8rem;color:#a23b2c">❔ 교적에서 같은 전화번호·이름+생년월일을 찾지 못함 — 전화로 확인해 보세요</span>';
+    var how = [m.phone ? '전화번호' : '', m.nameBirth ? '이름·생년월일' : ''].filter(Boolean).join('·');
+    return '<span style="flex-basis:100%;font-size:.8rem;color:#1a7f4b">✅ 교적의 <b>' + esc(m.name) + '</b>님과 ' + esc(how) + ' 일치</span>';
   }
 
   // 승인 거절(2026-10-10 목사님): 계정을 정지하고 로그인돼 있던 기기도 끊는다. 교적관리 ▸ 권한 관리에서 되돌릴 수 있다.
