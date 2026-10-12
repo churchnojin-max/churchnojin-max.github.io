@@ -897,6 +897,20 @@
       } catch (e) {}
     }
     window.__enhanceHeaderRole = enhanceHeaderWithRole;
+    // 패드처럼 손가락으로 누르는 큰 화면: 이름을 누르면 바로 '내 정보'로 넘어가 버려 카드 속 '대시보드'를 못 눌렀다(2026-10-12 목사님).
+    // → 첫 번째 누름은 카드만 열고(한 번 더 누르면 내 정보), 다른 곳을 누르면 닫는다. 휴대폰(760px 이하)은 햄버거 메뉴라 그대로.
+    // 머리글은 auth.js 가 다시 그리기도 하므로 문서 전체에서 한 번만 받는다.
+    document.addEventListener("click", (e) => {
+      const t = e.target;
+      const opened = document.querySelector(".auth-wrap.is-open");
+      if (opened && !opened.contains(t)) opened.classList.remove("is-open");
+      const a = t && t.closest && t.closest("a.auth-name");
+      const wrap = a && a.closest(".auth-wrap");
+      if (!wrap || wrap.classList.contains("is-open") || wrap.closest(".auth-slot") && window.innerWidth <= 760) return;
+      if (!(window.matchMedia("(hover: none), (pointer: coarse)").matches && window.innerWidth > 760)) return;
+      e.preventDefault();
+      wrap.classList.add("is-open");
+    }, true);
     if (slot0) {
       if (cachedUser) {
         const meta = cachedUser.user_metadata || {};

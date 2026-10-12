@@ -1802,7 +1802,8 @@ a.auth-name:hover { background: var(--accent); border-color: var(--accent); colo
   z-index: 120;
 }
 .auth-wrap:hover .auth-card,
-.auth-wrap:focus-within .auth-card { opacity: 1; visibility: visible; transform: translateY(0); }
+.auth-wrap:focus-within .auth-card,
+.auth-wrap.is-open .auth-card { opacity: 1; visibility: visible; transform: translateY(0); }   /* is-open: 패드에서 이름을 누르면(js/layout.js) */
 .ac-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .ac-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--paper-alt); flex-shrink: 0; }
 .ac-avatar-default { display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: var(--muted); }
