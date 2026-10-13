@@ -112,9 +112,45 @@ def text_docx(p):
     return [l for l in out if l.strip()]
 
 
+def text_pdf_gaps(d):
+    """크롬(Skia)으로 인쇄한 PDF: 줄 끝 공백 표시가 없고 한 줄이 한 블록이다.
+    대신 문단 사이가 줄 간격보다 넓으니, 넓은 틈 뒤의 첫 줄 앞에 전각 공백(　)을 붙여 새 문단으로 알린다."""
+    raw, widest = [], 0
+    for pg in d:
+        rows = []
+        for b in pg.get_text("dict")["blocks"]:
+            for ln in b.get("lines", []):
+                t = "".join(s["text"] for s in ln["spans"])
+                if t.strip():
+                    rows.append((ln["bbox"][1], ln["bbox"][3], t))
+        rows.sort(key=lambda r: r[0])
+        steps = sorted(b[0] - a[0] for a, b in zip(rows, rows[1:]) if b[0] - a[0] > 1)
+        step = steps[len(steps) // 4] if steps else 0          # 흔한 줄 간격(아래쪽 사분위)
+        prev = None
+        for top, bot, t in rows:
+            if re.fullmatch(r"\s*-\s*\d+\s*-\s*", t):
+                continue
+            if prev is None:
+                # 쪽의 첫 줄: 앞 쪽 마지막 줄이 짧게 문장으로 끝났을 때만 새 문단(쪽을 넘어 이어지는 문단은 잇는다)
+                last = raw[-1].strip() if raw else ""
+                gap_new = not raw or (_ends_sentence(last) and len(last) < widest * 0.85)
+            else:
+                gap_new = step and (top - prev) > step * 1.25
+            if re.search(r"[א-ת]", t):           # 크롬 PDF 의 히브리어: 모음 부호가 글자 앞에 붙고 사이에 공백이 끼어 나온다
+                t = re.sub(r"(?<=[֑-ת]) (?=[֑-ת])", "", t)
+                t = re.sub(r"([֑-ׇ]+)([א-ת])", r"\2\1", t)
+                t = re.sub(r"([֑-ת])([가-힣])", r"\1 \2", t)
+            raw.append(("　" if gap_new else "") + t.rstrip())
+            prev = top
+        widest = max([len(r[2].strip()) for r in rows] + [widest])
+    return raw
+
+
 def text_pdf(p):
     import fitz
     d = fitz.open(p)
+    if "Skia" in (d.metadata.get("producer") or ""):
+        return text_pdf_gaps(d)
     raw = []
     for pg in d:
         for l in pg.get_text().split("\n"):
@@ -170,7 +206,9 @@ def merge_pdf_paragraphs(lines):
             prev_raw = l
             continue
         prev = prev_raw.strip()
-        if cur and (starts_new or (_ends_sentence(prev) and len(prev) < maxlen * 0.72)):
+        # 줄 끝 공백 표시가 있는 PDF 에서는 공백 없이 문장으로 끝난 줄 = 문단 끝(줄이 꽉 찼어도)
+        para_end = _ends_sentence(prev) and (len(prev) < maxlen * 0.72 or (space_marks and not prev_raw.endswith(" ")))
+        if cur and (starts_new or para_end):
             flush()
         if cur:
             glue = " " if (not space_marks or prev_raw.endswith(" ") or prev.endswith((".", ",", "?", "!", ")", "\"", "”", "—", "·"))) else ""
@@ -421,11 +459,51 @@ def parse_wed(p, lines, base):
 DAWN_HDR = re.compile(r"새벽\s*(\d)\s*회(?:\s*차)?\s*$")
 
 
+# 2026-10(사사기 12주차)부터의 머리글: "사사기 강해 · 13 주 차 · 화요일 새벽 · 사사기 6:11~24" — 요일이 적혀 있다
+DAWN_HDR2 = re.compile(r"^.+?강해\s*·\s*\d+\s*주\s*차\s*·\s*(주일|월요일|화요일|수요일|목요일|금요일|토요일)\s*새벽(?:\s*·\s*(.+))?$")
+DAWN_DAY = {"주일": -1, "월요일": 0, "화요일": 1, "수요일": 2, "목요일": 3, "금요일": 4, "토요일": 5}
+
+
+def parse_dawn_v2(lines, base):
+    """새 형식: 편마다 요일이 머리글에 있다(주일·화·금). 주일은 그 주 월요일의 하루 앞(주일 새벽도 새벽기도로 등록).
+    머리글 다음 줄 = 제목, '— ' 줄 = 부제, '찬송:' 줄, (있으면) '본문 …' 줄과 절 블록, 그 뒤가 원고."""
+    hdr = [(i, m) for i, l in enumerate(lines) for m in [DAWN_HDR2.match(l.strip())] if m]
+    if not hdr:
+        return []
+    mon = week_monday(base, roll_weekend=True)
+    out = []
+    for k, (h, m) in enumerate(hdr):
+        end = hdr[k + 1][0] if k + 1 < len(hdr) else len(lines)
+        for j in range(h + 1, end):
+            if re.search(r"설교문\s*끝\s*$", lines[j].strip()):
+                end = j
+                break
+        seg = lines[h + 1:end]
+        scripture = whole_ref(m.group(2).strip()) if m.group(2) else None
+        title_parts, bidx = [], 0
+        for j, l in enumerate(seg[:6]):
+            t = l.strip()
+            r = whole_ref(t)
+            if r:                                   # '본문 사사기 6:1~10'
+                scripture, bidx = scripture or r, j + 1
+                break
+            if re.match(r"^(?:♪|찬송)", t):
+                bidx = j + 1
+                continue
+            if bidx:                                # 찬송 줄 뒤에 본문 줄이 없으면 거기서 원고 시작
+                break
+            title_parts.append(t.lstrip("—- ").strip())
+        title = " — ".join([x for x in title_parts if x][:2]) if title_parts else None
+        date = mon + dt.timedelta(days=DAWN_DAY[m.group(1)])
+        out.append(dict(date=date, title=title, scripture=scripture, lines=seg, body_start=bidx, part=k + 1))
+    return out
+
+
 def parse_dawn(p, lines, base):
     """한 파일에 '새벽 N회차' 여러 편. 차례 줄(| 또는 · 로 시작)은 건너뛰고 본문 머리글로 자른다. '주일 예배' 편은 등록하지 않음."""
     hdr = [i for i, l in enumerate(lines) if DAWN_HDR.search(l.strip()) and "|" not in l and not l.strip().startswith("·")]
     if not hdr:
-        return []
+        return parse_dawn_v2(lines, base)
     # 각 편의 끝: 다음 머리글, 또는 '주일 예배' 편 머리글, 또는 '설교문 끝'
     ends = []
     for k, h in enumerate(hdr):
@@ -675,6 +753,9 @@ def finish_entry(e):
     body = [l for l in lines[start:] if not re.search(r"설교문\s*끝\s*$|^다음\s*주[:：]", l.strip())]
     if e.get("is_pdf"):
         body = merge_pdf_paragraphs(body)
+        # PDF 에는 || 표시가 안 남는다: "… (사사기 6:1)" 처럼 장절 괄호로 끝나는 문단은 인용 블록으로
+        body = ["||" + t if re.search(r"\((?:" + REF_CORE + r")\)\s*$", t.strip()) and not t.strip().startswith("||") else t
+                for t in body]
     e["content"] = para_html(body)
     if len(re.sub(r"<[^>]+>", "", e["content"])) < 300:
         return "원고가 너무 짧게 읽힘(본문 블록 뒤를 못 찾음)"
