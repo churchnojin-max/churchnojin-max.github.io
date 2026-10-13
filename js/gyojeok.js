@@ -445,6 +445,34 @@ console.log('[gyojeok.js] v20261007reg');
           (done.length ? '<p class="help" style="padding:8px 16px 12px;margin:0">최근 30일 결정: ' + done.map(function (q) { return esc(q.name) + ' ' + (q.status === 'approved' ? '✓승인' : '✗거절'); }).join(' · ') + '</p>' : '') +
           '</div>';
       }
+      // ── 특별 승인 명단(2026-10-13 목사님: "명단을 따로 관리하면 좋겠어") ──
+      //    지금 특별 승인 중인 분 + 기한이 지나 준회원으로 돌아온 분. 기한·마지막 로그인을 한눈에, [1년 연장]·[특별 승인 해제]
+      function specialListHtml() {
+        var act = users.filter(function (u) { return u.special; }), exp = users.filter(function (u) { return u.specialExpired; });
+        var left = function (u) { return u.specialUntil ? Math.ceil((Date.parse(u.specialUntil) - Date.now()) / 864e5) : null; };
+        act.sort(function (a, b) { return (left(a) == null ? 1e9 : left(a)) - (left(b) == null ? 1e9 : left(b)); });
+        var row = function (u, expired) {
+          var d = left(u), last = u.lastSignIn ? dayStr(u.lastSignIn) : '없음';
+          var stale = !u.lastSignIn || Date.now() - Date.parse(u.lastSignIn) > 180 * 864e5;
+          return '<tr' + (expired ? ' style="color:#9aa5b1"' : '') + '><td><b>' + esc(u.name || '(이름없음)') + '</b>' + (u.email ? '<small>' + esc(u.email) + '</small>' : '') + '</td>' +
+            '<td>' + esc(u.specialNote || '') + '</td>' +
+            '<td>' + esc(dayStr(u.specialAt)) + '</td>' +
+            '<td>' + (expired ? '<b style="color:#c0392b">기한 지남</b>' : esc(dayStr(u.specialUntil)) + (d != null ? '<small style="color:' + (d <= 30 ? '#c0392b;font-weight:700' : '#7b8794') + '">' + (d <= 0 ? '오늘까지' : d + '일 남음') + '</small>' : '')) + '</td>' +
+            '<td' + (stale ? ' style="color:#c0392b"' : '') + '>' + esc(last) + (stale ? '<small>6개월 넘게 안 들어옴</small>' : '') + '</td>' +
+            '<td class="spl-btns"><button type="button" class="btn btn-line sp-extend" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '">' + (expired ? '다시 1년' : '1년 연장') + '</button>' +
+            (expired ? '' : '<button type="button" class="btn btn-line sp-end" data-uid="' + esc(u.uid) + '" data-name="' + esc(u.name || '') + '" style="color:#7a3b3b">해제</button>') + '</td></tr>';
+        };
+        return '<div class="ac-box" style="border:2px solid #e6c98a"><div class="ac-head"><h4>🎫 특별 승인 명단 <span>(' + act.length + '명' + (exp.length ? ' · 기한 지남 ' + exp.length + '명' : '') + ')</span></h4>' +
+          '<span>우리 교회 교적에 없는 분(다른 교회 성도 등)을 정회원처럼 쓰게 한 명단입니다. 1년마다 다시 확인합니다.</span></div>' +
+          '<style>.spl-wrap{overflow-x:auto;padding:0 16px}.spl{width:100%;border-collapse:collapse;font-size:.86rem;min-width:640px}.spl th{text-align:left;color:#7b8794;font-weight:600;padding:8px 6px;border-bottom:1px solid #efe3c4;white-space:nowrap}' +
+          '.spl td{padding:10px 6px;border-bottom:1px solid #f3ecd9;vertical-align:top;line-height:1.5}.spl small{display:block;font-size:.76rem;color:#9aa5b1}.spl-btns{white-space:nowrap}.spl-btns .btn{padding:5px 10px;font-size:.8rem;min-height:34px;margin:0 4px 4px 0}' +
+          '.spl-scope{margin:10px 16px 14px;padding:10px 12px;background:#fffdf6;border:1px dashed #e6c98a;border-radius:10px;font-size:.82rem;line-height:1.7;color:#5f6b7a}</style>' +
+          (act.length || exp.length ? '<div class="spl-wrap"><table class="spl"><thead><tr><th>이름</th><th>어떤 분인지</th><th>승인한 날</th><th>기한</th><th>마지막 로그인</th><th></th></tr></thead><tbody>' +
+            act.map(function (u) { return row(u, false); }).join('') + exp.map(function (u) { return row(u, true); }).join('') + '</tbody></table></div>'
+            : '<div class="ac-empty">특별 승인한 분이 없습니다.</div>') +
+          '<div class="spl-scope"><b>특별 승인한 분이 볼 수 있는 것</b>(정회원과 같음): 사진첩·우리들 소식, 주보의 향기로운 예물 명단(이름만, 금액 없음)·봉사위원 명단·주보 PDF, 예배 순서자 안내, 자료실, 수요 말씀 자료·콘티, 주일 예배 화면(현장·온라인, 그 시간의 새찬송가 악보), 게시판·사진 글쓰기, 대시보드(성경 읽기·QT).<br>' +
+          '<b>볼 수 없는 것</b>: 헌금 조회·가정 합산·내 교적·성도 문서(교적이 없어서), 교적부·재정·교구·행정 같은 관리 화면(권한을 따로 주지 않는 한).</div></div>';
+      }
       // 지금 로그인한 사람(나)의 uid — 최고 운영자 본인 줄에는 '관리자 해제'를 두지 않는다.
       // (최고 운영자 자리는 홈페이지에서 아무도 뺄 수 없고, 넘겨 주는 일은 Supabase 관리 화면에서만 — supabase/owner_guard_20261003.sql)
       var myUid = '';
@@ -491,7 +519,7 @@ console.log('[gyojeok.js] v20261007reg');
         '<p style="color:var(--ink-soft);font-size:.85rem;margin-bottom:14px;line-height:1.6"><b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동). 우리 교회 성도가 아니어도 믿을 만한 분은 <b>특별 승인</b>으로 정회원처럼 쓰게 할 수 있습니다(교적 연결 없음, 어떤 분인지 적어 둠).' +
           (adminLock ? '<br>관리자 지정·해제는 최고 운영자만 할 수 있습니다.' : '') + '</p>' +
         '<p class="help" id="gj_msg" style="margin:0 0 10px;min-height:1.2em;font-weight:700"></p>' +
-        specialReqHtml(spReqs) + kindBarHtml() +
+        specialReqHtml(spReqs) + specialListHtml() + kindBarHtml() +
         box('ac-admin', '① 최고 권한 · 관리자', '모든 영역에 들어갈 수 있는 분입니다. 꼭 필요한 분만 두세요.', admins, 'admin') +
         box('ac-granted', '② 영역 권한을 받은 분', '맡은 일에 해당하는 영역만 열려 있습니다.', granted, 'granted') +
         box('ac-plain', '③ 일반 회원', '받은 권한이 없는 분입니다.', plain, 'plain',
@@ -573,6 +601,15 @@ console.log('[gyojeok.js] v20261007reg');
         };
       });
 
+      // 특별 승인 해제(명단에서) — 준회원으로 내림(서버가 특별 승인 표시도 지움)
+      Array.prototype.forEach.call(panel.querySelectorAll('.sp-end'), function (b) {
+        b.onclick = function () {
+          var uid3 = b.getAttribute('data-uid'), nm3 = b.getAttribute('data-name');
+          if (!confirm('「' + nm3 + '」님의 특별 승인을 해제할까요?\n\n준회원으로 바뀌어 로그인하지 않은 분과 같은 것만 보게 됩니다.')) return;
+          WPF.call('adminSetMember', { uid: uid3, status: '준회원', memberKey: '', memberName: nm3 }).then(function () { reload(true, '✓ 「' + nm3 + '」님 특별 승인을 해제했습니다(준회원)'); })
+            .catch(function (e) { flash(false, '오류: ' + e.message); });
+        };
+      });
       // 한 사람의 권한을 바꾸는 창 — 체크는 여기서만, 저장을 눌러야 바뀌고, 바뀌는 내용을 한 번 더 보여 주고 묻는다
       function openPermEditor(u) {
         var nm = u.name || u.email || '(이름없음)';
