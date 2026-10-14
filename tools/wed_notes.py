@@ -444,29 +444,54 @@ def _song_key(t):
     return re.sub(r"[\s·,.!?~'\"’‘“”\-]", "", t).lower()
 
 
+def _norm_key(k):
+    k = str(k or "").strip().replace("♭", "b").replace("♯", "#")
+    return k[:1].upper() + k[1:] if k else ""
+
+
+def _split_key(title):
+    """'나의 평생에 Bb' · '나의 평생에 (B♭)' · '나의 평생에 Bb키' → ('나의 평생에', 'Bb'). 조가 없으면 ''"""
+    m = re.search(r"\s*[\(\[]?\s*([A-Ga-g](?:b|#|♭|♯)?m?)\s*(?:키|조|key)?\s*[\)\]]?\s*$", str(title or ""))
+    if m and m.start() > 0:
+        return title[:m.start()].strip(), _norm_key(m.group(1))
+    return str(title or "").strip(), ""
+
+
 def _known_titles():
-    """새찬송가(js/hymn-data.js)·모두의 찬양(js/praise-index.js, 부제목 포함) 제목"""
-    out = set()
-    for f, pat in (("js/hymn-data.js", r'"title"\s*:\s*"([^"]+)"'), ("js/praise-index.js", r'\[\d+,\s*"([^"]*)",\s*"[^"]*"(?:,\s*"([^"]*)")?')):
-        for m in re.finditer(pat, (SITE_DIR / f).read_text(encoding="utf-8")):
-            out.update(_song_key(g) for g in m.groups() if g)
-    out.discard("")
+    """{제목 키: 이미 있는 조 집합} — 새찬송가(js/hymn-data.js, 조 정보 없음 → '*')·모두의 찬양(js/praise-index.js, 부제목 포함)"""
+    out = {}
+    for m in re.finditer(r'"title"\s*:\s*"([^"]+)"', (SITE_DIR / "js/hymn-data.js").read_text(encoding="utf-8")):
+        out.setdefault(_song_key(m.group(1)), set()).add("*")
+    for m in re.finditer(r'\[\d+,\s*"([^"]*)",\s*"([^"]*)"(?:,\s*"([^"]*)")?', (SITE_DIR / "js/praise-index.js").read_text(encoding="utf-8")):
+        for g in (m.group(1), m.group(3)):
+            if g:
+                out.setdefault(_song_key(g), set()).add(_norm_key(m.group(2)))
+    out.pop("", None)
     return out
 
 
 def add_new_songs(st, date, songs):
-    """수요 원고 속 악보 가운데 새찬송가·모두의 찬양·새 찬양에 없는 곡을 악보집 '새 찬양'에 더한다
-       (2026-10-07 목사님: "악보 올린 것들을 악보집에 업데이트할 수 있을까?") songs = [(제목, png bytes)]"""
+    """수요 원고 속 악보 가운데 악보집에 없는 곡을 악보집 '새 찬양'에 더한다
+       (2026-10-07 목사님: "악보 올린 것들을 악보집에 업데이트할 수 있을까?") songs = [(제목, png bytes)]
+       2026-10-14 목사님: 같은 곡이라도 조가 다르면 더하고, 제목·조가 같으면 더하지 않는다.
+       제목 끝에 조를 붙이면(예: '하나님 한번도 나를 Bb') 조를 읽는다. 이미 있는 곡인데 조를 모르면 더하지 않는다.
+       새찬송가 곡은 더하지 않는다(악보집 '새찬송가'에 있음)."""
     from io import BytesIO
     from PIL import Image
     base = f"{SUPABASE_URL}/storage/v1/object/hymns/"
     r = st.rq.get(base + NEW_INDEX, headers=st.h, timeout=30)
     index = r.json() if r.status_code == 200 else []
-    known = _known_titles() | {_song_key(s.get("title")) for s in index}
+    known = _known_titles()
+    for s in index:
+        known.setdefault(_song_key(s.get("title")), set()).add(_norm_key(s.get("key")))
     added = []
     for title, png in songs:
+        title, key = _split_key(title)
         k = _song_key(title)
-        if not k or re.match(r"^찬양악보\d+$", k) or "새찬송가" in title or k in known:
+        if not k or re.match(r"^찬양악보\d+$", k) or "새찬송가" in title:
+            continue
+        have = known.get(k, set())
+        if "*" in have or (have and (not key or key in have)):
             continue
         no = max([int(s.get("no") or 0) for s in index] + [0]) + 1
         buf = BytesIO()
@@ -475,9 +500,9 @@ def add_new_songs(st, date, songs):
         up = st.rq.post(base + path, headers={**st.h, "Content-Type": "image/webp", "x-upsert": "true"}, data=buf.getvalue(), timeout=120)
         if up.status_code >= 300:
             raise RuntimeError(f"새 찬양 악보 올리기 실패 {up.status_code}: {up.text[:200]}")
-        index.append({"no": no, "title": title.strip(), "key": "", "path": path, "added": str(date), "from": f"{md(date)} 수요기도회"})
-        known.add(k)
-        added.append(title.strip())
+        index.append({"no": no, "title": title.strip(), "key": key, "path": path, "added": str(date), "from": f"{md(date)} 수요기도회"})
+        known.setdefault(k, set()).add(key)
+        added.append(title.strip() + (f" ({key})" if key else ""))
     if added:
         w = st.rq.post(base + NEW_INDEX, headers={**st.h, "Content-Type": "application/json", "x-upsert": "true", "cache-control": "max-age=0"},
                        data=json.dumps(index, ensure_ascii=False, indent=1).encode("utf-8"), timeout=60)
