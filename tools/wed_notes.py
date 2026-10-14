@@ -781,6 +781,9 @@ def cmd_save(path, no_tg=False, force=False, head=None):
         print(bad_flow + " — 더 짧게 고쳐 주세요(저장하지 않았습니다).")
         return 2
     row["summary"]["flow"] = flow
+    qa = note.get("qa") or ((old or {}).get("summary") or {}).get("qa")    # 질문과 답(2026-10-14) — 없으면 그날 있던 것 그대로
+    if qa:
+        row["summary"]["qa"] = qa
     if old and old.get("status") == "approved" and not force:
         print(f"{md(date)} 자료는 이미 올렸습니다. 덮어쓰지 않았습니다(목사님께 여쭌 뒤 --force — 다시 '확인 전'이 됩니다).")
         return 3

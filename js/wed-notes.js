@@ -163,6 +163,35 @@
     return '<section class="wr-sec" id="wrFlow"><h4 class="wr-h">말씀의 흐름</h4><ol class="wr-flow">' +
       f.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ol></section>';
   }
+  // 질문과 답(2026-10-14 목사님: "두 가지 핵심 질문으로 설교를 이끈다 — 질문과 답을 세세하게, 성도들이 들여다볼 수 있도록")
+  //   summary.qa = { intro, items: [{ no, verse, q, a, how, subs: [{ no, q, more, a, look: [...], think }] }], end: { q, a } }
+  function qaOf(n) {
+    var qa = ((n && n.summary) || {}).qa;
+    return qa && (qa.items || []).length ? qa : null;
+  }
+  function qaHtml(n) {
+    var qa = qaOf(n);
+    if (!qa) return "";
+    var s = function (x) { return esc(String(x || "").trim()); };
+    var sub = function (b) {
+      var look = (b.look || []).filter(Boolean);
+      return '<details class="wr-qa-sub"><summary><span class="wr-qa-no">' + s(b.no) + '</span><span class="wr-qa-sq">' + s(b.q) + '</span><span class="wr-qa-open" aria-hidden="true"></span></summary>' +
+        '<div class="wr-qa-in">' + (b.more ? '<p class="wr-qa-more">' + s(b.more) + '</p>' : '') +
+        (b.a ? '<p class="wr-qa-a"><b>답</b>' + s(b.a) + '</p>' : '') +
+        (look.length ? '<p class="wr-qa-lt">더 들여다보기</p><ul class="wr-qa-look">' + look.map(function (t) { return '<li>' + s(t) + '</li>'; }).join("") + '</ul>' : '') +
+        (b.think ? '<p class="wr-qa-think"><b>함께 생각해 보기</b>' + s(b.think) + '</p>' : '') + '</div></details>';
+    };
+    return '<section class="wr-sec" id="wrQa"><h4 class="wr-h">질문과 답 <small>오늘 말씀을 이끈 두 질문</small></h4>' +
+      (qa.intro ? '<p class="wr-qa-intro">' + s(qa.intro) + '</p>' : '') +
+      qa.items.map(function (it) {
+        return '<div class="wr-qa-item"><p class="wr-qa-tag">' + s(it.no) + (it.verse ? ' · ' + s(it.verse) : '') + '</p>' +
+          '<p class="wr-qa-q">' + s(it.q) + '</p>' + (it.a ? '<p class="wr-qa-a wr-qa-main"><b>답</b>' + s(it.a) + '</p>' : '') +
+          (it.how ? '<p class="wr-qa-how">' + s(it.how) + '</p>' : '') +
+          ((it.subs || []).length ? '<div class="wr-qa-subs">' + it.subs.map(sub).join("") + '</div>' : '') + '</div>';
+      }).join("") +
+      (qa.end && qa.end.q ? '<div class="wr-qa-end"><p class="wr-qa-q">' + s(qa.end.q) + '</p><p class="wr-qa-endA">' + s(qa.end.a) + '</p></div>' : '') +
+      '<p class="wr-qa-hint">세부 질문(1-1 …)을 누르면 답과 더 들여다볼 것이 펼쳐집니다.</p></section>';
+  }
   function prayerCount(n) { var p = prayerOf(n); return p.fixed.length + p.apply.length; }
   function prayerHtml(n) {
     var p = prayerOf(n);
@@ -184,6 +213,7 @@
       '<h3 class="ws-title">' + esc(n.title) + '</h3>' +
       (n.scripture ? '<p class="ws-ref">' + esc(n.scripture) + '</p>' : '') +
       pointsHtml(n) +
+      (qaOf(n) ? '<div class="wed-btns wed-btns-1 wed-btns-qa"><button type="button" class="wed-btn" data-wopen="' + esc(n.id) + '" data-wsec="wrQa"><span aria-hidden="true">❓</span> <span>오늘의 두 질문과 답</span></button></div>' : '') +
       '<div class="wed-btns">' +
         '<button type="button" class="wed-btn" data-wopen="' + esc(n.id) + '" data-wsec="wrVerses"><span aria-hidden="true">📖</span> <span>인용 구절</span>' + (cnt ? ' <b>' + cnt + '</b>' : '') + '</button>' +
         (showConti ? '<button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrConti"><span aria-hidden="true">🎵</span> <span>찬양 악보</span></button>'
@@ -386,6 +416,7 @@
         '<p class="wr-ref">' + esc(n.scripture || "") + (n.preacher ? ' · ' + esc(n.preacher) : '') + '</p></header>';
       var pts = pointsHtml(n, "wr-points");
       if (pts) h += '<section class="wr-sec" id="wrPoints"><h4 class="wr-h">핵심 3가지</h4>' + pts + '</section>';
+      h += qaHtml(n);
       h += flowHtml(n);
       if ((n.passage || []).length) h += '<section class="wr-sec" id="wrPassage"><h4 class="wr-h">오늘 본문 <small>' + esc(n.scripture || "") + '</small></h4>' + linesHtml(n.passage) + '</section>';
       var vs = n.verses || [];
@@ -403,6 +434,7 @@
   function tabsHtml(n, c) {
     var t = [];
     if (n && ((n.summary || {}).points || []).length) t.push(["wrPoints", "핵심"]);
+    if (n && qaOf(n)) t.push(["wrQa", "질문"]);
     if (n && flowOf(n).length) t.push(["wrFlow", "흐름"]);
     if (n && (n.passage || []).length) t.push(["wrPassage", "본문"]);
     if (n && (n.verses || []).length) t.push(["wrVerses", "인용 구절"]);
@@ -552,9 +584,10 @@
     resolveRefs(val("we_verses"), n.verses)
       .then(function (verses) {
         var lines = function (id) { return val(id).split(/\n+/).map(function (l) { return l.replace(/^\s*(?:\d+[.)]|[-·•])\s*/, "").trim(); }).filter(Boolean); };
-        var body = { title: val("we_title") || n.title, verses: verses, mentions: [], made_by: "pastor",
-                     summary: { points: points, flow: lines("we_flow").map(function (l) { return l.replace(/^\s*(?:→|->)\s*/, ""); }),
-                                prayer: { fixed: lines("we_pfixed"), apply: lines("we_papply") } } };
+        // 고치기 칸이 없는 것(질문과 답 qa 등)은 그대로 둔다
+        var summary = Object.assign({}, n.summary || {}, { points: points, flow: lines("we_flow").map(function (l) { return l.replace(/^\s*(?:→|->)\s*/, ""); }),
+                                prayer: { fixed: lines("we_pfixed"), apply: lines("we_papply") } });
+        var body = { title: val("we_title") || n.title, verses: verses, mentions: [], made_by: "pastor", summary: summary };
         return api("PATCH", "sermon_notes?id=eq." + encodeURIComponent(n.id), body, { Prefer: "return=representation" });
       })
       .then(function (rows) {
