@@ -62,6 +62,7 @@ LOG_PATH = DATA_DIR / "log.txt"
 PDF_CACHE = DATA_DIR / "pdf"
 TOOLS_DIR = Path(__file__).resolve().parent
 HWP2PDF = TOOLS_DIR / "hwp_to_pdf.ps1"
+HWP_CLEANUP = TOOLS_DIR / "hwp_cleanup.ps1"
 BIBLE_JS = Path(r"C:\Users\PC\.claude\skills\bible-verse\scripts\bible.js")
 TELEGRAM_ENV_PATH = Path(r"D:\클코저장소\텔레그램봇\.env")
 
@@ -623,19 +624,27 @@ def ensure_pdf(paths, allow_convert=True):
             return out
         log(f"PDF 변환 실패({r.returncode}): {r.stderr.decode('utf-8', 'replace')[:200]}")
     except subprocess.TimeoutExpired:
-        # 대개 한글의 '파일 접근 허용' 보안 창이 떠서 대답을 기다리는 경우. 변환용으로 뒤에서 연 한글만 정리한다
-        # (변환 시작 뒤에 생긴 Hwp 프로세스만 — 목사님이 쓰고 계신 한글 창은 그보다 먼저 떠 있으므로 건드리지 않음).
+        # 대개 한글의 '파일 접근 허용' 보안 창이 떠서 대답을 기다리는 경우.
         log(f"PDF 변환 시간 초과: {s.name} — 한글 '접근 허용' 창이 떠 있었을 가능성이 큽니다")
         CONVERT_FAILED.append(s.name)
-        try:
-            subprocess.run(["powershell", "-NoProfile", "-Command",
-                            f"Get-Process Hwp -ErrorAction SilentlyContinue | Where-Object {{ $_.StartTime -ge [datetime]'{started:%Y-%m-%dT%H:%M:%S}' }} | Stop-Process -Force"],
-                           capture_output=True, timeout=30, **NOWIN)
-        except Exception:
-            pass
     except Exception as e:
         log(f"PDF 변환 오류: {e}")
+    # 실패하면(시간 초과든 바로 끊긴 것이든) 변환용으로 뒤에서 띄운 한글을 반드시 정리한다.
+    # 10/07 에는 바로 끊긴 경우(3221225786)를 정리하지 않아 숨은 한글이 일주일 남았다.
+    hwp_cleanup("-Since", f"{started:%Y-%m-%dT%H:%M:%S}")
     return pdfs[0] if pdfs else None
+
+
+def hwp_cleanup(*args):
+    """화면 없는 자동화 한글(-Automation)만 정리 — 목사님이 연 한글 창은 건드리지 않는다 (tools\\hwp_cleanup.ps1)."""
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HWP_CLEANUP), *args],
+                           capture_output=True, timeout=60, **NOWIN)
+        for line in r.stdout.decode("utf-8", "replace").splitlines():
+            if line.strip():
+                log(f"남은 변환용 한글 {line.strip()}")
+    except Exception:
+        pass
 
 
 CONVERT_FAILED = []   # 이번 실행에서 변환 못 한 한글 파일 이름
@@ -800,6 +809,10 @@ def _main(a, lock):
             state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
         except Exception:
             state = {}
+
+    # 한 시간에 한 번: 30분 넘게 남아 있는 변환용 한글(어느 프로그램이 남겼든)을 치운다 — 설교 파일이 [읽기 전용]으로 열리지 않게
+    if dt.datetime.now().minute < 10 and not (a.dry_run or a.dump):
+        hwp_cleanup("-OlderThanMin", "30")
 
     groups = collect()
     fp = folder_fp(groups)
