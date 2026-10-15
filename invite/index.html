@@ -112,6 +112,7 @@ p { margin: 0; line-height: 1.7; }
 .park p { font-size: .95rem; line-height: 1.75; display: grid; grid-template-columns: 5em 1fr; gap: 8px; }
 .park p b { font-family: var(--sans); color: var(--gold); font-size: .85rem; padding-top: .15em; }
 .park strong { color: var(--green); }
+.row a.web { color: var(--green); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .park .btn { min-height: 44px; }
 /* 끝 */
 .end { padding-bottom: 0; }
@@ -159,7 +160,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--gold-l); outlin
           <div class="bio-row"><i>사역</i><ul><li>대구 사월교회</li><li>대구 반야월교회</li><li>대전 새로남교회</li><li>서울 장충교회</li></ul></div>
           <div class="bio-row"><i>가족</i><ul><li>아내 채애리 사모 · 아들 손필립</li></ul></div></div>
         <div class="row"><b>예배</b><span>주일 낮 예배 오전 11시<br />주일 찬양예배 오후 2시</span></div>
-        <div class="row"><b>누리집</b><span>nojin.kr</span></div>
+        <div class="row"><b>누리집</b><span><a class="web" href="https://nojin.kr" target="_blank" rel="noopener">https://nojin.kr</a></span></div>
       </div>
     </div>
   </section>
@@ -178,11 +179,11 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--gold-l); outlin
     <div class="info">
       <div><b>주차</b><span><button type="button" class="park-btn" id="parkBtn" aria-expanded="false" aria-controls="parkBox">주차 안내 보기 <i aria-hidden="true">▾</i></button></span></div>
       <div class="park" id="parkBox" hidden>
-        <p><b>승용차</b><span>노진교회 주차장에 세워 주세요.<br />가득 차면 길 건너편 <strong>노진초등학교</strong>에 세워 주세요.</span></p>
-        <p><b>대형버스</b><span><strong>노진초등학교</strong>에 세워 주세요.</span></p>
+        <p><b>승용차</b><span><strong>노진교회 주차장</strong>과 <strong>노진초등학교 주차장</strong>을 이용해 주세요.</span></p>
+        <p><b>대형버스</b><span><strong>노진초등학교</strong>를 이용해 주세요.</span></p>
         <a class="btn" href="https://map.naver.com/p/search/%ED%99%94%EC%84%B1%20%EB%85%B8%EC%A7%84%EC%B4%88%EB%93%B1%ED%95%99%EA%B5%90" target="_blank" rel="noopener">노진초등학교 길 찾기</a>
       </div>
-      <div><b>식사</b><span>예배 뒤 식사 자리가 준비되어 있습니다.</span></div>
+      <div><b>식사</b><span>예배 후 식사 자리가 준비되어 있습니다.</span></div>
       <div><b>문의</b><span>노진교회 070-4355-1598</span></div>
     </div>
   </section>
