@@ -76,10 +76,14 @@ p { margin: 0; line-height: 1.7; }
 .about { text-align: center; font-size: .97rem; color: var(--ink); }
 .name { text-align: center; font-family: var(--batang); font-size: 1.35rem; color: var(--green); margin: 4px 0 0; }
 .rows { display: grid; gap: 6px; }
-.bio { display: grid; gap: 0; padding: 10px 14px; background: #FFF9EE; border: 1px solid var(--line); border-radius: 12px; }
-.bio p { white-space: nowrap; font-size: clamp(.74rem, 3.5vw, .9rem); line-height: 1.55; }
-.bio .bio-name { font-family: var(--batang); color: var(--green); font-size: 1rem; margin-bottom: 2px; }
-.bio i { font-style: normal; font-family: var(--sans); color: var(--gold); font-size: .78em; font-weight: 700; letter-spacing: .08em; margin-right: .7em; }
+:root { --bio-fs: clamp(.7rem, 3.25vw, .9rem); }
+.bio { display: grid; gap: 6px; padding: 12px 12px; background: #FFF9EE; border: 1px solid var(--line); border-radius: 12px; }
+.bio .bio-name { font-family: var(--batang); color: var(--green); font-size: 1rem; margin: 0 0 2px; }
+/* 한 항목은 한 줄에(줄바꿈 없이), 항목끼리는 위아래로 붙여서 */
+.bio-row { display: grid; gap: 0; }   /* 이름표(학력·사역·가족)를 위에 두어 항목 줄이 화면 폭을 다 쓰게 */
+.bio-row ul { list-style: none; margin: 0; padding: 0; }
+.bio-row li { white-space: nowrap; overflow: hidden; font-size: var(--bio-fs); line-height: 1.45; }
+.bio i { display: block; font-style: normal; font-family: var(--sans); color: var(--gold); font-size: .72rem; font-weight: 700; letter-spacing: .08em; line-height: 1.5; }
 .row { display: grid; grid-template-columns: 3.4em 1fr; gap: 10px; font-size: .95rem; line-height: 1.55; }
 .row b { font-family: var(--sans); color: var(--gold); font-size: .82rem; letter-spacing: .1em; padding-top: .2em; }
 
@@ -151,9 +155,9 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--gold-l); outlin
       <p class="about">평생 흙과 더불어 살아온 어르신들의 기도로<br />오래 지켜 온 시골 제단, 그리고 다음 세대를<br />품는 교회입니다.</p>
       <div class="rows">
         <div class="bio"><p class="bio-name">담임목사 <b>손병민</b></p>
-          <p><i>학력</i>계명대 철학과 · 총신대 신대원(105회)</p>
-          <p><i>사역</i>사월교회 · 반야월교회 · 새로남교회 · 장충교회</p>
-          <p><i>가족</i>아내 채애리 사모 · 아들 손필립</p></div>
+          <div class="bio-row"><i>학력</i><ul><li>계명대학교 철학과 졸업</li><li>총신대학교 신학대학원 졸업(105회)</li><li>총신대학교 신학대학원 성경주해 석사(Th.M) 과정 중</li></ul></div>
+          <div class="bio-row"><i>사역</i><ul><li>대구 사월교회</li><li>대구 반야월교회</li><li>대전 새로남교회</li><li>서울 장충교회</li></ul></div>
+          <div class="bio-row"><i>가족</i><ul><li>아내 채애리 사모 · 아들 손필립</li></ul></div></div>
         <div class="row"><b>예배</b><span>주일 낮 예배 오전 11시 · 찬양예배 오후 2시</span></div>
         <div class="row"><b>누리집</b><span>nojin.kr</span></div>
       </div>
@@ -225,6 +229,17 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--gold-l); outlin
     if (navigator.share) { navigator.share(data).catch(function () {}); return; }
     copy(location.href, "초대장 주소를 복사했습니다 — 카톡에 붙여 넣어 보내세요");
   };
+  // 약력: 한 항목은 한 줄에 — 화면이 좁아 넘치는 줄만 글씨를 조금씩 줄여 맞춘다(잘리지 않게)
+  function fitBio() {
+    Array.prototype.forEach.call(document.querySelectorAll(".bio-row li"), function (li) {
+      li.style.fontSize = "";
+      var fs = parseFloat(getComputedStyle(li).fontSize), n = 0;
+      while (li.scrollWidth > li.clientWidth + 1 && fs > 9 && n++ < 40) { fs -= 0.5; li.style.fontSize = fs + "px"; }
+    });
+  }
+  fitBio();
+  window.addEventListener("resize", fitBio);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitBio);
   // 주차 안내: 누르면 펼치기
   $("parkBtn").onclick = function () { var box = $("parkBox"), open = box.hidden; box.hidden = !open; this.setAttribute("aria-expanded", open ? "true" : "false"); };
   // 교회 사진: 같은 폴더에 church.jpg 를 두면 저절로 나온다
