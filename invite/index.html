@@ -56,8 +56,8 @@ p { margin: 0; line-height: 1.7; }
 .verse cite { display: block; margin-top: 6px; font-style: normal; color: var(--gold); font-size: .85rem; letter-spacing: .08em; }
 
 .sign { margin-top: 18px; display: grid; gap: 2px; font-size: .95rem; color: var(--soft); }
-.sign b { font-family: var(--batang); color: var(--green); font-size: 1.12rem; font-weight: 700; margin-top: 6px; }
-.sign em { font-style: normal; color: var(--soft); font-size: .9rem; }
+.sign b { font-family: var(--batang); color: var(--green); font-size: clamp(.95rem, 4.3vw, 1.12rem); font-weight: 700; margin-top: 6px; white-space: nowrap; }
+.sign em { font-style: normal; font-weight: 400; color: var(--soft); font-size: .85em; }
 /* 교회 소개 */
 .parts { display: grid; gap: 14px; text-align: left; }
 .part { background: #FFF9EE; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
@@ -142,7 +142,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--gold-l); outlin
     <p>하나님의 크신 은혜 가운데<br />위임감사예배를 드리게 되었습니다.</p>
     <p style="margin-top:10px">목사와 교우가 한마음으로<br />주님께 감사드리는 이 자리에<br />귀한 분들을 정중히 모시고자 합니다.</p>
     <p style="margin-top:10px">바쁘시더라도 부디 오셔서<br />자리를 빛내 주시고<br />축복하여 주시기를 바랍니다.</p>
-    <div class="sign"><span>2026년 10월</span><span>대한예수교장로회 노진교회</span><b>담임목사 손병민 · 교우 일동</b><em>드림</em></div>
+    <div class="sign"><span>2026년 10월</span><span>대한예수교장로회 노진교회</span><b>담임목사 손병민 · 교우 일동 <em>드림</em></b></div>
     <p class="verse">이 모든 것 위에 사랑을 더하라<br />이는 온전하게 매는 띠니라<cite>골로새서 3:14</cite></p>
   </section>
 
@@ -152,7 +152,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--gold-l); outlin
       <div class="photo" id="photo">교회 사진 자리</div>
       <p class="about-lead">은혜를 먼저 받은 사람들이 모여<br />말씀을 한 장씩 이어 듣는 공동체입니다.</p>
       <p class="about">노진교회는 대한예수교장로회 합동<br />시화산노회 남부시찰에 속한 교회입니다.</p>
-      <p class="about">평생 흙과 더불어 살아온 어르신들의 기도로<br />오래 지켜 온 시골 제단, 그리고 다음 세대를<br />품는 교회입니다.</p>
+      <p class="about">평생 흙과 더불어 살아온 성도의<br />믿음과 신앙을 다음 세대에게<br />유산으로 전수하는 복된 교회입니다.</p>
       <div class="rows">
         <div class="bio"><p class="bio-name">담임목사 <b>손병민</b></p>
           <div class="bio-row"><i>학력</i><ul><li>계명대 철학과</li><li>총신대 신대원(105회)</li><li>총신대 신학대학원 Th.M(과정 중)</li></ul></div>
