@@ -4,7 +4,7 @@
    - 미리 보기: 주소 끝에 ?invitepop=1 을 붙이면 OPEN 이 false 여도 띄운다(하루 한 번 표시도 무시). */
 (function () {
   "use strict";
-  var OPEN = false;                                   // ← 목사님이 "오픈" 하시면 true
+  var OPEN = true;                                    // 2026-10-16 목사님 "팝업으로 띄우자" (끄려면 false)
   var END = Date.parse("2026-10-31T14:00:00+09:00");  // 이때부터는 안 띄움
   var KEY = "nojin_invite_pop";                       // localStorage: 띄운 날짜(한국 날짜)
   var URL_INVITE = "invite/";
