@@ -245,7 +245,7 @@
         <div class="nav-left">
           <a href="index.html" class="logo">
             <img src="images/icon-192.png?v=20260926icon2" alt="" class="logo-mark" />
-            <span class="logo-txt"><span class="logo-kr">${CH_NAME}</span>${CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}</span>
+            <span class="logo-txt"><span class="logo-kr">${CH_NAME}</span>${C.nameEn ? `<span class="logo-en">${C.nameEn}</span>` : CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}</span>
           </a>
           <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
         </div>
@@ -258,6 +258,22 @@
       </div>
     </header>`;
   document.body.insertAdjacentHTML("afterbegin", headerHTML);
+  // 머리글 '노진교회' 아래 영문 NOJIN CHURCH(2026-10-17 목사님: 대한예수교장로회 대신 작게) —
+  // 글자 사이를 벌려 위 '노진교회'와 양끝을 똑같이 맞춘다(글꼴이 늦게 와도, 화면 폭이 바뀌어도 다시 맞춤)
+  function fitLogoEn() {
+    document.querySelectorAll("#header .logo-txt").forEach((t) => {
+      const kr = t.querySelector(".logo-kr"), en = t.querySelector(".logo-en");
+      if (!kr || !en) return;
+      en.style.letterSpacing = "0px"; en.style.marginRight = "0px";
+      const krW = kr.getBoundingClientRect().width - (parseFloat(getComputedStyle(kr).letterSpacing) || 0);
+      const n = en.textContent.length;
+      const g = n > 1 ? Math.max(0, (krW - en.getBoundingClientRect().width) / (n - 1)) : 0;
+      en.style.letterSpacing = g.toFixed(2) + "px"; en.style.marginRight = -g.toFixed(2) + "px";
+    });
+  }
+  fitLogoEn();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLogoEn);
+  window.addEventListener("resize", fitLogoEn);
 
   // ===== 각 메뉴 첫 화면(표지)에 이 페이지의 차례 붙이기 =====
   // 위 메뉴(NAV)에 이 페이지가 있으면 그 세부 항목을 그대로 쓰고(메뉴와 차례가 늘 같게),
