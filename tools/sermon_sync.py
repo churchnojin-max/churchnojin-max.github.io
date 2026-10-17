@@ -480,6 +480,12 @@ def parse_dawn_v2(lines, base):
                 end = j
                 break
         seg = lines[h + 1:end]
+        # 14주차부터 찬송 아래 '합심기도' 칸(설교 전 기도 제목)이 있다 — 설교 원고가 아니므로 '본문 …' 줄 앞까지 뺀다
+        hj = next((j for j, l in enumerate(seg[:8]) if l.strip() == "합심기도"), None)
+        if hj is not None:
+            nj = next((j for j in range(hj + 1, min(len(seg), hj + 20)) if seg[j].strip().startswith("본문 ")), None)
+            if nj is not None:
+                seg = seg[:hj] + seg[nj:]
         scripture = whole_ref(m.group(2).strip()) if m.group(2) else None
         title_parts, bidx = [], 0
         for j, l in enumerate(seg[:6]):
