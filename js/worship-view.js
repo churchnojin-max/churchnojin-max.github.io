@@ -265,17 +265,18 @@
     return { label: label, text: rest.replace(/^[\s:：\-–—]+/, "").trim() };
   }
   function isVerseHead(h) { return /말씀|인용|구절|본문/.test(h) && !/질문|기도|나눔/.test(h); }
+  // 각 구절에 그 구절이 속한 칸 이름(group: '인용 구절'·'참고 구절' 등)을 붙여 둔다 — 칸이 둘 이상이면 나눠 보여 준다
   function parseXrefs(text) {
-    var out = [], cur = null, skip = false, verseSec = false;
+    var out = [], cur = null, skip = false, verseSec = false, group = "";
     String(text || "").split(/\r?\n/).forEach(function (raw) {
       var l = raw.trim();
       if (!l) return;
       var h = l.match(/^\[(.*)\]$/);
-      if (h) { skip = /질문/.test(h[1]); verseSec = isVerseHead(h[1]); cur = null; return; }
+      if (h) { skip = /질문/.test(h[1]); verseSec = isVerseHead(h[1]); group = h[1].trim(); cur = null; return; }
       if (skip) return;
       var bullet = /^●/.test(l), sp = (bullet || verseSec) ? splitRefLine(l) : null;
       if (bullet || sp) {
-        cur = { label: sp ? sp.label : l.replace(/^●\s*/, "").trim(), text: sp && sp.text ? [sp.text] : [] };
+        cur = { label: sp ? sp.label : l.replace(/^●\s*/, "").trim(), text: sp && sp.text ? [sp.text] : [], group: group };
         out.push(cur);
         return;
       }
@@ -283,14 +284,29 @@
     });
     return out;
   }
+  // [{name, n}] — 나오는 차례대로, 칸 이름 없는 구절은 '인용 구절'로 본다
+  function xrefGroups(list) {
+    var out = [];
+    list.forEach(function (x) {
+      var name = x.group || "인용 구절", g = out.filter(function (o) { return o.name === name; })[0];
+      if (g) g.n++; else out.push({ name: name, n: 1 });
+    });
+    return out;
+  }
+  function groupCount(groups, name) { var g = groups.filter(function (o) { return o.name === (name || "인용 구절"); })[0]; return g ? g.n : 0; }
   function openXrefs() {
     var list = parseXrefs(window.BULLETIN_XREFS);
     if (!list.length) return;
+    var groups = xrefGroups(list), many = groups.length > 1;
     var html = '<div class="xr-list">' + list.map(function (x, i) {
-      return '<div class="xr-item"><p class="vref-head">' + esc(x.label) + '</p>' +
+      var head = many && (i === 0 || list[i - 1].group !== x.group)
+        ? '<p class="xr-group">' + esc(x.group || "인용 구절") + ' <small>' + groupCount(groups, x.group) + '곳</small></p>' : "";
+      return head + '<div class="xr-item"><p class="vref-head">' + esc(x.label) + '</p>' +
         (x.text.length ? '<p class="sv-line">' + esc(x.text.join(" ")) + '</p>' : '<p class="sv-line xr-fill" data-i="' + i + '">불러오는 중…</p>') + '</div>';
-    }).join("") + '</div><p class="gd-note">설교에 인용된 말씀 ' + list.length + '곳 · 개역개정</p>';
-    sheet("설교 인용구절", html);
+    }).join("") + '</div><p class="gd-note">' + (many
+      ? groups.map(function (g) { return esc(g.name) + " " + g.n + "곳"; }).join(" · ")
+      : "설교에 인용된 말씀 " + list.length + "곳") + ' · 개역개정</p>';
+    sheet(many ? "설교 인용·참고 구절" : "설교 인용구절", html);
     // 본문 없이 장절만 적힌 줄은 찾아서 채운다
     list.forEach(function (x, i) {
       if (x.text.length) return;
@@ -479,5 +495,5 @@
     requestAnimationFrame(function () { pending = false; scan(); });
   }).observe(document.body, { childList: true, subtree: true });
 
-  window.WorshipView = { parseRef: parseRef, getVerses: getVerses, bookName: bookName, splitRefLine: splitRefLine, isVerseHead: isVerseHead };   // bookName: 수요기도회 말씀 고치기(js/wed-notes.js)
+  window.WorshipView = { parseRef: parseRef, getVerses: getVerses, bookName: bookName, splitRefLine: splitRefLine, isVerseHead: isVerseHead, parseXrefs: parseXrefs, xrefGroups: xrefGroups };   // bookName: 수요기도회 말씀 고치기(js/wed-notes.js)
 })();

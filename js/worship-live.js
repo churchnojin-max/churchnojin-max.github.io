@@ -162,15 +162,15 @@
   // 말씀선포: 주보 '설교 요약' 칸의 ●장절 + 본문 줄 → 인용 구절([..질문..] 칸은 뺀다)
   // ● 없이 '창세기 2:21 여호와 하나님이…'처럼 장절과 본문을 한 줄에 적어도 말씀 칸 안이면 나눈다(js/worship-view.js splitRefLine)
   function xrefsOf(summary) {
-    var out = [], cur = null, skip = false, verseSec = false, WV = window.WorshipView || {};
+    var out = [], cur = null, skip = false, verseSec = false, group = "", WV = window.WorshipView || {};
     String(summary || "").split(/\r?\n/).forEach(function (raw) {
       var l = raw.trim(); if (!l) return;
       var h = l.match(/^\[(.*)\]$/);
-      if (h) { skip = /질문/.test(h[1]); verseSec = WV.isVerseHead ? WV.isVerseHead(h[1]) : false; cur = null; return; }
+      if (h) { skip = /질문/.test(h[1]); verseSec = WV.isVerseHead ? WV.isVerseHead(h[1]) : false; group = h[1].trim(); cur = null; return; }
       if (skip) return;
       var bullet = /^●/.test(l), sp = (bullet || verseSec) && WV.splitRefLine ? WV.splitRefLine(l) : null;
       if (bullet || sp) {
-        cur = { ref: sp ? sp.label : l.replace(/^●\s*/, ""), lines: sp && sp.text ? [sp.text] : [] };
+        cur = { ref: sp ? sp.label : l.replace(/^●\s*/, ""), lines: sp && sp.text ? [sp.text] : [], group: group || "인용 구절" };
         out.push(cur);
         return;
       }
@@ -223,11 +223,19 @@
     }
     else if (isSermon) {
       var xr = xrefsOf(d.summary);
+      // [인용 구절]·[참고 구절]처럼 칸이 둘 이상이면 칸마다 제목을 달아 나눠 보여 준다
+      var grp = [];
+      xr.forEach(function (x) { var g = grp.filter(function (o) { return o.name === x.group; })[0]; if (g) g.n++; else grp.push({ name: x.group, n: 1 }); });
+      var many = grp.length > 1;
       c = '<p class="wl-sermon"><b>' + esc(plainDetail || b.title || "") + "</b>" +
         (b.scripture ? "<span>" + esc(b.scripture) + "</span>" : "") + (b.preacher ? "<span>" + esc(b.preacher) + "</span>" : "") + "</p>" +
-        (xr.length ? '<details class="wl-xref"><summary>말씀 속 인용 구절 ' + xr.length + "곳 보기</summary>" +
-          xr.map(function (x) {
-            return '<div class="wl-x"><b>' + esc(x.ref) + "</b>" + (x.lines.length ? x.lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("")
+        (xr.length ? '<details class="wl-xref"><summary>말씀 속 ' + (many
+            ? grp.map(function (g) { return esc(g.name) + " " + g.n + "곳"; }).join(" · ")
+            : "인용 구절 " + xr.length + "곳") + " 보기</summary>" +
+          xr.map(function (x, i) {
+            var head = many && (i === 0 || xr[i - 1].group !== x.group)
+              ? '<p class="wl-xgroup">' + esc(x.group) + " <small>" + grp.filter(function (o) { return o.name === x.group; })[0].n + "곳</small></p>" : "";
+            return head + '<div class="wl-x"><b>' + esc(x.ref) + "</b>" + (x.lines.length ? x.lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("")
               : '<div class="wl-bible" data-ref="' + esc(x.ref) + '"><p class="wl-hint">본문을 불러오는 중…</p></div>') + "</div>";
           }).join("") + "</details>" : "");
       sub = "";

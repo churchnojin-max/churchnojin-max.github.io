@@ -3851,6 +3851,9 @@ li.is-wv.is-hymn:hover { color: #1F4677; }
 .xr-item .vref-head { margin: 0 0 4px; font-weight: 700; color: #C95F0E; font-size: .95rem; display: flex; align-items: center; gap: 8px; }
 .xr-item .vref-head::before { content: ""; flex: none; width: .5em; height: .5em; background: var(--accent); border-radius: 2px; transform: rotate(45deg); }   /* 장절 앞 초록 마름모 */
 .xr-item .sv-line { margin: 0; font-family: "Gowun Batang", serif; font-size: 1.05rem; line-height: 1.75; color: var(--ink); }
+.xr-group { margin: 14px 0 2px; padding: 6px 0 4px; font-weight: 800; font-size: 1.02rem; color: var(--accent); border-bottom: 2px solid var(--accent); }   /* [인용 구절]·[참고 구절] 나눔 */
+.xr-group:first-child { margin-top: 0; }
+.xr-group small { font-weight: 600; color: #7b8794; font-size: .85em; }
 /* 글 속 성경 장절(롬 8:17 등) — 누르면 그 아래에 본문이 펼쳐진다 */
 button.vref { font: inherit; color: #C95F0E; font-weight: 700; background: none; border: 0; padding: 0;
   cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
