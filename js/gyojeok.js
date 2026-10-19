@@ -349,7 +349,9 @@ console.log('[gyojeok.js] v20261007reg');
       function permName(p) { return p[1].replace(/<br>/g, ' '); }
       var admins = users.filter(function (u) { return u.isAdmin; });
       var granted = users.filter(function (u) { return !u.isAdmin && hasPerm(u); });
-      var plain = users.filter(function (u) { return !u.isAdmin && !hasPerm(u); });
+      var plain = users.filter(function (u) { return !u.isAdmin && !hasPerm(u) && u.status !== '외부성도'; });
+      // 외부 성도(다른 교회 성도)는 일반 회원과 섞지 않고 ④ 상자로 따로(2026-10-20 목사님)
+      var outsiders = users.filter(function (u) { return !u.isAdmin && !hasPerm(u) && u.status === '외부성도'; });
       var AC_CSS = '<style>' +
         '.ac-box{border:1px solid #e3e8ef;border-radius:12px;margin:0 0 18px;overflow:hidden;background:#fff}' +
         '.ac-head{padding:12px 16px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}' +
@@ -358,6 +360,7 @@ console.log('[gyojeok.js] v20261007reg');
         '.ac-admin{border-color:#e2bcbc}.ac-admin .ac-head{background:#fbeeee}.ac-admin .ac-head h4{color:#7a3b3b}' +
         '.ac-granted{border-color:#e6d6a8}.ac-granted .ac-head{background:#fbf6e4}.ac-granted .ac-head h4{color:#7a5c12}' +
         '.ac-plain .ac-head{background:#f4f6f9}' +
+        '.ac-outside{border-color:#c9d9ee}.ac-outside .ac-head{background:#eef4fb}.ac-outside .ac-head h4{color:#3b6ea5}' +
         '.ac-row{display:grid;grid-template-columns:minmax(150px,1.2fr) auto minmax(130px,1.6fr) auto;gap:10px 14px;align-items:center;padding:12px 16px;border-top:1px solid #eef1f5;font-size:.88rem}' +
         '.ac-who b{font-size:.95rem}.ac-mail{display:block;color:var(--ink-soft,#7b8794);font-size:.78rem;word-break:break-all}' +
         '.ac-status{display:flex;align-items:center;gap:8px;white-space:nowrap}' +
@@ -525,7 +528,7 @@ console.log('[gyojeok.js] v20261007reg');
           (list.length ? list.map(function (u) { return personRow(u, kind); }).join('') : '<div class="ac-empty">해당하는 분이 없습니다.</div>') + '</div>';
       }
       panel.innerHTML = AC_CSS + '<div class="fin-card">' +
-        '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:6px">홈페이지에 가입한 회원입니다. 실수로 눌리지 않도록 <b>세 상자</b>로 나누었고, 권한은 <b>‘권한 바꾸기’</b>를 눌러 그 사람 창에서만 바꿀 수 있습니다(저장할 때 한 번 더 묻습니다).</p>' +
+        '<p style="color:var(--ink-soft);font-size:.88rem;margin-bottom:6px">홈페이지에 가입한 회원입니다. 실수로 눌리지 않도록 <b>네 상자</b>로 나누었고, 권한은 <b>‘권한 바꾸기’</b>를 눌러 그 사람 창에서만 바꿀 수 있습니다(저장할 때 한 번 더 묻습니다).</p>' +
         '<p style="color:var(--ink-soft);font-size:.85rem;margin-bottom:14px;line-height:1.6"><b>회원</b> 칸에서 정/준회원을 바꿀 수 있고, <b>정회원</b>으로 바꾸면 교적과 연결됩니다(헌금조회·가정합산 연동). 우리 교회 성도가 아니어도 믿을 만한 분은 <b>특별 승인</b>으로 정회원처럼 쓰게 할 수 있습니다(교적 연결 없음, 어떤 분인지 적어 둠).' +
           (adminLock ? '<br>관리자 지정·해제는 최고 운영자만 할 수 있습니다.' : '') + '</p>' +
         '<p class="help" id="gj_msg" style="margin:0 0 10px;min-height:1.2em;font-weight:700"></p>' +
@@ -534,6 +537,7 @@ console.log('[gyojeok.js] v20261007reg');
         box('ac-granted', '② 영역 권한을 받은 분', '맡은 일에 해당하는 영역만 열려 있습니다.', granted, 'granted') +
         box('ac-plain', '③ 일반 회원', '받은 권한이 없는 분입니다.', plain, 'plain',
           plain.length > 6 ? '<input type="text" class="ac-search" id="ac_q" placeholder="🔍 이름으로 찾기">' : '') +
+        box('ac-outside', '④ 외부 성도', '다른 교회 성도입니다. 주보·사진·봉사위원·수요 말씀·자료실·주일 예배 화면은 볼 수 있고, 헌금 명단·주보 PDF·교적·행정은 볼 수 없으며 글쓰기·댓글도 못 합니다.', outsiders, 'plain') +
         '<p class="help" style="margin-top:4px;line-height:1.8">' +
         // 표 머리의 줄바꿈(<br>)은 설명 글에서는 띄어쓰기로
         GJ_PERMS.map(function (p) { return '<b>' + esc(permName(p)) + '</b> ' + esc(p[2]); }).join(' &nbsp;·&nbsp; ') + '</p>' +
@@ -692,6 +696,8 @@ console.log('[gyojeok.js] v20261007reg');
         function setMember(status, key, name) {
           msg.style.color = 'var(--ink-soft)'; msg.textContent = '저장 중…';
           WPF.call('adminSetMember', { uid: uid, status: status, memberKey: key, memberName: name }).then(function () {
+            var moved = (u.status === '외부성도') !== (status === '외부성도');   // ③ 일반 회원 ↔ ④ 외부 성도 상자를 옮겨야 하면 다시 그린다
+            if (moved) { reload(true, '✓ ' + (name ? name + ' · ' : '') + (status === '외부성도' ? '외부 성도' : status) + ' 저장됨'); return; }
             prevStatus = status; u.status = status; u.special = false; if (name) { u.name = name; tr.querySelector('.ac-name').textContent = name; tr.setAttribute('data-name', name); }
             var sp = tr.querySelector('.st-pill'); if (sp) sp.innerHTML = stPill(status);
             flash(true, '✓ ' + (name ? name + ' · ' : '') + status + ' 저장됨');
