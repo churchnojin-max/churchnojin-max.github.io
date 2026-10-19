@@ -200,7 +200,7 @@
     if (more) more.hidden = !currentUser() || isPending();               // 로그인하지 않은 분께는 '소식 더 보기'도 숨김
     const addBtn = document.getElementById("hnAdd");
     if (!addBtn) return;
-    const show = !!currentUser() && !isPending() && uploadReady();
+    const show = !!currentUser() && !isPending() && !(window.ChurchOutside && window.ChurchOutside()) && uploadReady();   // 외부 성도는 보기만(2026-10-20)
     addBtn.hidden = !show;
   }
 
@@ -208,6 +208,7 @@
   async function toggleLike(p) {
     const me = currentUser();
     if (!me) { alert("좋아요를 누르려면 로그인해 주세요."); openLogin(); return null; }
+    if (window.ChurchWriteBlocked && window.ChurchWriteBlocked()) return null;
     if (!social) return null;
     const id = String(p.id), liked = myLikes.has(id);
     if (liked) { myLikes.delete(id); p.like_count = Math.max(0, (p.like_count || 0) - 1); }
@@ -232,6 +233,7 @@
   async function addComment(id, body) {
     const me = currentUser();
     if (!me) { alert("댓글을 쓰려면 로그인해 주세요."); openLogin(); return null; }
+    if (window.ChurchWriteBlocked && window.ChurchWriteBlocked()) return null;
     const text = String(body || "").trim(); if (!text) return null;
     const row = { photo_id: id, user_id: me.id, author_name: displayName(me), body: text };
     try {

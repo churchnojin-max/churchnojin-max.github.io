@@ -234,6 +234,21 @@ console.log('[dashboard.js] v20260705qtfallback');
     });
   }
 
+  // 외부 성도로 승인(2026-10-20 목사님): 다른 교회 성도 — 다 보되 헌금 명단·주보 PDF·교적·행정은 없고 글쓰기·댓글은 못 함
+  function bindOutside(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('.pa-outside'), function (bt) {
+      bt.onclick = function () {
+        var row = bt.closest('.pa-row'), uid = row.getAttribute('data-uid'), nm = row.getAttribute('data-name') || '이 분';
+        if (!confirm(nm + '님을 외부 성도로 승인할까요?\n\n주보·사진·봉사위원·수요 말씀·자료실·주일 예배 화면은 볼 수 있고,\n헌금(예물) 명단·주보 PDF·교적·행정은 볼 수 없습니다. 글쓰기·댓글도 막힙니다.')) return;
+        bt.disabled = true;
+        WPF.call('adminSetMember', { uid: uid, status: '외부성도', memberKey: '', memberName: nm }).then(function (r) {
+          if (r && r.ok === false) throw new Error(r.error || '저장하지 못했습니다.');
+          row.innerHTML = '<span style="color:#3b6ea5;font-size:.9rem">✓ ' + esc(nm) + '님 — 외부 성도로 승인했습니다.</span>';
+        }).catch(function (e) { bt.disabled = false; alert('승인하지 못했습니다: ' + e.message); });
+      };
+    });
+  }
+
   function loadPendingApproval() {
     var box = document.getElementById('pendingApproval');
     if (!box || !window.WPF) return;
@@ -243,7 +258,7 @@ console.log('[dashboard.js] v20260705qtfallback');
       var spLine = spPending.length ? '<p style="margin:0 0 12px;padding:9px 12px;background:#fff;border:1px solid #e6c98a;border-radius:9px;font-size:.88rem">🙋 <b>특별 승인 신청 ' + spPending.length + '건</b> (다른 교회 성도) — ' +
         spPending.map(function (q) { return esc(q.name) + '(' + esc(q.church) + ')'; }).join(', ') + ' · <a href="gyojeok.html">교적관리에서 확인 →</a></p>' : '';
       var all = r.users || [];
-      var pending = all.filter(function (u) { return u.status !== '정회원' && !u.isAdmin && !u.suspended; });   // 거절(정지)한 분은 빼고
+      var pending = all.filter(function (u) { return u.status !== '정회원' && u.status !== '외부성도' && !u.isAdmin && !u.suspended; });   // 거절(정지)한 분은 빼고
       if (!pending.length && !spLine) { box.innerHTML = ''; return; }
       if (!pending.length) { box.innerHTML = '<div class="form-card" style="padding:16px 18px;border:1px solid #e6c98a;background:#fffdf6">' + spLine + '</div>'; return; }
       // 최근 가입자가 위로
@@ -269,6 +284,7 @@ console.log('[dashboard.js] v20260705qtfallback');
             // 본인이 넣은 교적 인증 신청(이름·생년월일)과 교적 일치 여부 — 승인 판단용
             (u.claimName ? '<span style="flex-basis:100%;color:#7b8794;font-size:.8rem">교적 인증 신청: ' + esc(u.claimName) + ' · ' + esc(String(u.claimBirth || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')) +
               (u.claimMatched ? ' · <b style="color:#1a7f4b">교적과 일치</b>' : ' · <b style="color:#c0392b">교적에 없음</b>') + '</span>' : '') +
+            '<button type="button" class="btn btn-line pa-outside" style="padding:6px 14px;min-height:36px;color:#3b6ea5;border-color:#9dbbe0">외부 성도로 승인</button>' +
             '<button type="button" class="btn btn-line pa-reject" style="padding:6px 14px;min-height:36px;color:#a23b2c;border-color:#e9b1a8">승인 거절</button>' +
             '</div>';
         }).join('') +
@@ -277,6 +293,7 @@ console.log('[dashboard.js] v20260705qtfallback');
         '<p style="margin:8px 0 0;font-size:.78rem;color:#9aa5b1">※ 승인은 교적관리 ▸ 권한 관리에서 <b>정회원</b>으로 바꾸고 교적의 본인을 골라 연결하면 됩니다.</p>' +
         '</div>';
       bindReject(box);
+      bindOutside(box);
     }).catch(function () {
       // 관리자가 아니면 list_access 가 빈 배열/오류 → 아무것도 안 보여 준다
       box.innerHTML = '';

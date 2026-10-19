@@ -131,6 +131,7 @@
 
     writeBtn.addEventListener("click", () => {
       if (!currentUser()) { alert("글을 쓰려면 먼저 로그인해 주세요."); openLogin(); return; }
+      if (window.ChurchOutside && window.ChurchOutside()) { window.ChurchWriteBlocked(); return; }   // 외부 성도는 읽기만(2026-10-20)
       if (window.ChurchPending && window.ChurchPending()) { alert("정회원 승인 뒤에 이용하실 수 있습니다.\n기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다."); if (window.__askSignupInfo) window.__askSignupInfo(); return; }
       form.hidden = false;
       form.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -369,6 +370,7 @@
   async function toggleReaction(postId, type) {
     const me = currentUser();
     if (!me || !me.id) { alert("반응을 남기려면 로그인해 주세요."); openLogin(); return; }
+    if (window.ChurchOutside && window.ChurchOutside()) { window.ChurchWriteBlocked(); return; }   // 외부 성도는 읽기만(2026-10-20)
     if (window.ChurchPending && window.ChurchPending()) { alert("정회원 승인 뒤에 이용하실 수 있습니다.\n기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다."); if (window.__askSignupInfo) window.__askSignupInfo(); return; }
     // 현재 내가 눌렀는지 확인
     let mine = [];
@@ -392,6 +394,7 @@
     const input = commentForm.querySelector("input[name=comment]");
     const text = input.value.trim();
     if (!text || !me || !openPostId) { if (!me) openLogin(); return; }
+    if (window.ChurchOutside && window.ChurchOutside()) { window.ChurchWriteBlocked(); return; }   // 외부 성도는 읽기만(2026-10-20)
     if (window.ChurchPending && window.ChurchPending()) { alert("정회원 승인 뒤에 이용하실 수 있습니다.\n기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다."); if (window.__askSignupInfo) window.__askSignupInfo(); return; }
     try {
       await api("POST", "comments", { post_id: openPostId, user_id: me.id, author_name: displayName(me), content: text }, { Prefer: "return=minimal" });

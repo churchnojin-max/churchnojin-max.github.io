@@ -429,11 +429,23 @@
   let pendingVal = null;
   async function isPending(user) {
     if (pendingVal !== null) return pendingVal;
+    // 2026-10-20 외부 성도(다른 교회 성도) 칸: 'full'(관리자·정회원) / 'outside'(외부 성도) / 'none'(승인 대기)
+    let level = "";
     try {
-      const r = await sb.rpc("am_full_member");            // 서버 기준(관리자 또는 정회원)과 똑같이 판단
-      if (r.error) return false;
-      pendingVal = r.data !== true;
+      const r = await sb.rpc("am_member_level");
+      if (!r.error && typeof r.data === "string") level = r.data;
+    } catch (_) {}
+    try {
+      if (!level) {
+        const r = await sb.rpc("am_full_member");            // 서버 기준(관리자 또는 정회원)과 똑같이 판단
+        if (r.error) return false;
+        level = r.data === true ? "full" : "none";
+      }
+      pendingVal = level === "none";
     } catch (_) { return false; }
+    // 외부 성도: 다 보되 헌금 명단·글쓰기는 막힘(layout.js ChurchOutside)
+    try { if (level === "outside") sessionStorage.setItem("nojin_outside", user.id); else sessionStorage.removeItem("nojin_outside"); } catch (_) {}
+    if (level === "outside") window.dispatchEvent(new CustomEvent("church-outside"));
     // 화면이 '승인 대기' 잠금 안내를 그릴 수 있게 적어 둔다(layout.js ChurchPending)
     let was = null;
     try { was = sessionStorage.getItem("nojin_pending"); if (pendingVal) sessionStorage.setItem("nojin_pending", user.id); else sessionStorage.removeItem("nojin_pending"); } catch (_) {}

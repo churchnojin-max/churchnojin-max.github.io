@@ -25,6 +25,7 @@ console.log('[gyojeok.js] v20261007reg');
   // 특별 승인(2026-10-08): 교적 없이 정회원 — 우리 교회 성도가 아니어도 믿을 만한 분(supabase/special_member_20261008.sql)
   function stPill(st, special) {
     if (st === '정회원' && special) return '<span class="fin-pill in" style="background:#8a6d1f;color:#fff">특별 승인</span>';
+    if (st === '외부성도') return '<span class="fin-pill in" style="background:#3b6ea5;color:#fff">외부 성도</span>';   // 2026-10-20
     return '<span class="fin-pill ' + (st === '정회원' ? 'in' : 'out') + '">' + (st === '정회원' ? '정회원' : '준회원') + '</span>';
   }
 
@@ -382,6 +383,7 @@ console.log('[gyojeok.js] v20261007reg');
       function memberKind(u) {
         if (u.suspended && !u.isAdmin) return { k: 'rejected', label: /^승인 거절/.test(u.suspendNote || '') ? '승인 거절됨' : '정지됨', bg: '#eceff3', fg: '#5f6b7a' };
         if (u.status === '정회원' && u.special) return { k: 'guest', label: '비교인 · 특별 승인', bg: '#fbf1dc', fg: '#8a6d1f' };
+        if (u.status === '외부성도') return { k: 'outside', label: '외부 성도 · 읽기만', bg: '#e6eef8', fg: '#3b6ea5' };
         if (u.status === '정회원' && u.linked) return { k: 'member', label: '교인 · 교적 연결', bg: '#e3f3e8', fg: '#1a7f4b' };
         if (u.status === '정회원' || u.isAdmin) return { k: 'unlinked', label: '정회원 · 교적 미연결', bg: '#fff4d6', fg: '#8a6d1f' };
         var rel = (u.signup && u.signup.relation) || '';
@@ -503,19 +505,20 @@ console.log('[gyojeok.js] v20261007reg');
             (memberKind(u).k === 'rejected' ? '<button type="button" class="btn btn-line ac-unreject">되돌리기</button>' : '');
         return '<div class="ac-row" data-uid="' + esc(u.uid) + '" data-kind="' + memberKind(u).k + '" data-name="' + esc(u.name || '') + '">' + whoCell(u) +
           '<div class="ac-status"><span class="st-pill">' + stPill(u.status, u.special) + '</span><select class="ck-status" aria-label="회원 구분">' +
-            '<option value="준회원"' + (u.status === '정회원' ? '' : ' selected') + '>준회원</option>' +
+            '<option value="준회원"' + (u.status === '정회원' || u.status === '외부성도' ? '' : ' selected') + '>준회원</option>' +
             '<option value="정회원"' + (u.status === '정회원' && !u.special ? ' selected' : '') + '>정회원</option>' +
-            '<option value="특별"' + (u.status === '정회원' && u.special ? ' selected' : '') + '>특별 승인</option></select></div>' +
+            '<option value="특별"' + (u.status === '정회원' && u.special ? ' selected' : '') + '>특별 승인</option>' +
+            '<option value="외부성도"' + (u.status === '외부성도' ? ' selected' : '') + '>외부 성도</option></select></div>' +
           '<div class="ac-chips">' + chips + '</div><div class="ac-act">' + btn + '</div></div>';
       }
       function kindBarHtml() {
-        var c = { member: 0, unlinked: 0, guest: 0, pending: 0 };
+        var c = { member: 0, unlinked: 0, guest: 0, outside: 0, pending: 0, rejected: 0 };
         users.forEach(function (u) { c[memberKind(u).k]++; });
         var B = function (k, t, n, col) { return '<button type="button" class="mk-btn" data-k="' + k + '" style="border-color:' + col + '">' + t + ' <b>' + n + '</b></button>'; };
         return '<div class="mk-bar"><span class="mk-title">회원 구분</span>' +
           B('', '전체', users.length, '#cdd7e3') + B('member', '교인(교적 연결)', c.member, '#9fd3b2') + B('unlinked', '교적 미연결', c.unlinked, '#e6c98a') +
-          B('guest', '비교인(특별 승인)', c.guest, '#e6c98a') + B('pending', '승인 대기', c.pending, '#e9b1a8') +
-          '<p class="mk-note">승인 대기인 분은 로그인하지 않은 분과 똑같이 교회 정보(사진·주보 예물 명단·봉사위원·자료실·수요 말씀)를 볼 수 없고 글도 쓸 수 없습니다. 교적 미연결 정회원은 ‘권한 바꾸기’에서 교적의 본인과 연결해 주세요.</p></div>';
+          B('guest', '비교인(특별 승인)', c.guest, '#e6c98a') + B('outside', '외부 성도', c.outside, '#9dbbe0') + B('pending', '승인 대기', c.pending, '#e9b1a8') +
+          '<p class="mk-note">승인 대기인 분은 로그인하지 않은 분과 똑같이 교회 정보(사진·주보 예물 명단·봉사위원·자료실·수요 말씀)를 볼 수 없고 글도 쓸 수 없습니다. 교적 미연결 정회원은 ‘권한 바꾸기’에서 교적의 본인과 연결해 주세요. <b>외부 성도</b>(다른 교회 성도)는 다 볼 수 있지만 헌금 명단·주보 PDF·교적·행정은 볼 수 없고 글쓰기·댓글도 못 합니다.</p></div>';
       }
       function box(cls, title, sub, list, kind, extra) {
         return '<div class="ac-box ' + cls + '"><div class="ac-head"><h4>' + title + ' <span>(' + list.length + '명)</span></h4><span>' + sub + '</span></div>' + (extra || '') +
@@ -675,7 +678,7 @@ console.log('[gyojeok.js] v20261007reg');
         var u = users.filter(function (x) { return x.uid === uid; })[0] || {};
         var nm = u.name || u.email || '(이름없음)';
         var sel = tr.querySelector('.ck-status');
-        var prevStatus = u.status === '정회원' ? (u.special ? '특별' : '정회원') : '준회원';
+        var prevStatus = u.status === '정회원' ? (u.special ? '특별' : '정회원') : (u.status === '외부성도' ? '외부성도' : '준회원');
         var editBtn = tr.querySelector('.ac-edit'), unBtn = tr.querySelector('.ac-unadmin');
         if (editBtn) editBtn.addEventListener('click', function () { openPermEditor(u); });
         if (unBtn) unBtn.addEventListener('click', function () {
@@ -704,6 +707,12 @@ console.log('[gyojeok.js] v20261007reg');
             WPF.call('adminSetSpecial', { uid: uid, note: why.trim() }).then(function () {
               reload(true, '✓ 「' + nm + '」님을 특별 승인했습니다');
             }).catch(function (e) { flash(false, '오류: ' + e.message); sel.value = prevStatus; });
+            return;
+          }
+          if (sel.value === '외부성도') {
+            // 외부 성도(2026-10-20 목사님): 다른 교회 성도 — 다 보되 헌금 명단·교적·행정은 없고 글쓰기·댓글은 못 함
+            if (!confirm('「' + nm + '」님을 외부 성도로 승인할까요?\n\n주보·사진·봉사위원·수요 말씀·자료실·주일 예배 화면은 볼 수 있고,\n헌금(예물) 명단·주보 PDF·교적·행정은 볼 수 없습니다. 글쓰기·댓글도 막힙니다.')) { sel.value = prevStatus; return; }
+            setMember('외부성도', '', u.name || '');
             return;
           }
           if (sel.value === '정회원') {

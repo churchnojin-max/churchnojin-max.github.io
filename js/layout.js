@@ -331,6 +331,14 @@
     } catch (e) { return ""; }
   }
   window.ChurchPending = () => { try { const u = sessionUid(); return !!u && sessionStorage.getItem("nojin_pending") === u; } catch (e) { return false; } };
+  // 외부 성도(다른 교회 성도, 2026-10-20): 정회원처럼 다 보되 헌금 명단·교적·행정은 없고, 글쓰기·댓글은 막는다(서버도 막음)
+  window.ChurchOutside = () => { try { const u = sessionUid(); return !!u && sessionStorage.getItem("nojin_outside") === u; } catch (e) { return false; } };
+  // 글쓰기·댓글·좋아요·사진 올리기를 막아야 하면 안내하고 true(승인 대기·외부 성도)
+  window.ChurchWriteBlocked = () => {
+    if (window.ChurchPending()) { alert("정회원 승인 뒤에 이용하실 수 있습니다.\n기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다."); return true; }
+    if (window.ChurchOutside()) { alert("외부 성도님은 읽기만 하실 수 있습니다.\n글쓰기·댓글은 노진교회 성도님께만 열려 있습니다."); return true; }
+    return false;
+  };
   // 승인 대기인 분께 보여 줄 잠금 안내(what: '봉사위원 명단은' 처럼)
   window.PendingLockHtml = (what) =>
     `<div class="member-only pending-lock"><p>🔒 ${what}<br /><b>정회원 승인 뒤에</b> 보실 수 있습니다.</p>` +
@@ -1000,7 +1008,7 @@
     sdk.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     sdk.onload = function () {
       const auth = document.createElement("script");
-      auth.src = "js/auth.js?v=20261010cap";
+      auth.src = "js/auth.js?v=20261020out";
       document.body.appendChild(auth);
     };
     // SDK 로드 실패 시에도 버튼은 유지(클릭 시 모달은 위 핸들러가 처리)

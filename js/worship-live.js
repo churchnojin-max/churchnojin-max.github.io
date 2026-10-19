@@ -364,7 +364,7 @@
       if (!s) { shown = false; gate("정회원만 이용할 수 있습니다", "로그인한 정회원 성도님께 주일 " + timeTxt(SW.open) + "부터 " + timeTxt(SW.close) + "까지 열립니다.", { login: true, bulletin: true }); return; }
       return api("/rest/v1/rpc/my_perms", { method: "POST", body: "{}" }).then(function (p) {
         p = p || {};
-        var admin = p.isAdmin === true, full = admin || p.status === "정회원", open = isOpenNow();
+        var admin = p.isAdmin === true, full = admin || p.status === "정회원" || p.status === "외부성도", open = isOpenNow();
         isAdminView = admin;
         scheduleMark(admin);
         if (!full) { shown = false; gate("정회원만 이용할 수 있습니다", "교적 확인을 거쳐 정회원이 되시면 주일 예배 시간에 이용하실 수 있습니다.", { bulletin: true }); return; }

@@ -1724,6 +1724,8 @@ if (homeBulletin) {
           ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><ul class="hb-extra hb-offer">${offerKeys.map((k) => `<li><b>${escB(k)}</b><span>${escB(d.offering[k])}</span></li>`).join("")}</ul></div>`
           : (window.ChurchSignedIn && !window.ChurchSignedIn()
             ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><p class="member-only-line">예물 명단은 가입하고 로그인하신 분께만 보여 드립니다. <button type="button" data-mo="login">로그인</button></p></div>`
+            : window.ChurchOutside && window.ChurchOutside()
+              ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><p class="member-only-line">예물 명단은 노진교회 성도님께만 보여 드립니다.</p></div>`
             : (window.ChurchPending && window.ChurchPending()
               ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><p class="member-only-line">예물 명단은 정회원 승인 뒤에 보실 수 있습니다. 기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다. <button type="button" data-mo="info">기본 정보 적기</button></p></div>`
               : ""));
