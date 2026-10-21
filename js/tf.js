@@ -143,7 +143,7 @@
         var label = simple ? { todo: "아직 안 했어요", doing: "하는 중", done: "끝냈어요 ✓" }[s] : { todo: "안 함", doing: "하는 중", done: "끝남 ✓" }[s];
         return '<button type="button" data-s="' + s + '" class="' + (st.status === s ? "on" : "") + '">' + label + "</button>";
       }).join("") + "</div>" +
-      '<div class="tf-memo"><input type="text" placeholder="' + (simple ? "메모 (안 적어도 돼요)" : "메모 (예: 90명 예약, 선결제)") + '" value="' + esc(st.note || "") + '" /></div>' +
+      '<div class="tf-memo"><input type="text" placeholder="' + (simple ? "메모 — 수정할 것·보완할 것·건의 (안 적어도 돼요)" : "메모 — 수정·보완·건의 사항 (예: 130명 예약, 선결제)") + '" value="' + esc(st.note || "") + '" /></div>' +
       (who ? '<div class="tf-who">' + who + "</div>" : "") + "</div>";
   }
   function visible(t) {
