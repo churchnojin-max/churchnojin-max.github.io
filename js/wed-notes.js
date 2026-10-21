@@ -142,11 +142,21 @@
   function pointsHtml(n, cls) {
     var pts = ((n.summary || {}).points || []).slice(0, 3);
     if (!pts.length) return "";
-    var full = cls === "wr-points";   // 크게 읽는 창에서만 주요 내용·인용 장절까지
-    return '<ol class="' + (cls || "wed-points") + '">' + pts.map(function (p) {
+    var full = cls === "wr-points";   // 크게 읽는 창에서만 주요 내용·인용 구절까지
+    var byKey = {};
+    (n.verses || []).forEach(function (v) { byKey[rkey(v.ref)] = v; });
+    return '<ol class="' + (cls || "wed-points") + '">' + pts.map(function (p, i) {
       var more = "";
       if (full && (p.sub || []).length) more += '<ul class="wr-pt-sub">' + p.sub.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join("") + '</ul>';
-      if (full && (p.refs || []).length) more += '<p class="wr-pt-refs">인용 · ' + p.refs.map(esc).join(" · ") + '</p>';
+      // 인용 장절을 누르면 그 구절 본문이 바로 아래 펼쳐진다(2026-10-21 목사님: "장절만 써두면 안 돼")
+      var rs = full ? (p.refs || []).map(function (r) { return byKey[rkey(r)]; }).filter(Boolean) : [];
+      if (rs.length) {
+        more += '<div class="wr-chips wr-pt-chips">' + rs.map(function (v, j) {
+          return '<button type="button" class="wr-chip" data-wref="' + i + '-' + j + '" aria-expanded="false">' + esc(v.ref) + '</button>';
+        }).join("") + '</div>' + rs.map(function (v, j) {
+          return '<div class="wr-ment-box" data-wrefbox="' + i + '-' + j + '" hidden><p class="wr-ment-ref">' + esc(v.ref) + '</p>' + linesHtml(v.lines, true) + '</div>';
+        }).join("");
+      }
       return '<li>' + (p.label ? '<span class="wr-pill">' + esc(p.label) + '</span>' : '') + (more ? '<div>' + esc(p.text) + more + '</div>' : '<span>' + esc(p.text) + '</span>') + '</li>';
     }).join("") + '</ol>';
   }
@@ -523,6 +533,13 @@
     if (t.closest("[data-wclose]")) { closeReader(); return; }
     var g = t.closest("[data-go]");
     if (g) { goSec(g.getAttribute("data-go")); return; }
+    var wr = t.closest("[data-wref]");
+    if (wr) {
+      var key = wr.getAttribute("data-wref"), boxEl = rd.querySelector('[data-wrefbox="' + key + '"]'), open = wr.getAttribute("aria-expanded") !== "true";
+      wr.setAttribute("aria-expanded", open ? "true" : "false");
+      if (boxEl) boxEl.hidden = !open;
+      return;
+    }
     var a = t.closest("a[data-cpath]");
     if (a && a.getAttribute("href") === "#") { e.preventDefault(); return; }   // 아직 주소를 받기 전
     var st = t.closest("[data-wstatus]");
