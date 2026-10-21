@@ -20,7 +20,7 @@ insert into public.tf_roster (name, see_all, note) values
   ('김은희', false, '권사 · 식당 및 간식(부) · 하객 선물'),
   ('신성호', false, '집사 · 미디어·현수막·순서지·사진'),
   ('김평애', false, '권사 · 안내(팀장)'),
-  ('고은성', false, '안내'),
+  ('고은성', false, '권사 · 안내'),
   ('김종학', false, '집사 · 주차'),
   ('최명철', false, '집사 · 주차'),
   ('신성찬', false, '집사 · 예배 음악·순서 지원'),
