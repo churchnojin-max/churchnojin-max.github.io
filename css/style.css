@@ -4083,6 +4083,15 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .wr-h small { margin-left: 6px; font-size: .78rem; font-weight: 500; color: var(--ink-soft); }
 .wr-lines { margin: 0; padding: 14px 18px; }
 .wr-verses { list-style: none; margin: 0; padding: 0; }
+/* 핵심마다 주요 내용·인용 구절(2026-10-21) */
+.wr-pt-sub { margin: 6px 0 0; padding-left: 1.1em; font-size: .95rem; line-height: 1.65; color: var(--ink-soft); }
+.wr-pt-sub li { display: list-item; font-size: inherit; }
+.wr-pt-refs { margin: 6px 0 0; font-size: .86rem; font-weight: 600; color: var(--accent); word-break: keep-all; }
+.wr-vgroup + .wr-vgroup { margin-top: 26px; }
+.wr-vg-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--paper-alt); line-height: 1.55; word-break: keep-all; }
+.wr-vg-h b { color: var(--ink); }
+.wr-vg-no { flex: none; display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--gold); color: #fff; font-size: .85rem; font-weight: 800; }
+.wr-edit-sm { display: block; margin-top: 6px; font-size: .88rem; }
 .wr-v + .wr-v { margin-top: 16px; }
 .wr-v-ref { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: 800; color: var(--accent); }
 .wr-no { font-size: 1.3rem; line-height: 1; color: var(--gold); }

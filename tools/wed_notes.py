@@ -684,8 +684,43 @@ def _clean_summary(sm):
     for p in (sm.get("points") or []):
         t = _clean_text(p.get("text") or p.get("title"), 300)
         if t:
-            pts.append({"label": _clean_text(p.get("label"), 12), "text": t})
+            pt = {"label": _clean_text(p.get("label"), 12), "text": t}
+            # 핵심마다 주요 내용·인용 구절(2026-10-21 목사님: "1번 - 주요내용, 인용구절 … 참고하기 좋도록")
+            sub = [x for x in (_clean_text(s, SUB_MAX) for s in (p.get("sub") or [])) if x][:SUB_N]
+            refs = [x for x in (_clean_text(r, 40) for r in (p.get("refs") or [])) if x][:12]
+            if sub:
+                pt["sub"] = sub
+            if refs:
+                pt["refs"] = refs
+            pts.append(pt)
     return {"points": pts[:3]}
+
+
+SUB_MAX, SUB_N = 40, 4   # 핵심 아래 주요 내용: 한 줄 40자, 4줄까지
+
+
+def point_refs(points, verses, passage, skip):
+    """핵심마다 붙인 인용 구절 장절을 정식 이름으로 맞추고, 인용 구절 목록에 없으면 뒤에 더한다."""
+    have = {v["ref"] for v in verses}
+    bad = []
+    for p in points:
+        out = []
+        for r in p.get("refs") or []:
+            canon, lines = lookup(r)
+            if not canon:
+                bad.append(r)
+                continue
+            if passage and inside(canon, passage):
+                continue
+            if canon not in have:
+                verses.append({"ref": canon, "lines": lines}); have.add(canon); skip.add(canon)
+            if canon not in out:
+                out.append(canon)
+        if out:
+            p["refs"] = out
+        else:
+            p.pop("refs", None)
+    return bad
 
 
 def _prayer_list(v):
@@ -764,6 +799,10 @@ def cmd_save(path, no_tg=False, force=False, head=None):
     if long_:
         print(f"핵심이 너무 깁니다({POINT_MAX}자 넘음) — 더 짧게 고쳐 주세요(저장하지 않았습니다): " + " / ".join(long_))
         return 2
+    bad2 = point_refs(summary["points"], verses, passage, skip)
+    if bad2:
+        print("핵심에 붙인 장절을 성경 자료에서 찾지 못해 저장하지 않았습니다: " + ", ".join(bad2))
+        return 2
     pb = parse_canon(passage)[0] if passage else None
     clean_title, series = guess_series(s, pb)
     row = {
@@ -809,6 +848,9 @@ def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주�
     lines.append("[핵심 3가지]")
     for i, p in enumerate((n.get("summary") or {}).get("points") or [], 1):
         lines.append(f"{i}. {(p.get('label') + ' — ') if p.get('label') else ''}{p.get('text')}")
+        lines += [f"   · {s}" for s in p.get("sub") or []]
+        if p.get("refs"):
+            lines.append("   인용: " + " · ".join(p["refs"]))
     vs = n.get("verses") or []
     fl = (n.get("summary") or {}).get("flow") or []
     if fl:

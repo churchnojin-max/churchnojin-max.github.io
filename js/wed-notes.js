@@ -142,9 +142,28 @@
   function pointsHtml(n, cls) {
     var pts = ((n.summary || {}).points || []).slice(0, 3);
     if (!pts.length) return "";
+    var full = cls === "wr-points";   // 크게 읽는 창에서만 주요 내용·인용 장절까지
     return '<ol class="' + (cls || "wed-points") + '">' + pts.map(function (p) {
-      return '<li>' + (p.label ? '<span class="wr-pill">' + esc(p.label) + '</span>' : '') + '<span>' + esc(p.text) + '</span></li>';
+      var more = "";
+      if (full && (p.sub || []).length) more += '<ul class="wr-pt-sub">' + p.sub.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join("") + '</ul>';
+      if (full && (p.refs || []).length) more += '<p class="wr-pt-refs">인용 · ' + p.refs.map(esc).join(" · ") + '</p>';
+      return '<li>' + (p.label ? '<span class="wr-pill">' + esc(p.label) + '</span>' : '') + (more ? '<div>' + esc(p.text) + more + '</div>' : '<span>' + esc(p.text) + '</span>') + '</li>';
     }).join("") + '</ol>';
+  }
+  // 핵심마다 인용 구절(2026-10-21 목사님: "1번 - 주요내용, 인용구절 … 참고하기 좋도록") — summary.points[i].refs
+  function rkey(s) { return String(s || "").replace(/\s+/g, ""); }
+  function verseGroups(n) {
+    var pts = ((n.summary || {}).points || []).slice(0, 3), vs = n.verses || [];
+    if (!pts.some(function (p) { return (p.refs || []).length; })) return null;
+    var byKey = {}, used = {};
+    vs.forEach(function (v) { byKey[rkey(v.ref)] = v; });
+    var groups = pts.map(function (p, i) {
+      var list = (p.refs || []).map(function (r) { var v = byKey[rkey(r)]; if (v) used[rkey(r)] = 1; return v; }).filter(Boolean);
+      return { no: i + 1, label: p.label, text: p.text, verses: list };
+    }).filter(function (g) { return g.verses.length; });
+    var rest = vs.filter(function (v) { return !used[rkey(v.ref)]; });
+    if (rest.length) groups.push({ no: 0, text: "그 밖의 인용 구절", verses: rest });
+    return groups;
   }
 
   // 기도 제목(2026-10-07 목사님): "위에는 고정, 아래는 말씀 후 적용 기도 제목 — 두 개로 나누면"
@@ -420,11 +439,21 @@
       h += flowHtml(n);
       if ((n.passage || []).length) h += '<section class="wr-sec" id="wrPassage"><h4 class="wr-h">오늘 본문 <small>' + esc(n.scripture || "") + '</small></h4>' + linesHtml(n.passage) + '</section>';
       var vs = n.verses || [];
-      if (vs.length) {
+      var vItem = function (v, i) {
+        return '<li class="wr-v"><p class="wr-v-ref"><span class="wr-no" aria-hidden="true">' + circ(i) + '</span>' + esc(v.ref) + '</p>' + linesHtml(v.lines, true) + '</li>';
+      };
+      var groups = vs.length ? verseGroups(n) : null;
+      if (groups) {
+        var k = 0;
+        h += '<section class="wr-sec" id="wrVerses"><h4 class="wr-h">인용 구절 <small>핵심 3가지에 따라</small></h4>' +
+          groups.map(function (g) {
+            return '<div class="wr-vgroup"><p class="wr-vg-h">' + (g.no ? '<span class="wr-vg-no">' + g.no + '</span>' : '') +
+              (g.label ? '<span class="wr-pill">' + esc(g.label) + '</span>' : '') + '<b>' + esc(g.text) + '</b></p>' +
+              '<ol class="wr-verses">' + g.verses.map(function (v) { k += 1; return vItem(v, k); }).join("") + '</ol></div>';
+          }).join("") + '</section>';
+      } else if (vs.length) {
         h += '<section class="wr-sec" id="wrVerses"><h4 class="wr-h">인용 구절 <small>설교에서 읽는 순서대로</small></h4><ol class="wr-verses">' +
-          vs.map(function (v, i) {
-            return '<li class="wr-v"><p class="wr-v-ref"><span class="wr-no" aria-hidden="true">' + circ(i + 1) + '</span>' + esc(v.ref) + '</p>' + linesHtml(v.lines, true) + '</li>';
-          }).join("") + '</ol></section>';
+          vs.map(function (v, i) { return vItem(v, i + 1); }).join("") + '</ol></section>';
       }
       h += prayerHtml(n);
     }
@@ -535,7 +564,9 @@
       '<label>제목' + inp("we_title", n.title) + '</label>' +
       pts.map(function (p, i) {
         return '<fieldset class="wr-edit-pt"><legend>핵심 ' + (i + 1) + '</legend><div class="wr-edit-row">' +
-          inp("we_pl" + i, p.label, "예: 7절") + inp("we_px" + i, p.text, "한 줄로 짧게(비우면 빠짐)") + '</div></fieldset>';
+          inp("we_pl" + i, p.label, "예: 7절") + inp("we_px" + i, p.text, "한 줄로 짧게(비우면 빠짐)") + '</div>' +
+          '<label class="wr-edit-sm">주요 내용 <small>/ 로 나눔</small>' + inp("we_ps" + i, (p.sub || []).join(" / "), "예: 이름을 주신 아버지 / 나그네에서 식구로") + '</label>' +
+          '<label class="wr-edit-sm">인용 구절 <small>쉼표로 나눔, 아래 인용 구절 목록에 있는 것</small>' + inp("we_pr" + i, (p.refs || []).join(", "), "예: 에베소서 2:19, 로마서 8:10") + '</label></fieldset>';
       }).join("") +
       '<label>말씀의 흐름 <small>한 줄에 한 단계(3~6단계, 짧게) · 비우면 빠짐</small><textarea id="we_flow" rows="5">' + esc(flowOf(n).join("\n")) + '</textarea></label>' +
       '<label>인용 구절 <small>설교에서 읽는 순서대로, 한 줄에 하나</small><textarea id="we_verses" rows="6" placeholder="예: 에베소서 1:20">' + esc(refs) + '</textarea></label>' +
@@ -580,7 +611,13 @@
     if (!n) return;
     msg.textContent = "저장하는 중…";
     var points = [];
-    for (var i = 0; i < 3; i++) if (val("we_px" + i)) points.push({ label: val("we_pl" + i), text: val("we_px" + i) });
+    var parts = function (id, re) { return val(id).split(re).map(function (s) { return s.trim(); }).filter(Boolean); };
+    for (var i = 0; i < 3; i++) if (val("we_px" + i)) {
+      var pt = { label: val("we_pl" + i), text: val("we_px" + i) }, sub = parts("we_ps" + i, /\s*\/\s*/), prf = parts("we_pr" + i, /[,，\n]/);
+      if (sub.length) pt.sub = sub;
+      if (prf.length) pt.refs = prf;
+      points.push(pt);
+    }
     resolveRefs(val("we_verses"), n.verses)
       .then(function (verses) {
         var lines = function (id) { return val(id).split(/\n+/).map(function (l) { return l.replace(/^\s*(?:\d+[.)]|[-·•])\s*/, "").trim(); }).filter(Boolean); };
