@@ -403,6 +403,20 @@ def _sermon_file(date):
     return best
 
 
+def score_trim(im):
+    """모두의 찬양 악보 맨 위 머리띠(곡 번호·'모두의 찬양/운평장로교회'·조)를 잘라 낸다(2026-10-21 목사님).
+    위쪽 150픽셀 안, 폭 85% 넘게 이어진 회색 한 줄(검은 픽셀 없음)이 머리띠 밑줄 — 오선·표 줄은 검어서 안 걸린다.
+    D:\\클코저장소\\설교프로젝트\\찬양콘티\\악보자르기.py 와 같은 규칙(모두의 찬양 684장 모두 찾고 새찬송가 645장은 그대로임을 확인)."""
+    g = im.convert("L")
+    w, h = g.size
+    px = g.load()
+    for y in range(min(150, int(h * 0.25))):
+        row = [px[x, y] for x in range(0, w, 2)]
+        if sum(1 for v in row if 150 <= v <= 250) / len(row) > 0.85 and min(row) >= 140:
+            return im.crop((0, y + 4, w, h))
+    return im
+
+
 def manuscript_images(path):
     """원고 속 그림을 원고에 나오는 차례대로 [png bytes] — 아주 작은 그림(장식)은 뺀다"""
     import zipfile
@@ -428,7 +442,7 @@ def manuscript_images(path):
             if min(im.size) < 200:
                 continue
             buf = BytesIO()
-            im.convert("RGB").save(buf, "PNG", optimize=True)
+            score_trim(im.convert("RGB")).save(buf, "PNG", optimize=True)
             out.append(buf.getvalue())
         except Exception:
             continue
