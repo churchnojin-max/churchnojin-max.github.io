@@ -248,6 +248,7 @@
             <span class="logo-txt"><span class="logo-kr">${CH_NAME}</span>${C.nameEn ? `<span class="logo-en">${C.nameEn}</span>` : CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}</span>
           </a>
           <a href="dashboard.html" class="hdr-dash-btn" id="hdrDash" style="display:none">대시보드</a>
+          <a href="tf.html" class="hdr-dash-btn" id="hdrTf" style="display:none" title="위임식 준비 점검판">✅ 위임식 내 할 일</a>
         </div>
         <nav class="nav-menu" id="navMenu">${navLinks}${IS_PUBLIC ? `<button type="button" class="nav-help" data-guide>❓ 홈페이지 사용법</button>` : ""}</nav>
         <div class="nav-right">${workMenuHTML}
@@ -882,6 +883,24 @@
               .then((rows) => ({ isAdmin: !!(rows && rows.length) }));
           })
           .then(applyWorkPerms)
+          .catch(() => {});
+        // 위임식 준비위원(rpc tf_me)이면 헤더에 '위임식 내 할 일' 단추 + 이름 카드에 링크 (2026-10-21, 위임식 뒤에는 SQL에서 tf_members 비우면 사라짐)
+        fetch(window.SUPABASE_URL + "/rest/v1/rpc/tf_me", { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, headers), body: "{}" })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((info) => {
+            if (!info || !info.allowed) return;
+            const hb = document.getElementById("hdrTf");
+            if (hb) hb.style.display = "";
+            const card = document.querySelector(".auth-card");
+            if (card && !card.querySelector(".ac-tf-go")) {
+              const a = document.createElement("a");
+              a.href = "tf.html";
+              a.className = "ac-tf-go";
+              a.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:10px 14px;background:#BFA06C;color:#1A3A2F;border-radius:8px;font-size:.9rem;font-weight:700;text-decoration:none;letter-spacing:.03em";
+              a.innerHTML = "<span>✅</span><span>위임식 내 할 일</span>";
+              card.appendChild(a);
+            }
+          })
           .catch(() => {});
         // 정회원(member_links.member_status)이면 헤더 '대시보드' 메뉴 노출
         fetch(window.SUPABASE_URL + "/rest/v1/member_links?user_id=eq." + uid + "&select=member_status", { headers })
