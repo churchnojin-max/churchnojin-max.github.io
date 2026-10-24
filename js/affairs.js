@@ -5910,6 +5910,8 @@ console.log('[affairs.js] v20260712memo2');
           if (!started) continue;
           if (/인도\s*및\s*설교/.test(ln)) continue;
           if (/예배\s*및\s*봉사위원/.test(ln)) break;
+          // 2026-10-25 새 주보(버전 2)는 낮 예배 표 안에 오후 예배 순서가 이어진다 — 오후 예배 제목 줄에서 멈춘다
+          if (/^<\s*(주일\s*(오후|찬양)\s*예배|다음세대\s*연합\s*예배)\s*>\s*$/.test(ln)) break;
           var m = ln.match(/^<[^<>]*>\s*<([^<>]+)>\s*<([^<>]+)>\s*$/);
           if (m) out.push({ name: cleanCell(m[1]), detail: cleanCell(m[2]) });
         }
@@ -5919,7 +5921,7 @@ console.log('[affairs.js] v20260712memo2');
       // 헌금 액수는 들어있지 않음(명단만) — 그대로 '헌금자 명단(공개)' 칸에만 채워짐.
       var HWPX_OFFER_ALIAS = { '십일조': '십일조', '감사': '감사헌금', '주일': '주일헌금', '선교': '선교헌금', '차량': '차량헌금', '일천번': '일천번기도', '건축': '건축헌금', '유년부': '유년부' };
       function parseHwpxOffering(text) {
-        var m = text.match(/<예물봉헌>\s*([\s\S]+?)(?:<기도의 청지기가 됩시다>|$)/);
+        var m = text.match(/<예물봉헌>\s*([\s\S]+?)(?:<기도의 청지기가 됩시다>|<구역 및 예배현황>|$)/);   // 새 주보는 예물봉헌 다음이 구역 및 예배현황
         if (!m) return {};
         var re = /<([^<>]+)>\s*([^<>]*)/g, mm, off = {};
         while ((mm = re.exec(m[1]))) {
@@ -5940,12 +5942,13 @@ console.log('[affairs.js] v20260712memo2');
         // 그 뒤에 '섬기는 분' 이 이어지므로, 섬기는 분 바로 앞의 것을 고른다.
         // (예전에는 '말씀 요약' 을 먼저 만나야만 광고를 읽어서, 말씀 요약이
         //  빠진 주에는 광고가 통째로 비어 버렸다.)
-        var sums = [], news = [], ends = [];
+        var sums = [], news = [], ends = [], offs = [];
         for (var i = 0; i < lines.length; i++) {
           var t = norm(lines[i]);
           if (t === '말씀요약' || t === '말씀자료') sums.push(i);
           else if (t === '교회소식') news.push(i);
-          else if (t === '섬기는분') ends.push(i);
+          else if (t === '섬기는분' || t === '교회를섬기는분') ends.push(i);   // 새 주보(2026-10-25~)는 「교회를 섬기는 분」
+          else if (t === '예물봉헌') offs.push(i);
         }
         var iEnd = ends.length ? ends[0] : -1;
         var nCand = (iEnd >= 0) ? news.filter(function (x) { return x < iEnd; }) : news;
@@ -5967,7 +5970,10 @@ console.log('[affairs.js] v20260712memo2');
           out.summary = sLines.join('\n').trim();
         }
         if (iNews >= 0) {
-          out.notices = lines.slice(iNews + 1, iEnd >= 0 ? iEnd : lines.length).join('\n').trim();
+          // 새 주보는 교회소식 바로 뒤에 예물봉헌이 온다 — 교회소식 뒤의 첫 예물봉헌(또는 섬기는 분)에서 끊는다
+          var nEnd = iEnd >= 0 ? iEnd : lines.length;
+          offs.forEach(function (x) { if (x > iNews && x < nEnd) nEnd = x; });
+          out.notices = lines.slice(iNews + 1, nEnd).join('\n').trim();
         }
         return out;
       }
