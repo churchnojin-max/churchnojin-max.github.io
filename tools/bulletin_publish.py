@@ -214,8 +214,13 @@ def open_bulletin_editor(page, bdate: str):
     # 이전 실행이 중간에 끊겨 편집 화면(오버레이)이 열린 채로 남아있을 수 있으므로
     # 항상 새로고침해서 깨끗한 상태에서 시작한다(로그인은 sessionStorage라 유지됨).
     page.reload(wait_until="domcontentloaded")
-    page.wait_for_selector('.fin-tabs button[data-t="bulletin"]', timeout=20000)
-    page.click('.fin-tabs button[data-t="bulletin"]')
+    # 관리자 화면이 묶음(설교·예배·목양·서재·설정)으로 바뀐 뒤에는 「예배」 묶음 안에 주보제작이 있다
+    page.wait_for_selector('.fin-tabs button[data-g="예배"], .fin-tabs button[data-t="bulletin"]', timeout=20000)
+    group = page.locator('.fin-tabs button[data-g="예배"]')
+    if group.count():
+        group.first.click()
+    page.wait_for_selector('button[data-t="bulletin"]', state="visible", timeout=20000)
+    page.click('button[data-t="bulletin"]')
     page.wait_for_selector("#bt_list", timeout=15000)
     # 목록이 로딩될 시간을 조금 준다
     page.wait_for_timeout(800)
@@ -244,8 +249,18 @@ def open_bulletin_editor(page, bdate: str):
     page.fill("#bt_bdate", bdate)
 
 
+def clear_old_pdf(page):
+    # 이미 저장된 주보를 다시 올릴 때는 파일 칸 자리에 '보기·제거'가 떠 있다 → 제거를 눌러 파일 칸을 되살린다
+    rm = page.locator("#bt_pdf_remove")
+    if rm.count() and rm.first.is_visible():
+        log("  (먼저 올라가 있던 PDF를 빼고 새로 올립니다)")
+        rm.first.click()
+        page.wait_for_selector("#bt_pdf_file", state="attached", timeout=10000)
+
+
 def upload_hwpx_and_pdf(page, hwpx_path: Path, pdf_path: Path):
     log("hwpx 파일을 올려 내용을 자동으로 채우는 중…")
+    clear_old_pdf(page)
     page.set_input_files("#bt_pdf_file", str(hwpx_path))
     page.wait_for_function(
         """() => {
