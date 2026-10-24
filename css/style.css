@@ -4338,3 +4338,11 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .logo-en { display: block; align-self: flex-start; width: max-content; margin-top: 5px; white-space: nowrap; font-family: "Cormorant Garamond", "Noto Serif KR", serif;
   font-weight: 700; font-size: .6rem; line-height: 1; color: var(--accent); }
 @media (max-width: 760px) { .logo-en { font-size: .55rem; margin-top: 4px; } }
+
+/* 2026-10-24 사진: 안내위원(교회 안내 > 예배 안내), 전도회 회장(공동체 > 전도회) */
+.tone-usher { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 22px; align-items: center; }
+.tone-usher img { width: 100%; height: auto; border-radius: 10px; display: block; }
+.tone-usher .usher-cap { margin-top: 8px; font-size: .88rem; color: var(--gold); font-weight: 600; }
+@media (max-width: 640px) { .tone-usher { grid-template-columns: 1fr; } }
+.group-card-ph img { width: 92px; height: 92px; object-fit: cover; object-position: 50% 22%; border-radius: 50%; margin-bottom: 14px; display: block; border: 3px solid #fff; box-shadow: 0 0 0 1px #c9ddd3, 0 6px 14px rgba(0,0,0,.08); }
+.group-card .gc-who { margin-top: 6px; color: var(--gold); font-weight: 600; font-size: .86rem; }
