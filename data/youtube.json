@@ -1,15 +1,24 @@
 {
  "channelId": "UCYlesUmTrHecsHYmQNFYY1A",
  "sermon": {
-  "id": "CfeKHrns-tg",
-  "full": "멈춘 기도, 보이는 하갈 | 창 16:1-6 | 주일낮예배 | 손병민 목사",
-  "date": "2026-10-18",
-  "title": "멈춘 기도, 보이는 하갈",
-  "passage": "창 16:1-6",
+  "id": "AnhMOX-HhuE",
+  "full": "술 길에서 돌아서다 | 창 16:7-9 | 주일낮예배 | 손병민 목사",
+  "date": "2026-10-25",
+  "title": "술 길에서 돌아서다",
+  "passage": "창 16:7-9",
   "service": "주일낮예배",
   "preacher": "손병민 목사"
  },
  "recent": [
+  {
+   "id": "AnhMOX-HhuE",
+   "full": "술 길에서 돌아서다 | 창 16:7-9 | 주일낮예배 | 손병민 목사",
+   "date": "2026-10-25",
+   "title": "술 길에서 돌아서다",
+   "passage": "창 16:7-9",
+   "service": "주일낮예배",
+   "preacher": "손병민 목사"
+  },
   {
    "id": "w97TCt0Ncyo",
    "full": "그가 먼저 사랑하셨음이라 | 요일 4:19-5:4 | 주일찬양예배 | 손병민 목사",
@@ -54,16 +63,7 @@
    "passage": "고후 5:9",
    "service": "다음세대연합예배",
    "preacher": "손병민 목사"
-  },
-  {
-   "id": "RFIAuReXvPc",
-   "full": "무엇으로 알리이까? | 창 15:7-11 | 주일낮예배 | 손병민 목사",
-   "date": "2026-10-04",
-   "title": "무엇으로 알리이까?",
-   "passage": "창 15:7-11",
-   "service": "주일낮예배",
-   "preacher": "손병민 목사"
   }
  ],
- "updated": "2026-10-18 20:01"
+ "updated": "2026-10-25 12:30"
 }
