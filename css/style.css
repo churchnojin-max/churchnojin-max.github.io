@@ -4089,6 +4089,13 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .wr-pt-refs { margin: 6px 0 0; font-size: .86rem; font-weight: 600; color: var(--accent); word-break: keep-all; }
 .wr-pt-chips { margin-top: 8px; gap: 6px; }
 .wr-pt-chips .wr-chip { padding: 5px 11px; font-size: .84rem; font-weight: 700; }
+/* 인용 구절 / 참고 구절 나눔(2026-10-28) */
+.wr-chip-lab { align-self: center; margin-right: 2px; font-size: .78rem; font-weight: 800; color: var(--muted, #6b6b6b); }
+.wr-pt-chips .wr-chip-see { border-style: dashed; color: var(--muted, #555); font-weight: 600; }
+.wr-pt-chips .wr-chip-see[aria-expanded="true"] { background: var(--muted, #555); border-color: var(--muted, #555); color: #fff; }
+.wr-vg-kind { margin: 10px 0 6px; font-size: .84rem; font-weight: 800; color: var(--accent); }
+.wr-vg-see { color: var(--muted, #6b6b6b); }
+.wr-verses-see .wr-v-ref { color: var(--muted, #555); }
 .wr-points .wr-ment-box { padding: 10px 14px; border-radius: 10px; background: var(--paper-alt); font-size: 1rem; }
 .wr-vgroup + .wr-vgroup { margin-top: 26px; }
 .wr-vg-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--paper-alt); line-height: 1.55; word-break: keep-all; }

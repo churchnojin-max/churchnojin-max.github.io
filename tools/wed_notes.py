@@ -702,10 +702,13 @@ def _clean_summary(sm):
             # 핵심마다 주요 내용·인용 구절(2026-10-21 목사님: "1번 - 주요내용, 인용구절 … 참고하기 좋도록")
             sub = [x for x in (_clean_text(s, SUB_MAX) for s in (p.get("sub") or [])) if x][:SUB_N]
             refs = [x for x in (_clean_text(r, 40) for r in (p.get("refs") or [])) if x][:12]
+            see = [x for x in (_clean_text(r, 40) for r in (p.get("see") or [])) if x][:12]   # 참고 구절(2026-10-28)
             if sub:
                 pt["sub"] = sub
             if refs:
                 pt["refs"] = refs
+            if see:
+                pt["see"] = see
             pts.append(pt)
     return {"points": pts[:3]}
 
@@ -714,26 +717,34 @@ SUB_MAX, SUB_N = 40, 4   # 핵심 아래 주요 내용: 한 줄 40자, 4줄까�
 
 
 def point_refs(points, verses, passage, skip):
-    """핵심마다 붙인 인용 구절 장절을 정식 이름으로 맞추고, 인용 구절 목록에 없으면 뒤에 더한다."""
+    """핵심마다 붙인 인용 구절(refs)·참고 구절(see) 장절을 정식 이름으로 맞추고, 구절 목록에 없으면 뒤에 더한다.
+       참고 구절(2026-10-28 목사님: "인용구절, 참고구절 구분")은 구절 목록에서 kind='see' 로 표시한다."""
     have = {v["ref"] for v in verses}
-    bad = []
+    bad, as_ref, as_see = [], set(), set()
     for p in points:
-        out = []
-        for r in p.get("refs") or []:
-            canon, lines = lookup(r)
-            if not canon:
-                bad.append(r)
-                continue
-            if passage and inside(canon, passage):
-                continue
-            if canon not in have:
-                verses.append({"ref": canon, "lines": lines}); have.add(canon); skip.add(canon)
-            if canon not in out:
-                out.append(canon)
-        if out:
-            p["refs"] = out
+        for key, mark in (("refs", as_ref), ("see", as_see)):
+            out = []
+            for r in p.get(key) or []:
+                canon, lines = lookup(r)
+                if not canon:
+                    bad.append(r)
+                    continue
+                if passage and inside(canon, passage):
+                    continue
+                if canon not in have:
+                    verses.append({"ref": canon, "lines": lines}); have.add(canon); skip.add(canon)
+                if canon not in out:
+                    out.append(canon)
+                mark.add(canon)
+            if out:
+                p[key] = out
+            else:
+                p.pop(key, None)
+    for v in verses:
+        if v["ref"] in as_see and v["ref"] not in as_ref:
+            v["kind"] = "see"
         else:
-            p.pop("refs", None)
+            v.pop("kind", None)
     return bad
 
 
@@ -865,11 +876,17 @@ def preview_text(n, head="📖 수요기도회 말씀 자료 — 확인해 주�
         lines += [f"   · {s}" for s in p.get("sub") or []]
         if p.get("refs"):
             lines.append("   인용: " + " · ".join(p["refs"]))
+        if p.get("see"):
+            lines.append("   참고: " + " · ".join(p["see"]))
     vs = n.get("verses") or []
     fl = (n.get("summary") or {}).get("flow") or []
     if fl:
         lines += ["", "[말씀의 흐름]", " → ".join(fl)]
-    lines += ["", f"[인용 구절 {len(vs)}] " + (" · ".join(v["ref"] for v in vs) or "없음")]
+    vi = [v for v in vs if v.get("kind") != "see"]
+    vsee = [v for v in vs if v.get("kind") == "see"]
+    lines += ["", f"[인용 구절 {len(vi)}] " + (" · ".join(v["ref"] for v in vi) or "없음")]
+    if vsee:
+        lines.append(f"[참고 구절 {len(vsee)}] " + " · ".join(v["ref"] for v in vsee))
     pr = (n.get("summary") or {}).get("prayer") or {}
     for title, key in (("고정 기도 제목", "fixed"), ("특별 기도 제목", "apply")):
         if pr.get(key):

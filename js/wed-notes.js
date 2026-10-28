@@ -149,11 +149,16 @@
       var more = "";
       if (full && (p.sub || []).length) more += '<ul class="wr-pt-sub">' + p.sub.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join("") + '</ul>';
       // 인용 장절을 누르면 그 구절 본문이 바로 아래 펼쳐진다(2026-10-21 목사님: "장절만 써두면 안 돼")
-      var rs = full ? (p.refs || []).map(function (r) { return byKey[rkey(r)]; }).filter(Boolean) : [];
+      // 인용 구절(설교에서 읽은 것)과 참고 구절(말로 가리킨 것)을 나눠 보인다(2026-10-28 목사님: "인용구절, 참고구절 구분")
+      var pick = function (list) { return full ? (list || []).map(function (r) { return byKey[rkey(r)]; }).filter(Boolean) : []; };
+      var ri = pick(p.refs), rsee = pick(p.see), rs = ri.concat(rsee);
       if (rs.length) {
-        more += '<div class="wr-chips wr-pt-chips">' + rs.map(function (v, j) {
-          return '<button type="button" class="wr-chip" data-wref="' + i + '-' + j + '" aria-expanded="false">' + esc(v.ref) + '</button>';
-        }).join("") + '</div>' + rs.map(function (v, j) {
+        var chip = function (v, j) {
+          return '<button type="button" class="wr-chip' + (j >= ri.length ? ' wr-chip-see' : '') + '" data-wref="' + i + '-' + j + '" aria-expanded="false">' + esc(v.ref) + '</button>';
+        };
+        more += (ri.length ? '<div class="wr-chips wr-pt-chips"><span class="wr-chip-lab">인용</span>' + ri.map(function (v, j) { return chip(v, j); }).join("") + '</div>' : '') +
+          (rsee.length ? '<div class="wr-chips wr-pt-chips"><span class="wr-chip-lab">참고</span>' + rsee.map(function (v, j) { return chip(v, ri.length + j); }).join("") + '</div>' : '') +
+          rs.map(function (v, j) {
           return '<div class="wr-ment-box" data-wrefbox="' + i + '-' + j + '" hidden><p class="wr-ment-ref">' + esc(v.ref) + '</p>' + linesHtml(v.lines, true) + '</div>';
         }).join("");
       }
@@ -164,13 +169,14 @@
   function rkey(s) { return String(s || "").replace(/\s+/g, ""); }
   function verseGroups(n) {
     var pts = ((n.summary || {}).points || []).slice(0, 3), vs = n.verses || [];
-    if (!pts.some(function (p) { return (p.refs || []).length; })) return null;
+    if (!pts.some(function (p) { return (p.refs || []).length || (p.see || []).length; })) return null;
     var byKey = {}, used = {};
     vs.forEach(function (v) { byKey[rkey(v.ref)] = v; });
+    var take = function (list) { return (list || []).map(function (r) { var v = byKey[rkey(r)]; if (v) used[rkey(r)] = 1; return v; }).filter(Boolean); };
     var groups = pts.map(function (p, i) {
-      var list = (p.refs || []).map(function (r) { var v = byKey[rkey(r)]; if (v) used[rkey(r)] = 1; return v; }).filter(Boolean);
-      return { no: i + 1, label: p.label, text: p.text, verses: list };
-    }).filter(function (g) { return g.verses.length; });
+      var list = take(p.refs), see = take(p.see);   // see = 참고 구절(2026-10-28)
+      return { no: i + 1, label: p.label, text: p.text, verses: list, see: see };
+    }).filter(function (g) { return g.verses.length || g.see.length; });
     var rest = vs.filter(function (v) { return !used[rkey(v.ref)]; });
     if (rest.length) groups.push({ no: 0, text: "그 밖의 인용 구절", verses: rest });
     return groups;
@@ -455,11 +461,14 @@
       var groups = vs.length ? verseGroups(n) : null;
       if (groups) {
         var k = 0;
-        h += '<section class="wr-sec" id="wrVerses"><h4 class="wr-h">인용 구절 <small>핵심 3가지에 따라</small></h4>' +
+        var anySee = groups.some(function (g) { return (g.see || []).length; });
+        h += '<section class="wr-sec" id="wrVerses"><h4 class="wr-h">' + (anySee ? '인용 · 참고 구절' : '인용 구절') + ' <small>핵심 3가지에 따라</small></h4>' +
           groups.map(function (g) {
+            var see = g.see || [];
             return '<div class="wr-vgroup"><p class="wr-vg-h">' + (g.no ? '<span class="wr-vg-no">' + g.no + '</span>' : '') +
               (g.label ? '<span class="wr-pill">' + esc(g.label) + '</span>' : '') + '<b>' + esc(g.text) + '</b></p>' +
-              '<ol class="wr-verses">' + g.verses.map(function (v) { k += 1; return vItem(v, k); }).join("") + '</ol></div>';
+              (g.verses.length ? (see.length ? '<p class="wr-vg-kind">인용 구절</p>' : '') + '<ol class="wr-verses">' + g.verses.map(function (v) { k += 1; return vItem(v, k); }).join("") + '</ol>' : '') +
+              (see.length ? '<p class="wr-vg-kind wr-vg-see">참고 구절</p><ol class="wr-verses wr-verses-see">' + see.map(function (v) { k += 1; return vItem(v, k); }).join("") + '</ol>' : '') + '</div>';
           }).join("") + '</section>';
       } else if (vs.length) {
         h += '<section class="wr-sec" id="wrVerses"><h4 class="wr-h">인용 구절 <small>설교에서 읽는 순서대로</small></h4><ol class="wr-verses">' +
@@ -583,7 +592,8 @@
         return '<fieldset class="wr-edit-pt"><legend>핵심 ' + (i + 1) + '</legend><div class="wr-edit-row">' +
           inp("we_pl" + i, p.label, "예: 7절") + inp("we_px" + i, p.text, "한 줄로 짧게(비우면 빠짐)") + '</div>' +
           '<label class="wr-edit-sm">주요 내용 <small>/ 로 나눔</small>' + inp("we_ps" + i, (p.sub || []).join(" / "), "예: 이름을 주신 아버지 / 나그네에서 식구로") + '</label>' +
-          '<label class="wr-edit-sm">인용 구절 <small>쉼표로 나눔, 아래 인용 구절 목록에 있는 것</small>' + inp("we_pr" + i, (p.refs || []).join(", "), "예: 에베소서 2:19, 로마서 8:10") + '</label></fieldset>';
+          '<label class="wr-edit-sm">인용 구절 <small>쉼표로 나눔, 아래 인용 구절 목록에 있는 것</small>' + inp("we_pr" + i, (p.refs || []).join(", "), "예: 에베소서 2:19, 로마서 8:10") + '</label>' +
+          '<label class="wr-edit-sm">참고 구절 <small>말로 가리킨 구절, 쉼표로 나눔, 아래 목록에 있는 것</small>' + inp("we_pe" + i, (p.see || []).join(", "), "예: 에베소서 2:20") + '</label></fieldset>';
       }).join("") +
       '<label>말씀의 흐름 <small>한 줄에 한 단계(3~6단계, 짧게) · 비우면 빠짐</small><textarea id="we_flow" rows="5">' + esc(flowOf(n).join("\n")) + '</textarea></label>' +
       '<label>인용 구절 <small>설교에서 읽는 순서대로, 한 줄에 하나</small><textarea id="we_verses" rows="6" placeholder="예: 에베소서 1:20">' + esc(refs) + '</textarea></label>' +
@@ -633,6 +643,8 @@
       var pt = { label: val("we_pl" + i), text: val("we_px" + i) }, sub = parts("we_ps" + i, /\s*\/\s*/), prf = parts("we_pr" + i, /[,，\n]/);
       if (sub.length) pt.sub = sub;
       if (prf.length) pt.refs = prf;
+      var psee = parts("we_pe" + i, /[,，\n]/);   // 참고 구절(2026-10-28)
+      if (psee.length) pt.see = psee;
       points.push(pt);
     }
     resolveRefs(val("we_verses"), n.verses)
