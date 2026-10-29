@@ -23,7 +23,7 @@
     ".ivm-txt{min-width:0;flex:1;text-align:left;line-height:1.3}" +
     ".ivm-eye{display:block;font-family:'Gowun Batang',serif;color:#A8843F;font-size:.74rem;letter-spacing:.3em}" +
     ".ivm-ttl{display:block;font-family:'Gowun Batang',serif;font-weight:700;font-size:1.08rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-    ".ivm-sub{display:block;color:#6E6656;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    ".ivm-sub{display:block;color:#6E6656;font-size:.8rem;line-height:1.35}" +
     ".ivm-sub b{color:#1A3A2F;font-weight:600}" +
     ".ivm-x{position:absolute;top:6px;right:6px;width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:#6E6656;font-size:22px;line-height:32px;cursor:pointer}" +
     ".ivm-x:hover{background:rgba(26,58,47,.08)}" +
