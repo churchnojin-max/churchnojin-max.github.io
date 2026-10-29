@@ -1,111 +1,59 @@
-/* 첫 화면 알림 창: 손병민 목사 위임감사예배 초대 (2026-10-15 준비, 목사님이 "오픈" 하시면 OPEN = true)
-   - 2026-10-30 부터는 초대장 대신 순서지 창(order/ 표지 + 순서지 보기)만 뜸(목사님 "초대장은 끝내고"), 미리 보기 ?orderpop=1
-   - 누구에게나(로그인 무관), 이 기기에서 하루 한 번. 예배가 끝난 뒤(10/31 14시)에는 저절로 안 뜬다.
-   - 사용법 안내·환영 창·로그인 창 등이 떠 있으면 닫힐 때까지 기다렸다가 띄운다(js/wed-notes.js 와 같은 방식).
-   - 미리 보기: 주소 끝에 ?invitepop=1 을 붙이면 OPEN 이 false 여도 띄운다(하루 한 번 표시도 무시). */
+/* 첫 화면 작은 알림 창: 손병민 목사 위임감사예배 순서지 (2026-10-15 초대장 창으로 시작, 10/30 작은 창으로 바꿈)
+   - 2026-10-30 목사님: "작은 창 하나를 오늘·내일 계속 팝업으로 뜨게 해서 눌러서 들어갈 수 있게. 내일 오후 3시 이후면 팝업 삭제"
+     → 화면을 가리지 않는 작은 카드(아래쪽), 들어올 때마다 뜸(하루 한 번 제한 없음), 누르면 순서지(order/), × 는 이번 화면에서만 닫힘
+     → 2026-10-31 15:00 부터는 아예 안 뜸(END). 그 뒤에도 보려면 주소 끝에 ?orderpop=1
+   - 누구에게나(로그인 무관). 환영 창·사용법 안내가 떠 있어도 그 뒤에 가만히 있다가 창이 닫히면 보인다(z-index 150: modal 200 보다 낮고, 맨 위로·실시간 단추(400, 아래 구석)와 안 겹치게 그 위쪽에).
+   - 예전 큰 초대장 창은 git 기록(c35e78f·dea7daa)에 있음. */
 (function () {
   "use strict";
-  var OPEN = true;                                    // 2026-10-16 목사님 "팝업으로 띄우자" (끄려면 false)
-  var END = Date.parse("2026-10-31T14:00:00+09:00");  // 이때부터는 안 띄움
-  var URL_INVITE = "invite/";
-  var URL_ORDER = "order/";                           // 디지털 순서지(12판), 2026-10-29 단추 추가
-  // 2026-10-30 목사님 "초대장은 끝내고 순서지 뜨게" → 시각 조건 없이 늘 순서지 창(초대장 창 코드는 남겨 둠, 되살리려면 false)
-  var ORDER = true;
-  var KEY = ORDER ? "nojin_order_pop" : "nojin_invite_pop";   // localStorage: 띄운 날짜(한국 날짜). 순서지 창은 열쇠를 따로 둬 바뀐 날 다시 뜸
-
+  var OPEN = true;
+  var END = Date.parse("2026-10-31T15:00:00+09:00");  // 이때부터는 안 띄움(목사님 10/30 "내일 오후 3시 이후면 삭제")
+  var URL_ORDER = "order/";                           // 디지털 순서지(12판), 로그인 없이 누구나
   var force = /[?&](invitepop|orderpop)=1\b/.test(location.search);
   if (!force && (!OPEN || Date.now() >= END)) return;
 
-  function today() { var k = new Date(Date.now() + 9 * 3600e3); return k.toISOString().slice(0, 10); }
-  function seen() { try { return localStorage.getItem(KEY) === today(); } catch (e) { return false; } }
-  function mark() { try { localStorage.setItem(KEY, today()); } catch (e) {} }
-  if (!force && seen()) return;
-
-  function busy() {
-    return !!document.querySelector(".modal:not([hidden]), .pop-modal:not([hidden]), .ig-viewer:not([hidden])") ||
-      document.documentElement.classList.contains("pop-open") || document.body.classList.contains("menu-lock");
-  }
-
   var CSS =
-    ".ivp-box{max-width:380px;width:calc(100% - 32px);padding:0;overflow:hidden;background:#FDF2DE;border-radius:18px;text-align:center}" +
-    ".ivp-art{display:block;width:100%;height:auto}" +
-    ".ivp-in{padding:4px 22px 22px}" +
-    ".ivp-eye{margin:0;font-family:'Gowun Batang',serif;color:#A8843F;letter-spacing:.45em;padding-left:.45em;font-size:.92rem}" +
-    ".ivp-who{margin:6px 0 0;font-family:'Gowun Batang',serif;color:#1A3A2F;font-size:1.05rem}" +
-    ".ivp-title{margin:0;font-family:'Gowun Batang',serif;color:#1A3A2F;font-size:1.7rem;font-weight:700;line-height:1.3}" +
-    ".ivp-when{display:inline-block;margin:12px 0 0;padding:7px 4px;border-top:1px solid #CDB27A;border-bottom:1px solid #CDB27A;color:#2B2A24;font-size:clamp(.8rem,3.6vw,.95rem);white-space:nowrap}" +
-    ".ivp-from{margin:10px 0 0;color:#6E6656;font-size:.86rem}" +
-    ".ivp-btns{display:grid;gap:8px;margin-top:16px}" +
-    ".ivp-btns .btn{width:100%;min-height:48px;justify-content:center}" +
-    ".ivp-go{background:#1A3A2F !important;border-color:#1A3A2F !important;color:#FDF2DE !important}" +
-    ".ivp-box .modal-close{background:rgba(253,242,222,.85)}" +
-    ".ivp-ord .ivp-art{max-height:44vh;object-fit:cover;object-position:center top}" +
-    ".ivp-ord .ivp-who{font-size:.95rem;color:#6E6656}";
+    ".ivm{position:fixed;left:50%;bottom:calc(82px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:150;" +
+      "width:min(420px,calc(100% - 24px));display:flex;align-items:center;gap:12px;padding:10px 44px 10px 10px;" +
+      "background:#FDF2DE;color:#1A3A2F;border:1px solid #CDB27A;border-radius:16px;box-shadow:0 10px 30px rgba(26,58,47,.28);" +
+      "text-decoration:none;font-family:inherit;opacity:0;transition:opacity .35s,transform .35s}" +
+    ".ivm.ivm-in{opacity:1}" +
+    ".ivm:active{transform:translateX(-50%) scale(.985)}" +
+    ".ivm-img{flex:0 0 56px;width:56px;height:56px;border-radius:10px;object-fit:cover;object-position:center top;background:#1A3A2F}" +
+    ".ivm-txt{min-width:0;flex:1;text-align:left;line-height:1.3}" +
+    ".ivm-eye{display:block;font-family:'Gowun Batang',serif;color:#A8843F;font-size:.74rem;letter-spacing:.3em}" +
+    ".ivm-ttl{display:block;font-family:'Gowun Batang',serif;font-weight:700;font-size:1.08rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    ".ivm-sub{display:block;color:#6E6656;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    ".ivm-sub b{color:#1A3A2F;font-weight:600}" +
+    ".ivm-x{position:absolute;top:6px;right:6px;width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:#6E6656;font-size:22px;line-height:32px;cursor:pointer}" +
+    ".ivm-x:hover{background:rgba(26,58,47,.08)}" +
+    "@media (min-width:900px){.ivm{left:auto;right:22px;transform:none;bottom:86px}.ivm:active{transform:scale(.985)}}";
 
-  var el = null, on = false, wait = 0;
+  var el = null;
   function show() {
-    if (on) return;
-    if (busy()) { if (wait++ < 120) setTimeout(show, 1500); return; }
-    if (!el) {
-      var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
-      el = document.createElement("div");
-      el.className = "modal ivp" + (ORDER ? " ivp-ord" : "");
-      el.hidden = true;
-      var inner = ORDER
-        ? '<img class="ivp-art" src="order/img/cover.jpg" alt="위임감사예배 순서지 표지" />' +
-          '<div class="ivp-in">' +
-            '<p class="ivp-eye">위임감사예배</p>' +
-            '<h3 class="ivp-title" id="ivpTitle">순서지</h3>' +
-            '<p class="ivp-when">2026년 10월 31일 토요일 오전 11시</p>' +
-            '<p class="ivp-who">로그인 없이 누구나 보실 수 있습니다</p>' +
-            '<div class="ivp-btns">' +
-              '<a class="btn btn-solid ivp-go" href="' + URL_ORDER + '" data-ivp="go">순서지 보기</a>' +
-              '<button type="button" class="btn btn-line" data-ivp="close">닫기</button>' +
-            '</div>' +
-          '</div>'
-        : '<img class="ivp-art" src="invite/hero.jpg" alt="" />' +
-          '<div class="ivp-in">' +
-            '<p class="ivp-eye">초대합니다</p>' +
-            '<p class="ivp-who">손병민 목사</p>' +
-            '<h3 class="ivp-title" id="ivpTitle">위임감사예배</h3>' +
-            '<p class="ivp-when">2026년 10월 31일 토요일 오전 11시</p>' +
-            '<p class="ivp-from">노진교회 담임목사 손병민 · 교우 일동</p>' +
-            '<div class="ivp-btns">' +
-              '<a class="btn btn-solid ivp-go" href="' + URL_INVITE + '" data-ivp="go">초대장 보기</a>' +
-              '<a class="btn btn-line" href="' + URL_ORDER + '" data-ivp="go">순서지 보기</a>' +
-              '<button type="button" class="btn btn-line" data-ivp="close">닫기</button>' +
-            '</div>' +
-          '</div>';
-      el.innerHTML = '<div class="modal-backdrop" data-ivp="close"></div>' +
-        '<div class="modal-box ivp-box" role="dialog" aria-modal="true" aria-labelledby="ivpTitle">' +
-          '<button type="button" class="modal-close" data-ivp="close" aria-label="닫기">&times;</button>' + inner +
-        '</div>';
-      document.body.appendChild(el);
-      el.addEventListener("click", function (e) {
-        var b = e.target.closest("[data-ivp]");
-        if (!b) return;
-        if (b.getAttribute("data-ivp") === "close") { e.preventDefault(); close(); }
-      });
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && on) close(); });
-    }
-    if (!force) mark();
-    el.hidden = false;
-    on = true;
-    document.body.style.overflow = "hidden";
-    document.documentElement.classList.add("pop-open");   // 뒤 화면이 옆으로 넘어가지 않게
-    if (window.ModalNav) window.ModalNav.open(hide);       // 휴대폰 '뒤로'로 이 창만 닫히게
+    if (el) return;
+    var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
+    el = document.createElement("a");
+    el.className = "ivm";
+    el.href = URL_ORDER;
+    el.setAttribute("aria-label", "위임감사예배 순서지 보기");
+    el.innerHTML =
+      '<img class="ivm-img" src="order/img/cover.jpg" alt="" />' +
+      '<span class="ivm-txt">' +
+        '<span class="ivm-eye">위임감사예배</span>' +
+        '<span class="ivm-ttl">순서지 보기 ›</span>' +
+        '<span class="ivm-sub"><b>10월 31일(토) 오전 11시</b> · 로그인 없이 볼 수 있어요</span>' +
+      '</span>' +
+      '<button type="button" class="ivm-x" aria-label="닫기">&times;</button>';
+    document.body.appendChild(el);
+    el.querySelector(".ivm-x").addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      el.classList.remove("ivm-in");
+      setTimeout(function () { if (el && el.parentNode) el.parentNode.removeChild(el); }, 350);
+    });
+    requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add("ivm-in"); }); });
   }
-  function hide() {
-    if (!on) return;
-    on = false;
-    el.hidden = true;
-    if (!document.querySelector(".modal:not([hidden]), .pop-modal:not([hidden])")) {
-      document.body.style.overflow = "";
-      document.documentElement.classList.remove("pop-open");
-    }
-  }
-  function close() { if (on && !(window.ModalNav && window.ModalNav.close())) hide(); }
 
-  if (document.readyState === "complete") setTimeout(show, 1500);
-  else window.addEventListener("load", function () { setTimeout(show, 1500); });
+  if (document.readyState === "complete") setTimeout(show, 900);
+  else window.addEventListener("load", function () { setTimeout(show, 900); });
 })();
