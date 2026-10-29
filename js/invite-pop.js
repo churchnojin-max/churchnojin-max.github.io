@@ -1,5 +1,5 @@
 /* 첫 화면 알림 창: 손병민 목사 위임감사예배 초대 (2026-10-15 준비, 목사님이 "오픈" 하시면 OPEN = true)
-   - 2026-10-30 0시부터는 초대장 대신 순서지 창(order/ 표지 + 순서지 보기), 미리 보기 ?orderpop=1
+   - 2026-10-30 부터는 초대장 대신 순서지 창(order/ 표지 + 순서지 보기)만 뜸(목사님 "초대장은 끝내고"), 미리 보기 ?orderpop=1
    - 누구에게나(로그인 무관), 이 기기에서 하루 한 번. 예배가 끝난 뒤(10/31 14시)에는 저절로 안 뜬다.
    - 사용법 안내·환영 창·로그인 창 등이 떠 있으면 닫힐 때까지 기다렸다가 띄운다(js/wed-notes.js 와 같은 방식).
    - 미리 보기: 주소 끝에 ?invitepop=1 을 붙이면 OPEN 이 false 여도 띄운다(하루 한 번 표시도 무시). */
@@ -9,9 +9,8 @@
   var END = Date.parse("2026-10-31T14:00:00+09:00");  // 이때부터는 안 띄움
   var URL_INVITE = "invite/";
   var URL_ORDER = "order/";                           // 디지털 순서지(12판), 2026-10-29 단추 추가
-  // 2026-10-30 0시부터는 초대장 창을 내리고 순서지 창으로(목사님 10/29). 미리 보기: ?orderpop=1
-  var ORDER_FROM = Date.parse("2026-10-30T00:00:00+09:00");
-  var ORDER = Date.now() >= ORDER_FROM || /[?&]orderpop=1\b/.test(location.search);
+  // 2026-10-30 목사님 "초대장은 끝내고 순서지 뜨게" → 시각 조건 없이 늘 순서지 창(초대장 창 코드는 남겨 둠, 되살리려면 false)
+  var ORDER = true;
   var KEY = ORDER ? "nojin_order_pop" : "nojin_invite_pop";   // localStorage: 띄운 날짜(한국 날짜). 순서지 창은 열쇠를 따로 둬 바뀐 날 다시 뜸
 
   var force = /[?&](invitepop|orderpop)=1\b/.test(location.search);
@@ -61,7 +60,6 @@
             '<p class="ivp-who">로그인 없이 누구나 보실 수 있습니다</p>' +
             '<div class="ivp-btns">' +
               '<a class="btn btn-solid ivp-go" href="' + URL_ORDER + '" data-ivp="go">순서지 보기</a>' +
-              '<a class="btn btn-line" href="' + URL_INVITE + '" data-ivp="go">초대장 보기</a>' +
               '<button type="button" class="btn btn-line" data-ivp="close">닫기</button>' +
             '</div>' +
           '</div>'
