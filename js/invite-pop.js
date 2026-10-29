@@ -1,4 +1,5 @@
 /* 첫 화면 알림 창: 손병민 목사 위임감사예배 초대 (2026-10-15 준비, 목사님이 "오픈" 하시면 OPEN = true)
+   - 2026-10-30 0시부터는 초대장 대신 순서지 창(order/ 표지 + 순서지 보기), 미리 보기 ?orderpop=1
    - 누구에게나(로그인 무관), 이 기기에서 하루 한 번. 예배가 끝난 뒤(10/31 14시)에는 저절로 안 뜬다.
    - 사용법 안내·환영 창·로그인 창 등이 떠 있으면 닫힐 때까지 기다렸다가 띄운다(js/wed-notes.js 와 같은 방식).
    - 미리 보기: 주소 끝에 ?invitepop=1 을 붙이면 OPEN 이 false 여도 띄운다(하루 한 번 표시도 무시). */
@@ -6,10 +7,14 @@
   "use strict";
   var OPEN = true;                                    // 2026-10-16 목사님 "팝업으로 띄우자" (끄려면 false)
   var END = Date.parse("2026-10-31T14:00:00+09:00");  // 이때부터는 안 띄움
-  var KEY = "nojin_invite_pop";                       // localStorage: 띄운 날짜(한국 날짜)
   var URL_INVITE = "invite/";
+  var URL_ORDER = "order/";                           // 디지털 순서지(12판), 2026-10-29 단추 추가
+  // 2026-10-30 0시부터는 초대장 창을 내리고 순서지 창으로(목사님 10/29). 미리 보기: ?orderpop=1
+  var ORDER_FROM = Date.parse("2026-10-30T00:00:00+09:00");
+  var ORDER = Date.now() >= ORDER_FROM || /[?&]orderpop=1\b/.test(location.search);
+  var KEY = ORDER ? "nojin_order_pop" : "nojin_invite_pop";   // localStorage: 띄운 날짜(한국 날짜). 순서지 창은 열쇠를 따로 둬 바뀐 날 다시 뜸
 
-  var force = /[?&]invitepop=1\b/.test(location.search);
+  var force = /[?&](invitepop|orderpop)=1\b/.test(location.search);
   if (!force && (!OPEN || Date.now() >= END)) return;
 
   function today() { var k = new Date(Date.now() + 9 * 3600e3); return k.toISOString().slice(0, 10); }
@@ -34,7 +39,9 @@
     ".ivp-btns{display:grid;gap:8px;margin-top:16px}" +
     ".ivp-btns .btn{width:100%;min-height:48px;justify-content:center}" +
     ".ivp-go{background:#1A3A2F !important;border-color:#1A3A2F !important;color:#FDF2DE !important}" +
-    ".ivp-box .modal-close{background:rgba(253,242,222,.85)}";
+    ".ivp-box .modal-close{background:rgba(253,242,222,.85)}" +
+    ".ivp-ord .ivp-art{max-height:44vh;object-fit:cover;object-position:center top}" +
+    ".ivp-ord .ivp-who{font-size:.95rem;color:#6E6656}";
 
   var el = null, on = false, wait = 0;
   function show() {
@@ -43,12 +50,22 @@
     if (!el) {
       var st = document.createElement("style"); st.textContent = CSS; document.head.appendChild(st);
       el = document.createElement("div");
-      el.className = "modal ivp";
+      el.className = "modal ivp" + (ORDER ? " ivp-ord" : "");
       el.hidden = true;
-      el.innerHTML = '<div class="modal-backdrop" data-ivp="close"></div>' +
-        '<div class="modal-box ivp-box" role="dialog" aria-modal="true" aria-labelledby="ivpTitle">' +
-          '<button type="button" class="modal-close" data-ivp="close" aria-label="닫기">&times;</button>' +
-          '<img class="ivp-art" src="invite/hero.jpg" alt="" />' +
+      var inner = ORDER
+        ? '<img class="ivp-art" src="order/img/cover.jpg" alt="위임감사예배 순서지 표지" />' +
+          '<div class="ivp-in">' +
+            '<p class="ivp-eye">위임감사예배</p>' +
+            '<h3 class="ivp-title" id="ivpTitle">순서지</h3>' +
+            '<p class="ivp-when">2026년 10월 31일 토요일 오전 11시</p>' +
+            '<p class="ivp-who">로그인 없이 누구나 보실 수 있습니다</p>' +
+            '<div class="ivp-btns">' +
+              '<a class="btn btn-solid ivp-go" href="' + URL_ORDER + '" data-ivp="go">순서지 보기</a>' +
+              '<a class="btn btn-line" href="' + URL_INVITE + '" data-ivp="go">초대장 보기</a>' +
+              '<button type="button" class="btn btn-line" data-ivp="close">닫기</button>' +
+            '</div>' +
+          '</div>'
+        : '<img class="ivp-art" src="invite/hero.jpg" alt="" />' +
           '<div class="ivp-in">' +
             '<p class="ivp-eye">초대합니다</p>' +
             '<p class="ivp-who">손병민 목사</p>' +
@@ -57,9 +74,13 @@
             '<p class="ivp-from">노진교회 담임목사 손병민 · 교우 일동</p>' +
             '<div class="ivp-btns">' +
               '<a class="btn btn-solid ivp-go" href="' + URL_INVITE + '" data-ivp="go">초대장 보기</a>' +
+              '<a class="btn btn-line" href="' + URL_ORDER + '" data-ivp="go">순서지 보기</a>' +
               '<button type="button" class="btn btn-line" data-ivp="close">닫기</button>' +
             '</div>' +
-          '</div>' +
+          '</div>';
+      el.innerHTML = '<div class="modal-backdrop" data-ivp="close"></div>' +
+        '<div class="modal-box ivp-box" role="dialog" aria-modal="true" aria-labelledby="ivpTitle">' +
+          '<button type="button" class="modal-close" data-ivp="close" aria-label="닫기">&times;</button>' + inner +
         '</div>';
       document.body.appendChild(el);
       el.addEventListener("click", function (e) {
