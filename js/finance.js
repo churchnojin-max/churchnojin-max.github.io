@@ -341,7 +341,7 @@ console.log('[finance.js] v20260701di');
 
   var TABS = [
     ['home', '🏠 홈'], ['offering', '헌금입력'], ['bulk', '엑셀 자동입력'], ['expense', '지출입력'], ['ledger', '거래장부'],
-    ['givers', '헌금자통계'], ['gl', '총계정원장'], ['report', '결산보고서'],
+    ['givers', '헌금자통계'], ['gl', '총계정원장'], ['report', '결산보고서'], ['monthly', '월간 통계'],
     ['finrep', '재정보고서'], ['bulletin', '헌금명단'], ['receipt', '기부금영수증'], ['receiptlog', '영수증 발급대장'],
     ['budget', '예산'], ['settings', '설정']
   ];
@@ -361,7 +361,7 @@ console.log('[finance.js] v20260701di');
     { label: '🏠 홈', tab: 'home' },
     { label: '전표입력', items: ['offering', 'bulk', 'expense'] },
     { label: '장부관리', items: ['ledger', 'givers', 'gl', 'bulletin'] },
-    { label: '결산·보고서', items: ['report', 'finrep', 'receipt', 'receiptlog'] },
+    { label: '결산·보고서', items: ['report', 'monthly', 'finrep', 'receipt', 'receiptlog'] },
     { label: '예산·계정', items: ['budget'] },
     { label: '설정', tab: 'settings' }
   ];
@@ -406,6 +406,7 @@ console.log('[finance.js] v20260701di');
     else if (tab === 'givers') renderGivers(p);
     else if (tab === 'gl') renderGL(p);
     else if (tab === 'report') renderReport(p);
+    else if (tab === 'monthly') renderMonthly(p);
     else if (tab === 'finrep') renderFinReport(p);
     else if (tab === 'bulletin') renderGiverList(p);
     else if (tab === 'receipt') renderReceipt(p);
@@ -1708,6 +1709,117 @@ console.log('[finance.js] v20260701di');
     }
     ['#fr_month', '#fr_quarter', '#fr_week', '#fr_from', '#fr_to'].forEach(function (id) { panel.querySelector(id).addEventListener('change', go); });
     panel.querySelector('#fr_go').onclick = go; go();
+  }
+
+  /* ── 월간 통계 — 고른 달 요약(전달·작년 같은 달 대비) · 주일별 수입 · 회계연도 12달 항목별 표 ── */
+  function renderMonthly(panel) {
+    var fyMonths = fyMonthsOf(M.fy), nowYM = today().slice(0, 7);
+    var defM = fyMonths.indexOf(nowYM) >= 0 ? nowYM : (nowYM < fyMonths[0] ? fyMonths[0] : fyMonths[11]);
+    function ymLabel(m) { return (+m.slice(0, 4)) + '년 ' + (+m.slice(5)) + '월'; }
+    function shiftYM(m, n) { var y = +m.slice(0, 4), mo = +m.slice(5) + n; while (mo < 1) { mo += 12; y--; } while (mo > 12) { mo -= 12; y++; } return y + '-' + pad2(mo); }
+    function sundaysIn(m) { var y = +m.slice(0, 4), mo = +m.slice(5), a = [], td = today(); for (var d = 1; d <= lastDay(y, mo); d++) { var ds = m + '-' + pad2(d); if (isSunday(ds) && ds <= td) a.push(ds); } return a; }   // 오늘까지 지난 주일만
+    function monthList(m) { return M.vouchers.filter(function (v) { return fmtD(v['일자']).slice(0, 7) === m; }); }
+    // 한 달 숫자: 수입·지출·전표 수·헌금 드린 분(구역·단체·무기명 빼고)·주일 평균 수입
+    function stats(m) {
+      var list = monthList(m), s = { inc: 0, exp: 0, n: list.length, givers: 0, sun: sundaysIn(m).length }, gv = {};
+      list.forEach(function (v) {
+        var a = Number(v['금액']) || 0;
+        if (String(v['구분']) === '수입') { s.inc += a; var gi = giverInfo(v); if (gi.kind !== 'group') gv[gi.id] = 1; } else s.exp += a;
+      });
+      s.givers = Object.keys(gv).length; s.avg = s.sun ? Math.round(s.inc / s.sun) : 0;
+      return s;
+    }
+    function delta(a, b, upGood) {
+      if (!b) return '<span style="color:#9aa5b1">비교할 기록 없음</span>';
+      var p = (a - b) / b * 100, up = p >= 0, good = up === upGood;
+      return '<span style="color:' + (Math.abs(p) < 0.05 ? '#7b8794' : good ? '#1e874b' : '#c0392b') + '">' + (up ? '▲ ' : '▼ ') + Math.abs(p).toFixed(1) + '%</span>';
+    }
+    panel.innerHTML =
+      '<div class="fin-card"><div class="fin-grid" style="align-items:end">' +
+      '<div class="form-field"><label>달</label><select id="ms_month">' + fyMonths.map(function (m) { return '<option value="' + m + '"' + (m === defM ? ' selected' : '') + '>' + ymLabel(m) + '</option>'; }).join('') + '</select></div>' +
+      '</div><p class="help" style="margin-top:4px">고른 달의 요약을 지난달·작년 같은 달과 견주어 보고, 아래에서 ' + M.fy + '년도 12달을 항목별로 봅니다. 헌금 드린 분은 구역·단체·무기명을 뺀 사람 수입니다.</p></div>' +
+      '<div id="ms_out"></div>';
+    var sel = panel.querySelector('#ms_month'), out = panel.querySelector('#ms_out');
+    function draw() {
+      var ym = sel.value, cur = stats(ym), prev = stats(shiftYM(ym, -1)), last = stats(shiftYM(ym, -12));
+      function card(label, val, unit, color, upGood, pv, lv) {
+        return '<div style="flex:1;min-width:150px;background:#fff;border:1px solid #e8edf3;border-radius:12px;padding:12px 14px"><div style="color:#7b8794;font-size:.78rem;margin-bottom:4px">' + label + '</div>' +
+          '<div style="font-size:1.25rem;font-weight:700;color:' + color + '">' + won(val) + '<span style="font-size:.78rem;font-weight:400">' + unit + '</span></div>' +
+          '<div style="font-size:.76rem;margin-top:5px;line-height:1.6"><span style="color:#9aa5b1">지난달</span> ' + delta(val, pv, upGood) + '<br><span style="color:#9aa5b1">작년 같은 달</span> ' + delta(val, lv, upGood) + '</div></div>';
+      }
+      var cards = '<div style="display:flex;gap:12px;flex-wrap:wrap">' +
+        card('수입', cur.inc, '원', '#1e874b', true, prev.inc, last.inc) +
+        card('지출', cur.exp, '원', '#c0392b', false, prev.exp, last.exp) +
+        card('차액 (수입−지출)', cur.inc - cur.exp, '원', '#1A3A2F', true, prev.inc - prev.exp, last.inc - last.exp) +
+        card('헌금 드린 분', cur.givers, '명', '#1b4b8f', true, prev.givers, last.givers) +
+        card('주일 평균 수입 (주일 ' + cur.sun + '번)', cur.avg, '원', '#8a5a00', true, prev.avg, last.avg) +
+        '</div>';
+
+      // 주일별(주일~토요일 한 주) 수입 — 열은 그 달 수입의 항(계정표 순서)
+      var mList = monthList(ym), mStruct = accountRows('수입', sumByAccount(mList, '수입')).filter(function (r) { return r.level === 0; });
+      var weeks = {}, wOrder = [];
+      mList.forEach(function (v) { var w = weekRange(fmtD(v['일자'])).from; if (!weeks[w]) { weeks[w] = []; wOrder.push(w); } weeks[w].push(v); });
+      wOrder.sort();
+      var weekTable = !wOrder.length ? '<p class="help">이 달 기록이 없습니다.</p>' :
+        '<table class="fin-table"><thead><tr><th>주간 (주일)</th>' + mStruct.map(function (r) { return '<th class="num">' + esc(r.label) + '</th>'; }).join('') + '<th class="num">수입 합계</th><th class="num">지출 합계</th></tr></thead><tbody>' +
+        wOrder.map(function (w) {
+          var l = weeks[w], o = {}, ti = 0, te = 0;
+          accountRows('수입', sumByAccount(l, '수입')).forEach(function (r) { if (r.level === 0) o[r.label] = r.s; });
+          l.forEach(function (v) { var a = Number(v['금액']) || 0; if (String(v['구분']) === '수입') ti += a; else te += a; });
+          var wlab = (w.slice(0, 7) === ym ? '' : '<span style="color:#9aa5b1">(' + (+w.slice(5, 7)) + '월) </span>') + (+w.slice(5, 7)) + '/' + (+w.slice(8)) + ' 주간';
+          return '<tr><td>' + wlab + '</td>' + mStruct.map(function (r) { return '<td class="num">' + (o[r.label] ? won(o[r.label]) : '<span style="color:#c9ced6">-</span>') + '</td>'; }).join('') +
+            '<td class="num"><b style="color:#1e874b">' + won(ti) + '</b></td><td class="num" style="color:#c0392b">' + won(te) + '</td></tr>';
+        }).join('') +
+        '</tbody><tfoot><tr style="font-weight:700;background:#eef2f7"><td>합계</td>' + mStruct.map(function (r) { return '<td class="num">' + won(r.s) + '</td>'; }).join('') + '<td class="num">' + won(cur.inc) + '</td><td class="num">' + won(cur.exp) + '</td></tr></tfoot></table>';
+
+      // 회계연도 12달 표 — 고른 달 열을 칠해서 보여 준다. 월평균은 기록이 있는 달로 나눈다.
+      var past = fyMonths.filter(function (m) { return m <= nowYM; });
+      var ms = fyMonths.map(stats);
+      function th(m) { return '<th class="num"' + (m === ym ? ' style="background:#e8f6ee"' : '') + '>' + (+m.slice(5)) + '월</th>'; }
+      function td(m, html, strong) { return '<td class="num"' + (m === ym ? ' style="background:#f3fbf6' + (strong ? ';font-weight:700' : '') + '"' : '') + '>' + html + '</td>'; }
+      function avgOf(vals) { var a = vals.filter(function (x, i) { return ms[i].n; }); return a.length ? Math.round(a.reduce(function (s, x) { return s + x; }, 0) / a.length) : 0; }
+      var head = '<thead><tr><th>구분</th>' + fyMonths.map(th).join('') + '<th class="num">합계</th><th class="num">월평균</th></tr></thead>';
+      function sumRow(label, vals, color, noTotal) {
+        var tot = vals.reduce(function (s, x) { return s + x; }, 0);
+        return '<tr style="font-weight:700' + (color ? ';color:' + color : '') + '"><td>' + label + '</td>' + fyMonths.map(function (m, i) { return td(m, ms[i].n || m <= nowYM ? won(vals[i]) : '', true); }).join('') +
+          '<td class="num">' + (noTotal ? '' : won(tot)) + '</td><td class="num">' + won(avgOf(vals)) + '</td></tr>';
+      }
+      var summary = '<table class="fin-table">' + head + '<tbody>' +
+        sumRow('수입', ms.map(function (x) { return x.inc; }), '#1e874b') +
+        sumRow('지출', ms.map(function (x) { return x.exp; }), '#c0392b') +
+        sumRow('차액', ms.map(function (x) { return x.inc - x.exp; }), '#1A3A2F') +
+        sumRow('헌금 드린 분(명)', ms.map(function (x) { return x.givers; }), '#1b4b8f', true) +
+        sumRow('주일 평균 수입', ms.map(function (x) { return x.avg; }), '#8a5a00', true) +
+        '</tbody></table>';
+      function accMatrix(gubun) {
+        var fyList = vouchersFY(), struct = accountRows(gubun, sumByAccount(fyList, gubun));
+        if (!struct.length) return '<p class="help">' + gubun + ' 기록이 없습니다.</p>';
+        var per = fyMonths.map(function (m) { var o = {}; accountRows(gubun, sumByAccount(monthList(m), gubun)).forEach(function (r) { o[r.label] = r.s; }); return o; });
+        return '<table class="fin-table">' + head.replace('<th>구분</th>', '<th>' + gubun + ' 항목</th>') + '<tbody>' +
+          struct.map(function (r) {
+            var vals = per.map(function (o) { return o[r.label] || 0; });
+            var lab = r.level ? '<span style="padding-left:14px;color:#48576b">' + esc(r.label) + '</span>' : esc(r.label);
+            if (r.unknown) lab += ' <span class="fin-pill out">계정표에 없음</span>';
+            return '<tr' + (r.group ? ' style="font-weight:700;background:#f5f8fc"' : '') + '><td style="white-space:nowrap">' + lab + '</td>' +
+              fyMonths.map(function (m, i) { return td(m, vals[i] ? won(vals[i]) : '<span style="color:#c9ced6">-</span>'); }).join('') +
+              '<td class="num"><b>' + won(r.s) + '</b></td><td class="num">' + won(avgOf(vals)) + '</td></tr>';
+          }).join('') + '</tbody></table>';
+      }
+      var content =
+        '<div class="fin-card"><b>' + esc(ymLabel(ym)) + ' 요약</b><div style="margin-top:10px">' + cards + '</div>' +
+          (ym === nowYM ? '<p class="help" style="margin-top:8px;color:#8a5a00">이번 달은 아직 끝나지 않아 오늘까지 넣은 기록만 셉니다. 지난달과 견줄 때는 「주일 평균 수입」이 더 정확합니다.</p>' : '') + '</div>' +
+        '<div class="fin-card"><b>' + esc(ymLabel(ym)) + ' 주일별 수입</b><div style="overflow:auto;margin-top:8px">' + weekTable + '</div>' +
+          '<p class="help" style="margin-top:4px">한 주는 주일부터 토요일까지입니다. 달 첫머리에 앞달 주일 주간이 걸치면 (앞달) 표시가 붙습니다.</p></div>' +
+        '<div class="fin-card"><b>' + M.fy + '년도 달마다 한눈에</b><div style="overflow:auto;margin-top:8px">' + summary + '</div>' +
+          '<p class="help" style="margin-top:4px">초록 칸이 고른 달입니다. 월평균은 기록이 있는 달(' + ms.filter(function (x) { return x.n; }).length + '개월)로 나눈 값입니다.' + (past.length < 12 ? ' 아직 오지 않은 달은 비워 두었습니다.' : '') + '</p></div>' +
+        '<div class="fin-card"><b>수입 항목별 · 달마다</b><div style="overflow:auto;margin-top:8px">' + accMatrix('수입') + '</div></div>' +
+        '<div class="fin-card"><b>지출 항목별 · 달마다</b><div style="overflow:auto;margin-top:8px">' + accMatrix('지출') + '</div></div>';
+      withPrint(out, '월간 통계', content, ymLabel(ym) + ' · ' + M.fy + '년도');
+    }
+    loading(out);
+    Promise.all([ensureVouchers(), ensureBudget(), ensureSettings()]).then(function () {
+      sel.onchange = draw; draw();
+    }).catch(function (e) { out.innerHTML = msgCard('조회 실패', e.message); });
   }
 
   /* ── 헌금명단 (주보용: 주간·항목별 명단) ── */
