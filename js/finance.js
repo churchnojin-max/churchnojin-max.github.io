@@ -523,10 +523,10 @@ console.log('[finance.js] v20260701di');
       panel.innerHTML =
         // 월별 차트 + 도넛 (상단)
         '<div class="fin-card"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));gap:24px">' +
-          '<div style="min-width:0"><b>📊 월별 수입·지출</b> <span style="font-size:.76rem"><span style="color:#34C759">● 수입</span> <span style="color:#FF3B30">● 지출</span> <span style="color:#9aa5b1">· ' + esc(fyMonths[0]) + ' ~ ' + esc(fyMonths[11]) + ' · 막대를 누르면 금액</span></span>' +
+          '<div style="min-width:0"><b>📊 월별 수입·지출</b> <span style="font-size:.76rem"><span style="color:#34C759">● 수입</span> <span style="color:#FF3B30">● 지출</span> <span style="color:#9aa5b1">· ' + esc(fyMonths[0]) + ' ~ ' + esc(fyMonths[11]) + ' · 막대를 누르면 금액과 주간별 내역</span></span>' +
             '<div id="mcWrap" style="position:relative;margin-top:14px">' + monthChart() + '<div id="mcTip" style="position:absolute;display:none;background:#1A3A2F;color:#fff;font-size:.76rem;line-height:1.45;padding:6px 9px;border-radius:7px;pointer-events:none;white-space:nowrap;z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.25)"></div></div></div>' +
           '<div><b>🍩 헌금 항목별 (연간)</b>' + donut() + '</div>' +
-        '</div></div>' +
+        '</div><div id="mcWeek" style="margin-top:16px"></div></div>' +
         // KPI 요약
         '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">' + stat('전기 이월금', carry, '#7b8794') + stat('당기 수입', ti, '#1e874b') + stat('당기 지출', te, '#c0392b') + stat('현재 잔액', bal, '#1A3A2F') + '</div>' +
         // 주간 수입/지출 현황
@@ -558,11 +558,46 @@ console.log('[finance.js] v20260701di');
             if (px < 0) px = 0;
             mcTip.style.left = px + 'px'; mcTip.style.top = py + 'px'; mcTip.style.display = 'block';
           }
-          h.addEventListener('mousemove', show); h.addEventListener('mouseenter', show); h.addEventListener('click', show);
+          h.addEventListener('mousemove', show); h.addEventListener('mouseenter', show);
+          h.addEventListener('click', function (e) { show(e); showWeeks(h.getAttribute('data-m'), true); });
           h.addEventListener('mouseleave', function () { mcTip.style.display = 'none'; });
         });
         return true;
       }
+      // 2026-10-30 목사님: 막대(달)를 누르면 그 달의 주간(주일~토요일)마다 수입·지출 — 주간을 누르면 항목별
+      var mcWeek = panel.querySelector('#mcWeek');
+      function showWeeks(m, scroll) {
+        if (!mcWeek) return;
+        var list = fy.filter(function (v) { return String(v['일자']).slice(0, 7) === m; });
+        var head = '<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:8px"><b style="color:var(--accent,#1A3A2F)">📅 ' + (+m.slice(0, 4)) + '년 ' + (+m.slice(5)) + '월 주간별 수입·지출</b><span style="font-size:.76rem;color:#9aa5b1">한 주 = 주일~토요일 · 주간을 누르면 항목별</span></div>';
+        if (!list.length) { mcWeek.innerHTML = '<div style="border-top:1px solid #eef1f5;padding-top:14px">' + head + '<p class="help">이 달 기록이 없습니다.</p></div>'; return; }
+        var weeks = {}, wOrder = [];
+        list.forEach(function (v) { var w = weekRange(fmtD(v['일자'])).from; if (!weeks[w]) { weeks[w] = { inc: 0, exp: 0, ia: {}, ea: {} }; wOrder.push(w); } var x = weeks[w], a = Number(v['금액']) || 0, acc = v['계정'] || '(계정 없음)'; if (String(v['구분']) === '수입') { x.inc += a; x.ia[acc] = (x.ia[acc] || 0) + a; } else { x.exp += a; x.ea[acc] = (x.ea[acc] || 0) + a; } });
+        // 기록이 없는 주도 빠지지 않게 그 달에 걸친 주를 모두 늘어놓는다(주 번호가 달력과 맞도록)
+        var lastDay = m + '-' + pad2(new Date(+m.slice(0, 4), +m.slice(5), 0).getDate());
+        var wk0 = weekRange(m + '-01').from; if (wk0 < m + '-01') wk0 = shift(wk0, 7);   // 그 달의 첫 주일부터(앞 달 주일의 주는 기록이 있을 때만)
+        for (var wk = wk0; wk <= lastDay; wk = shift(wk, 7)) if (!weeks[wk]) { weeks[wk] = { inc: 0, exp: 0, ia: {}, ea: {} }; wOrder.push(wk); }
+        wOrder.sort();
+        var maxW = Math.max.apply(null, wOrder.map(function (w) { return Math.max(weeks[w].inc, weeks[w].exp); }).concat([1]));
+        function md(d) { return (+d.slice(5, 7)) + '/' + (+d.slice(8, 10)); }
+        function bar(v, col) { return '<span style="display:inline-block;height:7px;border-radius:4px;background:' + col + ';opacity:.55;width:' + Math.max(v ? 2 : 0, Math.round(v / maxW * 100)) + '%;vertical-align:middle"></span>'; }
+        function accList(o, col) { var ks = Object.keys(o).sort(function (a, b) { return o[b] - o[a]; }); return ks.length ? ks.map(function (k) { return '<div style="display:flex;justify-content:space-between;gap:10px"><span>' + esc(k) + '</span><b style="color:' + col + '">' + won(o[k]) + '원</b></div>'; }).join('') : '<div style="color:#9aa5b1">없음</div>'; }
+        var ti2 = 0, te2 = 0;
+        var rows = wOrder.map(function (w, i) {
+          var x = weeks[w], to = weekRange(w).to; ti2 += x.inc; te2 += x.exp;
+          return '<details style="border:1px solid #eef1f5;border-radius:10px;margin-bottom:6px;background:#fff"><summary style="cursor:pointer;padding:9px 12px;list-style:none">' +
+            '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px"><b>' + (i + 1) + '주 <span style="font-weight:400;color:#7b8794;font-size:.82rem">' + md(w) + '(주일) ~ ' + md(to) + '</span></b>' +
+            '<span style="font-size:.86rem"><span style="color:#1e874b">수입 <b>' + won(x.inc) + '</b></span> · <span style="color:#c0392b">지출 <b>' + won(x.exp) + '</b></span> · 차액 <b>' + won(x.inc - x.exp) + '</b></span></div>' +
+            '<div style="margin-top:5px;line-height:1">' + bar(x.inc, '#34C759') + '</div><div style="margin-top:3px;line-height:1">' + bar(x.exp, '#FF3B30') + '</div></summary>' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:8px 18px;padding:4px 12px 12px;font-size:.85rem"><div><div style="color:#1e874b;font-weight:700;margin-bottom:3px">＋ 수입</div>' + accList(x.ia, '#1e874b') + '</div><div><div style="color:#c0392b;font-weight:700;margin-bottom:3px">－ 지출</div>' + accList(x.ea, '#c0392b') + '</div></div></details>';
+        }).join('');
+        mcWeek.innerHTML = '<div style="border-top:1px solid #eef1f5;padding-top:14px">' + head + rows +
+          '<div style="display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;font-size:.88rem;padding:4px 12px"><span>이 달 합계</span><span style="color:#1e874b">수입 <b>' + won(ti2) + '원</b></span><span style="color:#c0392b">지출 <b>' + won(te2) + '원</b></span><span>차액 <b>' + won(ti2 - te2) + '원</b></span></div>' +
+          '<p class="help" style="margin:4px 0 0">※ 달이 걸친 주(예: 9월 마지막 주일~10월 초)는 이 달에 든 날의 금액만 셉니다.</p></div>';
+        if (scroll && mcWeek.scrollIntoView) mcWeek.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      // 처음에는 기록이 있는 가장 최근 달(이번 달까지)을 펼쳐 둔다
+      (function () { var past = order.filter(function (m) { return m <= nowYM; }); if (past.length) showWeeks(past[past.length - 1], false); })();
       if (mcWrap && mcTip) {
         drawChart();
         var rsT = null, lastW = mcWrap.clientWidth;
