@@ -136,6 +136,7 @@
       if (e.key === "End") go(PAGES.length - 1);
     });
     go(0);
+    setTimeout(function () { PAGES.forEach(function (p) { var im = new Image(); im.src = p.src; }); }, 800);   // 네 쪽 미리 받아 두기(넘길 때 바로 뜨게)
   }
   function apply() { document.body.classList.toggle("pc", mq.matches); if (mq.matches) build(); }
   apply();
