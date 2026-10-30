@@ -1020,25 +1020,31 @@ console.log('[finance.js] v20260701di');
         var joined = cells.join(' ');
         if (/^헌금자\s*리스트/.test(joined) || /^기간/.test(joined) || /누\s*계/.test(joined) || /합\s*계/.test(joined)) return;
         if (cells.length === 1 && !isAmount(cells[0]) && !/^.+\([\d,]+\)$/.test(cells[0])) { cat = cells[0]; return; } // 항목 구분 줄(단, "이름(금액)" 인라인 한 건짜리 줄은 제외)
-        for (var i = 0; i < cells.length;) {
-          var c = cells[i];
+        // 2026-10-30 목사님: 헌금 명세의 "이름(금액)" 줄에서 감사헌금이 덜 읽힘 → 고침
+        //   · "김동배 이경순(50)" 처럼 이름에 띄어쓰기가 있으면 앞 이름부터 한 건으로(예전엔 그 줄 나머지를 통째로 버림)
+        //   · "이름(?)" 처럼 금액을 못 읽은 칸은 그 칸만 건너뜀(예전엔 그 뒤 사람들까지 버림)
+        //   · "50,000원" · "이름(50,000원)" 처럼 '원'이 붙어도 금액으로 읽음
+        var parts = [];
+        for (var i = 0; i < cells.length; i++) {
+          var c = cells[i].replace(/원$/, '').replace(/원\)$/, ')');
           var inline = c.match(/^(.+)\(([\d,]+)\)$/); // "이름(금액)" 인라인 형식
           if (inline && isAmount(inline[2])) {
-            var nm = inline[1].trim();
+            parts.push(inline[1].trim());
+            var nm = parts.join(' ');
             items.push({ date: curDate, cat: cat, rawCat: cat, payer: nm, base: firstName(nm), amount: parseNum(inline[2]) });
-            i += 1;
+            parts = [];
             continue;
           }
-          if (isAmount(cells[i])) { i++; continue; }
-          // 금액이 나올 때까지 이어지는 낱말을 한 사람의 이름으로 본다.
-          // "홍길동 김영희 50000" 처럼 두 사람이 적힌 경우, 예전에는 뒤 이름만
-          // 남고 앞 이름이 버려졌다. 이제 전체를 헌금자로 적고 맨 앞 이름으로 교적을 찾는다.
-          var parts = [];
-          while (i < cells.length && !isAmount(cells[i])) { parts.push(cells[i]); i++; }
-          if (i >= cells.length || !isAmount(cells[i])) break;   // 금액이 없으면 그 줄은 버린다
-          var payer = parts.join(' ');
-          items.push({ date: curDate, cat: cat, rawCat: cat, payer: payer, base: firstName(payer), amount: parseNum(cells[i]) });
-          i += 1;
+          if (isAmount(c)) {
+            if (!parts.length) continue;   // 이름 없이 금액만(앞 사람 것) — 건너뜀
+            // 금액이 나올 때까지 이어진 낱말을 한 사람(또는 한 가정)의 이름으로 본다. 맨 앞 이름으로 교적을 찾는다.
+            var payer = parts.join(' ');
+            items.push({ date: curDate, cat: cat, rawCat: cat, payer: payer, base: firstName(payer), amount: parseNum(c) });
+            parts = [];
+            continue;
+          }
+          if (/\(\s*\?\s*\)$/.test(c)) { parts = []; continue; }   // "이름(?)" — 금액을 못 읽은 칸
+          parts.push(cells[i]);
         }
       });
       // 자료 속 날짜로 위의 일자 칸을 맞춘다: 붙여넣은 글의 날짜 머리글 > 엑셀 파일의 기간·파일 이름 > (없으면) 지난 주일 그대로
