@@ -24,7 +24,21 @@
 body { margin: 0; background: #E9E1CF; color: var(--ink); font-family: var(--serif); word-break: keep-all; overflow-wrap: anywhere; }
 .card { max-width: 480px; margin: 0 auto; background: var(--paper); min-height: 100vh; box-shadow: 0 0 40px rgba(60, 45, 20, .12); }
 header { text-align: center; padding: 26px 22px 10px; }
-.back { display: inline-block; font-family: var(--sans); font-size: .88rem; color: var(--green); text-decoration: none; font-weight: 700; margin-bottom: 14px; }
+.bar { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px;
+       background: rgba(253,242,222,.96); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+.bar a, .bar button { font-family: var(--sans); font-size: .84rem; font-weight: 700; color: var(--green); text-decoration: none; background: #fff;
+       border: 1px solid var(--green); border-radius: 999px; padding: 7px 12px; cursor: pointer; white-space: nowrap; line-height: 1.2; }
+.bar .home { background: var(--green); color: var(--paper); }
+.bar .grp { display: flex; gap: 6px; }
+.tools { display: flex; justify-content: center; gap: 8px; padding: 0 20px 4px; }
+.tools button { font-family: var(--sans); font-size: .8rem; color: var(--moss); background: #FFF9EE; border: 1px solid var(--gold-l); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.exit { display: flex; justify-content: center; gap: 8px; padding: 6px 20px 26px; }
+.exit a { font-family: var(--sans); font-size: .9rem; font-weight: 700; color: var(--green); text-decoration: none; background: #fff; border: 1px solid var(--green); border-radius: 999px; padding: 11px 18px; }
+.exit a.home { background: var(--green); color: var(--paper); }
+.txt.verse p { margin: 0 0 8px; }
+.txt.verse p b { font-family: var(--sans); color: var(--gold); font-weight: 700; margin-right: 6px; }
+.txt.verse p.ref { color: var(--moss); }
+.txt.creed p { margin: 0 0 4px; }
 .eyebrow { font-family: var(--batang); color: var(--gold); letter-spacing: .4em; font-size: .9rem; margin: 0; padding-left: .4em; }
 h1 { font-family: var(--batang); color: var(--green); font-size: 1.7rem; margin: 6px 0 2px; }
 .when { font-size: .95rem; color: var(--soft); margin: 0; }
@@ -54,20 +68,43 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--gold-l); outli
 </head>
 <body>
 <main class="card">
+  <div class="bar">
+    <a href="../order/">‹ 그림 순서지</a>
+    <span class="grp"><a href="../order/순서지.pdf" download>PDF</a><a class="home" href="../">홈으로</a></span>
+  </div>
   <header>
-    <a class="back" href="index.html">‹ 초대장으로</a>
     <p class="eyebrow">ORDER OF SERVICE</p>
     <h1>위임감사예배 순서</h1>
     <p class="when">2026년 10월 31일 토요일 오전 11시 · 노진교회당</p>
   </header>
+  <div class="tools"><button type="button" id="openAll">사도신경·찬송 가사·본문 모두 펼치기</button></div>
 
   <section>
     <h2>제1부 예배 <small>인도 · 한숲우리교회 / 위임국장 김성중 목사</small></h2>
     <ol>
       <li><b>예배부름</b><span class="what"></span><span class="who">인도자</span></li>
       <li><b>기원</b><span class="what"></span><span class="who">인도자</span></li>
-      <li><b>신앙고백</b><span class="what">사도신경</span><span class="who">다같이</span></li>
-      <li><b>찬송</b><span class="what">320장 「나의 죄를 정케 하사」</span><span class="who">다같이</span></li>
+      <li><b>신앙고백</b><span class="what">사도신경</span><span class="who">다같이</span>
+        <details class="det"><summary>사도신경 보기</summary><div class="txt creed">
+          <p>전능하사 천지를 만드신 하나님 아버지를 내가 믿사오며,</p>
+          <p>그 외아들 우리 주 예수 그리스도를 믿사오니,</p>
+          <p>이는 성령으로 잉태하사 동정녀 마리아에게 나시고,</p>
+          <p>본디오 빌라도에게 고난을 받으사, 십자가에 못 박혀 죽으시고,</p>
+          <p>장사한 지 사흘 만에 죽은 자 가운데서 다시 살아나시며,</p>
+          <p>하늘에 오르사, 전능하신 하나님 우편에 앉아 계시다가,</p>
+          <p>저리로서 산 자와 죽은 자를 심판하러 오시리라.</p>
+          <p>성령을 믿사오며, 거룩한 공회와, 성도가 서로 교통하는 것과,</p>
+          <p>죄를 사하여 주시는 것과, 몸이 다시 사는 것과,</p>
+          <p>영원히 사는 것을 믿사옵나이다. 아멘.</p>
+        </div></details></li>
+      <li><b>찬송</b><span class="what">320장 「나의 죄를 정케 하사」</span><span class="who">다같이</span>
+        <details class="det"><summary>가사 보기</summary><div class="txt verse">
+          <p><b>1</b>나의 죄를 정케 하사 주의 일꾼 삼으신 구세주의 넓은 사랑 항상 찬송합니다</p>
+          <p class="ref"><b>후렴</b>나를 일꾼 삼으신 주 크신 능력 주시고 언제든지 주 뜻대로 사용하여 주소서</p>
+          <p><b>2</b>내게 부어 주시려고 은혜 예비하신 주 주의 은혜 채워 주사 능력 있게 하소서</p>
+          <p><b>3</b>죄의 짐을 풀어 주신 주의 능력 크도다 나를 피로 사신 예수 내 맘 속에 오소서</p>
+          <p><b>4</b>주여 내게 성령으로 충만하게 채우사 생명수가 강물처럼 흐르게 하옵소서 아멘</p>
+        </div></details></li>
       <li><b>기도</b><span class="what"></span><span class="who">수암제일교회 / 부노회장<em>이신영 장로</em></span></li>
       <li><b>특송</b><span class="what"></span><span class="who">노진교회 교우 일동</span></li>
       <li><b>성경봉독</b><span class="what">이사야 60장 1~3절</span><span class="who">섬김의교회 / 노회서기<em>권병렬 목사</em></span>
@@ -117,13 +154,28 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--gold-l); outli
       <li><b>선물증정</b><span class="what"></span><span class="who">노진교회 교우 일동</span></li>
       <li><b>답사</b><span class="what"></span><span class="who">노진교회 / 위임목사<em>손병민 목사</em></span></li>
       <li><b>인사</b><span class="what"></span><span class="who">노진교회<em>문명수 시무장로</em></span></li>
-      <li><b>찬송</b><span class="what">210장 「시온성과 같은 교회」</span><span class="who">다같이</span></li>
+      <li><b>찬송</b><span class="what">210장 「시온성과 같은 교회」</span><span class="who">다같이</span>
+        <details class="det"><summary>가사 보기</summary><div class="txt verse">
+          <p><b>1</b>시온성과 같은 교회 그의 영광 한없다 허락하신 말씀대로 주가 친히 세웠다 반석 위에 세운 교회 흔들 자가 누구랴 모든 원수 에워싸도 아무 근심 없도다</p>
+          <p><b>2</b>생명샘이 솟아나와 모든 성도 마시니 언제든지 흘러넘쳐 부족함이 없도다 이런 물이 흘러가니 목마를 자 누구랴 주의 은혜 풍족하여 넘치고도 넘친다</p>
+          <p><b>3</b>주의 은혜 내가 받아 시온 백성 되는 때 세상 사람 비방해도 주를 찬송하리라 세상 헛된 모든 영광 아침 안개 같으나 주의 자녀 받을 복은 영원무궁하도다 아멘</p>
+        </div></details></li>
       <li><b>축도</b><span class="what"></span><span class="who">노진교회 / 원로목사<em>신동열 목사</em></span></li>
     </ol>
   </section>
 
   <p class="note">예배 뒤 기념 사진을 찍고, 식사 자리에서 함께 교제합니다.</p>
+  <div class="exit"><a href="../order/">‹ 그림 순서지</a><a class="home" href="../">홈으로</a></div>
   <footer><img src="logo-h.svg" alt="노진교회 대한예수교장로회" /></footer>
 </main>
+<script>
+(function () {
+  var b = document.getElementById("openAll"), ds = document.querySelectorAll("details");
+  function allOpen() { for (var i = 0; i < ds.length; i++) if (!ds[i].open) return false; return true; }
+  function label() { b.textContent = allOpen() ? "모두 접기" : "사도신경·찬송 가사·본문 모두 펼치기"; }
+  b.addEventListener("click", function () { var o = !allOpen(); for (var i = 0; i < ds.length; i++) ds[i].open = o; label(); });
+  for (var i = 0; i < ds.length; i++) ds[i].addEventListener("toggle", label);
+})();
+</script>
 </body>
 </html>
