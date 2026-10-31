@@ -53,6 +53,13 @@ html { scroll-padding-top: 0; }
 .wl-sermon { margin: 0; display: flex; flex-direction: column; gap: 2px; }
 .wl-sermon b { font-family: "Gowun Batang", serif; font-size: 1.2em; color: var(--accent); }
 .wl-sermon span { color: var(--ink-soft); font-size: .92em; }
+.wl-flow { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.wl-flow p { margin: 6px 0 0; line-height: 1.8; }
+.wl-flow .wl-flow-t { margin: 0 0 4px; font-weight: 800; color: var(--accent); }
+.wl-flow .wl-flow-h { margin-top: 16px; font-weight: 800; color: var(--ink); }
+.wl-flow .wl-flow-a { color: var(--accent); font-weight: 700; }
+.wl-flow .wl-flow-a::before { content: "→ "; }
+.wl-qs p + p { margin-top: 8px; }
 .wl-xref { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
 .wl-xref summary { display: inline-block; cursor: pointer; font-weight: 700; color: #fff; background: var(--accent); padding: 8px 16px; border-radius: 999px; list-style: none; }
 .wl-xref summary::-webkit-details-marker { display: none; }

@@ -179,6 +179,36 @@
     return out;
   }
 
+  // 말씀선포: 설교 요약의 말씀 칸·질문 칸이 아닌 칸([오늘의 말씀 흐름] 등)과 [..질문..] 칸 → 예배 화면에 글 그대로
+  // (2026-10-31 목사님: 종이 주보가 '예배 현장 입장'을 보라는데 흐름·질문이 없었다)
+  function flowOf(summary) {
+    var flow = [], qs = [], qName = "", cur = null, WV = window.WorshipView || {};
+    String(summary || "").split(/\r?\n/).forEach(function (raw) {
+      var l = raw.trim(); if (!l) return;
+      var h = l.match(/^\[(.*)\]$/);
+      if (h) {
+        var name = h[1].trim();
+        var verseHead = !/흐름|뿌리|요약|핵심/.test(name) && (WV.isVerseHead ? WV.isVerseHead(name) : /말씀|인용|구절|본문/.test(name));   // '오늘의 말씀 흐름'은 구절 칸이 아니다
+        cur = /질문/.test(name) ? { q: true } : verseHead ? null : { name: name, lines: [] };
+        if (cur && !cur.q) flow.push(cur);
+        if (cur && cur.q) qName = name;
+        return;
+      }
+      if (!cur) return;
+      if (cur.q) qs.push(l); else cur.lines.push(l);
+    });
+    return { flow: flow.filter(function (s) { return s.lines.length; }), qs: qs, qName: qName };
+  }
+  function flowHtml(f) {
+    return f.flow.map(function (s) {
+      return '<div class="wl-flow"><p class="wl-flow-t">' + esc(s.name) + "</p>" + s.lines.map(function (l) {
+        if (/^[①-⑳]/.test(l)) return '<p class="wl-flow-h">' + esc(l) + "</p>";
+        if (/^(→|->)/.test(l)) return '<p class="wl-flow-a">' + esc(l.replace(/^(→|->)\s*/, "")) + "</p>";
+        return "<p>" + esc(l) + "</p>";
+      }).join("") + "</div>";
+    }).join("");
+  }
+
   var hymnJobs = [], isAdminView = false, bibleSeen = false;
   function itemHtml(o, i, b) {
     var d = b.data || {};
@@ -226,9 +256,10 @@
       // [인용 구절]·[참고 구절]처럼 칸이 둘 이상이면 칸마다 제목을 달아 나눠 보여 준다
       var grp = [];
       xr.forEach(function (x) { var g = grp.filter(function (o) { return o.name === x.group; })[0]; if (g) g.n++; else grp.push({ name: x.group, n: 1 }); });
-      var many = grp.length > 1;
+      var many = grp.length > 1, fl = flowOf(d.summary);
       c = '<p class="wl-sermon"><b>' + esc(plainDetail || b.title || "") + "</b>" +
         (b.scripture ? "<span>" + esc(b.scripture) + "</span>" : "") + (b.preacher ? "<span>" + esc(b.preacher) + "</span>" : "") + "</p>" +
+        flowHtml(fl) +
         (xr.length ? '<details class="wl-xref"><summary>말씀 속 ' + (many
             ? grp.map(function (g) { return esc(g.name) + " " + g.n + "곳"; }).join(" · ")
             : "인용 구절 " + xr.length + "곳") + " 보기</summary>" +
@@ -237,7 +268,8 @@
               ? '<p class="wl-xgroup">' + esc(x.group) + " <small>" + grp.filter(function (o) { return o.name === x.group; })[0].n + "곳</small></p>" : "";
             return head + '<div class="wl-x"><b>' + esc(x.ref) + "</b>" + (x.lines.length ? x.lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("")
               : '<div class="wl-bible" data-ref="' + esc(x.ref) + '"><p class="wl-hint">본문을 불러오는 중…</p></div>') + "</div>";
-          }).join("") + "</details>" : "");
+          }).join("") + "</details>" : "") +
+        (fl.qs.length ? '<div class="wl-flow wl-qs"><p class="wl-flow-t">' + esc(fl.qName) + "</p>" + fl.qs.map(function (q) { return "<p>" + esc(q) + "</p>"; }).join("") + "</div>" : "");
       sub = "";
     }
     else if (/교회\s*소식|광고/.test(name)) {
