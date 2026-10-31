@@ -3092,7 +3092,7 @@ html.snap-gliding { scroll-snap-type: none !important; scroll-behavior: auto !im
 /* 로그인하면 오른쪽에 [교회행정][이름][로그아웃]이 붙어 머리글이 붐빈다 →
    컴퓨터 화면에서는 로고 옆 '대시보드'를 빼고(이름을 누르면 나오는 칸에 대시보드가 있음), 메뉴 간격을 조금 줄인다 */
 @media (min-width: 761px) {
-  html.logged-in .hdr-dash-btn:not(#hdrTf) { display: none !important; }   /* 위임식 '내 할 일' 단추는 컴퓨터에서도 보이게 (2026-10-21) */
+  html.logged-in .hdr-dash-btn { display: none !important; }
   html.logged-in .nav-menu { gap: 28px; }
 }
 @media (min-width: 761px) and (max-width: 1380px) {
