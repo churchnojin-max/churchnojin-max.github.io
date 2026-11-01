@@ -55,7 +55,7 @@
       var OPEN = Date.UTC(2026, 10, 1, 4, 50); // 13:50 KST
       var body = document.getElementById('pmBody');
       function draw() {
-        if (Date.now() >= OPEN) { body.innerHTML = document.getElementById('pmVerses').innerHTML; return; }
+        if (Date.now() >= OPEN || /[?&]go\b/.test(location.search)) {   // ?go = 목사님 미리 보기 body.innerHTML = document.getElementById('pmVerses').innerHTML; return; }
         body.innerHTML = '<div class="pm-wait">오늘 오후 2시 연합예배 때 말씀 구절이 열립니다.<br>조금만 기다려 주세요.</div>';
         setTimeout(draw, Math.min(OPEN - Date.now() + 500, 30000));
       }
