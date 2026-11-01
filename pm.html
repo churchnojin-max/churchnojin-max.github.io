@@ -49,6 +49,10 @@
     <div class="pm-v"><div class="r">요한복음 15장 15절</div><p><sup>15</sup>이제부터는 너희를 종이라 하지 아니하리니 종은 주인이 하는 것을 알지 못함이라 너희를 친구라 하였노니 내가 내 아버지께 들은 것을 다 너희에게 알게 하였음이라</p></div>
   </template>
 
+  <script src="js/church.js?v=20261009wl"></script>
+  <script src="js/brand.js?v=1"></script>
+  <script src="js/config.js?v=20261011ts"></script>
+  <script src="js/layout.js?v=20261031end"></script>
   <script>
     // 한국 시각 2026-11-01 13:50 부터 보임(그 전에는 안내)
     (function () {
@@ -60,11 +64,8 @@
         setTimeout(draw, Math.min(OPEN - Date.now() + 500, 30000));
       }
       draw();
+      window.addEventListener('load', function () { setTimeout(draw, 300); });
     })();
   </script>
-  <script src="js/church.js?v=20261009wl"></script>
-  <script src="js/brand.js?v=1"></script>
-  <script src="js/config.js?v=20261011ts"></script>
-  <script src="js/layout.js?v=20261031end"></script>
 </body>
 </html>
