@@ -4357,3 +4357,9 @@ html.big-text.ts-xl { font-size: 137.5%; }
 /* 전도회 4개(2026-10-24 여호수아 남전도회 뺌) */
 .block-mint .group-grid.group-grid-5.group-grid-4 { grid-template-columns: repeat(4, 1fr); }
 @media (max-width: 1100px) { .block-mint .group-grid.group-grid-5.group-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+
+/* 주보에 딸린 바로가기(오후예배 악보 등, data.links) — 2026-11-07 */
+.hbb-links { grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 14px 20px 0; }
+.hbb-links .hbb-link { background: #BFA06C; border-color: #BFA06C; color: #1A3A2F; font-weight: 700; }
+.hb-links { display: flex; flex-direction: column; gap: 8px; }
+.hb-links .btn { justify-content: center; text-align: center; background: #BFA06C; border-color: #BFA06C; color: #1A3A2F; font-weight: 700; }

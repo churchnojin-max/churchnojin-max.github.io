@@ -1683,6 +1683,8 @@ if (homeBulletin) {
         const dl = String(b.bdate || "").slice(0, 10).replace(/-/g, ". ");
         window.BULLETIN_XREFS = d.summary || "";   // 성경봉독 줄의 '인용구절 보기'(js/worship-view.js)에 쓴다
 
+        // 주보에 딸린 바로가기(2026-11-07 목사님: 오후예배 악보를 주보에 연결) — data.links = [{label, url}]
+        const linksOf = (d) => (Array.isArray(d.links) ? d.links : []).filter((l) => l && l.label && /^(https:\/\/|[a-z0-9_-]+\.html)/i.test(String(l.url || "")));
         // 한 주의 소식은 모두, 본문 말씀 대신 예배 순서를 보여 준다(2026-10-01 목사님 요청)
         const briefNews = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 10);
         const briefOrder = (d.order || []).filter((o) => o && (o.name || o.detail));
@@ -1697,6 +1699,7 @@ if (homeBulletin) {
                 : (d.headline ? `<p class="hbb-verse"><span>${escB(d.headline)}</span></p>` : "")}
             </div>
             ${briefNews.length ? `<div class="hbb-news"><p class="hbb-news-title">한 주의 소식</p><ul>${briefNews.map((l) => `<li>${escB(l)}</li>`).join("")}</ul></div>` : ""}
+            ${linksOf(d).length ? `<div class="hbb-links">${linksOf(d).map((l) => `<a class="btn btn-solid hbb-link" href="${escB(l.url)}">${escB(l.label)}</a>`).join("")}</div>` : ""}
             <div class="hbb-actions">
               <button type="button" class="btn btn-solid" data-pop="pop-bulletin">주보 전체 보기</button>
               ${d.pdf_url ? `<a class="btn btn-line" href="${escB(d.pdf_url)}" target="_blank" rel="noopener">PDF 원본 보기</a>` : ""}
@@ -1729,6 +1732,9 @@ if (homeBulletin) {
             : (window.ChurchPending && window.ChurchPending()
               ? `<div class="hb-sec"><p class="hb-col-title">향기로운 예물</p><p class="member-only-line">예물 명단은 정회원 승인 뒤에 보실 수 있습니다. 기본 인적 사항을 적지 않으면 승인이 거절될 수 있습니다. <button type="button" data-mo="info">기본 정보 적기</button></p></div>`
               : ""));
+        const linkHtml = linksOf(d).length
+          ? `<div class="hb-sec"><p class="hb-col-title">함께 보기</p><div class="hb-links">${linksOf(d).map((l) => `<a class="btn btn-solid" href="${escB(l.url)}">${escB(l.label)} →</a>`).join("")}</div></div>`
+          : "";
         const noticeLines = (d.notices || "").split("\n").map((l) => l.trim()).filter(Boolean);
         const noticeHtml = noticeLines.length
           ? `<div class="hb-sec"><p class="hb-col-title">한 주의 소식</p><ul class="hb-news">${noticeLines.map((l) => `<li>${escB(l)}</li>`).join("")}</ul></div>`
@@ -1747,6 +1753,7 @@ if (homeBulletin) {
             ${scriptureHtml}
             ${summaryHtml}
             ${orderHtml}
+            ${linkHtml}
             ${offerHtml}
             ${noticeHtml}
             <div class="hb-ft">
