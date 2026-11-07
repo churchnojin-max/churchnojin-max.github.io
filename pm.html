@@ -54,12 +54,27 @@
     (function () {
       var OPEN = Date.UTC(2026, 10, 8, 4, 50); // 13:50 KST
       var body = document.getElementById('pmBody');
+      var isAdm = false; // 관리자(목사님)는 열리기 전에도 미리 보기(2026-11-07 목사님)
       function draw() {
-        if (Date.now() >= OPEN || /[?&]go\b/.test(location.search)) { body.innerHTML = document.getElementById('pmVerses').innerHTML; return; }
+        if (Date.now() >= OPEN || isAdm || /[?&]go\b/.test(location.search)) {
+          body.innerHTML = (Date.now() < OPEN && isAdm ? '<div class="pm-wait" style="padding:10px;margin-bottom:12px">관리자 미리 보기 · 성도님들께는 11월 8일 오후 1시 50분에 열립니다</div>' : '') + document.getElementById('pmVerses').innerHTML;
+          return;
+        }
         body.innerHTML = '<div class="pm-wait">11월 8일 오후예배 때 찬양 악보가 열립니다.<br>조금만 기다려 주세요.</div>';
         setTimeout(draw, Math.min(OPEN - Date.now() + 500, 30000));
       }
       draw();
+      try {
+        var ref = new URL(window.SUPABASE_URL).hostname.split('.')[0];
+        var s0 = JSON.parse(sessionStorage.getItem('sb-' + ref + '-auth-token') || 'null');
+        var ss = s0 && (s0.currentSession || s0), tok = ss && ss.access_token;
+        if (tok && Date.now() < OPEN) {
+          fetch(window.SUPABASE_URL + '/rest/v1/rpc/my_perms', { method: 'POST', headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: '{}' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (p) { if (p && p.isAdmin) { isAdm = true; draw(); } })
+            .catch(function () {});
+        }
+      } catch (e) {}
       window.addEventListener('load', function () { setTimeout(draw, 300); });
     })();
   </script>
