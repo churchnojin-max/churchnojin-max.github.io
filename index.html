@@ -205,7 +205,7 @@
   <script>
     (function () {
       var END = Date.UTC(2026, 10, 8, 15, 0);           // 11/8 24:00 KST 까지
-      var LIVE = false;                                  // 목사님 확인 뒤 true
+      var LIVE = true;                                   // 2026-11-07 목사님 "띄워"
       var preview = /[?&]hv\b/.test(location.search);
       if (!preview && (!LIVE || Date.now() >= END)) return;
       var KEY = 'hvPopHide', today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
