@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>주일 오후 연합예배 말씀 | 노진교회</title>
+  <title>주일 오후예배 | 노진교회</title>
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#1A3A2F" />
   <link rel="icon" href="images/favicon-32.png?v=20260926icon2" />
@@ -23,30 +23,26 @@
     .pm-v p sup { color: #BFA06C; font-family: 'Noto Sans KR', sans-serif; font-size: .7em; margin-right: 3px; }
     .pm-v.main { background: #F6F4EB; border-left-color: #1A3A2F; }
     .pm-wait { text-align: center; color: #52606d; padding: 60px 0; font-size: 1.05rem; line-height: 1.8; }
+    .pm-song { background: #fff; border: 1px solid #ece7d8; border-top: 4px solid #BFA06C; border-radius: 12px; padding: 14px; text-align: center; }
+    .pm-song .t { font-weight: 700; color: #1A3A2F; margin-bottom: 10px; }
+    .pm-song img { width: 100%; height: auto; display: block; border-radius: 6px; }
     .pm-foot { text-align: center; color: #9aa5b1; font-size: .8rem; margin-top: 20px; }
   </style>
 </head>
 <body>
-  <!-- 2026-11-01 목사님: 주일 오후 연합예배 설교의 인용 구절만 (2시부터 보기). 구절은 bible-verse 개역개정에서 그대로 -->
+  <!-- 2026-11-08 목사님: 추수감사주일 오후예배 설교 후 찬양 악보(감사하신 하나님/에벤에셀 하나님, 홍정식, A조). 13:50부터 보임, ?go 미리 보기. 11/1 구절 판은 git 기록에 -->
   <main class="pm-page">
     <div class="pm-head">
-      <small>노진교회 주일 오후 연합예배 · 2026. 11. 1.</small>
-      <h1>친구는 서로의 히어로</h1>
-      <div class="pm-ref">잠언 17장 17절</div>
+      <small>노진교회 추수감사주일 오후예배 · 2026. 11. 8.</small>
+      <h1>설교 후 찬양</h1>
+      <div class="pm-ref">감사하신 하나님 (에벤에셀 하나님)</div>
     </div>
     <div id="pmBody"></div>
-    <p class="pm-foot">성경 본문: 개역개정</p>
+    <p class="pm-foot">악보: 홍정식 「감사하신 하나님」 · 손가락으로 벌려 크게 보실 수 있어요</p>
   </main>
 
   <template id="pmVerses">
-    <div class="pm-v main"><div class="r">잠언 17장 17절</div><p><sup>17</sup>친구는 사랑이 끊어지지 아니하고 형제는 위급한 때를 위하여 났느니라</p></div>
-    <div class="pm-v"><div class="r">창세기 2장 18절</div><p><sup>18</sup>여호와 하나님이 이르시되 사람이 혼자 사는 것이 좋지 아니하니 내가 그를 위하여 돕는 배필을 지으리라 하시니라</p></div>
-    <div class="pm-v"><div class="r">고린도전서 15장 33절</div><p><sup>33</sup>속지 말라 악한 동무들은 선한 행실을 더럽히나니</p></div>
-    <div class="pm-v"><div class="r">잠언 27장 17절</div><p><sup>17</sup>철이 철을 날카롭게 하는 것 같이 사람이 그의 친구의 얼굴을 빛나게 하느니라</p></div>
-    <div class="pm-v"><div class="r">다니엘 2장 17~18절</div><p><sup>17</sup>이에 다니엘이 자기 집으로 돌아가서 그 친구 하나냐와 미사엘과 아사랴에게 그 일을 알리고 <sup>18</sup>하늘에 계신 하나님이 이 은밀한 일에 대하여 불쌍히 여기사 다니엘과 친구들이 바벨론의 다른 지혜자들과 함께 죽임을 당하지 않게 하시기를 그들로 하여금 구하게 하니라</p></div>
-    <div class="pm-v"><div class="r">사도행전 10장 24절</div><p><sup>24</sup>이튿날 가이사랴에 들어가니 고넬료가 그의 친척과 가까운 친구들을 모아 기다리더니</p></div>
-    <div class="pm-v"><div class="r">요한복음 15장 13절</div><p><sup>13</sup>사람이 친구를 위하여 자기 목숨을 버리면 이보다 더 큰 사랑이 없나니</p></div>
-    <div class="pm-v"><div class="r">요한복음 15장 15절</div><p><sup>15</sup>이제부터는 너희를 종이라 하지 아니하리니 종은 주인이 하는 것을 알지 못함이라 너희를 친구라 하였노니 내가 내 아버지께 들은 것을 다 너희에게 알게 하였음이라</p></div>
+    <div class="pm-song"><div class="t">🎵 감사하신 하나님 (A)</div><img src="images/pm/20261108_thanks_god_A.webp" alt="감사하신 하나님(에벤에셀 하나님) 악보" /></div>
   </template>
 
   <script src="js/church.js?v=20261009wl"></script>
@@ -54,13 +50,13 @@
   <script src="js/config.js?v=20261011ts"></script>
   <script src="js/layout.js?v=20261031end"></script>
   <script>
-    // 한국 시각 2026-11-01 13:50 부터 보임(그 전에는 안내)
+    // 한국 시각 2026-11-08 13:50 부터 보임(그 전에는 안내)
     (function () {
-      var OPEN = Date.UTC(2026, 10, 1, 4, 50); // 13:50 KST
+      var OPEN = Date.UTC(2026, 10, 8, 4, 50); // 13:50 KST
       var body = document.getElementById('pmBody');
       function draw() {
         if (Date.now() >= OPEN || /[?&]go\b/.test(location.search)) { body.innerHTML = document.getElementById('pmVerses').innerHTML; return; }
-        body.innerHTML = '<div class="pm-wait">오늘 오후 2시 연합예배 때 말씀 구절이 열립니다.<br>조금만 기다려 주세요.</div>';
+        body.innerHTML = '<div class="pm-wait">11월 8일 오후예배 때 찬양 악보가 열립니다.<br>조금만 기다려 주세요.</div>';
         setTimeout(draw, Math.min(OPEN - Date.now() + 500, 30000));
       }
       draw();

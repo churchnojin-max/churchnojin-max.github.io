@@ -183,19 +183,19 @@
   <script>
     // 2026-11-01 목사님: 주일 오후 연합예배 인용 구절 — 13:50~17:00(한국 시각) 첫 화면 아래에 '말씀 구절 보기' 알림
     (function () {
-      var A = Date.UTC(2026, 10, 1, 4, 50), B = Date.UTC(2026, 10, 1, 8, 0);
+      var A = Date.UTC(2026, 10, 8, 4, 50), B = Date.UTC(2026, 10, 8, 8, 0); // 11/8 13:50~17:00 KST
       function show() {
         if (document.getElementById('pmNotice') || Date.now() < A || Date.now() >= B) return;
-        try { if (sessionStorage.getItem('pmNoticeX')) return; } catch (e) {}
+        try { if (sessionStorage.getItem('pmNoticeX8')) return; } catch (e) {}
         var d = document.createElement('div');
         d.id = 'pmNotice';
         d.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;width:min(420px,calc(100% - 32px));background:#1A3A2F;color:#F6F4EB;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:16px 18px;font-family:inherit';
-        d.innerHTML = '<div style="font-size:.82rem;opacity:.8">주일 오후 연합예배</div>' +
-          '<div style="font-size:1.08rem;font-weight:700;margin:3px 0 12px">「친구는 서로의 히어로」 말씀 구절</div>' +
-          '<div style="display:flex;gap:8px"><a href="pm.html" style="flex:1;text-align:center;background:#BFA06C;color:#1A3A2F;font-weight:700;border-radius:10px;padding:11px 0;text-decoration:none">📖 구절 보기</a>' +
+        d.innerHTML = '<div style="font-size:.82rem;opacity:.8">추수감사주일 오후예배</div>' +
+          '<div style="font-size:1.08rem;font-weight:700;margin:3px 0 12px">설교 후 찬양 「감사하신 하나님」 악보</div>' +
+          '<div style="display:flex;gap:8px"><a href="pm.html" style="flex:1;text-align:center;background:#BFA06C;color:#1A3A2F;font-weight:700;border-radius:10px;padding:11px 0;text-decoration:none">🎵 악보 보기</a>' +
           '<button type="button" id="pmNoticeX" style="background:transparent;color:#F6F4EB;border:1px solid rgba(246,244,235,.4);border-radius:10px;padding:0 14px;cursor:pointer">닫기</button></div>';
         document.body.appendChild(d);
-        document.getElementById('pmNoticeX').onclick = function () { d.remove(); try { sessionStorage.setItem('pmNoticeX', '1'); } catch (e) {} };
+        document.getElementById('pmNoticeX').onclick = function () { d.remove(); try { sessionStorage.setItem('pmNoticeX8', '1'); } catch (e) {} };
       }
       show();
       if (Date.now() < B) setInterval(show, 20000);
