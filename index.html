@@ -201,5 +201,52 @@
       if (Date.now() < B) setInterval(show, 20000);
     })();
   </script>
+  <!-- 2026-11-07 목사님: 추수감사절 팝업(현수막 그림 + "한 해 동안 은혜 베푸신 하나님께 감사합시다."). 11/8 밤까지, ?hv 는 미리 보기 -->
+  <script>
+    (function () {
+      var END = Date.UTC(2026, 10, 8, 15, 0);           // 11/8 24:00 KST 까지
+      var LIVE = false;                                  // 목사님 확인 뒤 true
+      var preview = /[?&]hv\b/.test(location.search);
+      if (!preview && (!LIVE || Date.now() >= END)) return;
+      var KEY = 'hvPopHide', today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+      if (!preview) {
+        try { if (localStorage.getItem(KEY) === today || sessionStorage.getItem(KEY)) return; } catch (e) {}
+      }
+      function busy() {
+        return document.querySelector('.modal:not([hidden]):not(.hv-pop), .pop-modal:not([hidden]), .ig-viewer:not([hidden])') ||
+          document.documentElement.classList.contains('pop-open') || document.body.classList.contains('menu-lock');
+      }
+      var tries = 0;
+      function open() {
+        if (busy() && tries++ < 90) { setTimeout(open, 1000); return; }   // 환영 안내·사용법 안내가 떠 있으면 닫힌 뒤에
+        var d = document.createElement('div');
+        d.className = 'modal hv-pop';
+        d.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(20,30,25,.55)';
+        d.innerHTML =
+          '<div role="dialog" aria-modal="true" aria-label="추수감사절" style="width:min(460px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#F6F4EB;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.35);text-align:center">' +
+            '<img src="images/pm/thanksgiving_2026.webp" alt="추수감사절 — 여호와께 감사하라 그는 선하시며 그 인자하심이 영원함이로다(시편 107:1)" style="display:block;width:100%;height:auto;border-radius:18px 18px 0 0">' +
+            '<div style="padding:20px 20px 18px">' +
+              '<p style="margin:0;font-family:\'Gowun Batang\',serif;font-weight:700;color:#1A3A2F;font-size:1.28rem;line-height:1.6;word-break:keep-all">한 해 동안 은혜 베푸신<br>하나님께 감사합시다.</p>' +
+              '<p style="margin:8px 0 0;color:#8a7650;font-size:.86rem">2026 추수감사주일 · 11월 8일</p>' +
+              '<div style="display:flex;gap:8px;margin-top:18px">' +
+                '<button type="button" data-hv="day" style="flex:1;background:transparent;color:#52606d;border:1px solid #d9d2bf;border-radius:10px;padding:11px 0;font:inherit;font-size:.9rem;cursor:pointer">오늘 하루 보지 않기</button>' +
+                '<button type="button" data-hv="close" style="flex:1;background:#1A3A2F;color:#F6F4EB;border:0;border-radius:10px;padding:11px 0;font:inherit;font-weight:700;cursor:pointer">닫기</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        function close(day) {
+          d.remove(); document.body.style.overflow = '';
+          try { sessionStorage.setItem(KEY, '1'); if (day) localStorage.setItem(KEY, today); } catch (e) {}
+        }
+        d.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-hv]');
+          if (b) close(b.getAttribute('data-hv') === 'day'); else if (e.target === d) close(false);
+        });
+        document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(false); document.removeEventListener('keydown', esc); } });
+        document.body.appendChild(d); document.body.style.overflow = 'hidden';
+      }
+      window.addEventListener('load', function () { setTimeout(open, 1800); });
+    })();
+  </script>
 </body>
 </html>
