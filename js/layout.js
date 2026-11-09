@@ -1037,7 +1037,6 @@
       <div class="sitemap-col">
         <h3>안내</h3>
         <ul>
-          <li><a href="bylaws.html">정관</a></li>
           <li><a href="terms.html">이용약관</a></li>
           <li><a href="privacy.html">개인정보처리방침</a></li>
           <li><a href="withdraw.html">회원탈퇴</a></li>

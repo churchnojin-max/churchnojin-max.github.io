@@ -8,6 +8,5 @@
   <url><loc>https://nojin.kr/prayer.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://nojin.kr/world.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://nojin.kr/library.html</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://nojin.kr/bylaws.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://nojin.kr/privacy.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>
