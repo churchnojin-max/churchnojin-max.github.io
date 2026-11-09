@@ -663,24 +663,41 @@ console.log('[dashboard.js] v20260705qtfallback');
     var head = '<div class="form-card" style="padding:16px 18px"><h3 style="margin:0 0 12px;font-size:1rem;color:var(--accent,#1A3A2F)">📄 나의 문서</h3>';
     var empty = head + '<p style="color:#9aa5b1;font-size:.9rem;margin:0">아직 등록된 문서가 없습니다.</p></div>';
     if (!url || !ak || !tok) { el.innerHTML = ''; return; }
-    // 본인(+배우자) 매칭키로만 조회 — 관리자여도 대시보드에선 남의 문서가 보이면 안 됨
+    // 본인(+배우자) 매칭키로만 조회 — 관리자여도 대시보드에선 남의 문서가 보이면 안 됨 (DB 규칙 member_files_select_own 이 한 번 더 막는다)
     var keys = [me.memberKey, me.spouseKey].filter(Boolean);
     if (!keys.length) { el.innerHTML = empty; return; }
     var inlist = keys.map(function (k) { return '"' + encodeURIComponent(k) + '"'; }).join(',');
     el.innerHTML = head + '<p class="qt-loading">불러오는 중…</p></div>';
-    fetch(url + '/rest/v1/member_files?select=id,category,title,file_url,file_name,doc_date,created_at&member_key=in.(' + inlist + ')&order=created_at.desc', { headers: { apikey: ak, Authorization: 'Bearer ' + tok } })
-      .then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t || ('HTTP ' + r.status)); }); return r.json(); })
+    var hdr = { headers: { apikey: ak, Authorization: 'Bearer ' + tok } };
+    function q(cols) { return fetch(url + '/rest/v1/member_files?select=' + cols + '&member_key=in.(' + inlist + ')&order=doc_date.desc.nullslast,created_at.desc', hdr).then(function (r) { if (!r.ok) return r.text().then(function (x) { throw new Error(x || ('HTTP ' + r.status)); }); return r.json(); }); }
+    // 발급 문서 칸(issued·doc_no, 2026-11-09)이 아직 DB 에 없으면 예전 칸만으로 다시 묻는다
+    q('id,category,title,file_url,file_name,doc_date,created_at,issued,doc_no').catch(function (e) { if (/issued|doc_no|42703|column/i.test(e.message || '')) return q('id,category,title,file_url,file_name,doc_date,created_at'); throw e; })
       .then(function (rows) {
         rows = rows || [];
         if (!rows.length) { el.innerHTML = empty; return; }
         var d = function (f) { return (String(f.doc_date || '').slice(0, 10)) || (String(f.created_at || '').slice(0, 10)); };
-        el.innerHTML = head + '<div style="overflow:auto"><table class="fin-table" style="font-size:.88rem"><thead><tr><th>분류</th><th>파일</th><th>일자</th></tr></thead><tbody>' +
-          rows.map(function (f) {
-            var name = f.file_name || f.title || '문서';
-            var cell = f.file_url ? '<a href="' + esc(f.file_url) + '" target="_blank" rel="noopener noreferrer">📎 ' + esc(name) + '</a>' : esc(name);
-            return '<tr><td>' + esc(f.category || '') + '</td><td>' + cell + '</td><td style="white-space:nowrap">' + esc(d(f)) + '</td></tr>';
-          }).join('') +
-          '</tbody></table></div></div>';
+        var issued = rows.filter(function (f) { return f.issued; }), others = rows.filter(function (f) { return !f.issued; });
+        var html = head;
+        if (issued.length) {
+          // 교회가 발급한 증명서·영수증 — 번호와 함께, 내려받기 단추로
+          html += '<p style="margin:0 0 8px;font-size:.86rem;color:#5a6b82">교회에서 발급한 증명서·영수증입니다. 「내려받기」를 누르면 PDF 가 열립니다(저장·인쇄).</p>' +
+            '<div style="overflow:auto"><table class="fin-table" style="font-size:.88rem"><thead><tr><th>문서</th><th>번호</th><th>발급일</th><th></th></tr></thead><tbody>' +
+            issued.map(function (f) {
+              var nm = (f.category || f.title || '문서');
+              var btn = f.file_url ? '<a class="btn btn-line" href="' + esc(f.file_url) + '" target="_blank" rel="noopener noreferrer" style="padding:4px 11px;font-size:.82rem;white-space:nowrap">⬇ 내려받기</a>' : '';
+              return '<tr><td><b>' + esc(nm) + '</b></td><td style="white-space:nowrap">' + esc(f.doc_no || '') + '</td><td style="white-space:nowrap">' + esc(d(f)) + '</td><td style="text-align:right">' + btn + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
+        }
+        if (others.length) {
+          html += (issued.length ? '<h4 style="margin:16px 0 8px;font-size:.92rem;color:#5a6b82">그 밖의 자료</h4>' : '') +
+            '<div style="overflow:auto"><table class="fin-table" style="font-size:.88rem"><thead><tr><th>분류</th><th>파일</th><th>일자</th></tr></thead><tbody>' +
+            others.map(function (f) {
+              var name = f.file_name || f.title || '문서';
+              var cell = f.file_url ? '<a href="' + esc(f.file_url) + '" target="_blank" rel="noopener noreferrer">📎 ' + esc(name) + '</a>' : esc(name);
+              return '<tr><td>' + esc(f.category || '') + '</td><td>' + cell + '</td><td style="white-space:nowrap">' + esc(d(f)) + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
+        }
+        el.innerHTML = html + '</div>';
       })
       .catch(function (e) {
         var m = (e && e.message) || '';

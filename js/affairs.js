@@ -270,7 +270,9 @@ console.log('[affairs.js] v20260712memo2');
   }
 
   // ═══════════════ 자료실 — 성도별 자료 보관·통합 관리 ═══════════════
-  var ARCH_CATS = ['학습', '세례증명서', '입교', '임직', '수료증', '출석/이수', '보고서', '숙제', '과제물', '신앙고백', '추천서', '기타'];
+  var ARCH_CATS = ['학습', '세례증명서', '유아세례증명서', '입교증명서', '입교', '교인확인증', '재직증명서', '증명서', '기부금영수증', '공문', '임직', '수료증', '출석/이수', '보고서', '숙제', '과제물', '신앙고백', '추천서', '기타'];
+  // 발급 문서(2026-11-09): 목회 작업실 › 공문서 제작이 저장한 PDF 이름 「노진 제2026-01호_세례증명서_홍길동.pdf」·「2026-0001_기부금영수증_홍길동.pdf」에서 번호·종류·이름을 읽는다
+  function parseIssuedName(fn) { var m = String(fn || '').match(/^(.+?)_(.+?)_(.+)\.(pdf|png|jpe?g)$/i); if (!m) return null; var no = m[1].trim(); if (!/^(.+ 제\d{4}-\d+호|\d{4}-\d{3,})$/.test(no)) return null; return { no: no, kind: m[2].trim(), name: m[3].trim().replace(/\s+/g, '') }; }
   function renderArchive(panel) {
     panel.innerHTML = msgCard('자료실', '불러오는 중…');
     var state = { view: 'members', q: '', cat: '', sel: null };
@@ -296,6 +298,7 @@ console.log('[affairs.js] v20260712memo2');
         '<div style="margin-left:auto;display:flex;gap:6px">' +
         '<button class="btn ' + (active === 'members' ? 'btn-solid' : 'btn-line') + '" data-v="members" style="padding:6px 13px;font-size:.85rem">성도별 보기</button>' +
         '<button class="btn ' + (active === 'all' ? 'btn-solid' : 'btn-line') + '" data-v="all" style="padding:6px 13px;font-size:.85rem">전체 목록</button>' +
+        '<button class="btn ' + (active === 'issued' ? 'btn-solid' : 'btn-line') + '" data-v="issued" style="padding:6px 13px;font-size:.85rem">📜 발급 문서 올리기</button>' +
         '</div></div>';
     }
     function bindHeader() { Array.prototype.forEach.call(panel.querySelectorAll('[data-v]'), function (b) { b.onclick = function () { if (b.dataset.v !== state.view) navTo(b.dataset.v, null); }; }); }
@@ -342,7 +345,7 @@ console.log('[affairs.js] v20260712memo2');
         '<div class="fin-msg" id="ar_msg" style="margin-top:8px"></div></div>' +
         '<div class="fin-card"><b>보관 자료 ' + files.length + '건</b><div style="overflow:auto;margin-top:8px">' +
         (files.length ? '<table class="fin-table"><thead><tr><th>분류</th><th>제목</th><th>파일</th><th>일자</th><th class="num">크기</th><th></th></tr></thead><tbody>' +
-          files.map(function (f) { return '<tr><td>' + esc(f.category || '') + '</td><td>' + esc(f.title || '') + '</td><td>' + (f.file_url ? '<a href="' + esc(f.file_url) + '" target="_blank" rel="noopener">' + esc(f.file_name || '열기') + '</a>' : '') + '</td><td style="white-space:nowrap">' + esc(ymd(f.doc_date) || ymd(f.created_at)) + '</td><td class="num">' + (f.file_size ? fmtBytes(f.file_size) : '') + '</td><td style="text-align:right"><button class="btn btn-line" data-del="' + esc(f.id) + '" style="padding:3px 9px;font-size:.78rem;color:#c0392b">삭제</button></td></tr>'; }).join('') +
+          files.map(function (f) { return '<tr' + (f.visible === false ? ' style="color:#9aa5b1"' : '') + '><td>' + esc(f.category || '') + issuedBadge(f) + '</td><td>' + esc(f.title || '') + '</td><td>' + (f.file_url ? '<a href="' + esc(f.file_url) + '" target="_blank" rel="noopener">' + esc(f.file_name || '열기') + '</a>' : '') + '</td><td style="white-space:nowrap">' + esc(ymd(f.doc_date) || ymd(f.created_at)) + '</td><td class="num">' + (f.file_size ? fmtBytes(f.file_size) : '') + '</td><td style="text-align:right;white-space:nowrap">' + visBtn(f) + ' <button class="btn btn-line" data-del="' + esc(f.id) + '" style="padding:3px 9px;font-size:.78rem;color:#c0392b">삭제</button></td></tr>'; }).join('') +
           '</tbody></table>' : '<p style="color:#9aa5b1;padding:10px 2px">아직 보관된 자료가 없습니다. 위에서 파일을 올려보세요.</p>') + '</div></div>';
       bindHeader();
       panel.querySelector('#ar_back').onclick = function () { history.back(); };
@@ -372,6 +375,90 @@ console.log('[affairs.js] v20260712memo2');
         drop.addEventListener('drop', function (e) { e.preventDefault(); e.stopPropagation(); drop.style.background = ''; drop.style.borderColor = '#cdd7e3'; var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) doUpload(f); });
       }
       Array.prototype.forEach.call(panel.querySelectorAll('[data-del]'), function (b) { b.onclick = function () { delFile(b.dataset.del); }; });
+      bindVis();
+    }
+    // 발급 문서 표시(번호) · 교인에게 보임/숨김 단추 (2026-11-09)
+    function issuedBadge(f) { return f.issued ? ' <span class="fin-pill" style="background:#e8f1ec;color:#1A3A2F" title="발급 문서">발급 ' + esc(f.doc_no || '') + '</span>' : ''; }
+    function visBtn(f) { var hid = f.visible === false; return '<button class="btn btn-line" data-vis="' + esc(f.id) + '" title="' + (hid ? '지금은 교인에게 안 보입니다. 누르면 보입니다' : '교인 본인 대시보드에 보입니다. 누르면 숨깁니다') + '" style="padding:3px 9px;font-size:.78rem;' + (hid ? 'color:#9aa5b1' : 'color:#1e874b') + '">' + (hid ? '숨김' : '보임') + '</button>'; }
+    function bindVis() {
+      Array.prototype.forEach.call(panel.querySelectorAll('[data-vis]'), function (b) {
+        b.onclick = function () {
+          var f = FILES.filter(function (x) { return String(x.id) === String(b.dataset.vis); })[0]; if (!f) return;
+          var next = f.visible === false; b.disabled = true;
+          api('PATCH', 'member_files?id=eq.' + f.id, { visible: next }, 'return=representation').then(function (rows) { if (rows && rows[0]) Object.assign(f, rows[0]); else f.visible = next; draw(); })
+            .catch(function (e) { b.disabled = false; alert(/visible|42703|column/i.test(e.message || '') ? '보임/숨김 기능을 쓰려면 Supabase ▸ SQL Editor 에서 supabase/issued_docs_20261109.sql 을 1회 실행해 주세요.' : ('바꾸지 못했습니다: ' + (e.message || e))); });
+        };
+      });
+    }
+    // ── 발급 문서 올리기: 공문서 제작이 저장한 PDF(+발급대장.json)를 골라 교인과 짝지어 한꺼번에 올린다 ──
+    function drawIssued() {
+      var rows = [], ledger = {};
+      panel.innerHTML = headerHTML('issued') +
+        '<div class="fin-card"><h3 style="margin:0 0 6px;color:var(--accent,#1A3A2F)">📜 발급 문서 올리기</h3>' +
+        '<p style="margin:0 0 10px;color:#5a6b82;font-size:.9rem;line-height:1.6">목회 작업실 › 공문서 제작이 저장한 PDF(<b>D:\\교회\\노진교회\\행정\\발급문서\\연도</b>)를 고르면 파일 이름에서 <b>번호·종류·이름</b>을 읽어 교적의 교인과 짝짓고, 비공개 보관함에 올려 그 교인의 대시보드 「나의 문서 › 내 발급 문서」에 보여 줍니다.<br>같은 폴더의 <b>발급대장.json</b>을 함께 고르면 발급일이 정확히 들어갑니다. 이미 올린 번호는 건너뜁니다.</p>' +
+        '<div id="is_drop" style="border:2px dashed #cdd7e3;border-radius:11px;padding:18px;text-align:center;color:#5a6b82;cursor:pointer;transition:background .15s,border-color .15s">📎 PDF 여러 개(와 발급대장.json)를 여기로 <b>끌어다 놓거나</b> 클릭해서 고르기<input type="file" id="is_file" multiple accept=".pdf,.png,.jpg,.jpeg,.json" style="display:none"></div>' +
+        '<div id="is_list" style="margin-top:12px"></div><div class="fin-msg" id="is_msg" style="margin-top:8px"></div></div>';
+      bindHeader();
+      var drop = panel.querySelector('#is_drop'), fi = panel.querySelector('#is_file'), listEl = panel.querySelector('#is_list'), msg = panel.querySelector('#is_msg');
+      function take(files) {
+        var jobs = [];
+        Array.prototype.forEach.call(files, function (f) {
+          if (/\.json$/i.test(f.name)) { jobs.push(f.text().then(function (t) { try { var j = JSON.parse(t); (j.entries || []).forEach(function (e) { if (e && e.no) ledger[e.no] = e; }); } catch (e) { } })); return; }
+          var pr = parseIssuedName(f.name);
+          if (!pr) { rows.push({ file: f, bad: true }); return; }
+          if (rows.some(function (r) { return r.no === pr.no; })) return;
+          rows.push({ file: f, no: pr.no, kind: pr.kind, name: pr.name, date: '', key: '', dup: FILES.some(function (x) { return x.doc_no && x.doc_no === pr.no; }) });
+        });
+        Promise.all(jobs).then(function () {
+          rows.forEach(function (r) { if (r.bad) return; var e = ledger[r.no]; if (e) { if (e.date) r.date = String(e.date).slice(0, 10); if (e.memo) r.memo = e.memo; if (e.off) r.off = true; }
+            var cands = MEMBERS.filter(function (m) { return m.name.replace(/\s+/g, '') === r.name; }); r.cands = cands; if (cands.length === 1) r.key = cands[0].key || ''; });
+          drawRows();
+        });
+      }
+      function drawRows() {
+        var good = rows.filter(function (r) { return !r.bad; });
+        if (!rows.length) { listEl.innerHTML = ''; return; }
+        listEl.innerHTML = '<div style="overflow:auto"><table class="fin-table"><thead><tr><th></th><th>번호</th><th>종류</th><th>이름 → 교적</th><th>발급일</th><th>파일</th><th>상태</th></tr></thead><tbody>' +
+          rows.map(function (r, i) {
+            if (r.bad) return '<tr style="color:#9aa5b1"><td></td><td colspan="5">' + esc(r.file.name) + '</td><td>이름 모양이 달라 건너뜀</td></tr>';
+            var sel = '<select data-i="' + i + '" style="padding:4px 6px;border:1px solid #dfe5ee;border-radius:6px;font:inherit;font-size:.86rem">' +
+              (r.cands.length ? r.cands.map(function (m) { return '<option value="' + esc(m.key || '') + '"' + (m.key === r.key ? ' selected' : '') + '>' + esc(m.name) + (m.birth ? ' (' + esc(m.birth) + ')' : '') + (m.group ? ' · ' + esc(m.group) : '') + '</option>'; }).join('') : '') +
+              '<option value=""' + (!r.key ? ' selected' : '') + '>' + (r.cands.length ? '(교적 연결 없이 이름만)' : '교적에 없음 — 이름만 저장') + '</option></select>';
+            var st = r.dup ? '<span style="color:#c0392b">이미 올림</span>' : r.off ? '<span style="color:#c0392b">대장에서 취소된 문서</span>' : r.done ? '<span style="color:#1e874b">✓ 올림</span>' : r.err ? '<span style="color:#c0392b">' + esc(r.err) + '</span>' : (!r.cands.length ? '<span style="color:#b26a00">교적에 같은 이름 없음</span>' : r.cands.length > 1 ? '<span style="color:#b26a00">동명이인 — 골라 주세요</span>' : '');
+            return '<tr><td><input type="checkbox" data-c="' + i + '"' + (r.dup || r.off || r.done ? '' : ' checked') + '></td><td style="white-space:nowrap"><b>' + esc(r.no) + '</b></td><td>' + esc(r.kind) + '</td><td><b>' + esc(r.name) + '</b> → ' + sel + '</td><td><input type="date" data-d="' + i + '" value="' + esc(r.date) + '" style="padding:4px 6px;border:1px solid #dfe5ee;border-radius:6px;font:inherit;font-size:.86rem"></td><td style="font-size:.82rem;color:#7b8794">' + esc(r.file.name) + ' · ' + fmtBytes(r.file.size) + '</td><td>' + st + '</td></tr>';
+          }).join('') + '</tbody></table></div>' +
+          '<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn btn-solid" id="is_go" style="padding:8px 16px">⬆ 선택한 문서 올리기</button><span style="color:#7b8794;font-size:.85rem">' + good.length + '건 읽음' + (Object.keys(ledger).length ? ' · 발급대장 ' + Object.keys(ledger).length + '건' : '') + '</span><button class="btn btn-line" id="is_clear" style="padding:6px 12px;font-size:.83rem">비우기</button></div>';
+        Array.prototype.forEach.call(listEl.querySelectorAll('select[data-i]'), function (e) { e.onchange = function () { rows[+e.dataset.i].key = e.value; }; });
+        Array.prototype.forEach.call(listEl.querySelectorAll('input[data-d]'), function (e) { e.onchange = function () { rows[+e.dataset.d].date = e.value; }; });
+        listEl.querySelector('#is_clear').onclick = function () { rows = []; ledger = {}; drawRows(); msg.textContent = ''; };
+        listEl.querySelector('#is_go').onclick = upload;
+      }
+      function upload() {
+        var picked = []; Array.prototype.forEach.call(listEl.querySelectorAll('input[data-c]:checked'), function (c) { picked.push(rows[+c.dataset.c]); });
+        picked = picked.filter(function (r) { return r && !r.bad && !r.done; });
+        if (!picked.length) { msg.style.color = '#c0392b'; msg.textContent = '올릴 문서를 고르세요.'; return; }
+        if (!(window.ChurchUpload && ChurchUpload.isReady())) { msg.style.color = '#c0392b'; msg.textContent = '업로드 서버가 설정되지 않았습니다.'; return; }
+        var go = listEl.querySelector('#is_go'); go.disabled = true; var n = 0, fail = 0, noCol = false;
+        (function next(i) {
+          if (i >= picked.length) { go.disabled = false; msg.style.color = fail ? '#c0392b' : 'green'; msg.textContent = '✓ ' + n + '건 올렸습니다.' + (fail ? ' ' + fail + '건 실패.' : '') + (noCol ? ' ※ 발급 표시·번호는 저장하지 못했습니다 — Supabase ▸ SQL Editor 에서 supabase/issued_docs_20261109.sql 을 1회 실행한 뒤 다시 올리면 번호가 함께 저장됩니다.' : ''); drawRows(); return; }
+          var r = picked[i]; msg.style.color = '#7b8794'; msg.textContent = '⬆ ' + (i + 1) + '/' + picked.length + ' 올리는 중… ' + r.file.name;
+          var m = MEMBERS.filter(function (x) { return x.key && x.key === r.key; })[0];
+          ChurchUpload.upload(r.file, { folder: 'archive', compress: false }).then(function (res) {
+            var base = { member_key: (m && m.key) || null, member_name: m ? m.name : r.name, category: r.kind, title: r.no + ' ' + r.kind, file_url: res.url, file_key: res.key || null, file_name: r.file.name, file_size: r.file.size || null, doc_date: r.date || null, memo: r.memo || null };
+            var full = Object.assign({ issued: true, doc_no: r.no, visible: true }, base);
+            return api('POST', 'member_files', full, 'return=representation').catch(function (e) {
+              if (/issued|doc_no|visible|42703|column/i.test(e.message || '')) { noCol = true; return api('POST', 'member_files', base, 'return=representation'); }
+              throw e;
+            });
+          }).then(function (saved) { if (saved && saved[0]) FILES.unshift(saved[0]); r.done = true; n++; next(i + 1); })
+            .catch(function (e) { r.err = (e && e.message) || '실패'; fail++; next(i + 1); });
+        }(0));
+      }
+      drop.onclick = function () { fi.click(); };
+      fi.onchange = function () { if (fi.files && fi.files.length) take(fi.files); fi.value = ''; };
+      ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); drop.style.background = '#eef5ff'; drop.style.borderColor = '#7fa3d8'; }); });
+      ['dragleave', 'dragend'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); drop.style.background = ''; drop.style.borderColor = '#cdd7e3'; }); });
+      drop.addEventListener('drop', function (e) { e.preventDefault(); e.stopPropagation(); drop.style.background = ''; drop.style.borderColor = '#cdd7e3'; if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) take(e.dataTransfer.files); });
     }
     function delFile(id) {
       var f = FILES.filter(function (x) { return String(x.id) === String(id); })[0];
@@ -392,15 +479,16 @@ console.log('[affairs.js] v20260712memo2');
         '<select id="ar_catf" style="padding:8px;border:1px solid #dfe5ee;border-radius:8px;font:inherit"><option value="">전체 분류</option>' + ARCH_CATS.map(function (c) { return '<option' + (c === cat ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
         '<span style="color:#7b8794;font-size:.85rem">' + list.length + '건</span></div>' +
         '<div style="overflow:auto;max-height:62vh"><table class="fin-table"><thead><tr><th>이름</th><th>분류</th><th>제목</th><th>파일</th><th>일자</th><th></th></tr></thead><tbody>' +
-        list.map(function (f) { return '<tr data-search="' + esc(((f.member_name || '') + ' ' + (f.title || '') + ' ' + (f.category || '')).trim()) + '"><td><b>' + esc(f.member_name || '') + '</b></td><td>' + esc(f.category || '') + '</td><td>' + esc(f.title || '') + '</td><td>' + (f.file_url ? '<a href="' + esc(f.file_url) + '" target="_blank" rel="noopener">' + esc(f.file_name || '열기') + '</a>' : '') + '</td><td style="white-space:nowrap">' + esc(ymd(f.doc_date) || ymd(f.created_at)) + '</td><td style="text-align:right"><button class="btn btn-line" data-del="' + esc(f.id) + '" style="padding:3px 9px;font-size:.78rem;color:#c0392b">삭제</button></td></tr>'; }).join('') +
+        list.map(function (f) { return '<tr data-search="' + esc(((f.member_name || '') + ' ' + (f.title || '') + ' ' + (f.category || '') + ' ' + (f.doc_no || '')).trim()) + '"' + (f.visible === false ? ' style="color:#9aa5b1"' : '') + '><td><b>' + esc(f.member_name || '') + '</b></td><td>' + esc(f.category || '') + issuedBadge(f) + '</td><td>' + esc(f.title || '') + '</td><td>' + (f.file_url ? '<a href="' + esc(f.file_url) + '" target="_blank" rel="noopener">' + esc(f.file_name || '열기') + '</a>' : '') + '</td><td style="white-space:nowrap">' + esc(ymd(f.doc_date) || ymd(f.created_at)) + '</td><td style="text-align:right;white-space:nowrap">' + visBtn(f) + ' <button class="btn btn-line" data-del="' + esc(f.id) + '" style="padding:3px 9px;font-size:.78rem;color:#c0392b">삭제</button></td></tr>'; }).join('') +
         '</tbody></table></div></div>';
       bindHeader();
       var q2 = panel.querySelector('#ar_q');
       if (q2) q2.oninput = function () { state.q = this.value; var v = this.value.trim(); Array.prototype.forEach.call(panel.querySelectorAll('tbody tr[data-search]'), function (tr) { tr.style.display = (!v || tr.getAttribute('data-search').indexOf(v) >= 0) ? '' : 'none'; }); };
       var cf = panel.querySelector('#ar_catf'); if (cf) cf.onchange = function () { state.cat = this.value; drawAll(); };
       Array.prototype.forEach.call(panel.querySelectorAll('[data-del]'), function (b) { b.onclick = function () { delFile(b.dataset.del); }; });
+      bindVis();
     }
-    function draw() { if (state.view === 'detail') return drawDetail(); if (state.view === 'all') return drawAll(); return drawMembers(); }
+    function draw() { if (state.view === 'detail') return drawDetail(); if (state.view === 'all') return drawAll(); if (state.view === 'issued') return drawIssued(); return drawMembers(); }
     // 자료실 내부 화면 전환은 히스토리에 남겨, 브라우저 '뒤로'가 바로 이전 화면(성도목록)으로 가게 한다
     // (안 그러면 상세에서 뒤로 시 목회행정 첫 탭으로 튐)
     function navTo(view, sel) {
