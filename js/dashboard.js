@@ -669,9 +669,10 @@ console.log('[dashboard.js] v20260705qtfallback');
     var inlist = keys.map(function (k) { return '"' + encodeURIComponent(k) + '"'; }).join(',');
     el.innerHTML = head + '<p class="qt-loading">불러오는 중…</p></div>';
     var hdr = { headers: { apikey: ak, Authorization: 'Bearer ' + tok } };
-    function q(cols) { return fetch(url + '/rest/v1/member_files?select=' + cols + '&member_key=in.(' + inlist + ')&order=doc_date.desc.nullslast,created_at.desc', hdr).then(function (r) { if (!r.ok) return r.text().then(function (x) { throw new Error(x || ('HTTP ' + r.status)); }); return r.json(); }); }
-    // 발급 문서 칸(issued·doc_no, 2026-11-09)이 아직 DB 에 없으면 예전 칸만으로 다시 묻는다
-    q('id,category,title,file_url,file_name,doc_date,created_at,issued,doc_no').catch(function (e) { if (/issued|doc_no|42703|column/i.test(e.message || '')) return q('id,category,title,file_url,file_name,doc_date,created_at'); throw e; })
+    function q(cols, filt) { return fetch(url + '/rest/v1/member_files?select=' + cols + '&member_key=in.(' + inlist + ')' + (filt || '') + '&order=doc_date.desc.nullslast,created_at.desc', hdr).then(function (r) { if (!r.ok) return r.text().then(function (x) { throw new Error(x || ('HTTP ' + r.status)); }); return r.json(); }); }
+    // 발급 문서 칸(issued·doc_no·visible, 2026-11-09)이 아직 DB 에 없으면 예전 칸만으로 다시 묻는다
+    // 숨김(visible=false)은 빼고 — 관리자는 'admin all' 규칙으로 모든 줄을 읽으므로 DB 규칙만으로는 목사님 대시보드에서 안 빠진다
+    q('id,category,title,file_url,file_name,doc_date,created_at,issued,doc_no', '&visible=not.is.false').catch(function (e) { if (/issued|doc_no|visible|42703|column/i.test(e.message || '')) return q('id,category,title,file_url,file_name,doc_date,created_at'); throw e; })
       .then(function (rows) {
         rows = rows || [];
         if (!rows.length) { el.innerHTML = empty; return; }
