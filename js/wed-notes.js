@@ -239,9 +239,18 @@
       part(PRAYER_FIXED, p.fixed, "wr-pray-fixed") + part(PRAYER_APPLY, p.apply, "wr-pray-apply") + '</section>';
   }
 
+  // 말씀 참고 자료(슬라이드 그림 등, 2026-11-11 목사님) — sermon_conti.files 안에서 kind:"ref" 로 악보와 나눈다
+  function isRef(f) { return !!f && f.kind === "ref"; }
+  function refFiles(c) { return ((c && c.files) || []).filter(isRef); }
+  function songFiles(c) { return ((c && c.files) || []).filter(function (f) { return !isRef(f); }); }
+  function refBtn(attr, n) {
+    return '<div class="wed-btns wed-btns-1 wed-btns-ref"><button type="button" class="wed-btn" ' + attr + ' data-wsec="wrRef"><span aria-hidden="true">📑</span> <span>말씀 참고 자료</span> <b>' + n + '</b></button></div>';
+  }
+
   function mainCard(n) {
     var cnt = (n.verses || []).length, c = contiFor(n.note_date), pc = prayerCount(n);
-    var showConti = c && (contiOpen(c) || (admin && (c.files || []).length));
+    var seeC = c && (contiOpen(c) || admin);
+    var showConti = seeC && songFiles(c).length, nRef = seeC ? refFiles(c).length : 0;
     return '<article class="week-sermon wed-card">' +
       '<span class="ws-date">' + esc(String(n.note_date).replace(/-/g, ".")) + ' · 수요기도회</span>' +
       (n.series ? '<p class="wed-series">' + esc(n.series) + '</p>' : '') +
@@ -254,6 +263,7 @@
         (showConti ? '<button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrConti"><span aria-hidden="true">🎵</span> <span>찬양 악보</span></button>'
                    : '<button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrPassage"><span aria-hidden="true">📜</span> <span>오늘 본문</span></button>') +
       '</div>' +
+      (nRef ? refBtn('data-wopen="' + esc(n.id) + '"', nRef) : '') +
       (pc ? '<div class="wed-btns wed-btns-1 wed-btns-pray"><button type="button" class="wed-btn wed-btn-2" data-wopen="' + esc(n.id) + '" data-wsec="wrPrayer"><span aria-hidden="true">🙏</span> <span>기도 제목</span> <b>' + pc + '</b></button></div>' : '') +
       '<p class="wed-close-note">밤 10시 30분에 닫힙니다</p>' +
       '</article>';
@@ -261,11 +271,13 @@
 
   function contiCard(c) {
     var beforeOpen = Date.now() < atKST(c.note_date, OPEN_H, OPEN_M);
+    var nS = songFiles(c).length, nR = refFiles(c).length;
     return '<article class="week-sermon wed-card">' +
       '<span class="ws-date">' + esc(String(c.note_date).replace(/-/g, ".")) + ' · 수요기도회</span>' +
-      '<h3 class="ws-title">오늘 찬양 악보</h3>' +
-      '<div class="wed-btns wed-btns-1"><button type="button" class="wed-btn" data-wconti="' + esc(c.note_date) + '"><span aria-hidden="true">🎵</span> <span>찬양 악보 보기</span> <b>' + (c.files || []).length + '</b></button></div>' +
-      '<p class="wed-close-note">' + (beforeOpen ? "말씀 자료는 " + OPEN_TXT + "에 열립니다 · " : "") + '악보는 밤 10시 30분에 사라집니다</p>' +
+      '<h3 class="ws-title">' + (nR && nS ? "오늘 말씀 참고 자료·찬양 악보" : nR ? "오늘 말씀 참고 자료" : "오늘 찬양 악보") + '</h3>' +
+      (nR ? refBtn('data-wconti="' + esc(c.note_date) + '"', nR) : '') +
+      (nS ? '<div class="wed-btns wed-btns-1"><button type="button" class="wed-btn' + (nR ? ' wed-btn-2' : '') + '" data-wconti="' + esc(c.note_date) + '"><span aria-hidden="true">🎵</span> <span>찬양 악보 보기</span> <b>' + nS + '</b></button></div>' : '') +
+      '<p class="wed-close-note">' + (beforeOpen ? "말씀 자료는 " + OPEN_TXT + "에 열립니다 · " : "") + (nR ? "자료는" : "악보는") + ' 밤 10시 30분에 사라집니다</p>' +
       '</article>';
   }
 
@@ -374,9 +386,15 @@
     });
   }
   function contiHtml(c) {
-    var files = (c && c.files) || [];
-    if (!files.length) return "";
-    return '<section class="wr-sec" id="wrConti"><h4 class="wr-h">찬양 악보 <small>누르면 크게 · 밤 10시 30분에 사라집니다</small></h4><div class="wr-conti">' +
+    var refs = refFiles(c), files = songFiles(c), h = "";
+    if (refs.length) {
+      h += '<section class="wr-sec" id="wrRef"><h4 class="wr-h">말씀 참고 자료 <small>누르면 크게 · 밤 10시 30분에 사라집니다</small></h4><div class="wr-conti wr-ref">' +
+        refs.map(function (f, i) {
+          return '<a class="wr-conti-img" data-cpath="' + esc(f.path) + '" href="#" target="_blank" rel="noopener"><img alt="' + esc(f.name || ("참고 자료 " + (i + 1))) + '" data-cimg="' + esc(f.path) + '" loading="lazy" /></a>';
+        }).join("") + '</div></section>';
+    }
+    if (!files.length) return h;
+    return h + '<section class="wr-sec" id="wrConti"><h4 class="wr-h">찬양 악보 <small>누르면 크게 · 밤 10시 30분에 사라집니다</small></h4><div class="wr-conti">' +
       files.map(function (f, i) {
         var pdf = /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.path || "");
         return pdf
@@ -487,7 +505,8 @@
     if (n && (n.passage || []).length) t.push(["wrPassage", "본문"]);
     if (n && (n.verses || []).length) t.push(["wrVerses", "인용 구절"]);
     if (n && prayerCount(n)) t.push(["wrPrayer", "기도"]);
-    if (c && (c.files || []).length && (contiOpen(c) || admin)) t.push(["wrConti", "악보"]);
+    if (c && refFiles(c).length && (contiOpen(c) || admin)) t.push(["wrRef", "참고 자료"]);
+    if (c && songFiles(c).length && (contiOpen(c) || admin)) t.push(["wrConti", "악보"]);
     return t.length > 1 ? t.map(function (x) { return '<button type="button" data-go="' + x[0] + '">' + x[1] + '</button>'; }).join("") : "";
   }
   function goSec(id) {
@@ -498,7 +517,7 @@
     cur = n; curConti = c || null;
     var iso = n ? n.note_date : c.note_date;
     rdDate.textContent = dayLabel(iso) + " · 수요기도회";
-    rdTitle.textContent = n ? (n.title || "") : "찬양 악보";
+    rdTitle.textContent = n ? (n.title || "") : songFiles(c).length ? "찬양 악보" : "말씀 참고 자료";
     rdTabs.innerHTML = tabsHtml(n, c);
     rdBody.innerHTML = readerHtml(n, c);
     rdBody.scrollTop = 0;
@@ -529,12 +548,12 @@
     paint(n, contiFor(n.note_date), sec);
     showReader();
   }
-  function openConti(iso) {
+  function openConti(iso, sec) {
     buildReader();
     var c = contiFor(iso);
     if (!c) return;
     var n = notes.filter(function (x) { return x.note_date === iso && isOpen(x); })[0] || null;
-    paint(n, c, "wrConti");
+    paint(n, c, sec || (songFiles(c).length ? "wrConti" : "wrRef"));
     showReader();
   }
   function onReaderClick(e) {
@@ -728,7 +747,7 @@
       var o = e.target.closest("[data-wopen]");
       if (o) { openReader(o.getAttribute("data-wopen"), o.getAttribute("data-wsec")); return; }
       var cv = e.target.closest("[data-wconti]");
-      if (cv) { openConti(cv.getAttribute("data-wconti")); return; }
+      if (cv) { openConti(cv.getAttribute("data-wconti"), cv.getAttribute("data-wsec")); return; }
       var rm = e.target.closest("[data-cremove]");
       if (rm) { removeConti(+rm.getAttribute("data-cremove")); return; }
       var st = e.target.closest("[data-wstatus]");
