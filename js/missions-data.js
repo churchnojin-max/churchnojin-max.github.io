@@ -5,6 +5,15 @@
    - 사진 파일: images/missions/<카드 data-mission>/
    ============================================================ */
 window.MISSIONS_BUILTIN = {
+  // 은목교회 강명우 목사님 사진(2026-11-11 목사님)
+  "eunmok": {
+    "photo": {
+      "url": "images/missions/eunmok/kang-portrait.jpg"
+    },
+    "intro": "",
+    "photos": [],
+    "reports": []
+  },
   "turkiye": {
     "photo": {
       "url": "images/missions/turkiye/hyundeok-portrait.jpg"
