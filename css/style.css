@@ -4363,3 +4363,9 @@ html.big-text.ts-xl { font-size: 137.5%; }
 .hbb-links .hbb-link { background: #BFA06C; border-color: #BFA06C; color: #1A3A2F; font-weight: 700; }
 .hb-links { display: flex; flex-direction: column; gap: 8px; }
 .hb-links .btn { justify-content: center; text-align: center; background: #BFA06C; border-color: #BFA06C; color: #1A3A2F; font-weight: 700; }
+
+/* 2026-11-14 목사님: 교회 이름 아래 '대한예수교장로회' 대신 주보처럼 영문 한 줄(NOJIN CHURCH).
+   글자 사이는 layout.js fitLogoEn 이 위 '노진교회' 폭에 맞춰 벌린다. */
+.footer-brand .logo-en { margin-top: 8px; font-size: .78rem; color: rgba(255,255,255,.85); }
+.ss-en { display: block; width: max-content; margin-top: 12px; white-space: nowrap; line-height: 1;
+  font-family: "Cormorant Garamond", "Noto Serif KR", serif; font-weight: 700; font-size: clamp(1rem, 2.4vw, 1.3rem); color: var(--accent); }

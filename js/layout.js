@@ -260,9 +260,10 @@
   document.body.insertAdjacentHTML("afterbegin", headerHTML);
   // 머리글 '노진교회' 아래 영문 NOJIN CHURCH(2026-10-17 목사님: 대한예수교장로회 대신 작게) —
   // 글자 사이를 벌려 위 '노진교회'와 양끝을 똑같이 맞춘다(글꼴이 늦게 와도, 화면 폭이 바뀌어도 다시 맞춤)
+  // 2026-11-14 목사님: 바닥글·교회 안내 심볼의 '대한예수교장로회'도 주보처럼 영문 한 줄로 → 같은 방식으로 맞춤
   function fitLogoEn() {
-    document.querySelectorAll("#header .logo-txt").forEach((t) => {
-      const kr = t.querySelector(".logo-kr"), en = t.querySelector(".logo-en");
+    document.querySelectorAll("#header .logo-txt, .footer-brand-txt, .ss-logo").forEach((t) => {
+      const kr = t.querySelector(".logo-kr, .ss-name"), en = t.querySelector(".logo-en, .ss-en");
       if (!kr || !en) return;
       en.style.letterSpacing = "0px"; en.style.marginRight = "0px";
       const krW = kr.getBoundingClientRect().width - (parseFloat(getComputedStyle(kr).letterSpacing) || 0);
@@ -391,7 +392,7 @@
           <img src="images/logo-symbol-white.svg?v=20260929" alt="" class="footer-mark" width="72" height="61" />
           <span class="footer-brand-txt">
             <span class="logo-kr">${CH_NAME}</span>
-            ${CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}
+            ${C.nameEn ? `<span class="logo-en">${C.nameEn}</span>` : CH_DENOM ? `<span class="logo-denom">${CH_DENOM}</span>` : ""}
           </span>
         </a>
         <nav class="footer-nav">${NAV.filter((n) => !n.adminOnly && !n.memberOnly).map((n) => `<a href="${n.href}">${n.label}</a>`).join("")}${IS_PUBLIC ? `<a href="#" data-guide>홈페이지 사용법</a>` : ""}<a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a><a href="withdraw.html">회원탈퇴</a></nav>
@@ -469,6 +470,12 @@
       </div>
     </div>`;
   document.body.insertAdjacentHTML("beforeend", footerHTML);
+  fitLogoEn();   // 바닥글 영문 줄도 '노진교회' 폭에 맞춤
+  // 교회 안내 심볼(팝업 속이라 처음엔 숨어 있음)은 보이는 순간 다시 맞춤
+  if ("ResizeObserver" in window) {
+    const ro = new ResizeObserver(() => fitLogoEn());
+    document.querySelectorAll(".ss-logo .ss-name").forEach((el) => ro.observe(el));
+  }
   // 온라인 헌금 모달 동작
   (function () {
     var giveBtn = document.getElementById("giveOnlineBtn");
