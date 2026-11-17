@@ -2126,9 +2126,24 @@ console.log('[gyojeok.js] v20261007reg');
     var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? m[1] + '년 ' + Number(m[2]) + '월 ' + Number(m[3]) + '일' : s;
   }
+  // 교회 직인(재정 설정 app_settings 'rcp_img_seal' — 비공개 보관함 finance/receipt, 2026-11-17).
+  // 재정 권한(관리자 포함)이 없으면 읽히지 않고 '(직인)' 글자로 남는다.
+  function gjSealUrl() {
+    if (!(window.WPF && WPF.call)) return Promise.resolve('');
+    return WPF.call('getSettings').then(function (r) {
+      var u = (r && r.settings && r.settings.rcp_img_seal) || '';
+      if (!u || !(window.ChurchUpload && ChurchUpload.resolve)) return u;
+      return ChurchUpload.resolve(u).catch(function () { return u; });
+    }).catch(function () { return ''; });
+  }
   function gjCertDoc(d) {
     var w = window.open('', '_blank', 'width=900,height=1000');
     if (!w) { alert('팝업이 차단되었습니다. 브라우저에서 팝업을 허용한 뒤 다시 시도해 주세요.'); return; }
+    try { w.document.write('<p style="font-family:sans-serif;padding:24px;color:#555">증명서를 준비하는 중…</p>'); } catch (e) { }
+    gjSealUrl().then(function (seal) { gjCertWrite(w, d, seal); });
+  }
+  function gjCertWrite(w, d, seal) {
+    try { w.document.open(); } catch (e) { }
     var css = [
       '@page{size:A4 portrait;margin:25mm 22mm}',
       '*{box-sizing:border-box}',
@@ -2147,6 +2162,7 @@ console.log('[gyojeok.js] v20261007reg');
       'table.sign td{padding:3mm 0;vertical-align:middle}',
       'table.sign img.mark{width:13mm;height:13mm;object-fit:contain;vertical-align:middle;margin:0 3mm 1mm 0}',
       'table.sign td.seal{padding-left:8mm;color:#666;font-weight:400;font-size:12pt;white-space:nowrap}',
+      'table.sign img.sealimg{width:24mm;height:24mm;object-fit:contain;vertical-align:middle;margin:-8mm 0 -8mm -16mm;mix-blend-mode:multiply;-webkit-print-color-adjust:exact;print-color-adjust:exact}',
       '@media print{.noprint{display:none}}'
     ].join('\n');
     function row(label, val) { return '<tr><td class="lb">' + esc(label) + '</td><td class="cl">:</td><td class="vl">' + esc(val || '') + '</td></tr>'; }
@@ -2163,7 +2179,7 @@ console.log('[gyojeok.js] v20261007reg');
       '<p class="stmt">위의 사람은 본 교회 교인임을 증명합니다.</p>' +
       '<p class="issue">' + esc(d.issue) + '</p>' +
       '<table class="sign">' +
-      '<tr><td><img class="mark" src="' + esc(new URL('images/denom-mark.png?v=20260926', location.href).href) + '" alt="대한예수교장로회 총회 마크">' + esc(CERT_DENOM) + '&nbsp;&nbsp;' + esc(CHURCH_NAME()) + '</td><td class="seal">(직인)</td></tr>' +
+      '<tr><td><img class="mark" src="' + esc(new URL('images/denom-mark.png?v=20260926', location.href).href) + '" alt="대한예수교장로회 총회 마크">' + esc(CERT_DENOM) + '&nbsp;&nbsp;' + esc(CHURCH_NAME()) + '</td><td class="seal">' + (seal ? '<img class="sealimg" src="' + esc(seal) + '" alt="직인">' : '(직인)') + '</td></tr>' +
       '<tr><td>' + esc(PASTOR_NAME()) + '</td><td class="seal">(인)</td></tr>' +
       '</table>' +
       '</div></body></html>'
