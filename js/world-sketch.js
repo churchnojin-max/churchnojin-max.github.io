@@ -152,6 +152,7 @@
       c.style.setProperty("--x", cf.xy[0] - X0);
       c.style.setProperty("--y", cf.xy[1]);
       c.classList.add("on-map");
+      if (c.hasAttribute("data-private")) return; // 비공개 카드(목사님만 보기)는 지도 선을 긋지 않는다 — js/missions.js
       const x = cf.xy[0], y = cf.xy[1], cy = y + CH / 2;
       let a, b;
       if (cf.after) { const o = CARD[cf.after].xy; a = [o[0] + CW, cy]; b = [x, cy]; }

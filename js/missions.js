@@ -15,8 +15,16 @@
 (function () {
   const grid = document.querySelector("[data-missions]");
   if (!grid) return;
-  const cards = Array.prototype.slice.call(grid.querySelectorAll(".mission-card[data-mission]"));
+  let cards = Array.prototype.slice.call(grid.querySelectorAll(".mission-card[data-mission]"));
   const KEY = "missions";
+  // 비공개(목사님만 보기): church_settings key='missions_private' — 관리자만 읽을 수 있는 칸(2026-11-17)
+  //   data = { cards:[{id,country,name}], items:{ <id>: 같은 모양 } }
+  //   html 의 카드에 data-private 를 붙이면 그 카드도 목사님께만 보인다(css .mission-card[data-private]).
+  const PKEY = "missions_private";
+  let PRIV = { cards: [], items: {} };
+  let isOwner = false;
+  const isPriv = (id) => !!PRIV.items[id] || PRIV.cards.some((c) => c.id === id);
+  const getItem = (id) => (isPriv(id) ? PRIV.items[id] : DATA.items[id]) || {};
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const nl2br = (s) => esc(s).replace(/\n/g, "<br />");
   const hasSB = () => !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY);
@@ -44,7 +52,8 @@
 
   // ---------- 자료 ----------
   let DATA = { items: {} };
-  const item = (id) => (DATA.items[id] = DATA.items[id] || { photo: null, intro: "", photos: [], reports: [] });
+  const blankItem = () => ({ photo: null, intro: "", photos: [], reports: [] });
+  const item = (id) => (isPriv(id) ? (PRIV.items[id] = PRIV.items[id] || blankItem()) : (DATA.items[id] = DATA.items[id] || blankItem()));
   // 미리 넣어 둔 자료(js/missions-data.js): 자료실에 그 선교사님 자료가 비어 있을 때만 쓴다
   const BUILTIN = window.MISSIONS_BUILTIN || {};
   function fillBuiltin() {
@@ -63,12 +72,61 @@
       } catch (e) { /* 공개 읽기 준비 전: 비어 있는 채로 */ }
     }
     fillBuiltin();
+    await loadPriv();
+  }
+  // 비공개 칸: 관리자(목사님)만 읽힌다. 읽히면 목사님이고, 비공개 카드를 그린다.
+  async function loadPriv() {
+    const s = session();
+    let ok = false;
+    if (hasSB() && s && s.access_token) {
+      try {
+        const rows = await api("GET", `church_settings?key=eq.${PKEY}&select=data`);
+        if (rows && rows[0] && rows[0].data) { PRIV = rows[0].data; ok = true; }
+      } catch (e) {}
+    }
+    if (!ok) PRIV = { cards: [], items: {} };
+    if (!PRIV.cards) PRIV.cards = [];
+    if (!PRIV.items) PRIV.items = {};
+    isOwner = ok;
+    grid.classList.toggle("is-owner", ok);
+    syncPrivCards();
+  }
+  function bindCard(c) {
+    if (c.dataset.bound) return;
+    c.dataset.bound = "1";
+    c.addEventListener("click", () => open(c.dataset.mission));
+    c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(c.dataset.mission); } });
+  }
+  function syncPrivCards() {
+    grid.querySelectorAll(".mission-card[data-priv-added]").forEach((c) => { if (!isOwner || !PRIV.cards.some((p) => p.id === c.dataset.mission)) c.remove(); });
+    if (isOwner) PRIV.cards.forEach((p) => {
+      if (grid.querySelector(`.mission-card[data-mission="${p.id}"]`)) return;
+      const c = document.createElement("div");
+      c.className = "mission-card";
+      c.dataset.mission = p.id;
+      c.setAttribute("data-private", "");
+      c.setAttribute("data-priv-added", "");
+      c.innerHTML = `<h4>${esc(p.country)}</h4><p class="m-name">${esc(p.name)}</p>`;
+      // 지도 화면(js/world-sketch.js)이면 빈자리에 놓는다. 지도 단위: 왼쪽 끝 서경 30도 → --x 는 7 을 더한 값
+      if (grid.closest(".mm-stage")) {
+        const SPOTS = [[69.7, 17.4], [69.7, 24.1], [69.7, 10.7], [69.7, 4.0]];
+        const xy = p.xy || SPOTS[PRIV.cards.indexOf(p) % SPOTS.length];
+        c.style.setProperty("--x", xy[0] + 7);
+        c.style.setProperty("--y", xy[1]);
+        c.classList.add("on-map");
+      }
+      grid.appendChild(c);
+      bindCard(c);
+    });
+    cards = Array.prototype.slice.call(grid.querySelectorAll(".mission-card[data-mission]"));
   }
   async function save(change) {
     // 저장 직전에 최신 자료를 다시 읽고, 바꿀 것만 적용해서 저장(두 사람이 동시에 고쳐도 덜 꼬이게)
+    const priv = isPriv(curId);
     await load();
     change();
-    await api("POST", "church_settings?on_conflict=key", { key: KEY, data: DATA, updated_at: new Date().toISOString() }, "resolution=merge-duplicates,return=minimal");
+    if (priv) await api("POST", "church_settings?on_conflict=key", { key: PKEY, data: PRIV, updated_at: new Date().toISOString() }, "resolution=merge-duplicates,return=minimal");
+    else await api("POST", "church_settings?on_conflict=key", { key: KEY, data: DATA, updated_at: new Date().toISOString() }, "resolution=merge-duplicates,return=minimal");
     paintCards();
   }
 
@@ -92,7 +150,7 @@
   const GLOBE = '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" stroke-width="1.6"/><ellipse cx="24" cy="24" rx="8" ry="18" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7 18h34M7 30h34" stroke="currentColor" stroke-width="1.4"/></svg>';
   function paintCards() {
     cards.forEach((c) => {
-      const it = DATA.items[c.dataset.mission] || {};
+      const it = getItem(c.dataset.mission);
       let ph = c.querySelector(".mc-photo");
       if (!ph) {
         ph = document.createElement("span");
@@ -144,7 +202,7 @@
   function render(msg) {
     const card = cards.find((c) => c.dataset.mission === curId);
     if (!card) return;
-    const it = DATA.items[curId] || {};
+    const it = getItem(curId);
     const country = card.querySelector("h4").textContent, name = card.querySelector(".m-name").textContent;
     const photos = it.photos || [];
     const reports = (it.reports || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
@@ -154,7 +212,7 @@
       <div class="ms-top">
         <div class="ms-hero${it.photo && it.photo.url ? "" : " is-empty"}">${it.photo && it.photo.url ? `<img src="${esc(it.photo.url)}" alt="${esc(name)}" />` : GLOBE}</div>
         <div class="ms-who">
-          <span class="ms-country">${esc(country)}</span>
+          <span class="ms-country">${esc(country)}${card.hasAttribute("data-private") ? ' <em class="ms-lock">🔒 목사님만 보기</em>' : ""}</span>
           <h3 class="ms-name">${esc(name)}</h3>
           ${ed ? `<label class="ms-btn ms-btn-sm">대표 사진 ${it.photo ? "바꾸기" : "넣기"}<input type="file" accept="image/*" data-act="photo" hidden /></label>` : ""}
         </div>
@@ -195,12 +253,19 @@
   }
 
   async function uploadAll(files, busyLabel) {
-    if (!window.ChurchUpload || !window.ChurchUpload.isReady()) throw new Error("사진 올리기 준비가 안 되어 있습니다.");
+    if (!window.ChurchUpload || (!isPriv(curId) && !window.ChurchUpload.isReady())) throw new Error("사진 올리기 준비가 안 되어 있습니다.");
     const out = [];
     let n = 0;
     for (const f of files) {
       n++;
       render(`${busyLabel} ${n} / ${files.length} …`);
+      if (isPriv(curId)) {
+        // 비공개 카드 사진은 공개 저장소에 올리지 않고 비공개 칸 안에 그림으로 넣는다
+        const small = await window.ChurchUpload.compressImage(f, 1100, 0.78);
+        const url = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(small); });
+        out.push({ url, key: null });
+        continue;
+      }
       const small = await window.ChurchUpload.compressImage(f, 1800, 0.84);
       out.push(await window.ChurchUpload.upload(small, { folder: "missions/" + curId }));
     }
@@ -280,10 +345,7 @@
   });
 
   // ---------- 시작 ----------
-  cards.forEach((c) => {
-    c.addEventListener("click", () => open(c.dataset.mission));
-    c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(c.dataset.mission); } });
-  });
+  cards.forEach(bindCard);
   paintCards();
   load().then(paintCards);
   checkPerm().then((ok) => { canEdit = ok; grid.classList.toggle("can-edit", ok); if (!modal.hidden) render(); });

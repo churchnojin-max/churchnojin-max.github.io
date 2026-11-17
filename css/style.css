@@ -855,6 +855,12 @@ ul { list-style: none; }
 .mission-card h4 { font-family: "Gowun Batang", serif; font-size: 1.25rem; color: var(--accent); margin-bottom: 10px; }
 .m-region { font-size: .9rem; color: var(--ink-soft); font-weight: 300; }
 .m-name { margin-top: 16px; font-weight: 500; font-size: .92rem; }
+/* 비공개 선교사님 카드(2026-11-17): 목사님(관리자)이 로그인했을 때만 보인다 — js/missions.js */
+.mission-card[data-private] { display: none !important; }
+.mission-grid.is-owner .mission-card[data-private] { display: block !important; border-style: dashed; border-color: #bfa06c; }
+.mission-grid.is-owner .mission-card[data-private] h4::after { content: " 🔒"; font-size: .8em; }
+.mission-grid.is-owner .mission-card[data-private] .m-name { font-size: .82rem; }
+.ms-lock { font-style: normal; font-size: .78em; background: #f3efe3; color: #8a6d2f; padding: 2px 8px; border-radius: 10px; margin-left: 6px; white-space: nowrap; }
 
 /* ===== Location ===== */
 .location-grid { display: grid; grid-template-columns: 380px 1fr; gap: 48px; align-items: stretch; }
