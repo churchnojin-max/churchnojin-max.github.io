@@ -860,6 +860,26 @@ ul { list-style: none; }
 .mission-grid.is-owner .mission-card[data-private] { display: block !important; border-style: dashed; border-color: #bfa06c; }
 .mission-grid.is-owner .mission-card[data-private] h4::after { content: " 🔒"; font-size: .8em; }
 .mission-grid.is-owner .mission-card[data-private] .m-name { font-size: .82rem; }
+.ms-lb { position: fixed; inset: 0; z-index: 3000; background: rgba(10, 18, 14, .92); display: flex; align-items: center; justify-content: center; padding: 20px 64px; }
+.ms-lb[hidden] { display: none; }
+.ms-lb figure { margin: 0; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ms-lb img { max-width: 100%; max-height: calc(100vh - 110px); object-fit: contain; border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+.ms-lb figcaption { color: #eee; font-size: 1rem; text-align: center; }
+.ms-lb button { position: absolute; background: rgba(255,255,255,.12); color: #fff; border: 0; border-radius: 50%; width: 52px; height: 52px; font-size: 2rem; line-height: 1; cursor: pointer; }
+.ms-lb button:hover { background: rgba(255,255,255,.25); }
+.ms-lb-x { top: 16px; right: 16px; }
+.ms-lb-prev { left: 8px; top: 50%; transform: translateY(-50%); }
+.ms-lb-next { right: 8px; top: 50%; transform: translateY(-50%); }
+.ms-lb button[hidden] { display: none; }
+@media (max-width: 640px) { .ms-lb { padding: 60px 8px; } .ms-lb-prev, .ms-lb-next { top: auto; bottom: 14px; transform: none; } .ms-lb-prev { left: calc(50% - 64px); } .ms-lb-next { right: calc(50% - 64px); } }
+.ms-gallery img { cursor: zoom-in; }
+.ms-gloss { margin: 14px 0 4px; padding: 10px 14px; background: #f7f5ee; border: 1px solid #e6dfcc; border-radius: 10px; font-size: .9rem; }
+.ms-gloss summary { cursor: pointer; color: #6b5a2e; font-weight: 600; }
+.ms-gloss dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 6px 14px; margin: 10px 0 2px; }
+.ms-gloss dl div { display: flex; gap: 8px; align-items: baseline; }
+.ms-gloss dt { font-weight: 700; color: var(--accent, #1A3A2F); min-width: 3.2em; white-space: nowrap; }
+.ms-gloss dd { margin: 0; color: #444; }
+.ms-gloss dd::before { content: "→ "; color: #b9a777; }
 .ms-lock { font-style: normal; font-size: .78em; background: #f3efe3; color: #8a6d2f; padding: 2px 8px; border-radius: 10px; margin-left: 6px; white-space: nowrap; }
 
 /* ===== Location ===== */

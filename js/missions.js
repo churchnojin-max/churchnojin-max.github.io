@@ -184,6 +184,7 @@
 
   function open(id) {
     curId = id;
+    plain = false;
     render();
     modal.hidden = false;
     document.body.style.overflow = "hidden";
@@ -195,15 +196,58 @@
     curId = null;
   }
   modal.addEventListener("click", (e) => { if (e.target.hasAttribute("data-close")) close(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) close(); });
+  // 사진 크게 보기(누르면 화면 가득, ‹ › 로 넘기기). 비공개 사진(자료 안 그림)은 새 탭으로 못 열어서 여기서 보여 준다(2026-11-17)
+  const lb = document.createElement("div");
+  lb.className = "ms-lb";
+  lb.hidden = true;
+  lb.innerHTML = `<button type="button" class="ms-lb-x" aria-label="닫기">&times;</button>
+    <button type="button" class="ms-lb-nav ms-lb-prev" aria-label="이전 사진">‹</button>
+    <figure><img alt="" /><figcaption></figcaption></figure>
+    <button type="button" class="ms-lb-nav ms-lb-next" aria-label="다음 사진">›</button>`;
+  document.body.appendChild(lb);
+  let lbList = [], lbI = 0;
+  function lbShow(i) {
+    lbI = (i + lbList.length) % lbList.length;
+    const p = lbList[lbI];
+    lb.querySelector("img").src = p.url;
+    lb.querySelector("figcaption").textContent = p.caption ? `${p.caption}  (${lbI + 1} / ${lbList.length})` : `${lbI + 1} / ${lbList.length}`;
+    lb.querySelectorAll(".ms-lb-nav").forEach((b) => { b.hidden = lbList.length < 2; });
+    lb.hidden = false;
+  }
+  const lbClose = () => { lb.hidden = true; lb.querySelector("img").removeAttribute("src"); };
+  lb.addEventListener("click", (e) => {
+    if (e.target.closest(".ms-lb-prev")) lbShow(lbI - 1);
+    else if (e.target.closest(".ms-lb-next")) lbShow(lbI + 1);
+    else if (!e.target.closest("img")) lbClose();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!lb.hidden) {
+      if (e.key === "Escape") lbClose();
+      else if (e.key === "ArrowLeft") lbShow(lbI - 1);
+      else if (e.key === "ArrowRight") lbShow(lbI + 1);
+      return;
+    }
+    if (e.key === "Escape" && !modal.hidden) close();
+  });
 
   function fmtDate(d) { const m = String(d || "").match(/(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[1]}. ${+m[2]}. ${+m[3]}.` : ""; }
 
+  // 창의적 접근 지역: 자료의 glossary([[바꾼 말, 원래 말], ...])로 '한글로 풀어 보기'. 로그인한 분께만 단추가 보인다(2026-11-17)
+  let plain = false;
   function render(msg) {
     const card = cards.find((c) => c.dataset.mission === curId);
     if (!card) return;
-    const it = getItem(curId);
-    const country = card.querySelector("h4").textContent, name = card.querySelector(".m-name").textContent;
+    const it0 = getItem(curId);
+    const gl = Array.isArray(it0.glossary) && it0.glossary.length ? it0.glossary : null;
+    const signedIn = !!((session() || {}).access_token);
+    const canPlain = !!(gl && signedIn);
+    const dec = (s) => (plain && canPlain ? gl.reduce((t, g) => t.split(g[0]).join(g[1]), String(s == null ? "" : s)) : s);
+    const it = Object.assign({}, it0, {
+      intro: dec(it0.intro),
+      photos: (it0.photos || []).map((p) => Object.assign({}, p, { caption: dec(p.caption) })),
+      reports: (it0.reports || []).map((r) => Object.assign({}, r, { title: dec(r.title), body: dec(r.body) })),
+    });
+    const country = dec(card.querySelector("h4").textContent), name = dec(card.querySelector(".m-name").textContent);
     const photos = it.photos || [];
     const reports = (it.reports || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
     const empty = !it.intro && !photos.length && !reports.length;
@@ -215,13 +259,16 @@
           <span class="ms-country">${esc(country)}${card.hasAttribute("data-private") ? ' <em class="ms-lock">🔒 목사님만 보기</em>' : ""}</span>
           <h3 class="ms-name">${esc(name)}</h3>
           ${ed ? `<label class="ms-btn ms-btn-sm">대표 사진 ${it.photo ? "바꾸기" : "넣기"}<input type="file" accept="image/*" data-act="photo" hidden /></label>` : ""}
+          ${canPlain ? `<button type="button" class="ms-btn ms-btn-line ms-btn-sm" data-act="plain">${plain ? "원래 글로 보기" : "🔓 한글로 풀어 보기"}</button>` : ""}
         </div>
       </div>
+      ${canPlain ? `<details class="ms-gloss"><summary>용어 풀이 — 이 지역은 안전을 위해 몇 낱말을 바꿔 씁니다</summary>
+        <dl>${gl.map((g) => `<div><dt>${esc(g[0])}</dt><dd>${esc(g[1])}</dd></div>`).join("")}</dl></details>` : ""}
       ${msg ? `<p class="ms-msg">${esc(msg)}</p>` : ""}
       <section class="ms-sec">
         <h4>사역 소개</h4>
         ${it.intro ? `<p class="ms-intro">${nl2br(it.intro)}</p>` : `<p class="ms-wait">${empty ? "선교사님의 사역 소개와 보고를 준비하고 있습니다. 함께 기도해 주세요." : "사역 소개를 준비하고 있습니다."}</p>`}
-        ${ed ? `<div class="ms-edit" data-edit="intro" hidden><textarea rows="6" placeholder="사역하는 곳, 하시는 일, 기도 제목 등을 적어 주세요.">${esc(it.intro || "")}</textarea>
+        ${ed ? `<div class="ms-edit" data-edit="intro" hidden><textarea rows="6" placeholder="사역하는 곳, 하시는 일, 기도 제목 등을 적어 주세요.">${esc(it0.intro || "")}</textarea>
           <div class="ms-row"><button type="button" class="ms-btn" data-act="save-intro">저장</button><button type="button" class="ms-btn ms-btn-line" data-act="cancel">취소</button></div></div>
           <button type="button" class="ms-btn ms-btn-line ms-btn-sm" data-act="edit-intro">사역 소개 ${it.intro ? "고치기" : "쓰기"}</button>` : ""}
       </section>
@@ -292,10 +339,19 @@
   });
 
   body.addEventListener("click", (e) => {
+    const ga = e.target.closest(".ms-gallery a");
+    if (ga) {
+      e.preventDefault();
+      const all = Array.prototype.slice.call(ga.closest(".ms-gallery").querySelectorAll("a"));
+      lbList = all.map((x) => ({ url: x.getAttribute("href"), caption: (x.querySelector("img") || {}).alt || "" }));
+      lbShow(all.indexOf(ga));
+      return;
+    }
     const b = e.target.closest("[data-act]");
     if (!b || b.tagName === "INPUT") return;
     const a = b.getAttribute("data-act");
     const showEdit = (name) => { body.querySelectorAll(".ms-edit").forEach((x) => { x.hidden = x.getAttribute("data-edit") !== name; }); };
+    if (a === "plain") { plain = !plain; render(); return; }
     if (a === "edit-intro") { showEdit("intro"); b.hidden = true; body.querySelector('[data-edit="intro"] textarea').focus(); }
     else if (a === "cancel") render();
     else if (a === "save-intro") {
