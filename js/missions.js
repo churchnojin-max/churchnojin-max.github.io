@@ -218,7 +218,7 @@
   lb.addEventListener("click", (e) => {
     if (e.target.closest(".ms-lb-prev")) lbShow(lbI - 1);
     else if (e.target.closest(".ms-lb-next")) lbShow(lbI + 1);
-    else if (!e.target.closest("img")) lbClose();
+    else lbClose(); // 사진을 다시 눌러도, 바깥이나 ×를 눌러도 닫힌다(11/17 목사님)
   });
   document.addEventListener("keydown", (e) => {
     if (!lb.hidden) {
