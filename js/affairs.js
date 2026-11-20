@@ -165,13 +165,13 @@ console.log('[affairs.js] v20260712memo2');
       cols: [['doc_date', '일자'], ['title', '제목'], ['category', '분류'], ['manager', '담당'], ['file_url', '파일'], ['content', '내용']]
     }
   };
-  var TAB_ORDER = [['dashboard', '설교 대시보드'], ['sermon', '설교관리'], ['worship', '예배매니저'], ['song', '🎵 찬양관리'], ['illus', '예화 클립'], ['bulletin', '주보제작'], ['visit', '심방관리'], ['counsel', '상담관리'], ['edu', '교육관리'], ['doc', '자료실'], ['read', '🔊 설교문 낭독'], ['sermonfile', '📄 설교자료'], ['library', '나의 도서관'], ['bible', '📖 성경 보기'], ['settings', '설정']];
+  var TAB_ORDER = [['dashboard', '설교 대시보드'], ['sermon', '설교관리'], ['worship', '예배매니저'], ['song', '🎵 찬양관리'], ['illus', '예화 클립'], ['bulletin', '주보제작'], ['visit', '심방관리'], ['counsel', '상담관리'], ['edu', '교육관리'], ['doc', '자료실'], ['read', '🔊 설교문 낭독'], ['sermonfile', '📄 설교자료'], ['bible', '📖 성경 보기'], ['settings', '설정']];
   // 메뉴가 15개라 한 줄에 다 늘어놓지 않고 다섯 묶음으로 나눠 보여 준다. (2026-10-02)
   var TAB_GROUPS = [
     ['설교', ['dashboard', 'sermon', 'illus', 'sermonfile', 'read']],
     ['예배', ['worship', 'song', 'bulletin']],
     ['목양', ['visit', 'counsel', 'edu', 'doc']],
-    ['서재', ['bible', 'library']],
+    ['서재', ['bible']],   // 나의 도서관은 2026-11-20 목사님 말씀으로 뺌(책 목록이 공개 주소로 읽혔음)
     ['설정', ['settings']]
   ];
   var lastInGroup = {};
@@ -259,7 +259,6 @@ console.log('[affairs.js] v20260712memo2');
     else if (tab === 'worship') renderSermon(p, { worship: true });
     else if (tab === 'song') renderWorshipSongs(p);
     else if (tab === 'bulletin') renderBulletinAdmin(p);
-    else if (tab === 'library') renderLibrary(p);
     else if (tab === 'bible') renderBibleViewer(p);
     else if (tab === 'settings') renderSettings(p);
     else if (tab === 'edu') renderEdu(p);
