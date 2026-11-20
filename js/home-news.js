@@ -76,6 +76,11 @@
   // 날짜 상자와 '사진 수정하기' 창이 같은 날을 가리키게: 정한 날짜(event_date), 없으면 올린 날
   const dayOf = (p) => String(p.event_date || p.created_at || "").slice(0, 10);
   const dayLabel = (d) => { const m = String(d || "").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${+m[2]}월 ${+m[3]}일` : String(d || ""); };
+  // 사진 순서(2026-11-20 목사님): 날짜는 최근 날이 먼저, 같은 날 안에서는 올린 순서대로(먼저 올린 사진이 앞).
+  //   예전에는 '나중에 올라간 사진이 앞'이라 여러 장을 올리면 늘 거꾸로 보였다.
+  //   순서를 바꾸면(끌어 옮기기·순서 뒤집기) 그 날 사진들의 올린 시각(created_at)을 서로 바꿔 순서를 저장한다.
+  const tms = (p) => { const t = Date.parse((p && p.created_at) || ""); return isNaN(t) ? 0 : t; };
+  const byShowOrder = (a, b) => { const da = dayOf(a), db = dayOf(b); if (da !== db) return da < db ? 1 : -1; return (tms(a) - tms(b)) || (a.id - b.id); };
 
   // 남의 사진도 고치고 지울 수 있는 분: 관리자, 또는 '게시판' 권한(공지·앨범·나눔터 관리)이 있는 분(2026-10-04)
   let _isAdmin = null;
@@ -107,14 +112,16 @@
     // 우리들 소식 사진에는 성도님 얼굴이 담겨 있어 가입하고 로그인한 분께만(2026-10-05 목사님, supabase/member_only_20261005.sql)
     if (!currentUser() || isPending()) { photos = []; renderLocked(); renderActions(); return; }
     try {
-      photos = await apiRetry("GET", "album_feed?select=*&order=created_at.desc&limit=40") || [];
+      // 최근 40장만 읽던 것을 넉넉히(2026-11-20: 한 번에 42장이 올라와 5월 사진이 첫 화면에서 밀려났다)
+      photos = await apiRetry("GET", "album_feed?select=*&order=created_at.desc&limit=600") || [];
       social = true;
     } catch (e) {
       social = false;
-      try { photos = await apiRetry("GET", "album_photos?select=*&order=created_at.desc&limit=40") || []; }
+      try { photos = await apiRetry("GET", "album_photos?select=*&order=created_at.desc&limit=600") || []; }
       catch (e2) { photos = []; loadError = true; }   // 두 경로 모두 실패 = 진짜 오류(소식 없음과 구분)
       photos = photos.map((p) => ({ ...p, like_count: 0, comment_count: 0 }));
     }
+    photos.sort(byShowOrder);
     myLikes.clear();
     const me = currentUser();
     if (social && me && me.id && photos.length) {
@@ -467,6 +474,80 @@
   let upSeq = 0;             // 날짜를 빨리 바꿀 때 늦게 온 응답은 버린다
   let picked = [];           // 새로 올릴 사진(File)
   let pickedUrls = [];
+  let upOrderDirty = false;  // 그 날 사진 순서를 바꿨으면 '저장하기' 때 순서를 저장한다
+  // 그 날 사진 순서는 모두 고칠 수 있는 분(올린 본인·관리자·게시판 담당)만 바꾼다
+  const canSortOld = () => upMode === "day" && upOld.length > 1 && upOld.every(canEditPhoto);
+
+  // 끌어서 순서 바꾸기 — 마우스는 누른 채 끌면 바로, 휴대폰·패드는 사진을 잠깐 꾹 누른 뒤 끈다(그냥 밀면 화면이 넘어가게).
+  // grid 에 class "up-sortable" 이 있을 때만 움직이고, 놓으면 onDone(각 칸의 data-k 순서)을 부른다.
+  function makeSortable(grid, onDone) {
+    let s = null;
+    const items = () => Array.from(grid.querySelectorAll(".up-th[data-k]"));
+    function start(th, x, y, touch) {
+      if (!grid.classList.contains("up-sortable") || items().length < 2) return;
+      s = { th, x, y, on: false, touch, timer: null };
+      if (touch) s.timer = setTimeout(() => { if (s && !s.on) begin(); }, 320);
+    }
+    function begin() {
+      s.on = true; s.th.classList.add("up-th-drag"); grid.classList.add("up-dragging");
+      if (s.touch && navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
+    }
+    function move(x, y) {
+      if (!s) return false;
+      if (!s.on) {
+        const far = Math.abs(x - s.x) > 6 || Math.abs(y - s.y) > 6;
+        if (far) { if (s.touch) { clearTimeout(s.timer); s = null; return false; } begin(); } else return false;
+      }
+      const el = document.elementFromPoint(x, y);
+      const over = el && el.closest && el.closest(".up-th[data-k]");
+      if (over && over !== s.th && grid.contains(over)) {
+        const list = items();
+        if (list.indexOf(over) > list.indexOf(s.th)) over.after(s.th); else over.before(s.th);
+      }
+      return true;
+    }
+    function end() {
+      if (!s) return;
+      clearTimeout(s.timer);
+      const was = s.on; s.th.classList.remove("up-th-drag"); grid.classList.remove("up-dragging"); s = null;
+      if (was) onDone(items().map((t) => t.getAttribute("data-k")));
+    }
+    grid.addEventListener("mousedown", (e) => {
+      if (e.button !== 0 || e.target.closest("button")) return;
+      const th = e.target.closest(".up-th[data-k]"); if (!th) return;
+      e.preventDefault(); start(th, e.clientX, e.clientY, false);
+    });
+    document.addEventListener("mousemove", (e) => { if (s && !s.touch) move(e.clientX, e.clientY); });
+    document.addEventListener("mouseup", () => { if (s && !s.touch) end(); });
+    grid.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1 || e.target.closest("button")) return;
+      const th = e.target.closest(".up-th[data-k]"); if (!th) return;
+      start(th, e.touches[0].clientX, e.touches[0].clientY, true);
+    }, { passive: true });
+    grid.addEventListener("touchmove", (e) => {
+      if (!s) return;
+      if (move(e.touches[0].clientX, e.touches[0].clientY) && s && s.on) e.preventDefault();   // 끄는 동안은 화면이 밀리지 않게
+    }, { passive: false });
+    grid.addEventListener("touchend", end);
+    grid.addEventListener("touchcancel", end);
+    grid.addEventListener("contextmenu", (e) => { if (s) e.preventDefault(); });   // 꾹 누를 때 뜨는 메뉴 막기
+  }
+  // 바꾼 순서 저장: 그 날 사진들의 올린 시각을 이른 것부터 새 순서대로 나눠 준다(사진·좋아요·댓글은 그대로)
+  async function saveOrder(list) {
+    const sorted = list.map((p) => p.created_at).sort((a, b) => Date.parse(a) - Date.parse(b));
+    const distinct = new Set(sorted.map((t) => Date.parse(t))).size === sorted.length;
+    const base = Date.parse(sorted[0]);
+    let fail = 0;
+    for (let i = 0; i < list.length; i++) {
+      const want = distinct ? sorted[i] : new Date(base + i).toISOString();
+      if (list[i].created_at === want) continue;
+      try {
+        const rows = await api("PATCH", `album_photos?id=eq.${list[i].id}`, { created_at: want }, { Prefer: "return=representation" });
+        if (Array.isArray(rows) && rows.length) list[i].created_at = want; else fail++;
+      } catch (e) { fail++; }
+    }
+    return fail;
+  }
   const upQ = (id) => upModal.querySelector("#" + id);
   const canEditPhoto = (p) => { const me = currentUser(); return !!(me && (me.id === p.user_id || _isAdmin === true)); };
   function todayISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
@@ -474,7 +555,7 @@
   // 그 날 사진 모두(첫 화면이 읽는 최신 40장 밖의 사진까지). 날짜를 안 정한 옛 사진은 올린 날로 본다(dayOf 와 같게).
   async function fetchDay(d) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) return [];
-    const q = `?select=*&or=(event_date.eq.${d},and(event_date.is.null,created_at.gte.${d},created_at.lt.${nextDay(d)}))&order=created_at.desc`;
+    const q = `?select=*&or=(event_date.eq.${d},and(event_date.is.null,created_at.gte.${d},created_at.lt.${nextDay(d)}))&order=created_at.asc,id.asc`;
     try { return (await api("GET", "album_feed" + q)) || []; }
     catch (e) {
       try { return (await api("GET", "album_photos" + q)) || []; }
@@ -493,6 +574,7 @@
         <p class="up-sub" id="upSub" hidden></p>
         <div class="up-old" id="upOldBox" hidden>
           <p class="up-old-h" id="upOldH"></p>
+          <div class="up-sortbar" id="upOldSort" hidden><button type="button" class="up-rev" data-rev="old">⇅ 순서 뒤집기</button><span>사진을 끌어서 순서를 바꿀 수 있어요</span></div>
           <div class="up-thumbs" id="upOld"></div>
         </div>
         <div class="up-drop" id="upDrop">
@@ -507,6 +589,7 @@
           <input type="file" id="upCamera" accept="image/*" capture="environment" hidden />
         </div>
         <p class="up-old-h up-new-h" id="upNewH" hidden></p>
+        <div class="up-sortbar" id="upNewSort" hidden><button type="button" class="up-rev" data-rev="new">⇅ 순서 뒤집기</button><span>이 순서대로 올라가요 · 끌어서 바꿀 수 있어요</span></div>
         <div class="up-thumbs" id="upThumbs"></div>
         <div class="up-fields">
           <label class="up-f"><span>제목 <em>(선택)</em></span><input type="text" id="upTitle" maxlength="60" placeholder="예: 여름성경학교 첫째 날" /></label>
@@ -597,6 +680,19 @@
 
     upQ("upOld").addEventListener("click", (e) => { const b = e.target.closest("[data-del]"); if (b) delOld(b.getAttribute("data-del")); });
     upQ("upThumbs").addEventListener("click", (e) => { const b = e.target.closest("[data-i]"); if (b) { picked.splice(Number(b.getAttribute("data-i")), 1); refreshThumbs(); } });
+    // 순서 바꾸기(2026-11-20): 끌어 옮기기 + 순서 뒤집기. 새 사진은 보이는 순서대로 올라가고,
+    // 이미 올린 사진은 '저장하기'를 누르면 그 순서가 저장된다.
+    makeSortable(upQ("upThumbs"), (keys) => { picked = keys.map((k) => picked[Number(k)]).filter(Boolean); refreshThumbs(); });
+    makeSortable(upQ("upOld"), (keys) => {
+      const next = keys.map((k) => upOld.find((p) => String(p.id) === k)).filter(Boolean);
+      if (next.length !== upOld.length) return renderOld();
+      upOld = next; upOrderDirty = true; renderOld(); refreshGo();
+    });
+    upModal.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-rev]"); if (!b) return;
+      if (b.getAttribute("data-rev") === "new") { picked.reverse(); refreshThumbs(); }
+      else { upOld.reverse(); upOrderDirty = true; renderOld(); refreshGo(); }
+    });
     // 새 사진 올리기: 날짜를 고르면 그 날 이미 올린 사진을 보여 준다 / 그 날 사진 고치기: 날짜를 바꾸면 저장할 때 옮긴다
     upQ("upDate").addEventListener("change", () => { if (upMode === "day") refreshGo(); else loadOld(upQ("upDate").value, false); });
     upQ("upTitle").addEventListener("input", () => { upAuto.upTitle = false; });
@@ -623,13 +719,17 @@
   function oldThumb(p) {
     const ok = canEditPhoto(p);
     const focus = upFocus && String(p.id) === String(upFocus);
-    return `<div class="up-th${ok ? "" : " up-th-lock"}${focus ? " up-th-focus" : ""}" data-id="${p.id}">
-      <img src="${esc(p.url)}" alt="" loading="lazy" />
+    return `<div class="up-th${ok ? "" : " up-th-lock"}${focus ? " up-th-focus" : ""}" data-id="${p.id}" data-k="${p.id}">
+      <img src="${esc(p.url)}" alt="" loading="lazy" draggable="false" />
+      ${upMode === "day" && upOld.length > 1 ? `<em class="up-th-n">${upOld.indexOf(p) + 1}</em>` : ""}
       ${ok ? `<button type="button" class="up-th-x" data-del="${p.id}" aria-label="이 사진 지우기" title="지우기">×</button>` : ""}
     </div>`;
   }
   function renderOld() {
     const box = upQ("upOldBox"), grid = upQ("upOld");
+    const sortOk = canSortOld();
+    upQ("upOldSort").hidden = !sortOk;
+    grid.classList.toggle("up-sortable", sortOk);
     if (!upOld.length) { box.hidden = true; grid.innerHTML = ""; return; }
     box.hidden = false;
     const nDel = upOld.filter(canEditPhoto).length;
@@ -643,15 +743,17 @@
   function refreshThumbs() {
     pickedUrls.forEach((u) => URL.revokeObjectURL(u));
     pickedUrls = picked.map((f) => URL.createObjectURL(f));
-    upQ("upThumbs").innerHTML = picked.map((f, i) => `<div class="up-th up-th-new"><img src="${pickedUrls[i]}" alt="" /><button type="button" class="up-th-x" data-i="${i}" aria-label="빼기" title="빼기">×</button></div>`).join("");
+    upQ("upThumbs").innerHTML = picked.map((f, i) => `<div class="up-th up-th-new" data-k="${i}"><img src="${pickedUrls[i]}" alt="" draggable="false" /><em class="up-th-n">${i + 1}</em><button type="button" class="up-th-x" data-i="${i}" aria-label="빼기" title="빼기">×</button></div>`).join("");
     const h = upQ("upNewH");
     h.hidden = !picked.length;
     h.innerHTML = picked.length ? `<b>새로 올릴 사진 ${picked.length}장</b>` : "";
+    upQ("upNewSort").hidden = picked.length < 2;
+    upQ("upThumbs").classList.toggle("up-sortable", picked.length > 1);
     refreshGo();
   }
   function refreshGo() {
     const go = upQ("upGo"), n = picked.length;
-    if (upMode === "day") { go.disabled = false; go.textContent = n ? `저장하기 (새 사진 ${n}장 올리기)` : "저장하기"; }
+    if (upMode === "day") { go.disabled = false; go.textContent = n ? `저장하기 (새 사진 ${n}장 올리기)` : (upOrderDirty ? "저장하기 (바꾼 순서 저장)" : "저장하기"); }
     else { go.disabled = n === 0; go.textContent = n ? `사진 ${n}장 올리기` : "올리기"; }
     const note = upQ("upDateNote"), d = upQ("upDate").value, mv = upOld.filter(canEditPhoto).length;
     if (upMode === "day" && d && d !== upDay0 && mv) {
@@ -738,6 +840,13 @@
           if (n < ids.length) alert(n ? `${ids.length}장 가운데 ${n}장만 고쳐졌어요. (고칠 권한이 없는 사진은 그대로예요)` : "고칠 권한이 없어 바뀌지 않았어요.");
         } catch (e) { st.textContent = ""; st.hidden = true; refreshGo(); alert("고치기 오류: " + e.message); return; }
       }
+      // 3) 바꾼 순서 저장(끌어 옮기기·순서 뒤집기)
+      if (upOrderDirty && canSortOld()) {
+        st.textContent = "순서 저장하는 중…";
+        const fail = await saveOrder(upOld);
+        upChanged = true; upOrderDirty = false;
+        if (fail) alert(`${fail}장의 순서를 저장하지 못했어요. 창을 다시 열어 확인해 주세요.`);
+      }
     }
     picked = []; refreshThumbs();
     closeUp();
@@ -745,7 +854,7 @@
 
   function resetUp() {
     picked = []; refreshThumbs();
-    upOld = []; upInit = { title: "", caption: "", category: "" }; upAuto = {}; upCatTouched = false; upChanged = false; upSeq++;
+    upOld = []; upInit = { title: "", caption: "", category: "" }; upAuto = {}; upCatTouched = false; upChanged = false; upOrderDirty = false; upSeq++;
     const day = upMode === "day";
     upQ("upTitle").value = ""; upQ("upCap").value = "";
     upQ("upDate").value = day ? upDay0 : todayISO();
@@ -756,7 +865,7 @@
     upQ("upTitleNote").hidden = true; upQ("upDateNote").hidden = true;
     upQ("upHead").textContent = day ? `${dayLabel(upDay0)} 사진 수정하기` : "사진 올리기";
     upQ("upSub").hidden = !day;
-    upQ("upSub").textContent = day ? "빨간 × 를 누르면 그 사진이 지워지고, 아래에서 사진을 더할 수 있어요." : "";
+    upQ("upSub").textContent = day ? "빨간 × 를 누르면 그 사진이 지워지고, 사진을 끌어서 순서를 바꿀 수 있어요. 아래에서 사진을 더할 수도 있어요." : "";
     upQ("upDropT").textContent = day ? "더할 사진을 여기로 끌어다 놓거나" : "여기로 사진을 끌어다 놓거나";
     upQ("upPick").textContent = day ? "사진 더하기" : "사진 선택";
     refreshGo();
@@ -794,7 +903,11 @@
     if ((!feedModal || feedModal.hidden) && viewer.hidden) document.body.style.overflow = "";
     if (upChanged) { upChanged = false; load().then(() => { if (feedModal && !feedModal.hidden) openFeed(); }); }
   }
-  function closeUp() { if (window.ModalNav && window.ModalNav.close()) return; closeUpDom(); }
+  function closeUp() {
+    if (upOrderDirty && !confirm("바꾼 사진 순서를 저장하지 않고 닫을까요?\n저장하려면 '취소'를 누르고 아래 '저장하기'를 눌러 주세요.")) return;
+    upOrderDirty = false;
+    if (window.ModalNav && window.ModalNav.close()) return; closeUpDom();
+  }
 
   /* ===================== 배선 ===================== */
   document.getElementById("hnMore").addEventListener("click", openFeed);

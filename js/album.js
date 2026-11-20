@@ -77,7 +77,14 @@
   let social = true;           // 좋아요/댓글 테이블 사용 가능 여부
   const myLikes = new Set();   // 내가 좋아요한 photo_id
   const commentCache = {};     // photo_id → [{...comment}]
-  const byCat = (cat) => photos.filter((p) => p.category === cat).sort((a, b) => b.id - a.id);
+  // 순서(2026-11-20, 첫 화면 home-news.js 와 같게): 최근 날이 먼저, 같은 날 안에서는 올린 순서대로
+  const dayOf = (p) => String(p.event_date || p.created_at || "").slice(0, 10);
+  const tms = (p) => { const t = Date.parse(p.created_at || ""); return isNaN(t) ? 0 : t; };
+  const byCat = (cat) => photos.filter((p) => p.category === cat).sort((a, b) => {
+    const da = dayOf(a), db = dayOf(b);
+    if (da !== db) return da < db ? 1 : -1;
+    return (tms(a) - tms(b)) || (a.id - b.id);
+  });
   const photoById = (id) => photos.find((p) => String(p.id) === String(id));
 
   async function load() {
