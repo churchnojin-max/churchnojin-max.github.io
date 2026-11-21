@@ -18,6 +18,9 @@
     [221, 381, 30], [463, 177, 28], [670, 368, 18], [1567, 69, 22], [1749, 109, 26], [1844, 260, 20],
     [1702, 518, 10], [1004, 39, 12], [101, 433, 14], [208, 172, 10], [797, 266, 7], [438, 296, 7], [1678, 327, 7],
   ];
+  // 2026-11-21 목사님 요청: 화면 가운데에 아브라함과 이삭 그림(index.html .hero-pair)을 넣으면서 작은 아브라함 걷기는 끈다.
+  // 다시 켜려면 true 로(코드는 그대로 남겨 둠). 별 반짝임은 이 값과 상관없이 늘 켜져 있다.
+  const WALK = false;
   const ALTAR_RIGHT = 613;   // 재단 오른쪽 끝(x)
   const ALTAR_FOOT = 1108;   // 재단 밑동(y) — 아브라함이 멈추는 땅 높이
 
@@ -109,7 +112,7 @@
     const k = heightScreen / s / 100;             // 아브라함 1단위 = 그림 몇 픽셀
     const endX = ALTAR_RIGHT + 24 * k;
     const startX = vx + vw + 30 * k;
-    const ok = W >= 761 && heightScreen >= 70 && endX > vx && endX < vx + vw && startX - endX > 200;
+    const ok = WALK && W >= 761 && heightScreen >= 70 && endX > vx && endX < vx + vw && startX - endX > 200;
     G = ok ? { k, feetY, startX, endX, startY: Math.min(feetY + 14, bottomImg) } : null;
     layer.classList.toggle("no-walker", !ok);
   }

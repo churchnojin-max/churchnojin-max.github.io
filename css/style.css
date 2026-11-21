@@ -3280,9 +3280,58 @@ html.snap-gliding { scroll-snap-type: none !important; scroll-behavior: auto !im
 .hw-headturn { transition: transform 1.6s ease-in-out; }
 .hw-body.is-looking .hw-headturn { transform: rotate(16deg); }
 .hero-sky.is-paused * { animation-play-state: paused !important; }
+/* ------------------------------------------------------------
+   2026-11-21 목사님 요청: 첫 화면 가운데에 아브라함과 이삭 — 두 사람이 고개를 들어 하늘의 별을 본다.
+   · 배경 그림과 별 반짝임은 그대로. 두 사람은 따로 얹은 그림(images/hero-pair-down.webp 앞을 봄 / hero-pair-up.webp 고개 듦)이라
+     배경 위치(background-position)와 상관없다 — 배경 위치를 바꾸면 별 자리가 어긋나니 건드리지 않는다.
+   · 사람을 옮기지 않고 상자 자리를 바꿨다. 컴퓨터: 제목은 위, '이번 주 설교'는 왼쪽 아래, 주보·예배 단추는 오른쪽 아래 세로.
+     휴대폰: 제목(조금 작게) → 두 사람 → 설교 상자 → 단추.
+   · 두 사람 칸(.hero-pair)은 제목과 아래 상자 사이 남는 높이를 차지하고, 그림은 그 안에서 발을 아래에 붙여 맞춘다.
+   · 작은 아브라함 걷기(예전)는 js/hero-walk.js 의 WALK 로 꺼 두었다(코드는 남김).
+   ------------------------------------------------------------ */
+.hero-pair { position: relative; z-index: 1; flex: 1 1 0; min-height: 0; width: 100%; pointer-events: none; animation: fadeUp 1.2s ease .3s both; }
+.hero-pair img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom;
+  filter: drop-shadow(0 6px 14px rgba(20,12,6,.22)); }
+/* 16초에 한 번: 앞을 봄(4.5초) → 천천히 고개를 듦(2초 남짓) → 하늘을 봄(6초 남짓) → 돌아옴.
+   고개 든 그림을 위에 겹쳐 서서히 나타내고, 다 나타난 동안에는 아래 그림을 감춘다(머리가 둘로 겹쳐 보이지 않게).
+   윈도우 '애니메이션 효과'가 꺼진 컴퓨터(사무실 PC 포함)에서도 고개 드는 것이 보여야 해서 prefers-reduced-motion 으로 멈추지 않는다
+   — 자리를 옮기는 움직임이 아니라 느리게 겹쳐 바뀌는 것뿐이다. */
+.hero-pair .hp-up { opacity: 0; animation: hpLook 16s ease-in-out infinite; }
+.hero-pair .hp-down { animation: hpDown 16s linear infinite; }
+@keyframes hpLook { 0%, 28% { opacity: 0 } 42%, 82% { opacity: 1 } 96%, 100% { opacity: 0 } }
+@keyframes hpDown { 0%, 42% { opacity: 1 } 42.01%, 81.99% { opacity: 0 } 82%, 100% { opacity: 1 } }
+/* 무대(.hero-stage)가 첫 화면 높이를 꽉 채워야 두 사람 칸이 남는 높이를 받는다.
+   컴퓨터의 '한 화면씩 넘어가기'(html.snap-page body > section)가 첫 화면을 세로 가운데 정렬로 바꾸므로 flex 로 늘린다. */
+.hero-full .hero-stage { flex: 1 1 auto; }
 @media (min-width: 761px) {
-  .hero-full .hero-stage { justify-content: center; padding-bottom: clamp(130px, 22vh, 260px); }
-  .hero-full .hero-headline { flex: 0 0 auto; padding-bottom: 0; }
+  .hero-full .hero-stage { justify-content: flex-start; padding-bottom: 6vh; }
+  .hero-full .hero-headline { flex: 0 0 auto; gap: 14px; padding: 1vh 0 0; }
+  .hero-brush { font-size: clamp(2rem, 3.8vw, 3.6rem); }
+}
+/* 가로로 넓은 화면(컴퓨터·눕힌 태블릿): 상자를 양쪽 아래 구석으로 */
+@media (min-width: 761px) and (min-aspect-ratio: 1/1) {
+  .hero-pair { max-height: 52vh; margin-top: auto; }
+  .hero-full .hero-sermon-banner { position: absolute; left: 32px; bottom: 7vh; width: min(360px, 29vw); padding: 16px 20px; z-index: 3; }
+  .hero-full .hero-sermon-banner .hsb-title { font-size: clamp(1.1rem, 1.6vw, 1.5rem); }
+  .hero-bul { position: absolute; right: 32px; bottom: 7vh; width: min(360px, 29vw); flex-direction: column; margin: 0; z-index: 3; }
+  .hero-bul > * { width: 100%; flex: 0 0 auto; }
+}
+/* 세운 태블릿(가로 761px 이상인데 세로가 더 긴 화면): 구석 상자가 두 사람을 가리므로 휴대폰처럼 아래로 차례로 */
+@media (min-width: 761px) and (max-aspect-ratio: 999/1000) {
+  .hero-full .hero-stage { gap: 16px; }
+  .hero-full .hero-sermon-banner, .hero-bul { position: relative; z-index: 3; }
+  .hero-bul { margin-top: 0; }
+}
+@media (max-width: 760px) {
+  .hero-full .hero-stage { gap: 10px; padding-bottom: 6vh; }
+  .hero-full .hero-headline { flex: 0 0 auto; gap: 10px; padding-bottom: 0; }
+  .hero-brush { font-size: clamp(1.5rem, 7.4vw, 2.1rem); }
+  /* 글씨를 '아주 크게' 해도 단추가 화면 밖으로 잘리지 않게: 휴대폰은 높이를 가두지 않고, 두 사람 칸은 170px 아래로 줄지 않는다 */
+  .hero.hero-full { height: auto; min-height: 100svh; }
+  .hero-pair { min-height: 170px; }
+  .hero-full .hero-sermon-banner { padding: 12px 16px; gap: 4px; position: relative; z-index: 3; }
+  .hero-full .hero-sermon-banner .hsb-title { font-size: 1.15rem; }
+  .hero-bul { margin-top: 0; position: relative; z-index: 3; }
 }
 
 /* ============================================================
