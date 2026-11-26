@@ -117,6 +117,8 @@ console.log('[dashboard.js] v20260705qtfallback');
       '<div id="referrerRequests" style="margin-bottom:22px;"></div>' +
       // 최고 운영자(목사님)에게만 — 성도가 보낸 메시지
       '<div id="ownerMessages" style="margin-bottom:22px;"></div>' +
+      // 교회 서류 보관함 — 최고 운영자와 그가 지정한 분만 (2026-11-26)
+      '<div id="churchDocs" style="margin-bottom:22px;"></div>' +
       '<div id="dashScores"></div>' +
       '<h2 style="' + grp + 'margin-top:6px;">🕊 나의 신앙생활</h2>' +
       '<div id="dashQt" style="margin-bottom:22px;"></div>' +
@@ -142,6 +144,7 @@ console.log('[dashboard.js] v20260705qtfallback');
     loadFamily(me);
     loadMyGyojeok();
     loadOwnerMessages();
+    loadChurchDocs();
   }
 
   /* ================= 악보집 단추 (2026-10-07 목사님 요청) =================
@@ -1155,6 +1158,100 @@ console.log('[dashboard.js] v20260705qtfallback');
       };
       if (location.hash === '#myGyojeok') setTimeout(function () { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 200);
     }).catch(function () { box.innerHTML = ''; });
+  }
+
+  /* ================= 교회 서류 (2026-11-26) =================
+     고유번호증·통장 사본 같은 교회 서류 사본. 목회 작업실(사무실 PC)에서만 올리고, 여기서는 보기만 한다.
+     볼 수 있는 사람 = 최고 운영자 + 최고 운영자가 지정한 분(DB 규칙 church_docs_can_view). 파일은 비공개 저장소라
+     [열기]를 누를 때마다 5분짜리 열람 주소를 받고, 누가 언제 열었는지 기록이 남는다. */
+  function loadChurchDocs() {
+    var box = document.getElementById('churchDocs'); if (!box) return;
+    var url = window.SUPABASE_URL.replace(/\/$/, ''), ak = window.SUPABASE_ANON_KEY;
+    dashRest('rpc/church_docs_me', 'POST', {}).then(function (me) {
+      if (!me || !me.view) { box.innerHTML = ''; return; }
+      return dashRest('church_docs?select=id,doc_key,name,issued,note,file_name,size,current,uploaded_at&order=uploaded_at.desc').then(function (rows) {
+        rows = rows || [];
+        var cur = rows.filter(function (r) { return r.current; }), old = {};
+        rows.filter(function (r) { return !r.current; }).forEach(function (r) { (old[r.doc_key] = old[r.doc_key] || []).push(r); });
+        function d(t) { return String(t || '').slice(0, 10); }
+        function size(n) { return !n ? '' : n > 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.round(n / 1024) + 'KB'; }
+        function openBtn(r, label) { return '<button type="button" class="btn btn-line cd-open" data-id="' + r.id + '" style="padding:4px 11px;font-size:.82rem;white-space:nowrap">' + (label || '🔍 열기') + '</button>'; }
+        var html = '<div class="form-card" style="padding:16px 18px"><h3 style="margin:0 0 6px;font-size:1rem;color:var(--accent,#1A3A2F)">🔒 교회 서류</h3>' +
+          '<p style="margin:0 0 12px;font-size:.84rem;color:#5a6b82">' + (me.owner ? '목사님과 목사님이 지정한 분만 보입니다.' : '담임목사님이 지정한 분께만 보입니다.') + ' 다른 곳에 옮기거나 돌리지 마세요. 열 때마다 기록이 남습니다.</p>';
+        if (!cur.length) html += '<p style="color:#9aa5b1;font-size:.9rem;margin:0">아직 올라온 서류가 없습니다. 목회 작업실 › 공문서 제작 › 교회 서류 보관함에서 올립니다.</p>';
+        else html += '<div style="overflow:auto"><table class="fin-table" style="font-size:.88rem"><thead><tr><th>서류</th><th>발급일</th><th>메모</th><th>올린 날</th><th></th></tr></thead><tbody>' +
+          cur.map(function (r) {
+            var past = old[r.doc_key] || [];
+            return '<tr><td><b>' + esc(r.name) + '</b>' + (r.size ? ' <span style="color:#9aa5b1;font-size:.76rem">' + size(r.size) + '</span>' : '') + '</td><td style="white-space:nowrap">' + esc(d(r.issued)) + '</td><td>' + esc(r.note || '') + '</td><td style="white-space:nowrap">' + esc(d(r.uploaded_at)) + '</td><td style="text-align:right;white-space:nowrap">' + openBtn(r) + '</td></tr>' +
+              (past.length ? '<tr><td colspan="5" style="padding-top:0"><details><summary style="cursor:pointer;font-size:.8rem;color:#7a8696">지난 판 ' + past.length + '</summary>' +
+                past.map(function (o) { return '<div style="display:flex;gap:10px;align-items:center;padding:4px 0;font-size:.82rem;color:#5a6b82">발급 ' + esc(d(o.issued) || '—') + ' · 올림 ' + esc(d(o.uploaded_at)) + ' ' + openBtn(o, '열기') + '</div>'; }).join('') + '</details></td></tr>' : '');
+          }).join('') + '</tbody></table></div>';
+        if (me.owner) html += '<div id="cdOwner" style="margin-top:16px;border-top:1px dashed #dde3ec;padding-top:12px"><p class="qt-loading">열람자 목록을 불러오는 중…</p></div>';
+        box.innerHTML = html + '</div>';
+        Array.prototype.forEach.call(box.querySelectorAll('.cd-open'), function (b) {
+          b.onclick = function () {
+            var r = rows.filter(function (x) { return String(x.id) === b.dataset.id; })[0]; if (!r) return;
+            var w = window.open('', '_blank'), oldTxt = b.textContent; b.textContent = '여는 중…';
+            dashRest('rpc/church_doc_opened', 'POST', { p_doc: r.id }).then(function () {
+              return dashRest('church_docs?select=file_key&id=eq.' + r.id);
+            }).then(function (k) {
+              var key = k && k[0] && k[0].file_key; if (!key) throw new Error('파일 정보를 찾지 못했습니다');
+              return fetch(url + '/storage/v1/object/sign/church-docs/' + key.split('/').map(encodeURIComponent).join('/'), {
+                method: 'POST', headers: { apikey: ak, Authorization: 'Bearer ' + WPF.token(), 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: 300 })
+              }).then(function (x) { return x.json(); });
+            }).then(function (sg) {
+              b.textContent = oldTxt;
+              if (!sg || !sg.signedURL) throw new Error((sg && sg.message) || '열람 주소를 받지 못했습니다');
+              var to = url + '/storage/v1' + sg.signedURL;
+              if (w) w.location.href = to; else location.href = to;
+            }).catch(function (e) { b.textContent = oldTxt; if (w) w.close(); alert('열지 못했습니다: ' + ((e && e.message) || e)); });
+          };
+        });
+        if (me.owner) loadChurchDocOwner();
+      });
+    }).catch(function () { box.innerHTML = ''; });
+  }
+  /* 최고 운영자만: 열람자 지정·해제 + 기록 */
+  function loadChurchDocOwner() {
+    var el = document.getElementById('cdOwner'); if (!el) return;
+    Promise.all([dashRest('rpc/church_doc_viewers_list', 'POST', {}), dashRest('rpc/church_doc_log_list', 'POST', {}).catch(function () { return []; })]).then(function (res) {
+      var vs = res[0] || [], logs = res[1] || [];
+      function when(t) { var x = new Date(t); return isNaN(x) ? '' : (x.getMonth() + 1) + '/' + x.getDate() + ' ' + ('0' + x.getHours()).slice(-2) + ':' + ('0' + x.getMinutes()).slice(-2); }
+      el.innerHTML = '<h4 style="margin:0 0 8px;font-size:.92rem;color:var(--accent,#1A3A2F)">👥 볼 수 있는 분 (목사님이 지정)</h4>' +
+        (vs.length ? vs.map(function (v) {
+          return '<div style="display:flex;gap:10px;align-items:center;padding:5px 0;border-top:1px solid #f0f3f7;font-size:.88rem"><b>' + esc(v.name || v.email) + '</b><span style="color:#7a8696">' + esc(v.role || '') + '</span><span style="color:#9aa5b1;font-size:.78rem">' + esc(v.email || '') + '</span><span style="flex:1"></span>' +
+            '<button type="button" class="btn btn-line cd-off" data-uid="' + esc(v.uid) + '" data-name="' + esc(v.name || v.email) + '" style="padding:3px 10px;font-size:.8rem;color:#c0392b">빼기</button></div>';
+        }).join('') : '<p style="margin:0 0 6px;color:#9aa5b1;font-size:.86rem">아직 지정한 분이 없습니다. 지금은 목사님만 보십니다.</p>') +
+        '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><input type="text" id="cdQ" placeholder="이름으로 찾기 (두 글자 이상)" style="flex:1;min-width:160px;font:inherit;font-size:.9rem;border:1px solid #dde3ec;border-radius:8px;padding:7px 10px"><button type="button" class="btn btn-line" id="cdFind" style="font-size:.86rem">찾기</button></div>' +
+        '<div id="cdFound" style="margin-top:6px"></div>' +
+        '<details style="margin-top:12px"><summary style="cursor:pointer;font-size:.86rem;color:#5a6b82">📜 열람 · 지정 기록 (최근 ' + logs.length + '건)</summary>' +
+        (logs.length ? '<div style="max-height:260px;overflow:auto;margin-top:6px">' + logs.map(function (l) { return '<div style="font-size:.8rem;color:#5a6b82;padding:3px 0;border-top:1px solid #f4f6f9">' + esc(when(l.at)) + ' · <b>' + esc(l.who) + '</b> · ' + esc(l.action) + (l.what ? ' — ' + esc(l.what) : '') + '</div>'; }).join('') + '</div>' : '<p style="font-size:.82rem;color:#9aa5b1">기록이 없습니다.</p>') + '</details>';
+      Array.prototype.forEach.call(el.querySelectorAll('.cd-off'), function (b) {
+        b.onclick = function () {
+          if (!confirm(b.dataset.name + ' 님이 교회 서류를 더 이상 못 보게 할까요?')) return;
+          dashRest('rpc/church_doc_viewer_set', 'POST', { p_uid: b.dataset.uid, p_on: false }).then(loadChurchDocOwner, function (e) { alert('빼지 못했습니다: ' + e.message); });
+        };
+      });
+      function find() {
+        var q = (document.getElementById('cdQ').value || '').trim(), out = document.getElementById('cdFound');
+        if (q.length < 2) { out.innerHTML = '<p style="font-size:.82rem;color:#9aa5b1;margin:4px 0">이름을 두 글자 이상 적어 주세요.</p>'; return; }
+        dashRest('rpc/church_doc_people', 'POST', { q: q }).then(function (ps) {
+          ps = (ps || []).filter(function (p) { return !vs.some(function (v) { return v.uid === p.uid; }); });
+          out.innerHTML = ps.length ? ps.map(function (p) {
+            return '<div style="display:flex;gap:10px;align-items:center;padding:4px 0;font-size:.86rem"><b>' + esc(p.name || p.email) + '</b><span style="color:#7a8696">' + esc(p.role || '') + '</span><span style="color:#9aa5b1;font-size:.78rem">' + esc(p.email || '') + '</span><span style="flex:1"></span>' +
+              '<button type="button" class="btn btn-solid cd-on" data-uid="' + esc(p.uid) + '" data-name="' + esc(p.name || p.email) + '" style="padding:3px 10px;font-size:.8rem">볼 수 있게 지정</button></div>';
+          }).join('') : '<p style="font-size:.82rem;color:#9aa5b1;margin:4px 0">찾는 분이 없습니다(홈페이지에 가입한 분만 지정할 수 있습니다).</p>';
+          Array.prototype.forEach.call(out.querySelectorAll('.cd-on'), function (b) {
+            b.onclick = function () {
+              if (!confirm(b.dataset.name + ' 님이 고유번호증·통장 사본 같은 교회 서류를 볼 수 있게 할까요?')) return;
+              dashRest('rpc/church_doc_viewer_set', 'POST', { p_uid: b.dataset.uid, p_on: true }).then(loadChurchDocOwner, function (e) { alert('지정하지 못했습니다: ' + e.message); });
+            };
+          });
+        }, function (e) { out.innerHTML = '<p style="font-size:.82rem;color:#c0392b">찾지 못했습니다: ' + esc(e.message) + '</p>'; });
+      }
+      document.getElementById('cdFind').onclick = find;
+      document.getElementById('cdQ').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); find(); } };
+    }).catch(function (e) { el.innerHTML = '<p style="font-size:.84rem;color:#c0392b">열람자 목록을 불러오지 못했습니다: ' + esc(e.message) + '</p>'; });
   }
 
   /* ================= 받은 메시지 (최고 운영자만, 2026-10-07) =================
