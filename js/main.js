@@ -487,6 +487,23 @@ function summaryBlocks(t, escH) {
   }).join("");
 }
 
+// 게시된 주보(bulletins_public)를 로그인한 분은 그 열쇠로 읽는다 — 말씀 자료(설교 요약)는 로그인한 분께만(2026-11-26 목사님,
+// supabase/word_summary_members_20261126.sql). 열쇠가 낡았으면(401) 익명으로 다시.
+function sbAuthToken() {
+  try {
+    const ref = new URL(window.SUPABASE_URL).hostname.split(".")[0];
+    const s = JSON.parse(sessionStorage.getItem("sb-" + ref + "-auth-token") || "null");
+    const ss = s && (s.currentSession || s);
+    return (ss && ss.access_token) || "";
+  } catch (e) { return ""; }
+}
+function sbBulletinFetch(u, tok) {
+  if (tok === undefined) tok = sbAuthToken();
+  return fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + (tok || window.SUPABASE_ANON_KEY) } })
+    .then((r) => (r.status === 401 && tok ? sbBulletinFetch(u, "") : r.ok ? r.json() : null));
+}
+const WORD_LOCKED_HTML = `<div class="member-only ws-locked"><p>🔒 말씀 자료(설교 요약)는 가입하고 로그인하신 분께 보여 드립니다.</p><div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div></div>`;
+
 // ===== 1-2b. 이번 주 말씀 — 게시된 주보(bulletins_public)의 본문 말씀·설교 요약(말씀 자료) =====
 (function () {
   const box = document.getElementById("weekSermon");
@@ -499,8 +516,8 @@ function summaryBlocks(t, escH) {
     return;
   }
   const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=bdate,title,scripture,preacher,data&order=bdate.desc&limit=1";
-  fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY } })
-    .then((r) => (r.ok ? r.json() : null))
+  const loggedIn = !!sbAuthToken();
+  sbBulletinFetch(u)
     .then((rows) => {
       const b = rows && rows[0];
       if (!b) { box.innerHTML = `<p class="qt-loading">아직 등록된 설교가 없습니다.</p>`; return; }
@@ -522,6 +539,7 @@ function summaryBlocks(t, escH) {
             <a class="ws-more" href="word.html#archive">주보 모아 보기 →</a>
             <a class="ws-more ws-yt" href="${SERMON_YOUTUBE_URL}" target="_blank" rel="noopener">▶ 유튜브 설교 영상 보기</a>
           </div>
+          ${!sum && !loggedIn ? WORD_LOCKED_HTML : ""}
         </article>`;
       const sheetHtml = `
         <div class="ws-pop">
@@ -1411,8 +1429,7 @@ function renderBulletins() {
 function loadSBBulletins() {
   if (!bulletinList || !(window.SUPABASE_URL && window.SUPABASE_ANON_KEY)) return;
   const u = window.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/bulletins_public?select=*&order=bdate.desc&limit=400";
-  fetch(u, { headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: "Bearer " + window.SUPABASE_ANON_KEY } })
-    .then((r) => (r.ok ? r.json() : []))
+  sbBulletinFetch(u)
     .then((rows) => { SB_BULLETINS = rows || []; if (SB_BULLETINS.length) { buildMonthOptions(); renderBulletins(); } })
     .catch(() => {});
 }
