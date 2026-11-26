@@ -19,12 +19,13 @@
       { href: "district.html", label: "교구사역" },
       { href: "story.html#communities", label: "다음 세대" },
       { href: "story.html#groups", label: "전도회" },
-      { href: "story.html#album", label: "우리들 소식" },
     ] },
     { href: "world.html", label: "선교와 사역", sub: [
       { href: "world.html#mission", label: "선교" },
       { href: "world.html#local", label: "지역 연합사역" },
     ] },
+    // 사진첩: 공동체와 양육의 '우리들 소식'을 따로 빼 위 메뉴에 단독으로(2026-11-26 목사님). 세부 항목 없이 바로 album.html
+    { href: "album.html", label: "사진첩", single: true },
     { href: "welcome.html", label: "교회 안내", sub: [
       { href: "welcome.html#about", label: "노진교회를 소개합니다" },
       { href: "welcome.html#worship", label: "예배 안내" },
@@ -200,10 +201,10 @@
   // 로고 클릭으로도 처음화면에 갈 수 있지만, 다른 창(외부 링크 등)에서 넘어왔을 때
   // "메인화면으로"라는 글자 링크가 명확히 보이는 게 낫다는 요청으로 다시 추가함.
   // '메인화면으로'에 마우스를 올리면 모든 메뉴와 그 세부 항목을 한눈에 보여 주는 큰 메뉴(전체 메뉴)가 뜬다.
-  const megaCols = NAV.filter((n) => n.sub && !n.adminOnly && !n.memberOnly && !n.footerOnly).map((n) => `
+  const megaCols = NAV.filter((n) => (n.sub || n.single) && !n.adminOnly && !n.memberOnly && !n.footerOnly).map((n) => `
           <div class="mega-col">
             <a class="mega-head" href="${n.href}">${n.label}</a>
-            <div class="mega-links">${n.sub.map((s) => `<a href="${s.href}">${s.label}</a>`).join("")}</div>
+            <div class="mega-links">${(n.sub || []).map((s) => `<a href="${s.href}">${s.label}</a>`).join("")}</div>
           </div>`).join("");
   const homeLink = `<div class="nav-item nav-home-link has-mega">
         <a href="index.html"${path === "index.html" ? ' class="active"' : ""}>메인화면으로<span class="nav-caret mega-caret" aria-hidden="true">⌄</span></a>
@@ -1030,10 +1031,10 @@
   // 교회행정(권한자 전용)과 사이트맵 링크 자신은 목록에서 제외
   const sitemapBox = document.getElementById("sitemapGrid");
   if (sitemapBox) {
-    sitemapBox.innerHTML = NAV.filter((n) => !n.adminOnly && n.sub).map((n) => `
+    sitemapBox.innerHTML = NAV.filter((n) => !n.adminOnly && (n.sub || n.single)).map((n) => `
       <div class="sitemap-col">
         <h3><a href="${n.href}">${n.label}</a></h3>
-        <ul>${n.sub.map((s) => `<li><a href="${s.href}">${s.label}</a></li>`).join("")}</ul>
+        <ul>${(n.sub || []).map((s) => `<li><a href="${s.href}">${s.label}</a></li>`).join("")}</ul>
       </div>`).join("") + `
       <div class="sitemap-col">
         <h3><a href="index.html">처음화면</a></h3>

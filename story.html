@@ -24,6 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>if (location.hash === "#album") location.replace("album.html");   /* 우리들 소식 → 사진첩(album.html)으로 옮김 2026-11-26 */</script>
   <script src="js/page-slide.js?v=20261005ts"></script>
   <link rel="stylesheet" href="css/style.css?v=20261121pair" />
   <link rel="stylesheet" href="css/refresh.css?v=20261115v2" />
@@ -107,22 +108,6 @@
     </div>
   </section>
 
-  <section id="album" class="block">
-    <div class="container">
-      <div class="block-head">
-        <span class="eyebrow2">ALBUM & NEWS</span>
-        <h2>우리들 소식</h2>
-        <p>사진과 짧은 글로 전하는 공동체의 일상.</p>
-      </div>
-      <div class="hn-box" id="hnBox">
-        <div class="hn-carousel" id="hnCarousel"><p class="qt-loading">소식을 불러오는 중…</p></div>
-        <div class="hn-actions">
-          <button type="button" class="btn btn-line" id="hnMore">소식 더 보기</button>
-          <button type="button" class="hn-add" id="hnAdd" hidden>＋ 사진 올리기</button>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- 삶의 질문: 2026-09-29 목사님 요청으로 숨김(내용은 그대로 둠). 다시 보이려면 아래 hidden 을 지우고 js/layout.js 메뉴에 다시 넣으면 된다. -->
   <section id="qna" class="block block-alt" hidden>
@@ -220,7 +205,7 @@
 
   <script src="js/config.js?v=20261120lib"></script>
   <script src="js/bulletins.js?v=20261005member"></script>
-  <script src="js/layout.js?v=20261114en"></script>
+  <script src="js/layout.js?v=20261126album"></script>
   <script src="js/counsel.js?v=20261010guest"></script>
   <script src="js/main.js?v=20261126word"></script>
   <script src="js/worship-view.js?v=20261018grp"></script>
@@ -228,7 +213,7 @@
   <script src="js/community.js?v=20261020out"></script>
   <script src="js/categories.js?v=20261004board"></script>
   <script src="js/notices.js?v=20261004board"></script>
-  <script src="js/home-news.js?v=20261120ord"></script>
+  <script src="js/home-news.js?v=20261126album"></script>
   <script src="js/story-scene.js?v=20260930legs"></script>
 </body>
 </html>

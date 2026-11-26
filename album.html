@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko" class="big-text">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>사진첩 | ○○교회</title>
+  <meta name="description" content="사진과 짧은 글로 전하는 ○○교회 공동체의 일상." />
+
+  <!-- Open Graph (카카오톡·SNS 미리보기) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="○○교회" />
+  <meta property="og:title" content="○○교회 | OOO CHURCH" />
+  <meta property="og:description" content="믿음의 공동체. 예배 안내·주보·매일 말씀(QT)·나눔터까지, ○○교회에 오신 것을 환영합니다." />
+  <meta property="og:image" content="https://nojin.kr/images/og-nojin-20260929.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://nojin.kr/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="manifest" href="manifest.json?v=20260730lib13" />
+  <meta name="theme-color" content="#1A3A2F" />
+  <link rel="icon" href="images/favicon-32.png?v=20260926icon2" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png?v=20260926icon2" />
+  <meta name="apple-mobile-web-app-title" content="○○교회" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="js/page-slide.js?v=20261005ts"></script>
+  <link rel="stylesheet" href="css/style.css?v=20261121pair" />
+  <link rel="stylesheet" href="css/refresh.css?v=20261115v2" />
+</head>
+<body>
+
+  <!-- 사진첩: 공동체와 양육(story.html)의 '우리들 소식'을 따로 뺀 화면(2026-11-26 목사님). 사진·글은 js/home-news.js 가 그린다 -->
+  <section class="page-hero ph-sketch" data-symbol="N">
+    <h1><span class="nw">사진첩</span></h1>
+    <p>사진과 짧은 글로 전하는 공동체의 일상</p>
+  </section>
+
+  <section id="album" class="block">
+    <div class="container">
+      <div class="block-head">
+        <span class="eyebrow2">ALBUM & NEWS</span>
+        <h2>사진첩</h2>
+        <p>사진과 짧은 글로 전하는 공동체의 일상.</p>
+      </div>
+      <div class="hn-box" id="hnBox">
+        <div class="hn-carousel" id="hnCarousel"><p class="qt-loading">소식을 불러오는 중…</p></div>
+        <div class="hn-actions">
+          <button type="button" class="btn btn-line" id="hnMore">소식 더 보기</button>
+          <button type="button" class="hn-add" id="hnAdd" hidden>＋ 사진 올리기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="modal" id="postModal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="게시글">
+      <button class="modal-close" data-close aria-label="닫기">&times;</button>
+      <div class="post-detail" id="postDetail"></div>
+      <div class="comments" id="commentsBox">
+        <h4 class="m-head">댓글</h4>
+        <div class="comment-list" id="commentList"></div>
+        <form class="comment-form" id="commentForm" hidden>
+          <input type="text" name="comment" required placeholder="따뜻한 댓글을 남겨주세요" />
+          <button type="submit" class="btn btn-solid">등록</button>
+        </form>
+        <p class="comment-login" id="commentLogin" hidden>댓글을 쓰려면 로그인해 주세요.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/ph-symbol.js?v=20261001"></script>
+  <script src="js/church.js?v=20260926denom"></script>
+
+  <script src="js/brand.js?v=1"></script>
+
+  <script src="js/config.js?v=20261120lib"></script>
+  <script src="js/bulletins.js?v=20261005member"></script>
+  <script src="js/layout.js?v=20261126album"></script>
+  <script src="js/counsel.js?v=20261010guest"></script>
+  <script src="js/main.js?v=20261126word"></script>
+  <script src="js/worship-view.js?v=20261018grp"></script>
+  <script src="js/upload.js?v=20261005conti"></script>
+  <script src="js/community.js?v=20261020out"></script>
+  <script src="js/categories.js?v=20261004board"></script>
+  <script src="js/notices.js?v=20261004board"></script>
+  <script src="js/home-news.js?v=20261126album"></script>
+</body>
+</html>

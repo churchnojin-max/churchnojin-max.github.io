@@ -72,7 +72,7 @@
   }
   // 제목 앞에 붙은 날짜('5월31일 …', '2026.5.31 …')는 날짜 칸에 이미 나오므로 떼고 보여 준다
   const noDate = (t) => String(t || "").trim().replace(/^(?:(?:\d{4}\s*년\s*)?\d{1,2}\s*월\s*\d{1,2}\s*일|(?:\d{4}\s*[.\-/]\s*)?\d{1,2}\s*[.\-/]\s*\d{1,2}\.?(?=\s))\s*/, "").trim();
-  const titleOf = (p) => noDate(p.title) || noDate(p.caption) || p.category || "우리들 소식";
+  const titleOf = (p) => noDate(p.title) || noDate(p.caption) || p.category || "사진첩";
   // 날짜 상자와 '사진 수정하기' 창이 같은 날을 가리키게: 정한 날짜(event_date), 없으면 올린 날
   const dayOf = (p) => String(p.event_date || p.created_at || "").slice(0, 10);
   const dayLabel = (d) => { const m = String(d || "").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${+m[2]}월 ${+m[3]}일` : String(d || ""); };
@@ -143,8 +143,8 @@
   function renderLocked() {
     stop();
     carEl.classList.remove("hn-days");
-    if (currentUser() && isPending() && window.PendingLockHtml) { carEl.innerHTML = `<div class="hn-empty hn-locked">${window.PendingLockHtml("우리들 소식 사진은")}</div>`; return; }
-    carEl.innerHTML = `<div class="hn-empty hn-locked"><span>🔒</span><p>우리들 소식 사진에는 성도님들의 얼굴이 담겨 있어<br />가입하고 로그인하신 분께만 보여 드립니다.</p><div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div></div>`;
+    if (currentUser() && isPending() && window.PendingLockHtml) { carEl.innerHTML = `<div class="hn-empty hn-locked">${window.PendingLockHtml("사진첩 사진은")}</div>`; return; }
+    carEl.innerHTML = `<div class="hn-empty hn-locked"><span>🔒</span><p>사진첩 사진에는 성도님들의 얼굴이 담겨 있어<br />가입하고 로그인하신 분께만 보여 드립니다.</p><div class="member-only-btns"><button type="button" class="btn btn-solid" data-mo="join">가입하기</button><button type="button" class="btn btn-line" data-mo="login">로그인</button></div></div>`;
   }
   function renderCarousel() {
     if (loadError) {   // 불러오기 실패 → '소식 없음'과 헷갈리지 않게 오류+다시 시도 안내
@@ -263,9 +263,9 @@
     feedModal.hidden = true;
     feedModal.innerHTML = `
       <div class="modal-backdrop" data-close></div>
-      <div class="modal-box modal-box-album" role="dialog" aria-modal="true" aria-label="우리들 소식">
+      <div class="modal-box modal-box-album" role="dialog" aria-modal="true" aria-label="사진첩">
         <button class="modal-close" data-close aria-label="닫기">&times;</button>
-        <h3 class="m-title">우리들 소식</h3>
+        <h3 class="m-title">사진첩</h3>
         <div class="album-feed" id="hnFeed"></div>
       </div>`;
     document.body.appendChild(feedModal);

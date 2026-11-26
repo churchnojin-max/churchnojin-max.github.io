@@ -482,7 +482,7 @@ console.log('[gyojeok.js] v20261007reg');
           (act.length || exp.length ? '<div class="spl-wrap"><table class="spl"><thead><tr><th>이름</th><th>어떤 분인지</th><th>승인한 날</th><th>기한</th><th>마지막 로그인</th><th></th></tr></thead><tbody>' +
             act.map(function (u) { return row(u, false); }).join('') + exp.map(function (u) { return row(u, true); }).join('') + '</tbody></table></div>'
             : '<div class="ac-empty">특별 승인한 분이 없습니다.</div>') +
-          '<div class="spl-scope"><b>특별 승인한 분이 볼 수 있는 것</b>(정회원과 같음): 사진첩·우리들 소식, 주보의 향기로운 예물 명단(이름만, 금액 없음)·봉사위원 명단·주보 PDF, 예배 순서자 안내, 자료실, 수요 말씀 자료·콘티, 주일 예배 화면(현장·온라인, 그 시간의 새찬송가 악보), 게시판·사진 글쓰기, 대시보드(성경 읽기·QT).<br>' +
+          '<div class="spl-scope"><b>특별 승인한 분이 볼 수 있는 것</b>(정회원과 같음): 사진첩, 주보의 향기로운 예물 명단(이름만, 금액 없음)·봉사위원 명단·주보 PDF, 예배 순서자 안내, 자료실, 수요 말씀 자료·콘티, 주일 예배 화면(현장·온라인, 그 시간의 새찬송가 악보), 게시판·사진 글쓰기, 대시보드(성경 읽기·QT).<br>' +
           '<b>볼 수 없는 것</b>: 헌금 조회·가정 합산·내 교적·성도 문서(교적이 없어서), 교적부·재정·교구·행정 같은 관리 화면(권한을 따로 주지 않는 한).</div></div>';
       }
       // 지금 로그인한 사람(나)의 uid — 최고 운영자 본인 줄에는 '관리자 해제'를 두지 않는다.

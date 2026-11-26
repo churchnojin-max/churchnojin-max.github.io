@@ -66,7 +66,7 @@
     });
   }
 
-  const goHome = '<a class="btn btn-outline" href="story.html#album">우리들 소식으로</a>';
+  const goHome = '<a class="btn btn-outline" href="album.html">사진첩으로</a>';
 
   function loginNeeded() {
     box.innerHTML = `
@@ -108,7 +108,7 @@
     const opts = cats().map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
     box.innerHTML = `
       <div class="share-card">
-        <h3>우리들 소식에 올리기</h3>
+        <h3>사진첩에 올리기</h3>
         <p class="share-note">${files.length}장의 사진을 앨범에 올립니다.</p>
         <div class="share-previews">${previews}</div>
         <label class="share-field"><span>카테고리</span>
