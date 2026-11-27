@@ -6112,7 +6112,8 @@ console.log('[affairs.js] v20260712memo2');
             // 말씀 요약·교회소식 본문 — 미리보기(PrvText.txt)엔 없어 원본 XML에서 직접 추출
             if (secXml) {
               var runs = (secXml.match(/<hp:t(?:\s[^>]*)?>[\s\S]*?<\/hp:t>/g) || [])
-                .map(function (t) { return htmlDec(t.replace(/<\/?hp:t(?:\s[^>]*)?>/g, '')); })
+                // 글 안의 줄바꿈(<hp:lineBreak/>)은 줄바꿈으로, 탭 등 다른 표시는 빼고 글자만(2026-11-28 11/29 소식 3번에 태그가 그대로 보인 일)
+                .map(function (t) { return htmlDec(t.replace(/<\/?hp:t(?:\s[^>]*)?>/g, '').replace(/<hp:lineBreak\s*\/>/g, '\n').replace(/<hp:tab\b[^>]*\/>/g, ' ').replace(/<[^>]+>/g, '')); })
                 .filter(function (s) { return s.trim(); });
               var ws = parseHwpxSummaryNews(runs);
               if (ws.summary) ex.summary = ws.summary;
